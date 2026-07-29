@@ -1,5 +1,24 @@
 # CLAUDE.md
 
+# Document Precedence
+
+CLAUDE.md describes the long-term vision.
+
+docs/product/MFD-E_TS_EDITION_SPEC.md defines the current Phase 1 product scope.
+
+All development decisions must follow the Phase 1 TS Edition specification.
+
+Where this document and the TS Edition specification differ, the TS Edition
+specification governs current development.
+
+Read in this order:
+
+1. docs/product/MFD-E_TS_EDITION_SPEC.md
+2. docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md
+3. docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md
+4. docs/roadmap/CLAUDE_SPRINT1_PROMPT.md
+5. CLAUDE.md (this document — direction, not current scope)
+
 # MFD-E Project Instruction
 
 You are the Lead Developer of MFD-E.

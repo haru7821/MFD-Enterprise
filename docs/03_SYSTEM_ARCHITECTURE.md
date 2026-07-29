@@ -1,6 +1,10 @@
 # System Architecture
 
-> Architecture for MFD-E, derived from CLAUDE.md. Status: proposal, partially implemented as of v0.1 Alpha.
+> Architecture for MFD-E. Status: proposal, partially implemented as of v0.1 Alpha.
+>
+> **Scope authority:** [MFD-E_TS_EDITION_SPEC.md](product/MFD-E_TS_EDITION_SPEC.md) defines
+> what is built now. CLAUDE.md supplies the engineering principles and the long-term
+> direction. Where they differ, the TS Edition specification governs.
 
 ## 0. Plain-language summary
 
@@ -115,33 +119,64 @@ A rule is a record, not a script. Fixed set of predicate kinds, extended by addi
 - `egress_reachability` — path width and travel distance to an exit
 
 Every rule record carries: `id`, `version`, `predicate`, `scope`, `parameters`,
-`severity` (`error` | `warning` | `advisory`), `jurisdiction`, `source_document`,
-`clause`, `effective_date`, `citation_text`.
+`result_level` (`GREEN` | `YELLOW` | `RED`, per the rule engine specification),
+`source_document`, `revision`, `section`, `effective_date`, `data_status`.
 
-*Rationale:* `severity` and `citation` are what separate an engineering platform from a
-drawing tool. A violation the user cannot trace to a clause is not actionable.
+*Rationale:* the result level and the citation are what separate an engineering platform
+from a drawing tool. Specification section 6 requires that every rule carry source
+information; a result the TS engineer cannot trace back to a manual section cannot be
+defended to a customer.
 
-### AD-6. Jurisdiction and code edition are first-class schema fields
+### AD-6. The source of authority is a schema field, and Version 1's authority is the manufacturer manual
 
-A project selects `{jurisdiction, code_edition, facility_type}`; rule sets resolve against
-that triple. Korean 의료법 시행규칙, FGI Guidelines, and a hospital's internal standard are
-different sets that must coexist.
+Every rule resolves against `{authority, document, revision, equipment_model}`.
+
+For the TS Edition MVP the authority is the **manufacturer installation manual** — not a
+national building code. A clearance figure is true *for the AK98, at manual revision X*,
+and becomes false when the manual is revised.
+
+The field is nonetheless kept general. Local electrical, drainage and fire requirements
+enter in later versions, and a hospital's own internal standard is a third layer. Rule
+resolution is therefore: base manual rules ← local requirement overlay ← project override,
+with the resolution chain recorded in every result.
 
 *Rationale:* this is the one dimension that cannot be retrofitted. Adding it later means
-rewriting every rule record and every stored validation result.
+rewriting every rule record and every stored validation result. It costs one field now.
+
+### AD-6a. Unverified data can never produce a GREEN result
+
+Equipment and rule records carry `data_status: draft | verified`. A record is `verified`
+only when it names its source document, revision and section; the loader rejects anything
+that claims otherwise.
+
+Any result computed from `draft` data is capped at YELLOW — "Review Required" — and the
+draft provenance is carried into the report.
+
+*Rationale:* the project currently holds example figures (900 × 750 mm, 1200 mm clearance)
+that are placeholders, not measurements. The failure this product exists to prevent is a
+plausible number quietly becoming an authoritative one. That has to be blocked by the
+engine, not by whoever remembers.
 
 ### AD-7. Domain model
 
+Follows the TS Edition workflow: import drawing → define room → place equipment →
+validate → report.
+
 ```
-Project ─ Level ─ Space (boundary polygon, function tag, name)
-                    └─ Placement (object_id, transform, parameters)
-                          └─ Port (service connection point)
-        └─ Connection (routing path between ports)   [Phase 2]
+Project ─ FloorPlan (imported image, scale calibration, page)
+        └─ Room (boundary polygon, function tag, name)
+             └─ Placement (equipment_id, transform, parameters)
+                  └─ Port (power · RO water · drain)
+        └─ Connection (routing path between ports)   [Version 2]
 ```
 
-`Space.function` (hemodialysis bay, water treatment, clean utility, soiled utility,
-isolation room, staff station…) is the selector most rules scope on, so the space taxonomy
-is a controlled vocabulary, not free text.
+`FloorPlan.scale` is the calibration produced in Sprint 2 — the factor that turns imported
+image pixels into millimetres. Until it is set, no measurement taken against that plan
+means anything, so it is part of the document rather than a view setting.
+
+`Room.function` (hemodialysis treatment area, water treatment room, clean utility, soiled
+utility, isolation…) is the selector most rules scope on, so the room taxonomy is a
+controlled vocabulary, not free text.
 
 ### AD-8. Document schema is versioned with migrations from v1
 
@@ -163,13 +198,16 @@ engine, not before.
 
 ## 4. Deferred / Flagged Decisions
 
+Versions below are those of the TS Edition specification, section 7.
+
 | Item | Position | Why |
 | --- | --- | --- |
-| Electron | Phase 3 | Packaging, signing, auto-update, second build target cost real time. Web-first with a thin file-I/O abstraction keeps the door open at near-zero cost. Pull forward only if offline hospital use is a hard requirement. |
-| Three.js | Phase 4 (Digital Twin) | Nothing before then is 3D. |
-| Python AI service | Phase 2 | No v0.1 or v0.2 requirement needs it. |
+| Electron | Not in the TS Edition specification | CLAUDE.md lists it as long-term direction; Version 1 is web-only. A thin file-I/O abstraction keeps the door open at near-zero cost. Revisit only if offline hospital use becomes a stated requirement. |
+| Three.js | Version 4 (Digital Twin) | Nothing before then is 3D. |
+| Python AI service | Version 3 | The TS Edition specification places the AI design assistant in Version 3, later than the generic roadmap assumed. Automatic layout in Version 2 is a constraint solver, not a model. |
 | Multi-tenancy / RBAC | Decide before `apps/api` | SaaS vs on-prem changes the auth model, not just a config flag. |
-| LLM data residency | Decide before Phase 2 | If hospital data cannot leave the network, AD-10's deployment changes fundamentally. |
+| LLM data residency | Decide before Version 3 | If hospital data cannot leave the network, AD-10's deployment changes fundamentally. |
+| DXF / DWG / IFC import | Future, per spec 5.1 | Version 1 imports raster floor plans only. |
 
 ## 5. Toolchain
 
