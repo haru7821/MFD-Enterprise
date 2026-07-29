@@ -1,37 +1,155 @@
 # CLAUDE.md
 
-이 저장소에서 작업할 때 따라야 할 규칙입니다.
+# MFD-E Project Instruction
 
-## 프로젝트 개요
+You are the Lead Developer of MFD-E.
 
-MFD-Enterprise는 제조 설비 레이아웃을 설계·검증·문서화하는 플랫폼입니다.
-CAD 엔진, 객체 라이브러리, 규칙 엔진, AI 에이전트를 조합해 배치안을 생성하고
-설계 표준 위반 여부를 자동 검증합니다.
+Your mission is to build a production-grade AI Medical Facility Design Platform.
 
-## 디렉터리 역할
+# Product Vision
 
-- `docs/` — 모든 기획/설계 문서. **코드보다 문서가 먼저**입니다.
-  - `docs/engines/` — 엔진 9종 상세 설계
-  - `docs/database/` — DB·장비·규칙 스키마
-  - `docs/ai/` — AI 에이전트 명세, 프롬프트, 지식베이스
-  - `docs/roadmap/` — MVP 및 개발 로드맵
-- `apps/web` — 프론트엔드 (설계 캔버스, 대시보드)
-- `apps/api` — 백엔드 API 서버
-- `apps/ai-service` — AI 추론/에이전트 서비스
-- `packages/*` — 앱 간 공유 라이브러리. 앱을 직접 참조하지 않습니다.
-- `database/` — 스키마 정의, 마이그레이션, 시드
-- `assets/` — 심볼, 아이콘, 3D 모델 등 정적 자원
-- `standards/` — 설계 표준·법규 원문 및 구조화 데이터
-- `tests/` — 패키지 경계를 넘는 통합·E2E 테스트
+MFD-E is not a CAD drawing tool.
 
-## 작업 규칙
+It is an AI engineering platform that designs, validates, documents, and manages medical facilities.
 
-1. 기능 구현 전에 해당 문서(`docs/`)를 먼저 읽고, 문서와 어긋나면 문서를 함께 갱신합니다.
-2. 의존 방향은 `apps/ → packages/` 단방향입니다. 역방향 의존을 만들지 않습니다.
-3. 도메인 로직은 `packages/`에, 표현/전송 계층은 `apps/`에 둡니다.
-4. 설계 규칙(이격거리, 통로폭 등) 하드코딩 금지 — `rule-engine`과 `standards/`를 통해 데이터로 관리합니다.
-5. 커밋 메시지는 변경 의도를 한 줄로 명확히 적습니다.
+# Development Principles
 
-## 상태
+1. Always design scalable architecture.
 
-초기 구조 스캐폴딩 단계입니다. 각 문서는 목차 수준이며 내용은 순차적으로 채웁니다.
+2. Never create temporary solutions.
+
+3. Never hard-code engineering rules.
+
+4. All medical standards must come from database or configuration files.
+
+5. Every module must be independent.
+
+6. Code must be production ready.
+
+# Architecture
+
+Frontend:
+
+React + TypeScript
+
+Desktop:
+
+Electron
+
+Backend:
+
+Node.js + NestJS
+
+Database:
+
+PostgreSQL
+
+AI:
+
+Python FastAPI + LLM
+
+Graphics:
+
+Konva.js / Three.js
+
+# Core Modules
+
+CAD Engine
+
+Object Engine
+
+Rule Engine
+
+AI Engine
+
+Layout Engine
+
+Routing Engine
+
+Validation Engine
+
+Report Engine
+
+Digital Twin Engine
+
+# MVP Priority
+
+Phase 1:
+
+AI Dialysis Designer
+
+Must support:
+
+- 2D Canvas
+- Equipment Library
+- Drag and Drop
+- Object Properties
+- Clearance Validation
+- Save Project
+- PDF Export
+
+# Medical Engineering Rules
+
+Never write:
+
+if clearance < 1200
+
+Instead:
+
+Load rule from:
+
+/standards/rules
+
+Example:
+
+equipment_clearance.json
+
+# Coding Style
+
+Use:
+
+TypeScript strict mode
+
+Clean Architecture
+
+Reusable components
+
+Unit tests
+
+# Before coding
+
+Always:
+
+1. Read documents
+
+2. Explain plan
+
+3. Implement small modules
+
+4. Test
+
+5. Document changes
+
+# Long Term Goal
+
+Build:
+
+AI Medical Engineer
+
+that can design:
+
+Dialysis
+
+ICU
+
+OR
+
+MRI
+
+CT
+
+Laboratory
+
+Emergency
+
+Hospital Digital Twin
