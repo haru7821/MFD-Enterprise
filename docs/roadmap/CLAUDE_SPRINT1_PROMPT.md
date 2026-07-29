@@ -1,6 +1,7 @@
-> **Note added in Sprint 1.5 — task-to-sprint mapping.**
+> ## Sprint Mapping Notice
+>
 > Sprint numbering was fixed in Sprint 1.5 and the five tasks below now span three
-> sprints. The instruction text is preserved unchanged; only this note was added.
+> sprints. The instruction text is preserved unchanged; only this notice was added.
 >
 > | Task below | Sprint | Status |
 > | --- | --- | --- |

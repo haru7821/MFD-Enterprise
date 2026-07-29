@@ -91,19 +91,36 @@ engine can be built and tested against fixtures; it cannot be seeded with anythi
 
 Spec 5.1 and the "Scale Setting" item of 5.2. Floor plan **import**, not report output.
 
+PDF Workflow means three distinct deliverables:
+
+| # | Deliverable | What it produces |
+| --- | --- | --- |
+| 1 | **PDF import** | The hospital's drawing on screen as a raster underlay — PDF, PNG, JPG |
+| 2 | **Scale calibration** | `millimetresPerPixel` — how large the drawing is |
+| 3 | **Coordinate mapping** | The full pixel ↔ millimetre transform: scale **plus origin plus rotation** |
+
+Scale alone is not a coordinate system. A correctly scaled plan with no origin gives
+nothing to measure *from*, and a plan scanned three degrees off square puts every clearance
+three degrees off. Hospital floor plans do not arrive square to the page, so the mapping is
+a deliverable in its own right rather than a detail of calibration.
+
+Supporting work in the same sprint:
+
 | Deliverable | |
 | --- | --- |
-| Import PDF, PNG and JPG as a raster underlay | |
-| Two-point scale calibration | |
-| `Level` and `PlanImage` in the document model | |
+| `Level`, `PlanImage`, `CoordinateMapping` in the document model | |
 | Locked background layer beneath the design | |
 | Project save / load with schema version and migration chain | |
 
 **Acceptance criteria**
 
-- A hospital PDF is imported, calibrated, and a 900 mm machine placed on it measures
-  900 mm against the drawing's own dimension lines.
-- An uncalibrated plan yields YELLOW with "plan not calibrated" — never GREEN.
+- A hospital PDF is imported, mapped, and a 900 mm machine placed on it measures 900 mm
+  against the drawing's own dimension lines.
+- A plan imported at an angle is measured correctly after rotation is set — distances do
+  not depend on how squarely the drawing was scanned.
+- Model (0, 0) lands where the engineer put the origin, and reopening the project puts it
+  in the same place.
+- An unmapped plan yields YELLOW with "plan not calibrated" — never GREEN.
 - A project saved on one machine opens identically on another.
 
 Scoped to raster underlay. Vector PDF geometry extraction, DXF and DWG stay in the

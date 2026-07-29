@@ -165,16 +165,20 @@ validate → report. Defined in full in
 [OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md).
 
 ```
-Project ─ Level (floor: imported plan image + scale calibration)
-        └─ Space (boundary polygon, function tag, name)
-             └─ Placement (equipment_object_id, transform, parameters)
-                  └─ Port (power · RO water · drain)
-        └─ Connection (routing path between ports)   [Sprint 7+]
+Project
+ └ Level                             floor: imported plan image + coordinate mapping
+     └ Space                         boundary polygon, function tag, name
+         └ Placement                 transform, parameters; Ports are its properties
+             └ Equipment Object Reference
 ```
 
-`Level.scale` is the calibration produced in Sprint 4 — the factor that turns imported
-plan pixels into millimetres. Until it is set, no measurement taken against that plan
-means anything, so it belongs to the document rather than to the view.
+`Level.coordinateMapping` is produced in Sprint 4 and holds the full image-pixel to
+millimetre transform — scale, origin and rotation. Until it is set, no measurement taken
+against that plan means anything, so it belongs to the document rather than to the view.
+
+`Port` is a property of `Placement`, derived from the equipment object and positioned by
+the placement transform, not a level of the hierarchy. `Connection` (routing between
+ports) arrives with the routing work and is not yet scheduled.
 
 `Space.function` (hemodialysis treatment area, water treatment room, clean utility, soiled
 utility, isolation…) is the selector most rules scope on, so the space taxonomy is a
