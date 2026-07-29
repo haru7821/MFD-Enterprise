@@ -1,19 +1,22 @@
 # Playwright Test Plan
 
 > Browser-level verification for MFD-E TS Edition.
-> Written in Sprint 2. **Not yet wired into CI** — see "Status" below.
+> Written in Sprint 2, committed and wired into CI in Sprint 3.
 
-## Status
+## Status — committed and running in CI as of Sprint 3
 
-The scenarios here are executed manually against a production build at the end of each
-sprint, and their results are reported. They are not part of the CI workflow yet:
-installing a browser adds minutes to every run, and the assertions worth locking down grow
-substantially once the rule engine lands in Sprint 3.
+17 specs in `tests/e2e/`, run by `.github/workflows/browser.yml`, **separate from the fast
+`ci.yml`**. Installing a browser costs minutes; the typecheck / lint / unit gate answers in
+under one, and should keep doing so. The two workflows run alongside each other, so a
+failing lint reports in seconds rather than queueing behind a browser download.
 
-**Committed to CI in Sprint 3**, alongside the validation results that make a regression
-suite worth its runtime.
+```bash
+pnpm test:e2e          # against a production build, started automatically
+pnpm test:e2e:ui       # interactive
+```
 
-Run manually against `pnpm build && pnpm preview`.
+The config takes `CHROMIUM_PATH` as an escape hatch for sandboxes that ship a browser at a
+version Playwright did not download. CI leaves it unset.
 
 ---
 
@@ -65,18 +68,20 @@ with itself proves nothing.
   the fill. A row crossing the footprint has hundreds of matching pixels; a row clipping
   a letter has a handful.
 
-### Tolerance
+### Tolerance — a pixel budget, not a percentage
 
-| Zoom | Acceptable error |
-| --- | --- |
-| ≥ 25 % | ±1 % |
-| 10–25 % | ±1.5 % |
-| < 10 % | ±3 % |
+**±6 pixels at every zoom level**, plus ±3 % relative error where the object is at least
+25 % zoom.
 
-The residual is the anti-aliased boundary — roughly one pixel lost on each edge,
-independent of scale. **Error must shrink as zoom rises.** An error that stays constant in
-percentage terms is a scale bug, not an edge effect, and fails the test regardless of
-whether it sits inside the tolerance above.
+The residual is fixed and scale-independent: the anti-aliased fill boundary, plus the
+validation outline drawn over it, together lose about two pixels per edge. Expressed as a
+percentage that becomes 6 % on a small object and 0.5 % on a large one, which would force
+the low-zoom tolerance so wide it could no longer catch a real scale error. A pixel budget
+matches the physics and stays strict.
+
+**The relative error must also shrink as zoom rises.** One that stays constant in
+percentage terms is a scale bug wearing an edge effect's clothing, and fails the test even
+if every absolute measurement sits inside the budget.
 
 ### Measured — Sprint 2, Vantive AK98, catalogue 900 × 750 mm
 
@@ -102,11 +107,24 @@ Draft data must be impossible to miss. Assertions:
 | D5 | Status bar | `draft-placement-warning` appears whenever a draft object is placed, and reports the count |
 | D6 | Upgrade path | Changing a record's `dataStatus` to `verified` (with complete source) removes every marking above, with no code change |
 
-D6 is the one that matters most and is currently untested: it proves the draft treatment
-is driven by data rather than hard-coded for the AK98. Add it in Sprint 3 with a fixture
-catalogue.
+D6 is covered at the unit level in Sprint 3 — `evaluate.test.ts` proves a verified rule and
+a verified equipment record together reach GREEN, while either being draft does not. It
+remains untested *through the browser*, which would need a fixture catalogue served to the
+app. Worth adding when a second, verified equipment record exists.
 
-## 4. Screenshot validation
+## 4. Rule engine (Sprint 3)
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| V1 | Rule set identity | The panel names the rule set and version stamped into results |
+| V2 | Evaluation on placement | Placing one machine produces its four clearance findings |
+| V3 | Unknown threshold | Reported YELLOW with "threshold unknown" — no fourth status |
+| V4 | No GREEN while provisional | With the shipped draft rule set, `result-badge-GREEN` never appears |
+| V5 | Collision | Two overlapping machines raise RED, reporting the overlap in millimetres |
+| V6 | Collision clears | Dragging them apart removes the RED |
+| V7 | Provenance | Every finding states its source, or says explicitly that there is none |
+
+## 5. Screenshot validation
 
 Screenshots are captured as evidence rather than compared pixel-by-pixel. Pixel-diff
 baselines are not adopted here: font rendering and anti-aliasing differ between machines,
@@ -132,11 +150,12 @@ Stable `data-testid` attributes, so selectors do not depend on layout or copy:
 | Hook | Element |
 | --- | --- |
 | `status-bar` | Status bar footer — the page has more than one `<footer>` |
+| `field-<label>` | A status bar value. Label and value are separated by a CSS gap, so the DOM text runs them together as "Placed1"; the value carries its own hook rather than making assertions depend on spacing. |
 | `catalog-item-<id>` | A catalogue palette entry |
 | `draft-badge` | Draft marking in the palette |
 | `draft-placement-warning` | Status bar draft warning |
-
-## When this becomes CI
-
-Sprint 3, with browser installation cached. Gate on: R1–R8, the dimension tolerance table,
-and D1–D6.
+| `validation-panel` | Findings panel |
+| `validation-result` | One finding, carrying `data-level` |
+| `result-badge-<LEVEL>` | GREEN / YELLOW / RED badge |
+| `provisional-warning` | Panel-wide provisional banner |
+| `findings-summary` | Status bar RED / YELLOW counts |

@@ -1,0 +1,20 @@
+[
+  {
+    "ruleId": "dialysis_machine_overlap",
+    "category": "collision",
+    "description": "Two pieces of equipment may not occupy the same floor area",
+    "threshold": null,
+    "unit": "mm",
+    "status": "draft",
+    "severity": "RED",
+    "appliesTo": { "equipmentIds": null, "categories": ["dialysis_machine"] },
+    "parameters": { "scope": "equipment" },
+    "source": {
+      "document": null,
+      "revision": null,
+      "section": null,
+      "type": "estimate",
+      "lastUpdated": "2026-07-29"
+    }
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "ruleId": "ak98_front_clearance",
+    "category": "clearance",
+    "description": "Front service and patient access clearance for the Vantive AK98",
+    "threshold": null,
+    "unit": "mm",
+    "status": "draft",
+    "severity": "RED",
+    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
+    "parameters": { "side": "front" },
+    "source": {
+      "document": null,
+      "revision": null,
+      "section": null,
+      "type": "estimate",
+      "lastUpdated": "2026-07-29"
+    }
+  },
+  {
+    "ruleId": "ak98_rear_clearance",
+    "category": "clearance",
+    "description": "Rear maintenance clearance for the Vantive AK98",
+    "threshold": null,
+    "unit": "mm",
+    "status": "draft",
+    "severity": "RED",
+    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
+    "parameters": { "side": "rear" },
+    "source": {
+      "document": null,
+      "revision": null,
+      "section": null,
+      "type": "estimate",
+      "lastUpdated": "2026-07-29"
+    }
+  },
+  {
+    "ruleId": "ak98_left_clearance",
+    "category": "clearance",
+    "description": "Left side access clearance for the Vantive AK98",
+    "threshold": null,
+    "unit": "mm",
+    "status": "draft",
+    "severity": "YELLOW",
+    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
+    "parameters": { "side": "left" },
+    "source": {
+      "document": null,
+      "revision": null,
+      "section": null,
+      "type": "estimate",
+      "lastUpdated": "2026-07-29"
+    }
+  },
+  {
+    "ruleId": "ak98_right_clearance",
+    "category": "clearance",
+    "description": "Right side access clearance for the Vantive AK98",
+    "threshold": null,
+    "unit": "mm",
+    "status": "draft",
+    "severity": "YELLOW",
+    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
+    "parameters": { "side": "right" },
+    "source": {
+      "document": null,
+      "revision": null,
+      "section": null,
+      "type": "estimate",
+      "lastUpdated": "2026-07-29"
+    }
+  }
+]

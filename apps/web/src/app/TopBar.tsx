@@ -16,7 +16,7 @@ export function TopBar() {
       <span className="text-sm text-ink-muted">Untitled dialysis unit</span>
 
       <span className="ml-auto font-mono text-[11px] text-ink-faint">
-        v0.2 Alpha · Sprint 2 — equipment object system
+        v0.3 Alpha · Sprint 3 — rule engine
       </span>
     </header>
   );

@@ -9,8 +9,8 @@
 | 1 | Foundation | 5.2 | ✅ **Complete** — v0.1 Alpha |
 | 1.5 | Architecture stabilisation | — | ✅ Complete |
 | 2 | Equipment Object System | 5.3 | ✅ **Complete** — v0.2 Alpha |
-| 3 | Rule Engine | 5.4 | ◀ **Next** |
-| 4 | PDF Workflow | 5.1 | ☐ |
+| 3 | Rule Engine | 5.4 | ✅ **Complete** — v0.3 Alpha |
+| 4 | PDF Workflow + Spatial Model | 5.1 | ◀ **Next** |
 | 5 | Report Generation | 5.5 | ☐ |
 | 6 | AI Assistant | §7 Version 3 | ☐ |
 
@@ -72,32 +72,51 @@ tests stay manual until Sprint 3.
 **Not blocked** by the missing AK98 measurements: the record ships as `draft`, and the real
 figures replace placeholders without touching code.
 
-## Sprint 3 — Rule Engine
+## Sprint 3 — Rule Engine ✅
 
-Spec 5.4. Where the product earns its purpose.
+Spec 5.4. Where the product earns its purpose. **Rule engine only** — the spatial model
+moved to Sprint 4.
 
 | Deliverable | |
 | --- | --- |
-| Rule record schema, rule set loader from `standards/rules/` | `packages/rule-engine` |
-| Predicate evaluators: clearance, equipment collision, wall collision | |
-| Connection availability and maintenance access checks | |
+| Rule record schema, JSON-driven with no hard-coded thresholds | `packages/rule-engine` |
+| Rule set loader from `standards/rules/` | |
+| Clearance evaluation | |
+| Equipment-to-equipment collision foundation | |
 | GREEN / YELLOW / RED result model carrying the rule and its source | |
 | Live violation overlay on the canvas, violation list panel | `apps/web` |
-| `Space` and the space function vocabulary | |
+| Browser validation workflow, separate from the fast CI | `.github/workflows` |
+
+**Out of scope, by decision:** `Space`, the room vocabulary and boundary collision. Room
+boundaries are traced on an imported floor plan, so drawing them before the plan exists
+means drawing them twice. They move to Sprint 4 with the rest of the spatial model; the
+collision evaluator ships with an interface for boundary collision but no implementation.
 
 **Acceptance criteria**
 
-- Moving an AK98 too close to a wall raises a RED result naming the manual section it
-  violates.
+- A rule set with an invalid or duplicate record fails to load, naming the file and field.
 - Editing the rule JSON changes the outcome with no code change.
+- Threshold resolution records which source was applied — rule or equipment.
+- An unknown threshold yields YELLOW with "threshold unknown", not a fourth status.
 - **A result derived from draft data is never GREEN.**
+- A violation of a draft rule is still reported at the rule's severity: provisional data
+  must not hide a problem.
+- Results are invariant under rotation and translation of the whole layout.
 
 **Blocked by:** the real clearance figures and the manual revision they come from. The
-engine can be built and tested against fixtures; it cannot be seeded with anything true.
+engine is built and tested against fixtures; it cannot be seeded with anything true, so the
+shipped rule set carries null thresholds until the manual arrives.
 
-## Sprint 4 — PDF Workflow
+## Sprint 4 — PDF Workflow and Spatial Model
 
-Spec 5.1 and the "Scale Setting" item of 5.2. Floor plan **import**, not report output.
+Spec 5.1 and the "Scale Setting" item of 5.2, plus the spatial model moved from Sprint 3.
+
+| Part | Deliverable |
+| --- | --- |
+| PDF workflow | PDF import · Scale calibration · Coordinate mapping |
+| Spatial model | `Level` · `Space` · Boundary |
+
+Floor plan **import**, not report output.
 
 PDF Workflow means three distinct deliverables:
 
@@ -112,18 +131,28 @@ nothing to measure *from*, and a plan scanned three degrees off square puts ever
 three degrees off. Hospital floor plans do not arrive square to the page, so the mapping is
 a deliverable in its own right rather than a detail of calibration.
 
-Supporting work in the same sprint:
+### Spatial model — moved here from Sprint 3
 
 | Deliverable | |
 | --- | --- |
 | `Level`, `PlanImage`, `CoordinateMapping` in the document model | |
+| **`Space`** — boundary polygon and the room function vocabulary | |
+| **Boundary** — walls, and boundary collision in the rule engine | |
+| Room tool, unlocked once `Space` exists | |
 | Locked background layer beneath the design | |
 | Project save / load with schema version and migration chain | |
+
+Rooms are traced on the imported plan, which is why they belong here rather than a sprint
+earlier: a boundary drawn without the drawing beneath it gets drawn twice.
+
+The rule engine's boundary collision interface ships unimplemented in Sprint 3 and is
+filled in here.
 
 **Acceptance criteria**
 
 - A hospital PDF is imported, mapped, and a 900 mm machine placed on it measures 900 mm
   against the drawing's own dimension lines.
+- A machine overlapping a room boundary raises a collision result.
 - A plan imported at an angle is measured correctly after rotation is set — distances do
   not depend on how squarely the drawing was scanned.
 - Model (0, 0) lands where the engineer put the origin, and reopening the project puts it

@@ -33,3 +33,8 @@ pnpm-debug.log*
 coverage/
 playwright-report/
 test-results/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/

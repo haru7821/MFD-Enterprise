@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM": the same engine runs in the browser for live feedback and on the
+       server as the authority for a signed report (architecture decision AD-3). */
+    "lib": ["ES2022"],
+    "resolveJsonModule": true
+  },
+  "include": ["src", "rules", "fixtures"]
+}

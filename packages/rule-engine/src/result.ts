@@ -1,0 +1,103 @@
+import type { DataStatus } from '@mfd/object-library';
+
+import type { RuleCategory, RuleSource, RuleStatus, ResultLevel } from './schema';
+import type { ThresholdOrigin } from './threshold';
+
+/**
+ * Evaluation results.
+ *
+ * Per docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md:
+ *
+ *   GREEN  — OK
+ *   YELLOW — Review Required
+ *   RED    — Not Acceptable
+ *
+ * A result is never stored in the project document. It is derived from the
+ * placements, the catalogue and the rule set, and it goes stale the moment any of
+ * those change — see docs/data-model/PROJECT_MODEL.md. A stale verdict inside a
+ * feasibility report is worse than no verdict.
+ */
+
+export interface EvaluationResult {
+  readonly ruleId: string;
+  readonly category: RuleCategory;
+  readonly level: ResultLevel;
+  /** One placement for clearance, two for a collision. */
+  readonly placementIds: readonly string[];
+  /** The measured value, or null when there was nothing to measure against. */
+  readonly measured: number | null;
+  /** The threshold actually applied. */
+  readonly appliedValue: number | null;
+  readonly thresholdOrigin: ThresholdOrigin;
+  readonly unit: 'mm';
+  /** The weakest provenance among the inputs actually used. */
+  readonly dataStatus: DataStatus;
+  /** Plain sentence a TS engineer can read without opening the rule file. */
+  readonly reason: string;
+  readonly source: RuleSource;
+}
+
+export interface EvaluationReport {
+  readonly ruleSetId: string;
+  readonly ruleSetVersion: string;
+  readonly results: readonly EvaluationResult[];
+  readonly counts: Readonly<Record<ResultLevel, number>>;
+  /** True when any result rests on provisional data. */
+  readonly hasDraftInputs: boolean;
+}
+
+/** The weaker of two provenances. Any draft input makes the whole result draft. */
+export function weakestStatus(
+  ruleStatus: RuleStatus,
+  equipmentStatus: DataStatus,
+): DataStatus {
+  return ruleStatus === 'draft' || equipmentStatus === 'draft' ? 'draft' : 'verified';
+}
+
+export interface LevelInputs {
+  /** Null when the rule could not be evaluated at all. */
+  readonly violated: boolean | null;
+  readonly severity: 'RED' | 'YELLOW';
+  readonly dataStatus: DataStatus;
+}
+
+/**
+ * Decide a result level.
+ *
+ * Three rules, in order:
+ *
+ * 1. **Nothing to compare against → YELLOW.** No fourth status is introduced; the
+ *    specification defines three, and "Review Required" is exactly what an
+ *    unknown threshold calls for.
+ *
+ * 2. **A violation reports at the rule's severity, whatever the provenance.**
+ *    Downgrading a breach because the figure behind it is provisional would make
+ *    poor data *hide* problems, which is the wrong direction to fail in. The
+ *    result carries `dataStatus` so it reads as "breaches a provisional figure".
+ *
+ * 3. **A pass needs verified inputs to reach GREEN.** Otherwise YELLOW. This is
+ *    architecture decision AD-6a: a placeholder must never be able to sign
+ *    something off.
+ */
+export function decideLevel({ violated, severity, dataStatus }: LevelInputs): ResultLevel {
+  if (violated === null) return 'YELLOW';
+  if (violated) return severity;
+  return dataStatus === 'verified' ? 'GREEN' : 'YELLOW';
+}
+
+export function summarise(
+  results: readonly EvaluationResult[],
+  ruleSetId: string,
+  ruleSetVersion: string,
+): EvaluationReport {
+  const counts: Record<ResultLevel, number> = { GREEN: 0, YELLOW: 0, RED: 0 };
+  for (const result of results) counts[result.level] += 1;
+
+  return {
+    ruleSetId,
+    ruleSetVersion,
+    results,
+    counts,
+    hasDraftInputs: results.some((result) => result.dataStatus === 'draft'),
+  };
+}

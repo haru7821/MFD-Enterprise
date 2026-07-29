@@ -1,0 +1,30 @@
+{
+  "name": "@mfd/rule-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Data-driven engineering rule evaluation for MFD-E. Pure TypeScript.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./rules": {
+      "types": "./rules/index.ts",
+      "default": "./rules/index.ts"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "rules"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mfd/cad-engine": "workspace:*",
+    "@mfd/object-library": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

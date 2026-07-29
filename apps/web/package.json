@@ -13,6 +13,7 @@
   "dependencies": {
     "@mfd/cad-engine": "workspace:*",
     "@mfd/object-library": "workspace:*",
+    "@mfd/rule-engine": "workspace:*",
     "konva": "^10.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

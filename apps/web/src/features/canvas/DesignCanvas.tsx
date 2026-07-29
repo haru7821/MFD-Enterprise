@@ -2,9 +2,11 @@ import { useEffect, useRef } from 'react';
 import { Layer, Stage } from 'react-konva';
 
 import { catalog } from '@mfd/object-library/catalog';
+import type { EvaluationReport } from '@mfd/rule-engine';
 
 import { useEditor } from '@/editor/useEditor';
 import { EquipmentLayer } from '@/features/equipment/EquipmentLayer';
+import { ValidationOverlay } from '@/features/validation/ValidationOverlay';
 
 import { GridLayer } from './GridLayer';
 import { NavigationHint } from './NavigationHint';
@@ -21,7 +23,7 @@ import { useElementSize } from './useElementSize';
  * screen is derived from millimetres by cad-engine. That is what keeps PDF and DXF
  * export possible later: the geometry is not trapped inside the renderer.
  */
-export function DesignCanvas() {
+export function DesignCanvas({ report }: { readonly report: EvaluationReport }) {
   const { state, dispatch } = useEditor();
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useElementSize(containerRef);
@@ -57,6 +59,12 @@ export function DesignCanvas() {
               viewport={state.viewport}
               screen={size}
               selectedPlacementId={state.selectedPlacementId}
+            />
+            <ValidationOverlay
+              report={report}
+              placements={state.placements}
+              catalog={catalog}
+              viewport={state.viewport}
             />
           </Layer>
         </Stage>
