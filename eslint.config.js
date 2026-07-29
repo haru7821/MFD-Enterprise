@@ -20,7 +20,7 @@ export default tseslint.config(
    * may not reach for a UI framework, a renderer or a Node built-in.
    */
   {
-    files: ['packages/cad-engine/**/*.ts'],
+    files: ['packages/*/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -29,7 +29,7 @@ export default tseslint.config(
             {
               group: ['react', 'react-dom', 'konva', 'react-konva', '@nestjs/*', 'node:*'],
               message:
-                'cad-engine is the framework-free domain core. Put renderer or server code in apps/ instead.',
+                'packages/ holds the framework-free domain core. Put renderer or server code in apps/ instead.',
             },
           ],
         },

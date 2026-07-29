@@ -8,8 +8,8 @@
 | --- | --- | --- | --- |
 | 1 | Foundation | 5.2 | ✅ **Complete** — v0.1 Alpha |
 | 1.5 | Architecture stabilisation | — | ✅ Complete |
-| 2 | Equipment Object System | 5.3 | ◀ **Next** |
-| 3 | Rule Engine | 5.4 | ☐ |
+| 2 | Equipment Object System | 5.3 | ✅ **Complete** — v0.2 Alpha |
+| 3 | Rule Engine | 5.4 | ◀ **Next** |
 | 4 | PDF Workflow | 5.1 | ☐ |
 | 5 | Report Generation | 5.5 | ☐ |
 | 6 | AI Assistant | §7 Version 3 | ☐ |
@@ -37,29 +37,37 @@ Delivered as v0.1 Alpha.
 
 23 unit tests; typecheck, lint and build clean.
 
-## Sprint 2 — Equipment Object System ◀ Next
+## Sprint 2 — Equipment Object System ✅
 
-Spec 5.3. Implements
-[OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md) and the Placement part of
-[PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md).
+Spec 5.3. Implements [OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md) and the Placement
+part of [PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md). Delivered as v0.2 Alpha.
 
-| Deliverable | Where |
+| Deliverable | Where | |
+| --- | --- | --- |
+| Equipment object schema (Zod) and catalogue loader | `packages/object-library` | ✅ |
+| JSON equipment database, first record: Vantive AK98 | `packages/object-library/catalog/` | ✅ |
+| Placement geometry — footprint, clearance zones, ports | `packages/object-library` | ✅ |
+| Object renderer with dimension display | `apps/web` | ✅ |
+| Equipment palette, click-to-place, drag-to-move, delete | `apps/web` | ✅ |
+| Draft data marking across palette, canvas and status bar | `apps/web` | ✅ |
+
+**Acceptance criteria — met**
+
+| Criterion | Result |
 | --- | --- |
-| Equipment object schema and catalogue loader | `packages/object-library` |
-| JSON equipment database, first record: Vantive AK98 | `packages/object-library/catalog/` |
-| Object renderer — footprint, service clearance area, connection ports | `apps/web` |
-| Dimension display | `apps/web` |
-| Equipment palette, click-to-place, drag-to-move | `apps/web` |
-| Undo / redo command stack | `apps/web` |
+| A malformed catalogue file is rejected, naming the file and the field | ✅ 30 schema tests |
+| A record marked `verified` without document, revision and section fails to load | ✅ |
+| A missing field is rejected rather than treated as unknown | ✅ nullable-but-required |
+| An AK98 measures its catalogue footprint at any zoom | ✅ ≤ 0.5 % error at 26.8 % zoom, shrinking with zoom |
+| Changing a catalogue value changes what is drawn, with no code change | ✅ no dimension appears in any component |
+| Draft data is visibly marked wherever it appears | ✅ palette badge, dashed outline, canvas label, status bar |
+| 50 placed objects hold interactive frame rate (spec section 6) | ✅ median 16.6 ms frame time while panning |
 
-**Acceptance criteria**
+Measurements in [PLAYWRIGHT_TEST_PLAN.md](../testing/PLAYWRIGHT_TEST_PLAN.md) and
+[PERFORMANCE_TEST_PLAN.md](../testing/PERFORMANCE_TEST_PLAN.md).
 
-- A malformed catalogue file is rejected with an error naming the file and the field.
-- An AK98 placed on the canvas measures its catalogue width and depth at any zoom.
-- Changing a value in the catalogue JSON changes what is drawn, with no code change.
-- A record marked `verified` without document, revision and section fails to load.
-- Draft data is visibly marked wherever it appears.
-- 50 placed objects hold interactive frame rate (spec section 6).
+**Deferred by decision:** undo/redo moves to a later editor-architecture sprint. Browser
+tests stay manual until Sprint 3.
 
 **Not blocked** by the missing AK98 measurements: the record ships as `draft`, and the real
 figures replace placeholders without touching code.

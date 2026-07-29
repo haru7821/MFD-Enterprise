@@ -1,0 +1,42 @@
+{
+  "id": "vantive_ak98",
+  "manufacturer": "Vantive",
+  "model": "AK98",
+  "category": "dialysis_machine",
+  "version": "0.1.0",
+  "dataStatus": "draft",
+
+  "dimensions": {
+    "width": 900,
+    "depth": 750,
+    "height": null,
+    "weight": null
+  },
+
+  "connections": {
+    "power": { "required": true, "port": null, "specification": null },
+    "roWater": { "required": true, "port": null, "specification": null },
+    "drain": { "required": true, "port": null, "specification": null }
+  },
+
+  "serviceClearance": {
+    "front": null,
+    "rear": null,
+    "left": null,
+    "right": null
+  },
+
+  "source": {
+    "document": null,
+    "revision": null,
+    "section": null,
+    "type": "estimate",
+    "lastUpdated": "2026-07-29"
+  },
+
+  "symbol": {
+    "origin": "front-left",
+    "outline": "rectangle",
+    "frontEdge": "south"
+  }
+}

@@ -9,6 +9,7 @@ import {
   zoomBy,
   zoomTo,
 } from '@mfd/cad-engine';
+import { type EquipmentObject, createPlacement } from '@mfd/object-library';
 
 import type { EditorState } from './editorState';
 import type { ToolId } from './tools';
@@ -25,7 +26,22 @@ export type EditorAction =
   | { readonly type: 'pan/start' }
   | { readonly type: 'pan/end' }
   | { readonly type: 'grid/toggle' }
-  | { readonly type: 'snap/toggle' };
+  | { readonly type: 'snap/toggle' }
+  /** Arm a catalogue object for placement, or pass null to disarm. */
+  | { readonly type: 'equipment/arm'; readonly equipmentObjectId: string | null }
+  | {
+      readonly type: 'placement/add';
+      readonly object: EquipmentObject;
+      /** Model-space position in millimetres. */
+      readonly position: Vec2;
+    }
+  | {
+      readonly type: 'placement/move';
+      readonly placementId: string;
+      readonly position: Vec2;
+    }
+  | { readonly type: 'placement/select'; readonly placementId: string | null }
+  | { readonly type: 'placement/delete'; readonly placementId: string };
 
 /** Put the model origin at the middle of the screen at the default zoom. */
 function resetView(screen: ScreenSize): EditorState['viewport'] {
@@ -52,7 +68,15 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     }
 
     case 'tool/select':
-      return state.activeTool === action.tool ? state : { ...state, activeTool: action.tool };
+      if (state.activeTool === action.tool) return state;
+      return {
+        ...state,
+        activeTool: action.tool,
+        // Leaving the equipment tool disarms it: an armed catalogue object that
+        // survives a tool change places a machine on the next unrelated click.
+        armedEquipmentObjectId:
+          action.tool === 'equipment' ? state.armedEquipmentObjectId : null,
+      };
 
     case 'viewport/panBy':
       return { ...state, viewport: panBy(state.viewport, action.delta) };
@@ -80,5 +104,55 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'snap/toggle':
       return { ...state, snapToGrid: !state.snapToGrid };
+
+    case 'equipment/arm':
+      return {
+        ...state,
+        armedEquipmentObjectId: action.equipmentObjectId,
+        activeTool: action.equipmentObjectId ? 'equipment' : state.activeTool,
+      };
+
+    case 'placement/add': {
+      const placement = createPlacement(
+        `placement-${state.nextPlacementNumber}`,
+        action.object,
+        action.position,
+        { label: `${action.object.model} ${state.nextPlacementNumber}` },
+      );
+
+      return {
+        ...state,
+        placements: [...state.placements, placement],
+        nextPlacementNumber: state.nextPlacementNumber + 1,
+        selectedPlacementId: placement.id,
+      };
+    }
+
+    case 'placement/move':
+      return {
+        ...state,
+        placements: state.placements.map((placement) =>
+          placement.id === action.placementId
+            ? { ...placement, transform: { ...placement.transform, position: action.position } }
+            : placement,
+        ),
+      };
+
+    case 'placement/select':
+      return state.selectedPlacementId === action.placementId
+        ? state
+        : { ...state, selectedPlacementId: action.placementId };
+
+    case 'placement/delete':
+      return {
+        ...state,
+        placements: state.placements.filter(
+          (placement) => placement.id !== action.placementId,
+        ),
+        selectedPlacementId:
+          state.selectedPlacementId === action.placementId
+            ? null
+            : state.selectedPlacementId,
+      };
   }
 }

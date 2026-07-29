@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { Layer, Stage } from 'react-konva';
 
+import { catalog } from '@mfd/object-library/catalog';
+
 import { useEditor } from '@/editor/useEditor';
+import { EquipmentLayer } from '@/features/equipment/EquipmentLayer';
 
 import { GridLayer } from './GridLayer';
 import { NavigationHint } from './NavigationHint';
@@ -48,6 +51,13 @@ export function DesignCanvas() {
           <Layer listening={false}>
             {state.showGrid && <GridLayer viewport={state.viewport} screen={size} />}
             <OriginMarker viewport={state.viewport} screen={size} />
+            <EquipmentLayer
+              placements={state.placements}
+              catalog={catalog}
+              viewport={state.viewport}
+              screen={size}
+              selectedPlacementId={state.selectedPlacementId}
+            />
           </Layer>
         </Stage>
       )}

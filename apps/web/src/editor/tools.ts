@@ -18,8 +18,13 @@ export interface ToolDefinition {
   readonly availableFrom: number;
 }
 
-/** Bump as sprints land; tools unlock themselves. */
-export const CURRENT_SPRINT = 1;
+/**
+ * Bump as sprints land; tools unlock themselves.
+ *
+ * Numbering follows docs/roadmap/MVP_PLAN.md: 1 Foundation, 2 Equipment Object
+ * System, 3 Rule Engine, 4 PDF Workflow, 5 Report Generation, 6 AI Assistant.
+ */
+export const CURRENT_SPRINT = 2;
 
 export const TOOLS: readonly ToolDefinition[] = [
   {
@@ -37,25 +42,25 @@ export const TOOLS: readonly ToolDefinition[] = [
     availableFrom: 1,
   },
   {
+    id: 'equipment',
+    label: 'Equipment',
+    shortcut: 'e',
+    hint: 'Click the canvas to place the selected equipment',
+    availableFrom: 2,
+  },
+  {
     id: 'room',
     label: 'Room',
     shortcut: 'r',
     hint: 'Draw a room boundary',
-    availableFrom: 2,
+    availableFrom: 3,
   },
   {
     id: 'measure',
     label: 'Measure',
     shortcut: 'm',
     hint: 'Measure a distance between two points',
-    availableFrom: 2,
-  },
-  {
-    id: 'equipment',
-    label: 'Equipment',
-    shortcut: 'e',
-    hint: 'Place equipment from the medical catalogue',
-    availableFrom: 3,
+    availableFrom: 4,
   },
 ];
 

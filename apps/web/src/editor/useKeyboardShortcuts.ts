@@ -13,11 +13,11 @@ import { useEditor } from './useEditor';
  */
 export function useKeyboardShortcuts(): void {
   const { state, dispatch } = useEditor();
-  const screenRef = useRef(state.screen);
+  const stateRef = useRef(state);
 
   useEffect(() => {
-    screenRef.current = state.screen;
-  }, [state.screen]);
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -28,9 +28,25 @@ export function useKeyboardShortcuts(): void {
         return;
       }
 
-      const screen = screenRef.current;
+      const screen = stateRef.current.screen;
       const centre = vec2(screen.width / 2, screen.height / 2);
       const key = event.key.toLowerCase();
+
+      if (key === 'delete' || key === 'backspace') {
+        const selected = stateRef.current.selectedPlacementId;
+        if (selected) {
+          event.preventDefault();
+          dispatch({ type: 'placement/delete', placementId: selected });
+        }
+        return;
+      }
+
+      if (key === 'escape') {
+        event.preventDefault();
+        dispatch({ type: 'equipment/arm', equipmentObjectId: null });
+        dispatch({ type: 'placement/select', placementId: null });
+        return;
+      }
 
       const tool = findAvailableToolByShortcut(key);
       if (tool) {

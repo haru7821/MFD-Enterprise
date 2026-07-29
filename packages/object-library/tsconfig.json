@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM": the catalogue must load in a browser, a server and a test runner alike. */
+    "lib": ["ES2022"]
+  },
+  "include": ["src", "catalog"]
+}

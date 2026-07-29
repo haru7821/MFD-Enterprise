@@ -1,0 +1,20 @@
+{
+  "name": "@mfd/report-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Installation review report generation for MFD-E. Scaffold only — implemented in Sprint 5.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@mfd/object-library",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Equipment catalogue for MFD-E: schema, validation, loader and placement geometry. Pure TypeScript.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./catalog": {
+      "types": "./catalog/index.ts",
+      "default": "./catalog/index.ts"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "catalog"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mfd/cad-engine": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}
