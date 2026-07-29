@@ -25,7 +25,7 @@ test, and bumping `EVALUATION_RESULT_VERSION`. All three, deliberately.
 ## Input model
 
 ```ts
-evaluate({ placements, catalog, ruleSet }): EvaluationReport
+evaluate({ placements, catalog, ruleSet, spatial? }): EvaluationReport
 ```
 
 | Input | Type | From |
@@ -33,6 +33,19 @@ evaluate({ placements, catalog, ruleSet }): EvaluationReport
 | `placements` | `readonly Placement[]` | The project document |
 | `catalog` | `Catalog` | `@mfd/object-library` — equipment records |
 | `ruleSet` | `RuleSet` | `standards/rules/`, loaded and validated |
+| `spatial` | `SpatialContext` (optional) | The level's boundaries and plan status |
+
+`spatial` was added in Sprint 4. It is optional so a caller with no building — a bare
+layout check, or the Sprint 3 call sites — needs no change; omitting it means no
+boundaries and `planStatus: 'none'`. **The result contract did not change, so
+`EVALUATION_RESULT_VERSION` stays at 1.**
+
+### SpatialContext
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `boundaries` | `readonly Boundary[]` | Room outlines, walls and obstructions on this level |
+| `planStatus` | `'none' \| 'calibrated' \| 'uncalibrated'` | Whether the drawing beneath the layout can be measured against |
 
 `evaluate` is **pure**: no clock, no randomness, no I/O, no globals. The same
 inputs always produce the same report, byte for byte. That is what makes the
@@ -54,6 +67,23 @@ One machine on the drawing. Defined in
 A placement whose `equipmentObjectId` is not in the catalogue is **skipped**, not
 an error: it is a data problem for the application to surface, and refusing to
 evaluate the other forty-nine machines would help nobody.
+
+### The calibration gate
+
+`planStatus: 'uncalibrated'` means a drawing was imported and never given a coordinate
+mapping. Machines placed against it sit where somebody eyeballed them on screen. Their
+geometry *relative to one another* is still real, but nothing about the **building** has
+been checked, so no result may be GREEN.
+
+| Level | On an uncalibrated plan |
+| --- | --- |
+| GREEN | Becomes **YELLOW**, with the reason extended to say why |
+| YELLOW | Unchanged |
+| RED | **Unchanged.** A violation is never softened for weak provenance |
+
+`'none'` — no drawing at all — is not a weaker case than `'calibrated'`. An engineer
+laying a room out in millimetres with no drawing behind it has exact geometry. It is the
+half-imported plan that is dangerous, because it *looks* like a measured drawing.
 
 ### Rule
 
@@ -124,6 +154,38 @@ engineer inspecting either machine has to see the problem.
 
 No field was added for this: the contract already carried all four, so
 `EVALUATION_RESULT_VERSION` stays at 1.
+
+### Boundary findings
+
+Also equipment-centred, and also one finding per machine. A machine reports one result if
+it is inside its room and clear of every obstruction, or one per problem otherwise.
+
+| Situation | Level | `measured` |
+| --- | --- | --- |
+| Inside its room, clear of obstructions | pass | `null` |
+| Extends past the room outline | violation | how far past, mm |
+| Inside no room outline at all | violation | `null` |
+| Overlaps a wall or obstruction | violation | overlap depth, mm |
+| No boundaries drawn | YELLOW | `null`, and the reason says nothing was checked |
+
+**Which room a machine is judged against** is its *home room*: the outline containing its
+centre, or failing that the one containing the most of its corners. A machine in room A is
+trivially outside room B, so "inside every room" is not the question — "inside the room it
+is in" is. A machine in no room is a violation, not a pass: an engineer who has drawn the
+rooms and left a machine in the corridor needs to see that.
+
+**Overlap depth is measured in both directions**, because either shape can be the one
+doing the engulfing. A machine straddling the edge of a column has no corner inside the
+column — the column's corners are inside the machine. It is `null` when no vertex of
+either lies inside the other, which is what a machine spanning a thin partition looks
+like: a real overlap with no well-defined depth, where reporting zero would read as "just
+touching".
+
+**A traced boundary does not affect `dataStatus`.** That field tracks the provenance of
+*engineering standards* — a manufacturer's clearance figure against a placeholder. A room
+outline is project data the engineer traced themselves, and its reliability is the
+calibration's, which the gate above handles rather than pretending a traced wall is a
+draft manual figure.
 
 The alternative — one finding per *pair* — was the first implementation and was
 replaced. It produced 1,225 findings for fifty machines, almost all of them saying
@@ -216,10 +278,11 @@ loader.
 | No threshold available | `YELLOW`, "threshold unknown" |
 | Nothing in front of the face | Pass, `measured: null`, reason says so |
 | Rule selects no placement | No results for that rule |
-| Unimplemented scope (`boundary`) | `YELLOW` stating it is not evaluated yet |
+| Boundary rule, no boundaries drawn | `YELLOW` saying nothing was checked |
+| A scope with no evaluator | `YELLOW` naming the scope |
 
-The last one matters: a rule that silently produced nothing would be
-indistinguishable from a rule everything passes.
+The last two matter: a rule that silently produced nothing would be indistinguishable
+from a rule everything passes.
 
 ### 3. Inconsistent references — skipped, and surfaced by the caller
 
@@ -247,16 +310,18 @@ machines.
 
 The result contract does not change, so consumers need no update.
 
-### Declared, not implemented
+### Implemented in Sprint 4
 
-| Extension point | Interface | Sprint |
+| Extension point | Interface | Status |
 | --- | --- | --- |
-| Boundary (wall) collision | `BoundaryCollisionEvaluator` in `evaluators/types.ts` | 4 |
-| `collision.parameters.scope: 'boundary'` | Accepted by the schema today | 4 |
+| Boundary (wall) collision | `BoundaryCollisionEvaluator` in `evaluators/types.ts` | ✅ `evaluators/boundary.ts` |
+| `collision.parameters.scope: 'boundary'` | Accepted by the schema since Sprint 3 | ✅ dispatched in `evaluate.ts` |
 
-The interface is fixed now, while the rest of the engine is fresh, so Sprint 4's
-walls bind to a shape that was designed rather than one invented against whatever
-the evaluator happened to need.
+Worth recording, because it is the case for declaring interfaces before their
+implementations: the `BoundaryCollisionEvaluator` shape was fixed in Sprint 3, before any
+walls existed. When the spatial model arrived it bound to the document model's `Boundary`
+**without the interface changing** — the only edit was replacing a structural stand-in for
+the polygon with the real record.
 
 ### Not yet designed
 

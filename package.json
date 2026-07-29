@@ -2,7 +2,7 @@
   "name": "mfd-enterprise",
   "version": "0.1.0",
   "private": true,
-  "description": "MFD-E — AI Medical Facility Design Platform",
+  "description": "MFD-E \u2014 AI Medical Facility Design Platform",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "engines": {
@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:perf": "MFD_PERF=1 playwright test --workers=1 --timeout=240000",
     "test:e2e:ui": "playwright test --ui",
     "bench": "pnpm --filter @mfd/rule-engine bench",
     "lint": "eslint .",

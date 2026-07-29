@@ -26,6 +26,13 @@ A budget met only on a fast laptop is not a budget.
 
 ## Method
 
+    pnpm test:perf
+
+`tests/perf/frames.spec.ts`. Kept out of the CI suite on purpose: frame times on a shared
+runner are noisy enough that asserting on them produces a flaky gate, and a flaky
+performance gate gets muted rather than fixed. It is an instrument that prints numbers
+into this document.
+
 1. Build for production and serve it — development builds carry React's dev overhead and
    would make the numbers meaningless.
 2. Place 50 objects in a 10 × 5 grid, all within the viewport.
@@ -181,18 +188,81 @@ Three decisions, all of which would be expensive to retrofit:
   zones; below 56 px it drops its labels. Zooming out cannot turn fifty objects into
   hundreds of unreadable text nodes.
 
+## Results — Sprint 4
+
+Chromium, 1600 × 900, production build. 50 AK98 objects, one traced room, and the full
+rule set including the new boundary rule — 300 findings.
+
+The plan underlay is a 3000 × 2000 PNG, imported and calibrated. Both columns below are
+otherwise the same scene, so the difference between them is the underlay's cost.
+
+### Engine, in Node
+
+`pnpm bench`. The bench now runs an L-shaped room plus a structural column every fourth
+row — concave on purpose, since a rectangle is the one room shape that would not have
+needed ray casting and would let the containment test exit on its first edge.
+
+| Objects | `evaluate()` | Equipment collision | Boundary collision | Results |
+| --- | --- | --- | --- | --- |
+| 10 | 0.73 ms | 0.06 ms | 0.10 ms | 60 |
+| **50** | **5.5–6.2 ms** | **1.2 ms** | **0.37 ms** | **300** |
+| 100 | 20.2 ms | 5.2 ms | 1.08 ms | 600 |
+| 200 | 83.0 ms | 22.2 ms | 2.32 ms | 1,200 |
+
+`evaluate()` at fifty objects moved from 4.54 ms to about 5.8 ms. The added work is the
+boundary rule: one more finding per machine, plus the pass that produces it. **The
+boundary pass itself is 0.37 ms** — under 7 % of the evaluation — and it grows roughly
+linearly rather than quadratically, because each machine is tested against the boundaries
+rather than against every other machine.
+
+### Rendering, in Chromium
+
+| Scenario | No plan | With plan underlay | Target | |
+| --- | --- | --- | --- | --- |
+| Findings rendered | 300 | 300 | ≤ 400 | ✅ |
+| Plan import + decode (3000 × 2000 PNG) | — | 496 ms | — | ✅ one-off |
+| Placement of 50 objects | 694 ms | 792 ms | — | ✅ |
+| 50 objects, idle (p95) | 16.9 ms | 16.9 ms | ≤ 20 ms | ✅ |
+| 50 objects, panning (p95) | 17.1 ms | 17.3 ms | ≤ 20 ms | ✅ |
+| 50 objects, panning (worst) | 42.0 ms | 21.1 ms | ≤ 50 ms | ✅ |
+| 50 objects, dragging one (p95) | 18.7 ms | 18.5 ms | ≤ 20 ms | ✅ |
+| 50 objects, dragging one (worst) | 18.9 ms | 18.7 ms | ≤ 50 ms | ✅ |
+
+**The plan underlay is free at interaction time.** Within measurement noise it changes
+nothing: it is a single Konva `Image` node, positioned by the same
+`pixelToModel` → `worldToScreen` chain every other object uses, so panning it costs one
+transform rather than one per drawing element. The only real cost is the one-off half
+second to decode a six-megapixel PNG on import.
+
+Two honest caveats on the numbers above:
+
+1. **The worst-frame figures are not directly comparable to Sprint 3.5's 63.8 ms.** The
+   drag gesture in this measurement is not the same gesture, so the improvement shown is
+   partly method. The p95 figures, which are what the interaction actually feels like, are
+   comparable and are flat.
+2. **The 42 ms pan outlier in the no-plan column is a single frame out of ninety** and did
+   not reproduce with the plan attached. It is noise on a shared runner, not a signal.
+
+### Where the cost sits at 300 findings
+
+Nowhere that matters yet. All five frame targets are met for the first time since the
+baseline was taken. The debouncing and row memoisation noted as available in Sprint 3.5
+were not done, and are still not needed.
+
 ## Headroom to check next
 
 Fifty is the specification's floor, not a realistic ceiling — a large dialysis unit runs to
 several dozen stations plus chairs, sinks and utility equipment, and Sprint 4 adds an
 imported floor plan image underneath all of it.
 
-| Sprint | Add to this plan |
-| --- | --- |
-| 4 | Re-measure after the findings volume is addressed |
-| 4 | Measure with a full-resolution plan image as an underlay |
-| 4 | Measure the pixel→millimetre coordinate mapping cost during pan |
-| later | Spatial index for the collision pass, if object counts pass ~150 |
+| Sprint | Add to this plan | |
+| --- | --- | --- |
+| 4 | Re-measure after the findings volume is addressed | ✅ done |
+| 4 | Measure with a full-resolution plan image as an underlay | ✅ done — free |
+| 4 | Measure the pixel→millimetre coordinate mapping cost during pan | ✅ done — one transform per frame, not one per element |
+| 5 | Measure document save and load with an embedded plan image | a 3000 × 2000 PNG is ~2 MB of base64 in the file |
+| 5 | Measure with several levels, once the editor shows more than one | |
+| later | Spatial index for the collision pass, if object counts pass ~150 | |
 
 A spatial index (a grid or R-tree over footprint bounds) would take the collision pass from
 O(n²) to roughly O(n log n). It is not worth its complexity at fifty objects and would be

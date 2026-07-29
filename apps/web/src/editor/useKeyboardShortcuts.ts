@@ -3,8 +3,12 @@ import { useEffect, useRef } from 'react';
 import { ZOOM_STEP, vec2 } from '@mfd/cad-engine';
 
 import { now } from './clock';
+import { activeLevel } from './editorState';
 import { findAvailableToolByShortcut } from './tools';
 import { useEditor } from './useEditor';
+
+/** A quarter turn, in millidegrees. */
+const QUARTER_TURN = 90_000;
 
 /**
  * Global keyboard shortcuts.
@@ -77,6 +81,30 @@ export function useKeyboardShortcuts(): void {
           event.preventDefault();
           dispatch({ type: 'placement/delete', placementId: selected, at: now() });
         }
+        return;
+      }
+
+      // Rotate the selection a quarter turn. `[` and `]` rather than a letter: every
+      // letter within reach is a tool shortcut, and a tool that changed under an
+      // engineer trying to turn a machine would be worse than no shortcut at all.
+      if (key === '[' || key === ']') {
+        const selected = stateRef.current.selectedPlacementId;
+        if (!selected) return;
+
+        const level = activeLevel(stateRef.current);
+        const placement = level.placements.find((entry) => entry.id === selected);
+        if (!placement) return;
+
+        event.preventDefault();
+        dispatch({
+          type: 'placement/rotate',
+          placementId: selected,
+          rotation: placement.transform.rotation + (key === ']' ? QUARTER_TURN : -QUARTER_TURN),
+          at: now(),
+        });
+        // Each press is its own undo step: a quarter turn is a deliberate act, not a
+        // frame of a gesture.
+        dispatch({ type: 'history/seal' });
         return;
       }
 

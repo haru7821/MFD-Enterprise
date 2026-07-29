@@ -20,9 +20,11 @@ Read in this order:
 3. docs/data-model/OBJECT_MODEL.md
 4. docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md
 5. docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md
-6. docs/roadmap/MVP_PLAN.md
-7. docs/architecture/SYSTEM_ARCHITECTURE.md
-8. CLAUDE.md (this document — direction, not current scope)
+6. docs/architecture/DOCUMENT_MODEL.md
+7. docs/architecture/RULE_ENGINE_API.md
+8. docs/roadmap/MVP_PLAN.md
+9. docs/architecture/SYSTEM_ARCHITECTURE.md
+10. CLAUDE.md (this document — direction, not current scope)
 
 # MFD-E Project Instruction
 

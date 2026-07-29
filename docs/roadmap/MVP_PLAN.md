@@ -107,7 +107,7 @@ collision evaluator ships with an interface for boundary collision but no implem
 engine is built and tested against fixtures; it cannot be seeded with anything true, so the
 shipped rule set carries null thresholds until the manual arrives.
 
-## Sprint 4 — PDF Workflow and Spatial Model
+## Sprint 4 — PDF Workflow and Spatial Model ✅
 
 Spec 5.1 and the "Scale Setting" item of 5.2, plus the spatial model moved from Sprint 3.
 
@@ -148,17 +148,43 @@ earlier: a boundary drawn without the drawing beneath it gets drawn twice.
 The rule engine's boundary collision interface ships unimplemented in Sprint 3 and is
 filled in here.
 
+### Delivered
+
+`packages/document-model` — the single definition of what a project is, and the package
+that save, reporting, collaboration, AI-assisted design and a future facility twin all
+read. See [../architecture/DOCUMENT_MODEL.md](../architecture/DOCUMENT_MODEL.md).
+
+Two model changes were made while building it, both recorded in
+[../data-model/PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md):
+
+- Placements hang off `Level` with a nullable `spaceId` rather than being owned by a
+  `Space`. An engineer places a machine before drawing its room at least as often as the
+  reverse, and a machine must survive its room being deleted.
+- `Boundary` is its own entity with a `kind`, so a structural column can be represented
+  without inventing a room for it.
+
+Also delivered beyond the original list: **undo/redo** (owner addition), a command history
+with explicit inverses, and internal polygon geometry — written rather than imported,
+because the rule engine's separating axis test is convex-only and an L-shaped treatment
+area is the ordinary case.
+
 **Acceptance criteria**
 
-- A hospital PDF is imported, mapped, and a 900 mm machine placed on it measures 900 mm
-  against the drawing's own dimension lines.
-- A machine overlapping a room boundary raises a collision result.
-- A plan imported at an angle is measured correctly after rotation is set — distances do
-  not depend on how squarely the drawing was scanned.
-- Model (0, 0) lands where the engineer put the origin, and reopening the project puts it
-  in the same place.
-- An unmapped plan yields YELLOW with "plan not calibrated" — never GREEN.
-- A project saved on one machine opens identically on another.
+| | |
+| --- | --- |
+| A hospital PDF is imported and mapped | ✅ PDF pages rasterised via pdf.js; PNG and JPG import directly |
+| A machine overlapping a room boundary raises a collision result | ✅ `evaluators/boundary.ts`, 21 unit tests plus browser specs |
+| A plan imported at an angle is measured correctly after rotation is set | ✅ `PlanTransform` carries rotation; `rotationFromReferenceLine` derives it |
+| Model (0, 0) lands where the engineer put the origin, and survives reopening | ✅ round-trip test asserts field-for-field equality |
+| An unmapped plan never yields GREEN | ✅ the calibration gate, plus a browser spec |
+| A project saved on one machine opens identically on another | ✅ `.mfd.json`, validated both ways, plan image embedded |
+| A 900 mm machine measures 900 mm against the drawing's own dimension lines | ⚠️ **not verified against a real hospital drawing** — see below |
+
+The last one is the honest gap. The maths is tested (`planTransform.test.ts` asserts the
+transform inverts exactly at arbitrary rotations, and `equipment.spec.ts` asserts a 900 mm
+machine draws 900 mm on screen at every zoom), and a synthetic plan round-trips correctly
+in the browser. What has not happened is an engineer calibrating against a real drawing's
+printed dimension line and confirming the result. That needs a drawing we do not have.
 
 Scoped to raster underlay. Vector PDF geometry extraction, DXF and DWG stay in the
 specification's "Future" list.
@@ -167,6 +193,10 @@ specification's "Future" list.
 
 Spec 5.5. PDF installation review report: project information, layout image, equipment
 list, engineering check results, installation checklist.
+
+Sprint 4 leaves it well placed: the document already records which drawing was assessed,
+how its scale was established, and which rule set produced every verdict — the three things
+a report has to be able to state and cannot reconstruct later.
 
 Vector output, not a canvas screenshot — the geometry already lives outside the renderer
 to make this possible (AD-2).

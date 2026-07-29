@@ -14,7 +14,10 @@ const PORT = 4173;
  * typecheck/lint/unit gate should stay under a minute.
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  // Only the e2e specs. Frame-time measurement lives in tests/perf and is run on
+  // demand (`pnpm test:perf`): frame times on a shared runner are noisy enough that
+  // asserting on them would produce a flaky gate, and a flaky gate gets muted.
+  testDir: process.env['MFD_PERF'] ? './tests/perf' : './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,

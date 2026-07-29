@@ -2,36 +2,44 @@
 
 > The document a TS engineer creates, saves and reports on.
 > Governed by [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).
-> Version 0.1 — Sprint 1.5. Not yet implemented; Sprint 2 builds the first part of it.
+> Version 0.2 — implemented in Sprint 4 as `packages/document-model`.
 
 ## Hierarchy
 
 ```
 Project
- └ Level
-     └ Space
-         └ Placement
-             └ Equipment Object Reference
+ └ Level                          a floor: owns its plan image and calibration
+     ├─ planImage                 the imported PDF / PNG / JPG, embedded
+     ├─ coordinateMapping         scale · origin · rotation, null until calibrated
+     ├─ boundaries[]              traced geometry: room outlines, walls, obstructions
+     ├─ spaces[]                  named rooms, each referring to a boundary
+     └─ placements[]              machines, each with a nullable spaceId
+                                   └ Equipment Object Reference
 ```
 
-The hierarchy ends at the **Equipment Object Reference** — a pointer into the catalogue,
-not a copy of it. That is the last link in the ownership chain: a Project owns its Levels,
-a Level its Spaces, a Space its Placements, and a Placement *refers to* an Equipment Object
-that lives outside the project entirely. See [OBJECT_MODEL.md](OBJECT_MODEL.md) for why
-that separation is load-bearing.
+The chain ends at the **Equipment Object Reference** — a pointer into the catalogue, not
+a copy of it. A Project owns its Levels and a Level owns everything on it; a Placement
+*refers to* an Equipment Object that lives outside the project entirely. See
+[OBJECT_MODEL.md](OBJECT_MODEL.md) for why that separation is load-bearing.
 
 **Port is a property of Placement, not a level of the hierarchy.** Ports are derived from
 the equipment object definition and positioned by the placement's transform; they are not
 independently owned or addressed.
 
-Two things hang off `Level` as properties rather than children — the imported plan and its
-coordinate mapping:
+### Two departures from version 0.1, both deliberate
 
-```
-Level
- ├─ planImage           the imported PDF / PNG / JPG
- └─ coordinateMapping   origin · rotation · millimetresPerPixel
-```
+**Placements hang off the Level with a `spaceId`, rather than off the Space.** Version 0.1
+made a Space own its Placements. Building it showed two problems with that. An engineer
+places a machine and then draws the room around it at least as often as the reverse, and a
+machine that cannot exist until its room does would block the commoner order of work. And
+a machine has to survive its room being deleted — losing equipment because a room outline
+was redrawn is not a recoverable mistake. So room membership is a reference that may be
+null, not an ownership chain.
+
+**Boundary is its own entity, not a field on Space.** A structural column, a duct riser or
+a fixed partition is a real obstruction with no room-hood at all. Folding boundaries into
+Space would have meant either inventing a fake room for every column or having no way to
+represent one.
 
 ---
 
@@ -42,7 +50,7 @@ The unit a TS engineer opens, saves and reports on. One hospital installation re
 | Field | Type | Notes |
 | --- | --- | --- |
 | `id` | string | |
-| `schemaVersion` | integer | Starts at 1. Every saved file carries it, and the loader migrates forward. |
+| `documentVersion` | integer | On the **file**, outside `project`, so a loader can read it before trusting anything else. Starts at 1; the loader migrates forward and refuses a version from the future. |
 | `name` | string | e.g. "Seoul St. Mary's — 3F dialysis unit" |
 | `customer` | object | Hospital name, site, contact |
 | `reviewedBy` | string | The TS engineer. Appears on the report. |
@@ -66,7 +74,9 @@ that floor rather than of the view.
 | `elevation` | Millimetres | Height above project datum. 0 for a single-level project. |
 | `planImage` | PlanImage \| null | The imported floor plan. Null before import. |
 | `coordinateMapping` | CoordinateMapping \| null | **Null until mapped.** |
-| `spaces` | Space[] | |
+| `boundaries` | Boundary[] | Traced geometry |
+| `spaces` | Space[] | Named rooms |
+| `placements` | Placement[] | Machines on this floor |
 
 ### PlanImage
 
@@ -76,8 +86,22 @@ The imported drawing, as pixels. Carries no notion of real-world size.
 | --- | --- | --- |
 | `sourceFormat` | `pdf` \| `png` \| `jpg` | |
 | `sourceFileName` | string | Shown in the report so the reviewer knows which drawing was assessed |
-| `pageIndex` | integer | PDF only |
+| `pageIndex` | integer | PDF only; 0 for raster imports |
 | `pixelWidth` / `pixelHeight` | integer | |
+| `dataUrl` | string | The image itself, base64. See below. |
+| `importedAt` | timestamp | |
+
+The image is **embedded, not referenced by path**. A project file an engineer emails to a
+colleague has to arrive with its drawing; a path into someone else's filesystem is not a
+floor plan. External asset storage is a later decision.
+
+The cost is worth stating: a large scanned plan becomes several megabytes of base64 inside
+the project file. That is precisely why undo stores explicit inverses rather than document
+snapshots — see [../architecture/DOCUMENT_MODEL.md](../architecture/DOCUMENT_MODEL.md).
+
+A PDF page is **rasterised on import** and then treated exactly like a PNG. Sprint 4's
+scope is a raster underlay the engineer works on top of; the vector content is not read, so
+nothing downstream can come to depend on it being there.
 
 ### CoordinateMapping
 
@@ -117,12 +141,50 @@ established rather than having to trust it.
 | `pointA` / `pointB` | Vec2 | The two points the engineer picked, in image pixels |
 | `knownDistance` | Millimetres | The real distance the engineer typed |
 | `statedRatio` | string \| null | e.g. "1:100", when the drawing declares its own scale |
+| `dotsPerInch` | number \| null | The resolution a stated ratio was applied at |
 | `calibratedAt` | timestamp | |
 
-**An unmapped Level cannot be validated.** Any rule evaluated against a plan with
-`coordinateMapping === null` returns YELLOW with the reason "plan not calibrated" — never
-GREEN. Measuring screen distance and calling it a clearance is the single most damaging
-thing this application could do, so it is blocked structurally rather than by a warning.
+Every field is present and nullable: a two-point calibration has no `statedRatio`, and
+saying so with `null` is different from omitting the key.
+
+**An unmapped Level cannot be validated.** A layout on a plan with
+`coordinateMapping === null` can never reach GREEN. Measuring screen distance and calling
+it a clearance is the single most damaging thing this application could do, so it is
+blocked structurally rather than by a warning somebody can dismiss.
+
+How that is enforced, precisely — the rule engine is told the plan's status and gates the
+report on it:
+
+| `planStatus` | Means | Effect on the report |
+| --- | --- | --- |
+| `none` | No drawing imported; the engineer works directly in millimetres | None. This geometry is exact. |
+| `calibrated` | A drawing with a mapping | None |
+| `uncalibrated` | A drawing with no mapping | Every GREEN becomes YELLOW. **RED stays RED.** |
+
+`none` is not a weaker case than `calibrated`. An engineer laying a room out in
+millimetres with no drawing behind it has exact geometry; it is the half-imported plan that
+is dangerous, because it *looks* like a measured drawing. And a violation is never softened
+for weak provenance — that would make poor data hide problems.
+
+## Boundary
+
+A traced polygon in model space. Its own entity, because not every piece of building
+geometry is a room.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | string | |
+| `kind` | `space_outline` \| `wall` \| `obstruction` | What the rule engine does with it |
+| `vertices` | Vec2[] | Closed ring, millimetres. At least three. |
+| `label` | string | e.g. "Column C4" |
+
+The ring is **closed implicitly** — the closing edge is never stored, so "is this ring
+closed" has one answer rather than two.
+
+| `kind` | Equipment must |
+| --- | --- |
+| `space_outline` | be **inside** it |
+| `wall`, `obstruction` | **not overlap** it |
 
 ## Space
 
@@ -133,8 +195,7 @@ A room. The scope most rules select on.
 | `id` | string | |
 | `name` | string | e.g. "Treatment area A" |
 | `function` | SpaceFunction | Controlled vocabulary — see below |
-| `boundary` | Vec2[] | Closed polygon, millimetres, model space |
-| `placements` | Placement[] | |
+| `boundaryId` | string | The Boundary that gives this room its shape |
 
 ### SpaceFunction
 
@@ -158,8 +219,12 @@ One machine on one drawing.
 | `equipmentObjectVersion` | string | The catalogue version placed. Lets a report state exactly which data was used. |
 | `transform` | Transform | Position and rotation in model space |
 | `label` | string | e.g. "Station 12" |
-| `parameters` | object | Per-instance overrides, if the object declares any |
-| `ports` | Port[] | Resolved from the object definition, positioned by the transform |
+| `spaceId` | string \| null | The room this machine is assigned to. Null when it sits in no named room. |
+| `ports` | Port[] | Derived from the object definition, positioned by the transform. Not stored. |
+
+Room assignment is **by reference, not by geometry**, and the two are allowed to disagree:
+an engineer may place a machine before drawing the room, or drag one across a wall
+mid-review. The rule engine reports on the geometry; `spaceId` records the intent.
 
 ### Transform
 
@@ -191,7 +256,8 @@ converted out of.
 saved file. Adding versioning after real project files exist means either breaking them or
 writing the migration you skipped, under pressure.
 
-**Undo/redo is a command stack over this model**, not a snapshot diff — see AD-8.
+**Undo/redo is a command stack over this model**, not a snapshot diff — see AD-8 and
+[../architecture/DOCUMENT_MODEL.md](../architecture/DOCUMENT_MODEL.md).
 
 **Not in this model:** validation results. Those are computed, never stored in the
 project. A stored verdict goes stale the moment a rule set or a placement changes, and a
@@ -199,9 +265,13 @@ stale verdict in a feasibility report is worse than no verdict.
 
 ## Implementation status
 
-| Element | Sprint |
-| --- | --- |
-| Equipment Object, Placement, Port | 2 |
-| Space, Space function vocabulary | 3 |
-| Level, PlanImage, CoordinateMapping, ScaleCalibration | 4 |
-| Project, save / load, schema migration | 4 |
+| Element | Sprint | Status |
+| --- | --- | --- |
+| Equipment Object, Placement | 2 | ✅ |
+| Level, Boundary, Space, Space function vocabulary | 4 | ✅ |
+| PlanImage, CoordinateMapping, ScaleCalibration | 4 | ✅ |
+| Project, save / load, document versioning | 4 | ✅ |
+| Command stack (undo / redo) | 4 | ✅ |
+| Port | after the routing model | declared, not derived yet |
+| Placement `parameters` (per-instance overrides) | when an object declares one | not modelled |
+| Multiple levels in the UI | 5 | model supports it; the editor shows one |

@@ -124,7 +124,70 @@ app. Worth adding when a second, verified equipment record exists.
 | V6 | Collision clears | Dragging them apart removes the RED |
 | V7 | Provenance | Every finding states its source, or says explicitly that there is none |
 
-## 5. Screenshot validation
+## 5. Plan workflow, rooms and undo (Sprint 4)
+
+`tests/e2e/spatial.spec.ts`, 21 specs. These cover what a unit test cannot reach: a file
+crossing a real file input, a canvas click landing on the room the geometry says it should,
+and undo behaving like one step after a gesture that emitted a command per pointer move.
+
+### Plan workflow
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| P1 | Import | A PNG through the real file input shows its name and pixel size |
+| P2 | Uncalibrated | An imported plan raises `plan-uncalibrated-warning` and offers "Set scale — required" |
+| P3 | No GREEN uncalibrated | `result-badge-GREEN` never appears while the plan has no mapping |
+| P4 | Two-point calibration | Two canvas picks plus a typed distance produce a mm/px figure and clear the warning |
+| P5 | Refusal | Two identical picks raise `plan-error` and leave the level uncalibrated |
+| P6 | Re-import | Importing a second drawing discards the first one's calibration |
+
+P3 is weak today and worth saying so: the AK98 record is draft, so no GREEN is reachable
+whatever the plan status. The gate itself is proved in `evaluators/boundary.test.ts` with a
+verified fixture catalogue. P3 becomes load-bearing the moment a verified record exists.
+
+### Rooms
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| R1 | Trace | Four clicks and Enter produce one room with an area in m² |
+| R2 | Degenerate | Two points produce no room |
+| R3 | Escape | A half-traced room is abandoned |
+| R4 | Rename | Name is free text; function is a controlled dropdown |
+| R5 | Containment | A machine inside a traced room reports "is inside" |
+| R6 | Outside | A machine outside every room reports RED |
+| R7 | Room deletion | Deleting a room leaves its machines on the drawing |
+
+### Undo
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| U1 | Placement | Ctrl+Z removes it, Shift+Ctrl+Z restores it |
+| U2 | **One drag, one step** | After a 12-move drag, one undo returns the footprint to its starting pixel |
+| U3 | Room | One undo removes the room *and* its outline |
+| U4 | One rename, one step | A whole typed name undoes in one step, and the room survives |
+| U5 | Rotation | `]` turns a 900 × 750 footprint so it draws 750 wide; one undo turns it back |
+| U6 | Text fields | Ctrl+Z inside an input leaves the document alone |
+
+U2 is the one worth reading the code of. Two bugs were found writing it, both of which
+would have left a green test proving nothing:
+
+1. **It first measured the status bar's cursor readout, not the machine.** The cursor
+   position depends only on the pointer and the viewport, so the assertion held whatever
+   undo did. Now it scans the canvas for the equipment fill.
+2. **It then raced the repaint.** Reading a canvas straight after an input event measures
+   the previous frame. `expect.poll` retries; a bare `page.evaluate` does not.
+
+It was then verified by temporarily disabling coalescing and confirming the failure —
+252 px off. A test that has never failed is not known to work.
+
+## 6. Save and open (Sprint 4)
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| S1 | Round trip | Save, start a new project, reopen the file — rooms, names and machines return |
+| S2 | Rejection | A JSON file that is not a project raises `project-error` |
+
+## 7. Screenshot validation
 
 Screenshots are captured as evidence rather than compared pixel-by-pixel. Pixel-diff
 baselines are not adopted here: font rendering and anti-aliasing differ between machines,
@@ -159,3 +222,13 @@ Stable `data-testid` attributes, so selectors do not depend on layout or copy:
 | `result-badge-<LEVEL>` | GREEN / YELLOW / RED badge |
 | `provisional-warning` | Panel-wide provisional banner |
 | `findings-summary` | Status bar RED / YELLOW counts |
+| `plan-file-input` | Hidden file input for the floor plan |
+| `import-plan` · `calibrate` · `recalibrate` | Plan workflow buttons |
+| `calibration-distance` · `calibration-apply` | Scale entry |
+| `plan-error` | Plan import or calibration failure |
+| `plan-uncalibrated-warning` | Status bar warning that the drawing has no mapping |
+| `space-list` | The rooms on this level |
+| `space-name` · `space-function` · `delete-space` | Room inspector |
+| `project-file-input` · `open-project` · `save-project` · `new-project` | File operations |
+| `project-error` | Save or open failure |
+| `project-name` | Title bar project name |

@@ -6,12 +6,17 @@
 
 ---
 
-## A. Blocking — Sprint 3 cannot be seeded without these
+## A. Blocking — the product cannot state a true verdict without these
 
 ### A-1. The AK98 installation data package ← **the one that matters**
 
 This is the single blocker for the product's purpose. Everything else on this page can
 wait.
+
+**Four sprints in, this is now the only thing standing between the application and a
+usable answer.** The plan imports, the scale calibrates, the rooms trace, the rule engine
+evaluates, and every finding still reads "threshold unknown" — because there is no true
+figure to compare against. The machinery is finished and empty.
 
 The rule engine can be *built* without it. It cannot be *seeded* with anything true, and a
 seeded-with-guesses rule engine is worse than none: it produces a confident feasibility
@@ -33,6 +38,26 @@ report a TS engineer might sign.
 engine caps any result derived from it at YELLOW. GREEN becomes reachable the moment the
 real figures land — flipping one field, no code change. See
 [OBJECT_MODEL.md](data-model/OBJECT_MODEL.md).
+
+### A-2. Left / right side convention — check this first when the manual arrives
+
+Clearance sides are implemented from **an operator standing at the front, looking at the
+machine**: with the front facing south, the operator looks north and their left is west.
+
+A manual that labels its sides from the service engineer's position *behind* the machine
+inverts left and right, putting both side clearances on the wrong face of every result.
+This cannot be settled from inside the code — only the document settles it. It is item one
+of reading the manual, before any figure is transcribed.
+
+### A-3. One real hospital drawing
+
+Sprint 4's acceptance criterion "a 900 mm machine measures 900 mm against the drawing's own
+dimension lines" is unverified. The maths is tested and a synthetic plan round-trips
+correctly, but nobody has calibrated against a real printed dimension line and confirmed
+the result.
+
+**Needed:** one PDF floor plan of the kind TS engineers actually receive — ideally one that
+is scanned slightly off square, since that is the case the rotation step exists for.
 
 ---
 
@@ -97,6 +122,9 @@ Not blocking; recorded so they are visible and can be corrected.
 | C-5 | Equipment catalogues and rule sets are versioned in git and loaded at runtime. |
 | C-6 | Imported floor plans are used as a raster underlay the engineer works on top of, not parsed for geometry. |
 | C-7 | Estimates assume 1–2 full-time developers. |
+| C-8 | A project is one file the engineer keeps and shares themselves. No server, no autosave — an autosave that quietly went nowhere would be worse than a visible download. |
+| C-9 | The imported plan is embedded in the project file as base64. A large scan makes the file a few megabytes; external asset storage is a later decision. |
+| C-10 | Room membership (`placement.spaceId`) and room geometry are allowed to disagree. The rule engine reports on the geometry; the reference records the engineer's intent. |
 
 ---
 
@@ -111,3 +139,8 @@ Not blocking; recorded so they are visible and can be corrected.
 | Accepted deliverable? | A PDF installation review report. DXF and DWG are in the specification's Future list. | TS Edition spec §5.5 |
 | Sprint numbering | Foundation · Equipment Object System · Rule Engine · PDF Workflow · Report Generation · AI Assistant | Sprint 1.5 |
 | Does Version 1 need a backend? | No. Sections 5.1–5.5 require no server; catalogues and rule sets are files. | Sprint 1.5 |
+| Does a Space own its Placements? | **No.** Placements hang off `Level` with a nullable `spaceId`, so a machine can be placed before its room is drawn and survives the room being deleted. | Sprint 4 |
+| Is a room outline a field on Space? | **No.** `Boundary` is its own entity with a `kind`, so a structural column needs no fake room. | Sprint 4 |
+| Snapshot undo or command undo? | **Commands with explicit inverses.** A Level embeds its plan image, so snapshots would allocate megabytes per drag frame. | Sprint 4 |
+| Are plan import and calibration undoable? | **No.** Undoing a calibration would silently reinterpret every placement's geometry. Both are explicit acts, repeatable by hand. | Sprint 4 |
+| Polygon geometry — library or internal? | **Internal.** Rooms are concave, so the convex-only separating axis test cannot answer containment; and the tolerance and epsilon policy a clearance verdict rests on should be visible. | Sprint 4 |

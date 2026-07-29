@@ -72,7 +72,11 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
     >
       <span className="text-ink-muted">
         <span className="font-medium text-ink">{tool.label}</span>
-        <span className="ml-2 text-ink-faint">{tool.hint}</span>
+        <span className="ml-2 text-ink-faint">
+          {state.selectedPlacementId
+            ? 'Drag to move · [ and ] rotate a quarter turn · Delete removes'
+            : tool.hint}
+        </span>
       </span>
 
       {draftPlacementCount > 0 && (

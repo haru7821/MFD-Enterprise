@@ -2,14 +2,15 @@
 
 > How `packages/rule-engine` implements
 > [DIALYSIS_RULE_ENGINE_v0.1.md](DIALYSIS_RULE_ENGINE_v0.1.md).
-> Delivered in Sprint 3.
+> Delivered in Sprint 3; boundary collision added in Sprint 4.
 
 ## The flow
 
 ```
 Placement ──┐
 Catalogue ──┼──► evaluate() ──► EvaluationReport
-Rule set  ──┘                    └─ EvaluationResult[]
+Rule set  ──┤                    └─ EvaluationResult[]
+Spatial   ──┘   boundaries + plan status (Sprint 4)
 ```
 
 `evaluate()` is pure — no clock, no randomness, no I/O. The same inputs always give
@@ -112,6 +113,19 @@ apart.
   normal. Returns null when the other polygon is behind or beside the face, which is
   a genuine "nothing there" rather than a distance of zero.
 
+### Boundaries do not use the separating axis test
+
+`polygonsOverlap` is **convex only**, and rooms are not convex. An L-shaped treatment
+area is the ordinary case, not the exception, and SAT reports a machine standing in the
+notch of an L as inside the room — a false pass on exactly the geometry an engineer is
+most likely to get wrong.
+
+So `evaluators/boundary.ts` uses ray-casting containment from `@mfd/cad-engine` instead:
+`polygonContains` for a point, `polygonContainsPolygon` for a footprint, and
+`polygonsOverlapAnywhere` for obstructions. That last one also catches the pure
+containment case — a machine entirely covering a small riser has no edge crossings at
+all, and an intersection-only test would call it clear.
+
 ### Side convention — needs manufacturer confirmation
 
 Left and right are taken from **an operator standing at the front, looking at the
@@ -139,17 +153,19 @@ Edit JSON in `standards/rules/dialysis/`. No code changes. See
 
 | | Sprint |
 | --- | --- |
-| Boundary (wall) collision — `BoundaryCollisionEvaluator` is declared, not implemented | 4 |
 | Connection availability (power, RO, drain reachable) | after the routing model |
-| Maintenance access path | after the spatial model |
+| Maintenance access path | after the routing model |
+| Per-project rule overrides (a hospital's stricter standard) | AD-4's override layer |
 
-A rule with `scope: "boundary"` loads and reports YELLOW saying it is not evaluated
-yet, rather than silently producing nothing — a rule that does nothing looks exactly
-like a rule that passes.
+Boundary collision **is** implemented, in Sprint 4 — see
+[../architecture/RULE_ENGINE_API.md](../architecture/RULE_ENGINE_API.md) for its result
+semantics. A boundary rule evaluated with no rooms drawn still reports YELLOW saying
+nothing was checked, rather than silently producing nothing: a rule that does nothing
+looks exactly like a rule that passes.
 
 ## Tests
 
-199 unit tests across the workspace, of which the rule engine holds 119. The ones
+362 unit tests across the workspace, of which the rule engine holds 140. The ones
 that matter most are the **invariants**: a layout's verdict is a fact about the
 arrangement, not about where it sits or which way it is turned. Rotate the whole
 layout 137° or move it a kilometre, and every result must be identical.

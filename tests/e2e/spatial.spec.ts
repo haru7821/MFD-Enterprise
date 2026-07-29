@@ -67,6 +67,12 @@ async function traceRoom(
  * too. Same method as equipment.spec.ts, which documents the two traps.
  */
 async function footprintLeftPx(page: Page): Promise<number | null> {
+  return (await footprintEdgesPx(page))?.left ?? null;
+}
+
+async function footprintEdgesPx(
+  page: Page,
+): Promise<{ left: number; right: number } | null> {
   return page.evaluate(() => {
     const element = document.querySelector('canvas');
     if (!element) return null;
@@ -91,11 +97,23 @@ async function footprintLeftPx(page: Page): Promise<number | null> {
     }
 
     const THRESHOLD = 10;
+    const dpr = window.devicePixelRatio || 1;
+    let left = -1;
+    let right = -1;
     for (let x = 0; x < width; x += 1) {
-      if ((columns[x] ?? 0) >= THRESHOLD) return x / (window.devicePixelRatio || 1);
+      if ((columns[x] ?? 0) >= THRESHOLD) {
+        if (left < 0) left = x;
+        right = x;
+      }
     }
-    return null;
+    return left < 0 ? null : { left: left / dpr, right: right / dpr };
   });
+}
+
+/** Width of the drawn equipment footprint, in CSS pixels. */
+async function footprintWidthPx(page: Page): Promise<number | null> {
+  const edges = await footprintEdgesPx(page);
+  return edges === null ? null : Math.round(edges.right - edges.left);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -342,6 +360,25 @@ test.describe('undo and redo', () => {
     await expect
       .poll(async () => Math.abs(((await footprintLeftPx(page)) ?? 0) - (start ?? 0)))
       .toBeLessThan(2);
+  });
+
+  test('rotates a machine a quarter turn, and undoes it', async ({ page }) => {
+    await page.getByTestId('catalog-item-vantive_ak98').click();
+    // Placing selects, so there is no need to click the machine again — and
+    // re-clicking is unreliable at low zoom, where grid snapping can move the
+    // footprint's origin a few hundred millimetres away from the click.
+    await clickAt(page, 0.4, 0.4);
+
+    // A 900 × 750 footprint turned 90° draws 750 wide. Measured from the canvas
+    // rather than from state, because the point is that the drawing turned.
+    const before = await footprintWidthPx(page);
+    await page.keyboard.press(']');
+    await expect
+      .poll(async () => footprintWidthPx(page))
+      .not.toBe(before);
+
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(async () => footprintWidthPx(page)).toBe(before);
   });
 
   test('undoes a traced room in one step, outline and all', async ({ page }) => {
