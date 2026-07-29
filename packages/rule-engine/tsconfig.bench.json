@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022"],
+    /* Node types live here and nowhere else in this package. The engine itself
+       must stay runnable in a browser, a server and a test runner alike, so its
+       own tsconfig has no "node" types and `console` would not compile there. */
+    "types": ["node"],
+    "resolveJsonModule": true
+  },
+  "include": ["bench"]
+}

@@ -20,7 +20,8 @@
     "rules"
   ],
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.bench.json",
+    "bench": "vite-node bench/evaluate.bench.ts"
   },
   "dependencies": {
     "@mfd/cad-engine": "workspace:*",

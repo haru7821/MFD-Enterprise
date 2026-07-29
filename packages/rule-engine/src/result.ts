@@ -18,6 +18,22 @@ import type { ThresholdOrigin } from './threshold';
  * feasibility report is worse than no verdict.
  */
 
+/**
+ * Version of the evaluation result contract.
+ *
+ * **Frozen in Sprint 3.5.** From here the shape below is a published interface:
+ * Sprint 5's report generator, server-side re-evaluation, and any stored
+ * comparison between the two all read it.
+ *
+ * Adding, removing or renaming a field on {@link EvaluationResult} or
+ * {@link EvaluationReport} means bumping this number, and `result.shape.test.ts`
+ * fails until you do. That test exists because a documented freeze is a promise
+ * nobody is holding — a locked shape is one the build holds for you.
+ *
+ * Version 1 — Sprint 3.5.
+ */
+export const EVALUATION_RESULT_VERSION = 1;
+
 export interface EvaluationResult {
   readonly ruleId: string;
   readonly category: RuleCategory;
