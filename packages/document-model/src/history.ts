@@ -11,13 +11,23 @@ import type { MfdDocument } from './schema';
  *
  * A pointer drag emits a move command per animation frame. Sixty undo steps to get a
  * machine back where it started is not what "undo the move" means, so consecutive
- * commands that share a `mergeKey` and land within {@link MERGE_WINDOW_MS} of each
- * other become one entry: the newest forward command, and the **oldest** inverse —
- * the one that goes back to before the drag began.
+ * commands that share a `mergeKey` become one entry: the newest forward command, and
+ * the **oldest** inverse — the one that goes back to before the drag began.
  *
- * The time window is a backstop, not the primary mechanism. The editor calls
- * {@link seal} on pointer-up, which is precise; the window only catches the case
- * where nothing sealed and two unrelated edits would otherwise merge.
+ * **{@link seal} is what ends a run, not elapsed time.** The editor seals on
+ * pointer-up, which is exact: one gesture, one undo step, however long the gesture
+ * took or how slowly the frames arrived.
+ *
+ * {@link MERGE_WINDOW_MS} is only a safety net for a run that never seals — a lost
+ * pointer capture, or a future command issued by held keys rather than a gesture. It
+ * is deliberately generous.
+ *
+ * It started at 300 ms, which looked reasonable and was too tight to be safe: a drag
+ * re-evaluates a few hundred findings per pointer move, and one frame that took
+ * longer than the window would split the drag into two undo steps. Undo would then
+ * behave one way on an idle machine and another on a loaded one, with nothing
+ * anywhere saying so. Widening it costs nothing, because the seal is what actually
+ * ends a gesture.
  *
  * ## Depth
  *
@@ -27,7 +37,11 @@ import type { MfdDocument } from './schema';
  * two orders of magnitude tighter, because a level embeds its floor plan.
  */
 
-export const MERGE_WINDOW_MS = 300;
+/**
+ * Safety net for a run that never seals. Not the mechanism that ends a drag —
+ * see the note above.
+ */
+export const MERGE_WINDOW_MS = 2_000;
 export const MAX_HISTORY_DEPTH = 200;
 
 export interface HistoryEntry {

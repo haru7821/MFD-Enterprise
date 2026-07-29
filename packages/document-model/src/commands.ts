@@ -411,7 +411,10 @@ export function renameSpaceCommand(
   return command({
     type: 'space.rename',
     label: 'Rename room',
-    mergeKey: null,
+    // Typing a name emits one command per keystroke. Sixteen undo steps to take
+    // back "Treatment area A" is not what anyone means by undo, so a run of edits
+    // to the same room coalesces until the field is left.
+    mergeKey: `space.rename:${spaceId}`,
     apply(document) {
       const level = requireLevel(document, levelId);
       const previous = requireSpace(level, spaceId);

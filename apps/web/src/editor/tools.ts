@@ -24,7 +24,7 @@ export interface ToolDefinition {
  * Numbering follows docs/roadmap/MVP_PLAN.md: 1 Foundation, 2 Equipment Object
  * System, 3 Rule Engine, 4 PDF Workflow, 5 Report Generation, 6 AI Assistant.
  */
-export const CURRENT_SPRINT = 2;
+export const CURRENT_SPRINT = 4;
 
 export const TOOLS: readonly ToolDefinition[] = [
   {
@@ -52,15 +52,15 @@ export const TOOLS: readonly ToolDefinition[] = [
     id: 'room',
     label: 'Room',
     shortcut: 'r',
-    hint: 'Draw a room boundary',
-    availableFrom: 3,
+    hint: 'Click to trace a room — click the first point again, or double-click, to close it',
+    availableFrom: 4,
   },
   {
     id: 'measure',
     label: 'Measure',
     shortcut: 'm',
     hint: 'Measure a distance between two points',
-    availableFrom: 4,
+    availableFrom: 5,
   },
 ];
 

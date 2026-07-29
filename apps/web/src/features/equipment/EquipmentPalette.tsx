@@ -14,12 +14,11 @@ export function EquipmentPalette() {
   const { state, dispatch } = useEditor();
 
   return (
-    <aside
-      className="flex w-60 shrink-0 flex-col border-r border-edge bg-chrome"
-      aria-label="Equipment catalogue"
-    >
+    <section className="flex min-h-0 flex-1 flex-col" aria-label="Equipment catalogue">
       <header className="border-b border-edge px-3 py-2">
-        <h2 className="text-xs font-semibold tracking-wide text-ink uppercase">Equipment</h2>
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          Equipment
+        </h2>
         <p className="mt-0.5 text-[11px] text-ink-faint">
           {catalog.objects.length} object{catalog.objects.length === 1 ? '' : 's'} · click
           to arm, then click the canvas
@@ -74,6 +73,6 @@ export function EquipmentPalette() {
           Real dimensions and clearances are pending the installation manual.
         </footer>
       )}
-    </aside>
+    </section>
   );
 }

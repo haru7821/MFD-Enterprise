@@ -1,10 +1,20 @@
 import { type RefObject, useEffect, useRef, useState } from 'react';
 
-import { type Vec2, chooseGridSpec, screenToWorld, snapToStep, vec2 } from '@mfd/cad-engine';
+import {
+  type Vec2,
+  chooseGridSpec,
+  modelToPixel,
+  screenToWorld,
+  snapToStep,
+  vec2,
+  worldToScreen,
+} from '@mfd/cad-engine';
 import { footprintContains } from '@mfd/object-library';
 import { catalog } from '@mfd/object-library/catalog';
 
-import type { EditorState } from '@/editor/editorState';
+import { now } from '@/editor/clock';
+import { type EditorState, activeLevel, planDisplayTransform } from '@/editor/editorState';
+import { CLOSE_TARGET_RADIUS_PX } from '@/features/space/spaceTheme';
 import { useEditor } from '@/editor/useEditor';
 
 /**
@@ -41,8 +51,9 @@ function applySnap(state: EditorState, point: Vec2): Vec2 {
  * which is what the user is pointing at.
  */
 function placementAt(state: EditorState, point: Vec2): string | null {
-  for (let index = state.placements.length - 1; index >= 0; index -= 1) {
-    const placement = state.placements[index];
+  const placements = activeLevel(state).placements;
+  for (let index = placements.length - 1; index >= 0; index -= 1) {
+    const placement = placements[index];
     if (!placement) continue;
 
     const object = catalog.get(placement.equipmentObjectId);
@@ -136,12 +147,53 @@ export function useCanvasInteraction(
       if (event.button !== 0) return;
       const world = screenToWorld(current.viewport, localPoint(event));
 
+      // Calibration takes precedence over every tool: it is a modal act the engineer
+      // started deliberately, and a stray click that placed a machine instead would
+      // leave them wondering which of the two things happened.
+      if (current.calibration) {
+        event.preventDefault();
+        // Recorded in image pixels, not millimetres. A calibration is a statement
+        // about the drawing, made before the drawing has any millimetres in it.
+        dispatch({
+          type: 'calibration/pick',
+          pixel: modelToPixel(planDisplayTransform(current), world),
+        });
+        return;
+      }
+
+      // Room tool: trace a ring, click the first vertex again to close it.
+      if (current.activeTool === 'room') {
+        event.preventDefault();
+        const point = applySnap(current, world);
+        const first = current.draftRoomVertices[0];
+
+        if (first && current.draftRoomVertices.length >= 3) {
+          const firstScreen = worldToScreen(current.viewport, first);
+          const pointer = localPoint(event);
+          const withinCloseTarget =
+            Math.hypot(pointer.x - firstScreen.x, pointer.y - firstScreen.y) <=
+            CLOSE_TARGET_RADIUS_PX;
+          if (withinCloseTarget) {
+            dispatch({ type: 'room/close', at: now() });
+            return;
+          }
+        }
+
+        dispatch({ type: 'room/addVertex', point });
+        return;
+      }
+
       // Equipment tool with a catalogue object armed: place one.
       if (current.activeTool === 'equipment' && current.armedEquipmentObjectId) {
         const object = catalog.get(current.armedEquipmentObjectId);
         if (object) {
           event.preventDefault();
-          dispatch({ type: 'placement/add', object, position: applySnap(current, world) });
+          dispatch({
+            type: 'placement/add',
+            object,
+            position: applySnap(current, world),
+            at: now(),
+          });
         }
         return;
       }
@@ -151,7 +203,9 @@ export function useCanvasInteraction(
       dispatch({ type: 'placement/select', placementId: hitId });
       if (!hitId) return;
 
-      const placement = current.placements.find((candidate) => candidate.id === hitId);
+      const placement = activeLevel(current).placements.find(
+        (candidate) => candidate.id === hitId,
+      );
       if (!placement) return;
 
       event.preventDefault();
@@ -180,6 +234,7 @@ export function useCanvasInteraction(
             current,
             vec2(world.x + drag.grabOffset.x, world.y + drag.grabOffset.y),
           ),
+          at: now(),
         });
         return;
       }
@@ -202,6 +257,9 @@ export function useCanvasInteraction(
           element.releasePointerCapture(event.pointerId);
         }
         dragRef.current = null;
+        // One drag, one undo step. Sealing here is precise; the history's time
+        // window is only a backstop for gestures that never reach a pointer-up.
+        dispatch({ type: 'history/seal' });
         return;
       }
 
@@ -217,6 +275,15 @@ export function useCanvasInteraction(
 
     const onPointerLeave = () => {
       dispatch({ type: 'cursor/move', position: null });
+    };
+
+    // Double-click closes a room, for engineers who expect the polygon-tool
+    // convention rather than clicking the first vertex again.
+    const onDoubleClick = (event: MouseEvent) => {
+      if (stateRef.current.activeTool !== 'room') return;
+      if (stateRef.current.draftRoomVertices.length < 3) return;
+      event.preventDefault();
+      dispatch({ type: 'room/close', at: now() });
     };
 
     // Middle-click opens the autoscroll widget in some browsers; suppress it.
@@ -253,6 +320,7 @@ export function useCanvasInteraction(
     element.addEventListener('pointerup', endGesture);
     element.addEventListener('pointercancel', endGesture);
     element.addEventListener('pointerleave', onPointerLeave);
+    element.addEventListener('dblclick', onDoubleClick);
     element.addEventListener('auxclick', onAuxClick);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -265,6 +333,7 @@ export function useCanvasInteraction(
       element.removeEventListener('pointerup', endGesture);
       element.removeEventListener('pointercancel', endGesture);
       element.removeEventListener('pointerleave', onPointerLeave);
+      element.removeEventListener('dblclick', onDoubleClick);
       element.removeEventListener('auxclick', onAuxClick);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

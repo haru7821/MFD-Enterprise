@@ -1,19 +1,24 @@
 import type { ReactNode } from 'react';
 
 import { ZOOM_STEP, vec2, zoomPercent } from '@mfd/cad-engine';
+import { canRedo, canUndo, redoLabel, undoLabel } from '@mfd/document-model';
 
 import {
   EquipmentIcon,
   GridIcon,
   MeasureIcon,
   PanIcon,
+  PlanIcon,
+  RedoIcon,
   ResetViewIcon,
   RoomIcon,
   SelectIcon,
   SnapIcon,
+  UndoIcon,
   ZoomInIcon,
   ZoomOutIcon,
 } from '@/components/icons';
+import { activeLevel } from '@/editor/editorState';
 import { TOOLS, type ToolId, isToolAvailable } from '@/editor/tools';
 import { useEditor } from '@/editor/useEditor';
 
@@ -39,6 +44,8 @@ export function Toolbar() {
   const { state, dispatch } = useEditor();
 
   const centre = vec2(state.screen.width / 2, state.screen.height / 2);
+  const history = state.doc.history;
+  const hasPlan = activeLevel(state).planImage !== null;
   const availableTools = TOOLS.filter(isToolAvailable);
   const upcomingTools = TOOLS.filter((tool) => !isToolAvailable(tool));
 
@@ -73,6 +80,33 @@ export function Toolbar() {
       ))}
 
       <div className="ml-auto flex items-center">
+        <ToolButton
+          icon={<UndoIcon />}
+          label="Undo"
+          shortcut="⌘Z"
+          description={undoLabel(history) ?? 'Nothing to undo'}
+          isDisabled={!canUndo(history)}
+          onClick={() => dispatch({ type: 'history/undo' })}
+        />
+        <ToolButton
+          icon={<RedoIcon />}
+          label="Redo"
+          shortcut="⇧⌘Z"
+          description={redoLabel(history) ?? 'Nothing to redo'}
+          isDisabled={!canRedo(history)}
+          onClick={() => dispatch({ type: 'history/redo' })}
+        />
+
+        <Divider />
+
+        <ToolButton
+          icon={<PlanIcon />}
+          label="Plan"
+          description={hasPlan ? (state.showPlan ? 'Visible' : 'Hidden') : 'No drawing imported'}
+          isActive={hasPlan && state.showPlan}
+          isDisabled={!hasPlan}
+          onClick={() => dispatch({ type: 'plan/toggle' })}
+        />
         <ToolButton
           icon={<GridIcon />}
           label="Grid"

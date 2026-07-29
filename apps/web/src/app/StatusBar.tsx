@@ -8,6 +8,7 @@ import {
 import { catalog } from '@mfd/object-library/catalog';
 import type { EvaluationReport } from '@mfd/rule-engine';
 
+import { activeLevel, planStatusOf } from '@/editor/editorState';
 import { getTool } from '@/editor/tools';
 import { useEditor } from '@/editor/useEditor';
 
@@ -42,6 +43,7 @@ function Field({ label, value }: { readonly label: string; readonly value: strin
  */
 export function StatusBar({ report }: { readonly report: EvaluationReport }) {
   const { state } = useEditor();
+  const level = activeLevel(state);
 
   const grid = chooseGridSpec(state.viewport.scale);
   const tool = getTool(state.activeTool);
@@ -57,9 +59,11 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
   // Counted from the catalogue rather than stored on the placement: if a record is
   // upgraded from draft to verified, every placement of it stops being flagged with
   // no migration.
-  const draftPlacementCount = state.placements.filter(
+  const draftPlacementCount = level.placements.filter(
     (placement) => catalog.get(placement.equipmentObjectId)?.dataStatus === 'draft',
   ).length;
+
+  const planStatus = planStatusOf(level);
 
   return (
     <footer
@@ -83,6 +87,16 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
         </span>
       )}
 
+      {planStatus === 'uncalibrated' && (
+        <span
+          data-testid="plan-uncalibrated-warning"
+          className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-1.5 py-px text-[10px] font-medium text-amber-300"
+          title="Set the drawing scale before trusting any measurement taken from it."
+        >
+          plan not calibrated
+        </span>
+      )}
+
       {(report.counts.RED > 0 || report.counts.YELLOW > 0) && (
         <span
           data-testid="findings-summary"
@@ -96,7 +110,8 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
       )}
 
       <div className="ml-auto flex items-center gap-4">
-        <Field label="Placed" value={`${state.placements.length}`} />
+        <Field label="Placed" value={`${level.placements.length}`} />
+        <Field label="Rooms" value={`${level.spaces.length}`} />
         <Field label="X" value={cursor ? formatCoordinate(cursor.x) : '—'} />
         <Field label="Y" value={cursor ? formatCoordinate(cursor.y) : '—'} />
         <Field label="Grid" value={state.showGrid ? formatLength(grid.step) : 'off'} />

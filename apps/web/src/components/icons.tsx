@@ -119,3 +119,30 @@ export function ResetViewIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function UndoIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 7.5h6.5a3.5 3.5 0 0 1 0 7H7" />
+      <path d="M5.5 4.5 3 7.5l2.5 3" />
+    </Icon>
+  );
+}
+
+export function RedoIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M13 7.5H6.5a3.5 3.5 0 0 0 0 7H9" />
+      <path d="M10.5 4.5 13 7.5l-2.5 3" />
+    </Icon>
+  );
+}
+
+export function PlanIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M2.5 3.5h11v9h-11z" />
+      <path d="M6 3.5v9M2.5 8H6M9.5 8h4" />
+    </Icon>
+  );
+}

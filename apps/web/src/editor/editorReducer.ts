@@ -6,15 +6,56 @@ import {
   centreOn,
   createViewport,
   panBy,
+  simplifyPolygon,
   zoomBy,
   zoomTo,
 } from '@mfd/cad-engine';
-import { createPlacement } from '@mfd/document-model';
+import {
+  type Boundary,
+  type CoordinateMapping,
+  type MfdDocument,
+  type PlanImage,
+  type Space,
+  type SpaceFunction,
+  createBoundary,
+  createDocumentState,
+  createPlacement,
+  createPlacementCommand,
+  createSpace,
+  createSpaceCommand,
+  deletePlacementCommand,
+  deleteSpaceCommand,
+  execute,
+  movePlacementCommand,
+  redo,
+  renameSpaceCommand,
+  rotatePlacementCommand,
+  seal,
+  setBoundaryVerticesCommand,
+  setPlanImage,
+  clearPlanImage,
+  setCoordinateMapping,
+  undo,
+} from '@mfd/document-model';
 import type { EquipmentObject } from '@mfd/object-library';
 
-import type { EditorState } from './editorState';
+import {
+  DEFAULT_SPACE_FUNCTION,
+  type EditorState,
+  activeLevel,
+  defaultSpaceName,
+  emptyDocument,
+} from './editorState';
 import type { ToolId } from './tools';
 
+/**
+ * Editor actions.
+ *
+ * Document-changing actions carry an `at` timestamp rather than reading a clock here.
+ * A reducer that called `Date.now()` would be impure — React invokes reducers twice in
+ * development, and undo coalescing depends on that timestamp. `useDocumentCommands`
+ * stamps it at the call site, which is where the clock belongs.
+ */
 export type EditorAction =
   | { readonly type: 'screen/resize'; readonly size: ScreenSize }
   | { readonly type: 'tool/select'; readonly tool: ToolId }
@@ -28,6 +69,7 @@ export type EditorAction =
   | { readonly type: 'pan/end' }
   | { readonly type: 'grid/toggle' }
   | { readonly type: 'snap/toggle' }
+  | { readonly type: 'plan/toggle' }
   /** Arm a catalogue object for placement, or pass null to disarm. */
   | { readonly type: 'equipment/arm'; readonly equipmentObjectId: string | null }
   | {
@@ -35,21 +77,68 @@ export type EditorAction =
       readonly object: EquipmentObject;
       /** Model-space position in millimetres. */
       readonly position: Vec2;
+      readonly at: number;
     }
   | {
       readonly type: 'placement/move';
       readonly placementId: string;
       readonly position: Vec2;
+      readonly at: number;
+    }
+  | {
+      readonly type: 'placement/rotate';
+      readonly placementId: string;
+      readonly rotation: number;
+      readonly at: number;
     }
   | { readonly type: 'placement/select'; readonly placementId: string | null }
-  | { readonly type: 'placement/delete'; readonly placementId: string };
+  | { readonly type: 'placement/delete'; readonly placementId: string; readonly at: number }
+  | { readonly type: 'space/select'; readonly spaceId: string | null }
+  | {
+      readonly type: 'space/rename';
+      readonly spaceId: string;
+      readonly name: string;
+      readonly function: SpaceFunction;
+      readonly at: number;
+    }
+  | { readonly type: 'space/delete'; readonly spaceId: string; readonly at: number }
+  | {
+      readonly type: 'boundary/setVertices';
+      readonly boundaryId: string;
+      readonly vertices: readonly Vec2[];
+      readonly at: number;
+    }
+  /** Room tracing. */
+  | { readonly type: 'room/addVertex'; readonly point: Vec2 }
+  | { readonly type: 'room/undoVertex' }
+  | { readonly type: 'room/cancel' }
+  | { readonly type: 'room/close'; readonly at: number }
+  /** Plan workflow — deliberately outside the undo stack; see document-model/plan.ts. */
+  | { readonly type: 'plan/import'; readonly planImage: PlanImage }
+  | { readonly type: 'plan/clear' }
+  | { readonly type: 'plan/setMapping'; readonly mapping: CoordinateMapping | null }
+  | { readonly type: 'calibration/start' }
+  | { readonly type: 'calibration/pick'; readonly pixel: Vec2 }
+  | { readonly type: 'calibration/cancel' }
+  | { readonly type: 'history/undo' }
+  | { readonly type: 'history/redo' }
+  | { readonly type: 'history/seal' }
+  | { readonly type: 'document/load'; readonly document: MfdDocument }
+  | { readonly type: 'document/new'; readonly now: string };
 
 /** Put the model origin at the middle of the screen at the default zoom. */
 function resetView(screen: ScreenSize): EditorState['viewport'] {
   return centreOn(createViewport(DEFAULT_SCALE), ORIGIN, screen);
 }
 
+/** Apply a plan-level change, which is not undoable. */
+function withDocument(state: EditorState, document: MfdDocument): EditorState {
+  return { ...state, doc: { ...state.doc, document } };
+}
+
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
+  const levelId = state.activeLevelId;
+
   switch (action.type) {
     case 'screen/resize': {
       if (
@@ -77,6 +166,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         // survives a tool change places a machine on the next unrelated click.
         armedEquipmentObjectId:
           action.tool === 'equipment' ? state.armedEquipmentObjectId : null,
+        // A half-traced room does not belong to any other tool. Abandoning it on the
+        // tool change is less surprising than having it reappear later.
+        draftRoomVertices: action.tool === 'room' ? state.draftRoomVertices : [],
       };
 
     case 'viewport/panBy':
@@ -106,6 +198,9 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'snap/toggle':
       return { ...state, snapToGrid: !state.snapToGrid };
 
+    case 'plan/toggle':
+      return { ...state, showPlan: !state.showPlan };
+
     case 'equipment/arm':
       return {
         ...state,
@@ -114,46 +209,235 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       };
 
     case 'placement/add': {
+      const number = state.nextEntityNumber;
       const placement = createPlacement(
-        `placement-${state.nextPlacementNumber}`,
+        `placement-${number}`,
         action.object,
         action.position,
-        { label: `${action.object.model} ${state.nextPlacementNumber}` },
+        { label: `${action.object.model} ${number}` },
       );
 
       return {
         ...state,
-        placements: [...state.placements, placement],
-        nextPlacementNumber: state.nextPlacementNumber + 1,
+        doc: execute(state.doc, createPlacementCommand(levelId, placement), action.at),
+        nextEntityNumber: number + 1,
         selectedPlacementId: placement.id,
+        selectedSpaceId: null,
       };
     }
 
     case 'placement/move':
       return {
         ...state,
-        placements: state.placements.map((placement) =>
-          placement.id === action.placementId
-            ? { ...placement, transform: { ...placement.transform, position: action.position } }
-            : placement,
+        doc: execute(
+          state.doc,
+          movePlacementCommand(levelId, action.placementId, action.position),
+          action.at,
+        ),
+      };
+
+    case 'placement/rotate':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          rotatePlacementCommand(levelId, action.placementId, action.rotation),
+          action.at,
         ),
       };
 
     case 'placement/select':
       return state.selectedPlacementId === action.placementId
         ? state
-        : { ...state, selectedPlacementId: action.placementId };
+        : { ...state, selectedPlacementId: action.placementId, selectedSpaceId: null };
 
     case 'placement/delete':
       return {
         ...state,
-        placements: state.placements.filter(
-          (placement) => placement.id !== action.placementId,
+        doc: seal(
+          execute(state.doc, deletePlacementCommand(levelId, action.placementId), action.at),
         ),
         selectedPlacementId:
-          state.selectedPlacementId === action.placementId
-            ? null
-            : state.selectedPlacementId,
+          state.selectedPlacementId === action.placementId ? null : state.selectedPlacementId,
+      };
+
+    case 'space/select':
+      return state.selectedSpaceId === action.spaceId
+        ? state
+        : { ...state, selectedSpaceId: action.spaceId, selectedPlacementId: null };
+
+    case 'space/rename':
+      // Not sealed here: the field seals on blur, so one editing session is one
+      // undo step rather than one per keystroke.
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          renameSpaceCommand(levelId, action.spaceId, action.name, action.function),
+          action.at,
+        ),
+      };
+
+    case 'space/delete':
+      return {
+        ...state,
+        doc: seal(execute(state.doc, deleteSpaceCommand(levelId, action.spaceId), action.at)),
+        selectedSpaceId: state.selectedSpaceId === action.spaceId ? null : state.selectedSpaceId,
+      };
+
+    case 'boundary/setVertices':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          setBoundaryVerticesCommand(levelId, action.boundaryId, action.vertices),
+          action.at,
+        ),
+      };
+
+    case 'room/addVertex':
+      return { ...state, draftRoomVertices: [...state.draftRoomVertices, action.point] };
+
+    case 'room/undoVertex':
+      return { ...state, draftRoomVertices: state.draftRoomVertices.slice(0, -1) };
+
+    case 'room/cancel':
+      return state.draftRoomVertices.length === 0 ? state : { ...state, draftRoomVertices: [] };
+
+    case 'room/close': {
+      // Vertices traced by hand collect repeats and points that merely sit along a
+      // wall. Neither changes the room; both make every later edge test slower and
+      // every vertex handle harder to grab.
+      const vertices = simplifyPolygon(state.draftRoomVertices);
+      // Fewer than three vertices encloses nothing. Silently creating it would give
+      // the engineer a room that reports every machine in the building as outside it.
+      if (vertices.length < 3) return { ...state, draftRoomVertices: [] };
+
+      const number = state.nextEntityNumber;
+      const boundary: Boundary = createBoundary(
+        `boundary-${number}`,
+        'space_outline',
+        vertices,
+        defaultSpaceName(number),
+      );
+      const space: Space = createSpace(
+        `space-${number}`,
+        boundary.id,
+        defaultSpaceName(number),
+        DEFAULT_SPACE_FUNCTION,
+      );
+
+      return {
+        ...state,
+        doc: seal(execute(state.doc, createSpaceCommand(levelId, boundary, space), action.at)),
+        draftRoomVertices: [],
+        nextEntityNumber: number + 1,
+        selectedSpaceId: space.id,
+        selectedPlacementId: null,
+      };
+    }
+
+    case 'plan/import':
+      return {
+        ...withDocument(state, setPlanImage(state.doc.document, levelId, action.planImage)),
+        calibration: null,
+      };
+
+    case 'plan/clear':
+      return {
+        ...withDocument(state, clearPlanImage(state.doc.document, levelId)),
+        calibration: null,
+      };
+
+    case 'plan/setMapping':
+      return {
+        ...withDocument(
+          state,
+          setCoordinateMapping(state.doc.document, levelId, action.mapping),
+        ),
+        calibration: null,
+      };
+
+    case 'calibration/start':
+      return activeLevel(state).planImage === null
+        ? state
+        : { ...state, calibration: { points: [] }, activeTool: 'select' };
+
+    case 'calibration/pick': {
+      if (!state.calibration) return state;
+      const points = [...state.calibration.points, action.pixel].slice(-2);
+      return { ...state, calibration: { points } };
+    }
+
+    case 'calibration/cancel':
+      return state.calibration === null ? state : { ...state, calibration: null };
+
+    case 'history/undo':
+      return { ...state, doc: undo(state.doc) };
+
+    case 'history/redo':
+      return { ...state, doc: redo(state.doc) };
+
+    case 'history/seal':
+      return { ...state, doc: seal(state.doc) };
+
+    case 'document/load': {
+      const level = action.document.project.levels[0];
+      return {
+        ...state,
+        // A loaded document starts a fresh history. Undoing across a file open would
+        // reach back into a project the engineer is no longer looking at.
+        doc: createDocumentState(action.document),
+        activeLevelId: level?.id ?? state.activeLevelId,
+        selectedPlacementId: null,
+        selectedSpaceId: null,
+        draftRoomVertices: [],
+        calibration: null,
+        // Ids in a loaded document were numbered in another session. Restarting the
+        // counter past the largest number already present avoids colliding with them.
+        nextEntityNumber: nextFreeNumber(action.document),
+      };
+    }
+
+    case 'document/new':
+      return {
+        ...INITIAL_EDITOR_STATE_VIEW(state),
+        doc: createDocumentState(emptyDocument(action.now)),
       };
   }
+}
+
+/**
+ * Keep the view, drop everything about the old project.
+ *
+ * An engineer starting a new review has not asked for their zoom level to be reset.
+ */
+function INITIAL_EDITOR_STATE_VIEW(state: EditorState): EditorState {
+  return {
+    ...state,
+    activeLevelId: 'level-1',
+    armedEquipmentObjectId: null,
+    selectedPlacementId: null,
+    selectedSpaceId: null,
+    draftRoomVertices: [],
+    calibration: null,
+    nextEntityNumber: 1,
+  };
+}
+
+/** One past the largest `-<n>` suffix in the document, so new ids cannot collide. */
+function nextFreeNumber(document: MfdDocument): number {
+  let highest = 0;
+  for (const level of document.project.levels) {
+    for (const id of [
+      ...level.placements.map((entry) => entry.id),
+      ...level.boundaries.map((entry) => entry.id),
+      ...level.spaces.map((entry) => entry.id),
+    ]) {
+      const match = /-(\d+)$/.exec(id);
+      const value = match?.[1] ? Number(match[1]) : 0;
+      if (value > highest) highest = value;
+    }
+  }
+  return highest + 1;
 }

@@ -4,8 +4,13 @@ import { Layer, Stage } from 'react-konva';
 import { catalog } from '@mfd/object-library/catalog';
 import type { EvaluationReport } from '@mfd/rule-engine';
 
+import { activeLevel, planDisplayTransform } from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
 import { EquipmentLayer } from '@/features/equipment/EquipmentLayer';
+import { CalibrationOverlay } from '@/features/plan/CalibrationOverlay';
+import { PlanLayer } from '@/features/plan/PlanLayer';
+import { DraftRoomLayer } from '@/features/space/DraftRoomLayer';
+import { SpaceLayer } from '@/features/space/SpaceLayer';
 import { ValidationOverlay } from '@/features/validation/ValidationOverlay';
 
 import { GridLayer } from './GridLayer';
@@ -25,6 +30,7 @@ import { useElementSize } from './useElementSize';
  */
 export function DesignCanvas({ report }: { readonly report: EvaluationReport }) {
   const { state, dispatch } = useEditor();
+  const level = activeLevel(state);
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useElementSize(containerRef);
   const { isSpacePanReady } = useCanvasInteraction(containerRef);
@@ -39,6 +45,8 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
       ? 'cursor-grab'
       : 'cursor-crosshair';
 
+  const planTransform = planDisplayTransform(state);
+
   const isMeasured = size.width > 0 && size.height > 0;
 
   return (
@@ -50,11 +58,29 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
     >
       {isMeasured && (
         <Stage width={size.width} height={size.height}>
+          {/*
+            Layer order is the drawing's reading order: the plan is context, the
+            building sits on it, the equipment sits in the building, and the findings
+            sit on top of everything because they are what stops an installation.
+          */}
           <Layer listening={false}>
+            {state.showPlan && (
+              <PlanLayer
+                planImage={level.planImage}
+                transform={planTransform}
+                viewport={state.viewport}
+                opacity={0.55}
+              />
+            )}
             {state.showGrid && <GridLayer viewport={state.viewport} screen={size} />}
             <OriginMarker viewport={state.viewport} screen={size} />
+            <SpaceLayer
+              level={level}
+              viewport={state.viewport}
+              selectedSpaceId={state.selectedSpaceId}
+            />
             <EquipmentLayer
-              placements={state.placements}
+              placements={level.placements}
               catalog={catalog}
               viewport={state.viewport}
               screen={size}
@@ -62,10 +88,23 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
             />
             <ValidationOverlay
               report={report}
-              placements={state.placements}
+              placements={level.placements}
               catalog={catalog}
               viewport={state.viewport}
             />
+            <DraftRoomLayer
+              vertices={state.draftRoomVertices}
+              cursorScreen={state.cursorScreen}
+              viewport={state.viewport}
+            />
+            {state.calibration && (
+              <CalibrationOverlay
+                points={state.calibration.points}
+                transform={planTransform}
+                viewport={state.viewport}
+                cursorScreen={state.cursorScreen}
+              />
+            )}
           </Layer>
         </Stage>
       )}

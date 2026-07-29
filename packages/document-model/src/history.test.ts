@@ -139,7 +139,23 @@ describe('coalescing a drag', () => {
     expect(state.history.past).toHaveLength(4);
   });
 
-  it('does not merge across the time window when nothing sealed', () => {
+  it('keeps merging however slowly the frames arrive, as long as nothing sealed', () => {
+    // The seal ends a drag, not elapsed time. A frame that spends 400 ms
+    // re-evaluating findings is still part of the same gesture, and an earlier
+    // 300 ms window split it — making undo behave one way on an idle machine and
+    // another on a loaded one.
+    let state = seal(start());
+    state = execute(state, movePlacementCommand(LEVEL, 'p1', { x: 100, y: 0 }), 0);
+    state = execute(state, movePlacementCommand(LEVEL, 'p1', { x: 200, y: 0 }), 400);
+    state = execute(state, movePlacementCommand(LEVEL, 'p1', { x: 300, y: 0 }), 900);
+
+    expect(state.history.past).toHaveLength(2);
+    expect(positionOf(undo(state))).toEqual({ x: 0, y: 0 });
+  });
+
+  it('still refuses to merge across the safety window', () => {
+    // The net that catches a run which never sealed — a lost pointer capture, or a
+    // future command issued by held keys rather than a gesture.
     let state = seal(start());
     state = execute(state, movePlacementCommand(LEVEL, 'p1', { x: 100, y: 0 }), 1_000);
     state = execute(
