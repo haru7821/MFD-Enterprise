@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@mfd/cad-engine": "workspace:*",
+    "@mfd/document-model": "workspace:*",
     "@mfd/object-library": "workspace:*",
     "zod": "^4.4.3"
   }

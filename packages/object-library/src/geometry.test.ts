@@ -1,3 +1,4 @@
+import type { Transform } from '@mfd/cad-engine';
 import { describe, expect, it } from 'vitest';
 
 import { parseEquipmentObject } from './catalog';
@@ -12,7 +13,6 @@ import {
   portPoints,
   sideNormals,
 } from './geometry';
-import type { PlacementTransform } from './placement';
 import type { EquipmentObject } from './schema';
 
 function machine(overrides: Record<string, unknown> = {}): EquipmentObject {
@@ -45,7 +45,7 @@ function machine(overrides: Record<string, unknown> = {}): EquipmentObject {
   );
 }
 
-const AT_ORIGIN: PlacementTransform = {
+const AT_ORIGIN: Transform = {
   position: { x: 0, y: 0 },
   rotation: 0,
   mirrored: false,
@@ -96,7 +96,7 @@ describe('placement transform', () => {
   });
 
   it('round-trips a point through model space and back', () => {
-    const transform: PlacementTransform = {
+    const transform: Transform = {
       position: { x: 1_234, y: -567 },
       rotation: 37_500,
       mirrored: true,
@@ -111,7 +111,7 @@ describe('placement transform', () => {
 
   it('measures the same distance however the object is placed', () => {
     // The width of the machine cannot depend on where it sits or how it is turned.
-    const transform: PlacementTransform = {
+    const transform: Transform = {
       position: { x: 3_333, y: 777 },
       rotation: 22_000,
       mirrored: false,

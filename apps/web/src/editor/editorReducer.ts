@@ -9,7 +9,8 @@ import {
   zoomBy,
   zoomTo,
 } from '@mfd/cad-engine';
-import { type EquipmentObject, createPlacement } from '@mfd/object-library';
+import { createPlacement } from '@mfd/document-model';
+import type { EquipmentObject } from '@mfd/object-library';
 
 import type { EditorState } from './editorState';
 import type { ToolId } from './tools';

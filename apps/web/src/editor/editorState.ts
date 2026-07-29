@@ -1,5 +1,5 @@
 import { type ScreenSize, type Vec2, type Viewport, createViewport } from '@mfd/cad-engine';
-import type { Placement } from '@mfd/object-library';
+import type { Placement } from '@mfd/document-model';
 
 import type { ToolId } from './tools';
 

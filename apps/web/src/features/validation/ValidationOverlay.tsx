@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { Line } from 'react-konva';
 
 import { type Viewport, worldToScreen } from '@mfd/cad-engine';
-import { type Catalog, type Placement, footprintCorners } from '@mfd/object-library';
+import type { Placement } from '@mfd/document-model';
+import { type Catalog, footprintCorners } from '@mfd/object-library';
 import type { EvaluationReport, ResultLevel } from '@mfd/rule-engine';
 
 import { LEVEL_ORDER, RESULT_THEME } from './validationTheme';

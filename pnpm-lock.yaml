@@ -47,6 +47,9 @@ importers:
       '@mfd/cad-engine':
         specifier: workspace:*
         version: link:../../packages/cad-engine
+      '@mfd/document-model':
+        specifier: workspace:*
+        version: link:../../packages/document-model
       '@mfd/object-library':
         specifier: workspace:*
         version: link:../../packages/object-library
@@ -90,6 +93,18 @@ importers:
 
   packages/cad-engine: {}
 
+  packages/document-model:
+    dependencies:
+      '@mfd/cad-engine':
+        specifier: workspace:*
+        version: link:../cad-engine
+      '@mfd/object-library':
+        specifier: workspace:*
+        version: link:../object-library
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+
   packages/object-library:
     dependencies:
       '@mfd/cad-engine':
@@ -106,6 +121,9 @@ importers:
       '@mfd/cad-engine':
         specifier: workspace:*
         version: link:../cad-engine
+      '@mfd/document-model':
+        specifier: workspace:*
+        version: link:../document-model
       '@mfd/object-library':
         specifier: workspace:*
         version: link:../object-library

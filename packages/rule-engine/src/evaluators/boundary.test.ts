@@ -1,0 +1,291 @@
+import { describe, expect, it } from 'vitest';
+
+import type { Boundary } from '@mfd/document-model';
+
+import {
+  fixtureBoundary,
+  fixtureCatalog,
+  fixtureCollisionRule,
+  fixtureEquipmentRecord,
+  fixtureLShapedRoom,
+  fixturePlacement,
+  fixtureRuleSet,
+} from '../../fixtures/index';
+import { evaluate, type SpatialContext } from '../evaluate';
+
+/**
+ * Boundary collision — equipment against the building.
+ *
+ * Machines are 900 × 750 mm with a `front-left` origin, so a placement at (x, y)
+ * occupies x → x + 900 and y → y + 750.
+ */
+
+const VERIFIED_CATALOG = fixtureCatalog([fixtureEquipmentRecord({ dataStatus: 'verified' })]);
+const DRAFT_CATALOG = fixtureCatalog([fixtureEquipmentRecord()]);
+
+const BOUNDARY_RULE = fixtureRuleSet([
+  fixtureCollisionRule({ ruleId: 'boundary_rule', scope: 'boundary', status: 'verified' }),
+]);
+
+function spatial(
+  boundaries: readonly Boundary[],
+  planStatus: SpatialContext['planStatus'] = 'calibrated',
+): SpatialContext {
+  return { boundaries, planStatus };
+}
+
+function check(
+  placements: Parameters<typeof evaluate>[0]['placements'],
+  boundaries: readonly Boundary[],
+  options: { calibrated?: boolean; draft?: boolean } = {},
+) {
+  return evaluate({
+    placements,
+    catalog: options.draft === true ? DRAFT_CATALOG : VERIFIED_CATALOG,
+    ruleSet: BOUNDARY_RULE,
+    spatial: spatial(boundaries, options.calibrated === false ? 'uncalibrated' : 'calibrated'),
+  });
+}
+
+const ROOM = fixtureBoundary(
+  'room-1',
+  'space_outline',
+  { x: 0, y: 0 },
+  10_000,
+  8_000,
+  'Treatment area A',
+);
+
+describe('room containment', () => {
+  it('passes a machine wholly inside the room', () => {
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM]);
+
+    expect(report.results).toHaveLength(1);
+    expect(report.results[0]?.level).toBe('GREEN');
+    expect(report.results[0]?.reason).toContain('Treatment area A');
+  });
+
+  it('flags a machine that extends past the wall, and says by how much', () => {
+    // Placed at x = 9,600 with a 900 mm width: 500 mm past a wall at x = 10,000.
+    const report = check([fixturePlacement(1, { x: 9_600, y: 2_000 })], [ROOM]);
+    const result = report.results[0];
+
+    expect(result?.level).toBe('RED');
+    expect(result?.measured).toBe(500);
+    expect(result?.reason).toContain('500 mm beyond');
+  });
+
+  it('flags a machine that is in no room at all', () => {
+    // An engineer who has drawn the rooms and left a machine in the corridor needs
+    // to see that, not a silent pass.
+    const report = check([fixturePlacement(1, { x: 40_000, y: 40_000 })], [ROOM]);
+
+    expect(report.results[0]?.level).toBe('RED');
+    expect(report.results[0]?.reason).toContain('outside every room outline');
+  });
+
+  it('judges a machine against the room it is in, not against every room', () => {
+    // A machine in room A is trivially outside room B. "Inside every room" is not
+    // the question.
+    const roomB = fixtureBoundary(
+      'room-2',
+      'space_outline',
+      { x: 20_000, y: 0 },
+      10_000,
+      8_000,
+      'Treatment area B',
+    );
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM, roomB]);
+
+    expect(report.results).toHaveLength(1);
+    expect(report.results[0]?.level).toBe('GREEN');
+  });
+
+  it('names the room a straddling machine is mostly in', () => {
+    const roomB = fixtureBoundary(
+      'room-2',
+      'space_outline',
+      { x: 10_000, y: 0 },
+      10_000,
+      8_000,
+      'Treatment area B',
+    );
+    // Centre at x = 10,050: just over the party wall, mostly in room B.
+    const report = check([fixturePlacement(1, { x: 9_600, y: 2_000 })], [ROOM, roomB]);
+
+    expect(report.results[0]?.level).toBe('RED');
+    expect(report.results[0]?.reason).toContain('Treatment area B');
+  });
+});
+
+describe('concave rooms', () => {
+  const L_ROOM = fixtureLShapedRoom();
+
+  it('passes a machine in the arm of an L-shaped room', () => {
+    const report = check([fixturePlacement(1, { x: 1_000, y: 6_000 })], [L_ROOM]);
+    expect(report.results[0]?.level).toBe('GREEN');
+  });
+
+  it('fails a machine standing in the notch of an L', () => {
+    // The case the separating axis test gets wrong: this footprint is inside the
+    // room's convex hull and outside the room. SAT would call it a pass, which is a
+    // false GREEN on exactly the geometry an engineer is most likely to get wrong.
+    const report = check([fixturePlacement(1, { x: 8_000, y: 6_000 })], [L_ROOM]);
+
+    expect(report.results[0]?.level).toBe('RED');
+    expect(report.results[0]?.reason).toContain('outside every room outline');
+  });
+
+  it('fails a machine reaching around the inner corner', () => {
+    // Corner of the L is at (6000, 4000). A machine spanning it is partly out.
+    const report = check([fixturePlacement(1, { x: 5_600, y: 3_800 })], [L_ROOM]);
+    expect(report.results[0]?.level).toBe('RED');
+  });
+});
+
+describe('obstructions', () => {
+  const COLUMN = fixtureBoundary(
+    'column-1',
+    'obstruction',
+    { x: 4_000, y: 4_000 },
+    600,
+    600,
+    'Column C4',
+  );
+
+  it('passes a machine clear of the column', () => {
+    const report = check([fixturePlacement(1, { x: 1_000, y: 1_000 })], [ROOM, COLUMN]);
+
+    expect(report.results).toHaveLength(1);
+    expect(report.results[0]?.level).toBe('GREEN');
+    expect(report.results[0]?.reason).toContain('clears every obstruction');
+  });
+
+  it('flags a machine standing on the column, and says how far into it', () => {
+    // Machine spans x 3,800 → 4,700, y 4,000 → 4,750. The column spans 4,000 → 4,600
+    // both ways. No *machine* corner lands inside the column — the column's corners
+    // land inside the machine, which is why the depth is measured both ways.
+    const report = check([fixturePlacement(1, { x: 3_800, y: 4_000 })], [ROOM, COLUMN]);
+    const result = report.results.find((entry) => entry.reason.includes('Column C4'));
+
+    expect(result?.level).toBe('RED');
+    // Deepest is the column's (4000, 4600) corner: 150 mm from the machine's near
+    // long edge at y = 4,750.
+    expect(result?.measured).toBe(150);
+    expect(result?.reason).toContain('overlaps Column C4 by 150 mm');
+  });
+
+  it('detects a machine that entirely covers a small obstruction', () => {
+    // No edge crossing at all — a pure containment case an intersection-only test
+    // would report as clear.
+    const riser = fixtureBoundary('riser', 'obstruction', { x: 2_100, y: 2_100 }, 200, 200, 'Riser');
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM, riser]);
+
+    expect(report.results.some((entry) => entry.level === 'RED')).toBe(true);
+  });
+
+  it('reports no depth when no corner lands inside a thin partition', () => {
+    // A machine spanning a 100 mm partition crosses its edges without any corner in
+    // it. There is a real overlap and no well-defined depth; reporting zero would
+    // read as "just touching".
+    const partition = fixtureBoundary(
+      'partition',
+      'wall',
+      { x: 2_400, y: 0 },
+      100,
+      8_000,
+      'Partition',
+    );
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM, partition]);
+    const result = report.results.find((entry) => entry.reason.includes('Partition'));
+
+    expect(result?.level).toBe('RED');
+    expect(result?.measured).toBeNull();
+  });
+
+  it('checks obstructions even when no room has been drawn', () => {
+    const report = check([fixturePlacement(1, { x: 1_000, y: 1_000 })], [COLUMN]);
+    expect(report.results[0]?.level).toBe('GREEN');
+    expect(report.results[0]?.reason).toContain('clears every obstruction');
+  });
+});
+
+describe('nothing to check', () => {
+  it('says so rather than producing no result', () => {
+    // A rule that silently produced nothing would be indistinguishable from a rule
+    // everything passes.
+    const report = check([fixturePlacement(1, { x: 0, y: 0 })], []);
+
+    expect(report.results).toHaveLength(1);
+    expect(report.results[0]?.level).toBe('YELLOW');
+    expect(report.results[0]?.reason).toContain('nothing was checked');
+  });
+});
+
+describe('draft policy', () => {
+  it('cannot reach GREEN on a draft machine', () => {
+    // AD-6a: a placeholder must never sign anything off.
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM], { draft: true });
+
+    expect(report.results[0]?.level).toBe('YELLOW');
+    expect(report.results[0]?.dataStatus).toBe('draft');
+  });
+
+  it('still reports a violation as RED on draft data', () => {
+    // A breach is never softened for being provisional — that would make poor data
+    // hide problems.
+    const report = check([fixturePlacement(1, { x: 9_600, y: 2_000 })], [ROOM], { draft: true });
+    expect(report.results[0]?.level).toBe('RED');
+  });
+});
+
+describe('the calibration gate', () => {
+  it('downgrades a pass on an uncalibrated plan', () => {
+    // Nothing about the building has been checked; the outline is pixels somebody
+    // eyeballed.
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM], {
+      calibrated: false,
+    });
+
+    expect(report.results[0]?.level).toBe('YELLOW');
+    expect(report.results[0]?.reason).toContain('not calibrated');
+  });
+
+  it('leaves a violation RED on an uncalibrated plan', () => {
+    const report = check([fixturePlacement(1, { x: 40_000, y: 40_000 })], [ROOM], {
+      calibrated: false,
+    });
+    expect(report.results[0]?.level).toBe('RED');
+  });
+
+  it('leaves a calibrated plan alone', () => {
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM]);
+    expect(report.results[0]?.level).toBe('GREEN');
+    expect(report.results[0]?.reason).not.toContain('not calibrated');
+  });
+
+  it('treats "no plan at all" as exact rather than as unchecked', () => {
+    // An engineer laying a room out in millimetres with no drawing behind it has
+    // exact geometry. It is the half-imported plan that is dangerous, because it
+    // looks like a measured drawing.
+    const report = evaluate({
+      placements: [fixturePlacement(1, { x: 2_000, y: 2_000 })],
+      catalog: VERIFIED_CATALOG,
+      ruleSet: BOUNDARY_RULE,
+      spatial: spatial([ROOM], 'none'),
+    });
+    expect(report.results[0]?.level).toBe('GREEN');
+  });
+});
+
+describe('findings volume', () => {
+  it('produces one finding per machine when every machine is clear', () => {
+    const placements = Array.from({ length: 20 }, (_, index) =>
+      fixturePlacement(index, { x: (index % 5) * 1_500 + 200, y: Math.floor(index / 5) * 1_500 + 200 }),
+    );
+    const report = check(placements, [ROOM]);
+
+    expect(report.results).toHaveLength(20);
+    expect(report.counts.GREEN).toBe(20);
+  });
+});

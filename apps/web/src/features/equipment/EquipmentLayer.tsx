@@ -7,7 +7,8 @@ import {
   expandRect,
   visibleWorldRect,
 } from '@mfd/cad-engine';
-import { type Catalog, type Placement, footprintBounds } from '@mfd/object-library';
+import type { Placement } from '@mfd/document-model';
+import { type Catalog, footprintBounds } from '@mfd/object-library';
 
 import { EquipmentShape } from './EquipmentShape';
 

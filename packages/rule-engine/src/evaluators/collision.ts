@@ -1,5 +1,6 @@
+import type { Placement } from '@mfd/document-model';
 import { footprintCorners } from '@mfd/object-library';
-import type { DataStatus, EquipmentObject, Placement } from '@mfd/object-library';
+import type { DataStatus, EquipmentObject } from '@mfd/object-library';
 
 import { type EvaluationResult, decideLevel, weakestStatus } from '../result';
 import { polygonsOverlap } from '../sat';
@@ -57,9 +58,11 @@ export function evaluateCollision(
   subjects: readonly ResolvedPlacement[],
   context: EvaluationContext,
 ): EvaluationResult[] {
+  // `evaluate()` dispatches boundary scope to ./boundary.ts. Reaching here with any
+  // other scope means a schema variant was added without an evaluator, which is
+  // reported rather than ignored: a rule that silently does nothing looks exactly
+  // like a rule that passes.
   if (rule.parameters.scope !== 'equipment') {
-    // Declared in the schema, not yet implemented. Reported rather than ignored:
-    // a rule that silently does nothing looks like a rule that passes.
     return [
       {
         ruleId: rule.ruleId,
@@ -71,7 +74,7 @@ export function evaluateCollision(
         thresholdOrigin: 'none',
         unit: rule.unit,
         dataStatus: 'draft',
-        reason: `collision scope "${rule.parameters.scope}" is not evaluated yet — room boundaries arrive in Sprint 4`,
+        reason: `collision scope "${rule.parameters.scope}" has no evaluator`,
         source: rule.source,
       },
     ];

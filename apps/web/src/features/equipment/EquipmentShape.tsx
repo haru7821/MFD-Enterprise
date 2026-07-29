@@ -1,9 +1,9 @@
 import { Circle, Line, Text } from 'react-konva';
 
 import { type Viewport, worldToScreen, worldToScreenLength } from '@mfd/cad-engine';
+import type { Placement } from '@mfd/document-model';
 import {
   type EquipmentObject,
-  type Placement,
   clearanceZones,
   footprintCorners,
   portPoints,

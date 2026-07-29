@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Vec2 } from '@mfd/cad-engine';
-import type { Placement } from '@mfd/object-library';
+import type { Placement } from '@mfd/document-model';
 
 import {
   fixtureCatalog,

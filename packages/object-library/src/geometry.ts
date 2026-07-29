@@ -1,6 +1,5 @@
-import { type Rect, type Vec2, rect } from '@mfd/cad-engine';
+import { type Rect, type Transform, type Vec2, rect } from '@mfd/cad-engine';
 
-import type { PlacementTransform } from './placement';
 import {
   CLEARANCE_SIDES,
   CONNECTION_KINDS,
@@ -79,7 +78,7 @@ export function localFootprintRect(object: EquipmentObject): Rect {
  * Order is mirror → rotate → translate, so mirroring is about the object's own
  * axis rather than about wherever it happens to sit on the drawing.
  */
-export function localToModel(local: Vec2, transform: PlacementTransform): Vec2 {
+export function localToModel(local: Vec2, transform: Transform): Vec2 {
   const x = transform.mirrored ? -local.x : local.x;
   const radians = (transform.rotation / 1000) * (Math.PI / 180);
   const cos = Math.cos(radians);
@@ -92,7 +91,7 @@ export function localToModel(local: Vec2, transform: PlacementTransform): Vec2 {
 }
 
 /** Inverse of {@link localToModel} — used for hit testing. */
-export function modelToLocal(point: Vec2, transform: PlacementTransform): Vec2 {
+export function modelToLocal(point: Vec2, transform: Transform): Vec2 {
   const dx = point.x - transform.position.x;
   const dy = point.y - transform.position.y;
   const radians = (transform.rotation / 1000) * (Math.PI / 180);
@@ -117,7 +116,7 @@ function rectCorners(r: Rect): Vec2[] {
 /** Footprint corners in model millimetres, in polygon order. */
 export function footprintCorners(
   object: EquipmentObject,
-  transform: PlacementTransform,
+  transform: Transform,
 ): Vec2[] {
   return rectCorners(localFootprintRect(object)).map((corner) =>
     localToModel(corner, transform),
@@ -127,7 +126,7 @@ export function footprintCorners(
 /** Axis-aligned bounds of the footprint in model space. Used for culling. */
 export function footprintBounds(
   object: EquipmentObject,
-  transform: PlacementTransform,
+  transform: Transform,
 ): Rect {
   const corners = footprintCorners(object, transform);
   const xs = corners.map((corner) => corner.x);
@@ -141,7 +140,7 @@ export function footprintBounds(
 /** Is this model-space point inside the footprint? */
 export function footprintContains(
   object: EquipmentObject,
-  transform: PlacementTransform,
+  transform: Transform,
   point: Vec2,
 ): boolean {
   const local = modelToLocal(point, transform);
@@ -171,7 +170,7 @@ export interface ClearanceZone {
  */
 export function clearanceZones(
   object: EquipmentObject,
-  transform: PlacementTransform,
+  transform: Transform,
 ): ClearanceZone[] {
   const footprint = localFootprintRect(object);
   const normals = sideNormals(object);
@@ -223,7 +222,7 @@ export interface PortPoint {
  */
 export function portPoints(
   object: EquipmentObject,
-  transform: PlacementTransform,
+  transform: Transform,
 ): PortPoint[] {
   const points: PortPoint[] = [];
 

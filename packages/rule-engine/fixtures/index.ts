@@ -1,5 +1,6 @@
-import { type Catalog, createCatalog, createPlacement } from '@mfd/object-library';
-import type { Placement } from '@mfd/object-library';
+import type { Boundary, BoundaryKind } from '@mfd/document-model';
+import { type Placement, createPlacement } from '@mfd/document-model';
+import { type Catalog, createCatalog } from '@mfd/object-library';
 import type { Vec2 } from '@mfd/cad-engine';
 
 import { type RuleSet, createRuleSet } from '../src/ruleSet';
@@ -169,6 +170,57 @@ export function fixturePlacement(
     equipmentObjectVersion: '0.1.0',
     transform: { position, rotation, mirrored: false },
     label: `FX ${index}`,
+    spaceId: null,
+  };
+}
+
+/** A rectangular boundary in model millimetres. */
+export function fixtureBoundary(
+  id: string,
+  kind: BoundaryKind,
+  origin: Vec2,
+  width: number,
+  height: number,
+  label = '',
+): Boundary {
+  return {
+    id,
+    kind,
+    vertices: [
+      { x: origin.x, y: origin.y },
+      { x: origin.x + width, y: origin.y },
+      { x: origin.x + width, y: origin.y + height },
+      { x: origin.x, y: origin.y + height },
+    ],
+    label,
+  };
+}
+
+/**
+ * An L-shaped room — the geometry the separating axis test gets wrong.
+ *
+ * ```
+ *  (0,0) ───────────────── (12000,0)
+ *    │                          │
+ *    │                    (12000,4000)
+ *    │        ┌─────────────────┘
+ *    │        │  ← outside the room, inside its convex hull
+ * (0,9000) (6000,9000)
+ * ```
+ */
+export function fixtureLShapedRoom(id = 'room-l', label = 'Treatment area'): Boundary {
+  return {
+    id,
+    kind: 'space_outline',
+    vertices: [
+      { x: 0, y: 0 },
+      { x: 12_000, y: 0 },
+      { x: 12_000, y: 4_000 },
+      { x: 6_000, y: 4_000 },
+      { x: 6_000, y: 9_000 },
+      { x: 0, y: 9_000 },
+    ],
+    label,
   };
 }
 

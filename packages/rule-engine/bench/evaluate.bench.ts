@@ -14,7 +14,8 @@
  * stops being free rather than to claim they are supported.
  */
 
-import { createCatalog, type Catalog, type Placement } from '@mfd/object-library';
+import type { Placement } from '@mfd/document-model';
+import { createCatalog, type Catalog } from '@mfd/object-library';
 
 import { evaluateCollision } from '../src/evaluators/collision';
 import { evaluate } from '../src/evaluate';
@@ -103,6 +104,7 @@ function layout(count: number): Placement[] {
         mirrored: false,
       },
       label: `BX ${index}`,
+      spaceId: null,
     });
   }
 

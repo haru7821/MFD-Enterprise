@@ -1,4 +1,5 @@
-import type { Catalog, EquipmentObject, Placement } from '@mfd/object-library';
+import type { Boundary, Placement } from '@mfd/document-model';
+import type { Catalog, EquipmentObject } from '@mfd/object-library';
 
 import type { EvaluationResult } from '../result';
 import type { Rule } from '../schema';
@@ -31,21 +32,13 @@ export interface Evaluator<TRule extends Rule = Rule> {
 }
 
 /**
- * Boundary collision — declared, not implemented.
+ * Boundary collision — implemented in Sprint 4 by `./boundary.ts`.
  *
- * Walls arrive with `Space` in Sprint 4. The interface exists now so the shape of
- * that work is fixed while the rest of the engine is fresh, and so a rule file
- * written with `scope: "boundary"` has something to bind to rather than being
- * invented later against whatever the evaluator happens to need.
- *
- * @see docs/roadmap/MVP_PLAN.md — Sprint 4, spatial model
+ * The interface was declared in Sprint 3, before the walls existed, so that the shape
+ * of this work was fixed while the rest of the engine was fresh. It bound to the
+ * document model's `Boundary` on arrival without changing: the only edit was
+ * replacing a structural stand-in for the polygon with the real record.
  */
-export interface Boundary {
-  readonly id: string;
-  /** Closed polygon in model millimetres. */
-  readonly polygon: readonly { readonly x: number; readonly y: number }[];
-}
-
 export interface BoundaryEvaluationContext extends EvaluationContext {
   readonly boundaries: readonly Boundary[];
 }

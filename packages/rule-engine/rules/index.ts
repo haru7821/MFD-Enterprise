@@ -2,6 +2,7 @@ import { type RuleSet, createRuleSet } from '../src/ruleSet';
 
 import clearanceRules from '../../../standards/rules/dialysis/equipment_clearance.json';
 import collisionRules from '../../../standards/rules/dialysis/equipment_collision.json';
+import boundaryRules from '../../../standards/rules/dialysis/boundary_collision.json';
 
 /**
  * The shipped dialysis rule set.
@@ -26,11 +27,19 @@ import collisionRules from '../../../standards/rules/dialysis/equipment_collisio
  *
  * Figures used to *test* the evaluators live in `../fixtures/`, deliberately apart
  * from this path.
+ *
+ * ## The boundary rule has no threshold either, and needs none
+ *
+ * "Equipment must be inside the room and not on top of a column" is geometry, not an
+ * engineering figure — the same reason the equipment-overlap rule carries a null
+ * threshold. It stays `status: "draft"` because nothing has confirmed it is how this
+ * customer's reviews are conducted, which keeps it out of GREEN until someone says so.
  */
 export const dialysisRuleSet: RuleSet = createRuleSet(
   [
     { fileName: 'standards/rules/dialysis/equipment_clearance.json', raw: clearanceRules },
     { fileName: 'standards/rules/dialysis/equipment_collision.json', raw: collisionRules },
+    { fileName: 'standards/rules/dialysis/boundary_collision.json', raw: boundaryRules },
   ],
   { id: 'dialysis', version: '0.1.0' },
 );

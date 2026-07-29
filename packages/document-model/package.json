@@ -1,0 +1,30 @@
+{
+  "name": "@mfd/document-model",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The MFD-E project document: Project, Level, Space, Boundary, Placement, CoordinateMapping — plus save, load and the undo command stack. Pure TypeScript.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./fixtures": {
+      "types": "./fixtures/index.ts",
+      "default": "./fixtures/index.ts"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "fixtures"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mfd/cad-engine": "workspace:*",
+    "@mfd/object-library": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

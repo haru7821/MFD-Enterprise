@@ -14,5 +14,4 @@
 export * from './schema';
 export * from './errors';
 export * from './catalog';
-export * from './placement';
 export * from './geometry';

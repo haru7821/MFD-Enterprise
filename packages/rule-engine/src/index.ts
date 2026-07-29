@@ -24,3 +24,4 @@ export * from './evaluate';
 export * from './evaluators/types';
 export { evaluateClearance } from './evaluators/clearance';
 export { evaluateCollision } from './evaluators/collision';
+export { evaluateBoundaryCollision } from './evaluators/boundary';

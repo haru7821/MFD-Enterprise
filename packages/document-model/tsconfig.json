@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM": the document is loaded by the browser editor, by the server that
+       signs a report, and by the test runner. A document model that could only be
+       parsed in a tab would make the server the odd one out. */
+    "lib": ["ES2022"]
+  },
+  "include": ["src", "fixtures"]
+}

@@ -1,4 +1,4 @@
-import type { Placement } from '@mfd/object-library';
+import type { Placement } from '@mfd/document-model';
 import type { EvaluationReport, EvaluationResult } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 

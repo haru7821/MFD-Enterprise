@@ -156,7 +156,10 @@ describe('collision evaluation', () => {
     }
   });
 
-  it('reports boundary scope as not yet evaluated rather than silently passing', () => {
+  it('says a boundary rule checked nothing rather than silently passing', () => {
+    // Sprint 4 implements boundary scope. With no rooms drawn there is still nothing
+    // to check, and saying so is the point: a rule that produced no result would be
+    // indistinguishable from a rule everything passed.
     const report = evaluate({
       placements: [machineAt(1, { x: 0, y: 0 })],
       catalog: fixtureCatalog([fixtureEquipmentRecord()]),
@@ -164,7 +167,7 @@ describe('collision evaluation', () => {
     });
 
     expect(report.results[0]?.level).toBe('YELLOW');
-    expect(report.results[0]?.reason).toContain('Sprint 4');
+    expect(report.results[0]?.reason).toContain('nothing was checked');
   });
 });
 

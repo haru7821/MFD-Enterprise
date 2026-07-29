@@ -2,7 +2,7 @@
   "name": "@mfd/web",
   "version": "0.1.0",
   "private": true,
-  "description": "MFD-E web client — medical layout designer canvas.",
+  "description": "MFD-E web client \u2014 medical layout designer canvas.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mfd/cad-engine": "workspace:*",
+    "@mfd/document-model": "workspace:*",
     "@mfd/object-library": "workspace:*",
     "@mfd/rule-engine": "workspace:*",
     "konva": "^10.3.0",
