@@ -63,18 +63,21 @@ MFD-Enterprise
 ├── CLAUDE.md               long-term vision and engineering principles
 ├── docs/
 │   ├── product/            TS Edition specification — current scope
+│   ├── architecture/       system architecture, tech stack
+│   ├── data-model/         project model, equipment object model
 │   ├── equipment/          equipment object specifications
 │   ├── rules/              rule engine specification
-│   └── roadmap/            sprint plans
+│   ├── roadmap/            sprint plans
+│   └── OPEN_QUESTIONS.md   what we still need from the product owner
 ├── apps/
 │   ├── web/                React + Vite client (the designer)          ← built
 │   ├── api/                NestJS backend                              not in Version 1
-│   └── ai-service/         Python FastAPI AI service                   Version 3
+│   └── ai-service/         Python FastAPI AI service                   Sprint 6
 ├── packages/
 │   ├── cad-engine/         geometry, units, viewport, grid             ← built
-│   ├── object-library/     equipment catalogue                         Sprint 1 · Task 2
-│   ├── rule-engine/        installation requirement evaluation         Sprint 1 · Task 5
-│   └── report-engine/      installation review PDF                     Sprint 4
+│   ├── object-library/     equipment catalogue                         Sprint 2
+│   ├── rule-engine/        installation requirement evaluation         Sprint 3
+│   └── report-engine/      installation review PDF                     Sprint 5
 ├── database/               schema, migrations, seed data
 ├── standards/              rule sets as versioned data
 ├── assets/                 symbols, icons, models
@@ -92,12 +95,14 @@ Read in this order:
 | Document | Read it for |
 | --- | --- |
 | [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md) | **What we are building now** — product definition, user, MVP features |
+| [docs/data-model/PROJECT_MODEL.md](docs/data-model/PROJECT_MODEL.md) | Project · Level · Space · Placement |
+| [docs/data-model/OBJECT_MODEL.md](docs/data-model/OBJECT_MODEL.md) | Equipment object: catalogue record, provenance, draft vs verified |
 | [docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md](docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md) | The first equipment object |
 | [docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md](docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md) | Rule categories, result levels, rule data structure |
-| [docs/roadmap/CLAUDE_SPRINT1_PROMPT.md](docs/roadmap/CLAUDE_SPRINT1_PROMPT.md) | The current sprint instruction |
 | [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
-| [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Versions 1–4 and the risk register |
-| [docs/03_SYSTEM_ARCHITECTURE.md](docs/03_SYSTEM_ARCHITECTURE.md) | Architecture and the decisions behind it |
+| [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |
+| [docs/architecture/SYSTEM_ARCHITECTURE.md](docs/architecture/SYSTEM_ARCHITECTURE.md) | Architecture and the decisions behind it |
+| [docs/architecture/TECH_STACK.md](docs/architecture/TECH_STACK.md) | Versions and the reasoning behind them |
 | [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | **What we still need from the product owner** |
 | [CLAUDE.md](CLAUDE.md) | Long-term direction and engineering principles |
 

@@ -1,64 +1,57 @@
 # Development Roadmap
 
-> Governed by [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).
-> Version numbering follows section 7 of that specification.
-> Estimates assume **1–2 full-time developers**; they are relative sizing, not commitments.
+> Long view. For the executable plan see [MVP_PLAN.md](MVP_PLAN.md).
+> Versions follow section 7 of
+> [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).
 
 ## Ordering principle
 
-> canvas → equipment → rules → floor plan → validation → report → routing → AI → twin
+> canvas → equipment → rules → floor plan → report → AI → routing → twin
 
 Validation comes before AI, and equipment before validation. A tool that judges a layout
 before it can describe one has nothing to judge; an AI that proposes layouts before a
-validator exists produces confident, unverifiable output. In a workflow whose product is
-an installation feasibility report, that is the worst possible failure.
+validator exists produces confident, unverifiable output. For a product whose deliverable
+is an installation feasibility report, that is the worst available failure.
 
 ---
 
-## Version 1 — MVP: Installation Feasibility Review
+## Sprint sequence
 
-Delivers sections 5.1–5.5 of the TS Edition specification. Sprint detail in
-[MVP_PLAN.md](MVP_PLAN.md).
-
-| Sprint | Delivers | Spec section |
+| Sprint | Name | Delivers |
 | --- | --- | --- |
-| **1** | Project structure · canvas · equipment data system · object renderer · rule engine foundation | 5.2, 5.3 |
-| **2** | Floor plan import (PDF/PNG/JPG) and scale setting | 5.1 |
-| **3** | Engineering validation — clearance, collision, connection, maintenance access | 5.4 |
-| **4** | Report generator — installation review PDF | 5.5 |
+| 1 | Foundation | Monorepo, geometry core, canvas, zoom/pan/grid — ✅ v0.1 Alpha |
+| 1.5 | Architecture stabilisation | Documentation structure, data model, CI — ✅ |
+| 2 | Equipment Object System | Equipment catalogue, object renderer, placement |
+| 3 | Rule Engine | Installation requirement validation, GREEN/YELLOW/RED |
+| 4 | PDF Workflow | Floor plan import, scale calibration, save/load |
+| 5 | Report Generation | Installation review PDF |
+| 6 | AI Assistant | Intent interpretation and explanation |
 
-**Done when:** a Vantive TS engineer opens a hospital's PDF floor plan, sets its scale,
-places AK98 units, sees which installation requirements pass or fail **with the manual
-section each requirement comes from**, and exports a report they would send to the
-customer.
+Sprints 1–5 deliver **Version 1**, the MVP defined by specification sections 5.1–5.5.
 
-**Current position:** Sprint 1 is in progress — Tasks 1 and 3 shipped as v0.1 Alpha,
-Tasks 2, 4 and 5 remain.
+## Version map
 
-**Blocked by:** real AK98 dimensions and clearance figures with their manual revision.
-The engine can be built without them; it cannot be seeded with anything true.
+| Version | Content | Sprints |
+| --- | --- | --- |
+| **1** | Installation feasibility review: import → place → validate → report | 1–5 |
+| **2** | RO routing, electrical routing, automatic layout | not yet scheduled |
+| **3** | AI design assistant, BIM | 6 (assistant); BIM unscheduled |
+| **4** | Digital twin | unscheduled |
 
-## Version 2 — Routing and Automatic Layout
+**Sequencing note.** The sprint list reaches the Version 3 AI assistant at Sprint 6, ahead
+of the Version 2 routing work. That is the product owner's ordering, and it is defensible:
+the assistant explains results the Sprint 3 validator already produces, whereas routing
+needs a service-network model that does not exist yet. Version 2's routing and automatic
+layout are not cancelled — they are unscheduled, and will slot in once the routing model
+is specified.
 
-RO water routing, electrical routing, automatic layout generation. `routing-engine` and
-`layout-engine` begin here.
+**Version 1 done when:** a Vantive TS engineer opens a hospital's PDF floor plan, sets its
+scale, places AK98 units, sees which installation requirements pass or fail with the manual
+section each result comes from, and exports a report they would send to the customer.
 
-Automatic layout is a constraint solver operating under the Version 1 rule engine, not a
-generative model. The rules it satisfies must already be real.
-
-## Version 3 — AI Design Assistant and BIM
-
-The AI assistant interprets intent, explains why a layout was chosen, and drafts
-documentation. BIM object support and IFC references (reserved in the AK98 object spec)
-land here.
-
-**Blocked by:** whether project data may leave the hospital network — see
-[OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-1. If it may not, the AI service must run
-self-hosted, which changes its architecture rather than its schedule.
-
-## Version 4 — Digital Twin
-
-Three.js visualisation, as-built model sync, equipment lifecycle and telemetry.
+**Version 1 blocked by:** real AK98 dimensions and clearance figures with their manual
+revision. The engine can be built without them; it cannot be seeded with anything true.
+See [OPEN_QUESTIONS](../OPEN_QUESTIONS.md).
 
 ---
 
@@ -66,9 +59,10 @@ Three.js visualisation, as-built model sync, equipment lifecycle and telemetry.
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Real AK98 data never arrives | Fatal — the product becomes invented numbers wearing a citation field | Equipment and rule records carry `dataStatus`. Draft data can never produce a GREEN result, so an unverified figure cannot silently pass an installation. |
-| Rule schema too narrow for the second machine | Rewrite in Version 2 | Test the schema against a second manufacturer's manual *on paper* during Sprint 3, before freezing it. |
-| PDF import complexity underestimated | Sprint 2 overruns | Scope Sprint 2 to raster underlay plus two-point scale calibration. Vector PDF parsing and DXF are explicitly Version 2. |
-| Konva performance at 50 objects | Spec section 6 unmet | Measure at the end of Sprint 1, when real objects first exist. |
-| Scope creep toward general CAD | Never ships | The specification is explicit: this is not a replacement for CAD. Every drawing feature must be justified by a TS engineer's feasibility check. |
-| Vision document drives current work | Wrong priorities | CLAUDE.md now states that the TS Edition specification governs Phase 1. |
+| Real AK98 data never arrives | Fatal — the product becomes invented numbers wearing a citation field | Records carry `dataStatus`. Draft data can never produce GREEN, so an unverified figure cannot silently pass an installation. |
+| Rule schema too narrow for the second machine | Rewrite during Version 2 | Test the schema against a second manufacturer's manual *on paper* during Sprint 3, before freezing it. |
+| PDF import complexity underestimated | Sprint 4 overruns | Scope to raster underlay plus two-point calibration. Vector extraction and DXF stay in the specification's Future list. |
+| Konva performance at 50 objects | Specification section 6 unmet | Measure at the end of Sprint 2, when real objects first exist. |
+| Scope creep toward general CAD | Never ships | The specification is explicit: this does not replace CAD. Every drawing feature must be justified by a TS engineer's feasibility check. |
+| AI expectations outrun the validator | Untrustworthy output | AD-10: the validator decides, the assistant explains. Sprint 6 follows Sprint 3 for this reason. |
+| Vision document drives current work | Wrong priorities | CLAUDE.md states that the TS Edition specification governs Phase 1. |

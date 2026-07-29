@@ -1,3 +1,19 @@
+> **Note added in Sprint 1.5 — task-to-sprint mapping.**
+> Sprint numbering was fixed in Sprint 1.5 and the five tasks below now span three
+> sprints. The instruction text is preserved unchanged; only this note was added.
+>
+> | Task below | Sprint | Status |
+> | --- | --- | --- |
+> | 1 — Project structure | Sprint 1 Foundation | ✅ complete |
+> | 3 — Canvas foundation | Sprint 1 Foundation | ✅ complete |
+> | 2 — Equipment data system | Sprint 2 Equipment Object System | ☐ |
+> | 4 — Object renderer | Sprint 2 Equipment Object System | ☐ |
+> | 5 — Rule engine foundation | Sprint 3 Rule Engine | ☐ |
+>
+> Current plan of record: [MVP_PLAN.md](MVP_PLAN.md).
+
+---
+
 # Claude Code Sprint 1 Instruction
 
 

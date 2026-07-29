@@ -1,159 +1,113 @@
-# Open Questions / Missing Information
+# Open Questions
 
-> Everything the architecture depends on that CLAUDE.md does not yet specify.
-> Ordered by how much damage a wrong assumption causes.
+> What the project still needs from the product owner, and what has been settled.
+> Restructured in Sprint 1.5 — resolved items moved to section D so the open ones are
+> visible.
 
-## Status after the TS Edition document package
+---
 
-The TS Edition spec package resolves the product questions. What remains open is almost
-entirely **data**: the real numbers, and where they are published.
+## A. Blocking — Sprint 3 cannot be seeded without these
 
-| # | Was | Now |
-| --- | --- | --- |
-| A-1 | Which code basis governs? | **Reframed.** The authority is the **manufacturer installation manual**, not a national building code. Still need the actual manual, with its revision. |
-| A-2 | Import a plan, or draw from scratch? | **Answered — import.** PDF / PNG / JPG floor plan import is an MVP feature, with a scale-setting step. This is the largest scope change; see below. |
-| A-3 | Real clearance values | **Still open.** The rule example (`AK98_FRONT_CLEARANCE`, 1200 mm) is illustrative. Need the manual's actual front / rear / left / right figures. |
-| A-4 | Equipment catalogue source | **Partly answered.** First object is the Vantive AK98. The 900 × 750 mm in the object spec is marked "Example" — real width, depth, height and weight are still needed. |
-| A-5 | Who is the primary user? | **Answered.** Vantive TS engineer, evaluating installation feasibility. |
-| A-6 | Accepted deliverable format | **Answered for the MVP.** A PDF installation review report. DXF moves out of Phase 1. |
-| A-7 | Deployment and tenancy | **Still open.** |
-| A-8 | UI language | **Still open.** |
-| B-3 | Optimisation objective | Deferred — no automatic layout until Version 2. |
+### A-1. The AK98 installation data package ← **the one that matters**
 
-**What A-2 costs.** Importing a PDF or image plan means the drawing arrives with no known
-scale, so the MVP needs a calibration step: the user picks two points on the imported plan
-and types the real distance between them, and everything after that is measured in true
-millimetres. That step is small to build but must exist before any clearance check on an
-imported plan means anything. It also means Sprint 2 carries a raster underlay layer and a
-PDF page renderer, which the earlier "draw from scratch" plan did not.
+This is the single blocker for the product's purpose. Everything else on this page can
+wait.
 
-**The remaining risk is unchanged and is now sharper.** Section 6 of the TS Edition spec
-requires that every rule carry source information. A rule whose source reads only
-"Manufacturer Manual" does not meet that bar — it needs the manual identifier, revision,
-and the section the number comes from. Until those arrive, the rule engine can be built
-but cannot be seeded with anything true.
+The rule engine can be *built* without it. It cannot be *seeded* with anything true, and a
+seeded-with-guesses rule engine is worse than none: it produces a confident feasibility
+report a TS engineer might sign.
 
-## A. Blocking — cannot start Phase 1 without an answer
+**Needed, from the manufacturer installation manual:**
 
-### A-1. Which code basis governs? (highest impact)
+| Item | Why |
+| --- | --- |
+| Manual document number and **revision** | A clearance is true "for the AK98 at revision X". Without the revision we cannot say what a report was based on, or what a future revision invalidates. |
+| Section reference for each figure | Specification section 6 requires source information per rule. "Manufacturer Manual" alone does not meet that bar. |
+| Width · Depth · Height · Weight | The 900 × 750 mm currently in the object specification is marked "Example" — a placeholder, not a measurement. |
+| Front · Rear · Left · Right service clearance | The 1200 mm in the rule specification is likewise illustrative. |
+| Power specification | Voltage, phase, rating |
+| RO water specification | Supply pressure, flow, connection type |
+| Drain specification | Diameter, connection type, height |
 
-CLAUDE.md says standards live in `/standards/rules` but never names a standard.
-Candidates: 의료법 시행규칙 (Korea), 인공신장실 운영 관련 기준/학회 권고,
-AAMI/ANSI (water treatment for dialysis), FGI Guidelines (US), a specific hospital's
-internal standard.
+**Until this arrives:** the AK98 catalogue record ships as `dataStatus: "draft"`, and the
+engine caps any result derived from it at YELLOW. GREEN becomes reachable the moment the
+real figures land — flipping one field, no code change. See
+[OBJECT_MODEL.md](data-model/OBJECT_MODEL.md).
 
-Without the actual source documents, any `equipment_clearance.json` we write is invented
-numbers wearing a citation field — which is exactly the failure mode the platform exists
-to prevent.
+---
 
-**Needed:** the governing document(s), edition/year, and jurisdiction.
+## B. Needed before their sprint, not before now
 
-### A-2. Does the user import an existing floor plan, or draw from scratch?
+### B-1. Deployment and data location — before any backend work
 
-The MVP list says "2D Canvas" but not what is on it. These are different products:
+Cloud SaaS, on-prem at each hospital, or a purely local desktop tool?
 
-- **(a) Underlay import** — user loads DWG/DXF/PDF architectural plan, traces or
-  auto-detects spaces, places equipment on it. Requires a DWG/DXF parser or PDF raster
-  underlay. Large scope.
-- **(b) Draw from scratch** — user draws walls and spaces in MFD-E. Requires a wall/space
-  drawing tool. Medium scope.
-- **(c) Bay-level only** — no building; user configures a dialysis unit layout on a blank
-  rectangular boundary they type dimensions for. Small scope, ships fastest.
+Less urgent than it was: the MVP feature list (specification 5.1–5.5) needs no server, so
+Version 1 can ship without `apps/api` at all. The question returns when project sharing or
+a central equipment catalogue becomes a requirement.
 
-**Recommendation:** (c) for Phase 1, (b) in Phase 2, (a) in Phase 3.
-**This single answer moves the MVP date by weeks.**
+### B-2. UI language — cheap now, expensive later
 
-### A-3. Real clearance values with citations, for dialysis specifically
+Korean only, English only, or both from the start? The expensive part is not the interface
+but the **generated report** and the rule citation text. Retrofitting a second language
+into a document generator is painful; designing for it costs almost nothing today.
 
-Required before the rule engine can be seeded: station/bay footprint, spacing between
-stations, aisle and circulation width, stretcher and wheelchair access, distance to
-handwash stations, isolation station count or ratio, water treatment room requirements
-and its distance to the treatment floor, staff station sightlines.
+Currently assumed: English documentation, interface language undecided.
 
-**Needed:** a table of value + unit + source clause. If you have a reference project or a
-past design that passed inspection, that is the fastest input.
+### B-3. Liability posture — before the first report leaves the building
 
-### A-4. Equipment catalogue source
+If MFD-E reports an installation as feasible and the site disagrees, what is the product's
+stated position?
 
-Real dialysis machine models and dimensions (e.g. Fresenius, Nikkiso, JMS, Baxter),
-treatment chairs/beds, RO units, and their **manufacturer-specified service clearances**
-(which often exceed code clearance).
+**Recommendation:** the report states that it is an engineering aid requiring a qualified
+engineer's review, and every finding is traceable to a manual section. That traceability is
+already designed in; the wording needs an owner decision.
 
-**Needed:** which machines to support first, and whether we may use manufacturer spec
-sheets as the data source.
+### B-4. AI assistant scope and data residency — before Sprint 6
 
-### A-5. Who is the primary user?
+- May project data (floor plans, hospital names, equipment lists) leave the hospital
+  network? If not, the assistant must run self-hosted, which changes its architecture.
+- Does "AI assistant" mean generating layouts, or interpreting and explaining the
+  validator's results? AD-10 recommends the latter.
 
-Hospital facility engineer / architect / medical equipment vendor / design consultant /
-hospital administrator. This determines vocabulary, default views, and what "done" looks
-like for an output document. A vendor wants an equipment schedule; an architect wants a
-drawing that drops into their CAD set.
+### B-5. Optimisation objective — before automatic layout
 
-### A-6. What is the accepted deliverable format?
+When several layouts satisfy every rule, what makes one better? Station count, staff
+walking distance, service run length, construction cost? An optimiser cannot be built
+without a ranked objective. Automatic layout is currently unscheduled.
 
-PDF is on the MVP list. But if the output must enter an architect's drawing set, **DXF
-export is the real requirement** and PDF is a preview. Confirm whether PDF alone is
-sufficient for Phase 1.
+### B-6. Digital twin scope — Version 4
 
-### A-7. Deployment and tenancy
+Data sources (BMS, equipment telemetry, RTLS, maintenance system) and protocols. Is the
+twin as-built documentation, live monitoring, or simulation? Those are three different
+products.
 
-Cloud SaaS (multi-tenant), on-prem single hospital, or desktop-only offline? This decides
-the `apps/api` auth model, whether Electron is Phase 1 or Phase 3, and where data lives.
+---
 
-### A-8. UI language
+## C. Assumptions in force
 
-CLAUDE.md is English; the existing repository docs are Korean. Decide: Korean-only,
-English-only, or i18n from day 1. Reports and rule citation text are the expensive part —
-retrofitting i18n into generated documents is painful.
-
-## B. Needed before Phase 2 (AI)
-
-### B-1. LLM provider, model, and data residency
-
-Can project data (floor plans, hospital names, equipment lists) leave the hospital
-network? If not, the AI service must run a self-hosted model, and the architecture in
-AD-10 changes. This is a compliance question, not a technical preference.
-
-### B-2. What "AI designs the layout" means concretely
-
-Full generative layout from a prompt, or constraint-solver optimisation with an LLM
-front-end? Recommendation in AD-10 is the latter. Confirm the expectation, because it
-changes what Phase 2 delivers.
-
-### B-3. Optimisation objective
-
-When multiple layouts satisfy all rules, what makes one better? Station count
-maximisation, staff walking distance, sightlines, plumbing run length, daylight,
-construction cost. Needs a ranked objective list to build an optimiser at all.
-
-## C. Needed before Phase 4 (Digital Twin)
-
-- Data sources: BMS, equipment telemetry, RTLS, maintenance system. Which protocols
-  (BACnet, Modbus, MQTT, HL7/FHIR for the clinical side)?
-- Is the twin as-built documentation, live monitoring, or simulation? Three different systems.
-
-## D. Product and liability posture
-
-### D-1. What does "validated" mean legally?
-
-If MFD-E reports a design as compliant and an inspection disagrees, what is the platform's
-stated position? Recommendation: outputs are engineering aids requiring a qualified
-professional's review, stated in the report itself, with every finding traceable to a
-clause. Needs an explicit decision before any report leaves the building.
-
-### D-2. Team size and timeline expectation
-
-The roadmap currently assumes **1–2 full-time developers**. Confirm, so estimates mean
-something.
-
-## E. Answered by assumption (proceeding unless corrected)
-
-These are not blocking; recorded so the assumption is visible:
+Not blocking; recorded so they are visible and can be corrected.
 
 | # | Assumption |
 | --- | --- |
-| E-1 | Metric units, millimetres, throughout. |
-| E-2 | Single-user editing per project in Phase 1; no real-time collaboration. |
-| E-3 | Web-first; Electron deferred (see AD-4 flagged decisions). |
-| E-4 | Documentation is written in English to match CLAUDE.md, pending A-8. |
-| E-5 | Rule sets are versioned in git under `standards/`, mirrored into PostgreSQL. |
+| C-1 | Metric units, millimetres, throughout. |
+| C-2 | Single user per project; no real-time collaboration in Version 1. |
+| C-3 | Web application. Electron is not in the TS Edition specification. |
+| C-4 | Repository documentation is written in English (see B-2). |
+| C-5 | Equipment catalogues and rule sets are versioned in git and loaded at runtime. |
+| C-6 | Imported floor plans are used as a raster underlay the engineer works on top of, not parsed for geometry. |
+| C-7 | Estimates assume 1–2 full-time developers. |
+
+---
+
+## D. Resolved
+
+| Question | Answer | Settled |
+| --- | --- | --- |
+| Which product are we building? | MFD-E TS Edition is Phase 1; CLAUDE.md is the long-term vision and does not govern current scope. | Sprint 1.5 |
+| Who is the primary user? | Vantive TS engineer, evaluating dialysis installation feasibility. | TS Edition spec §2 |
+| Import a plan, or draw from scratch? | **Import** — PDF, PNG, JPG, with a scale-setting step. Sprint 4. | TS Edition spec §5.1 |
+| What is the authority for engineering values? | The **manufacturer installation manual**, not a national building code. | TS Edition spec §6 |
+| Accepted deliverable? | A PDF installation review report. DXF and DWG are in the specification's Future list. | TS Edition spec §5.5 |
+| Sprint numbering | Foundation · Equipment Object System · Rule Engine · PDF Workflow · Report Generation · AI Assistant | Sprint 1.5 |
+| Does Version 1 need a backend? | No. Sections 5.1–5.5 require no server; catalogues and rule sets are files. | Sprint 1.5 |

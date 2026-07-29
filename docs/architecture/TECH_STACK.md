@@ -59,5 +59,6 @@ now is the same reasoning as fixing the millimetre coordinate system now.
 
 ## Related
 
-- [CLAUDE.md](../CLAUDE.md)
-- [03_SYSTEM_ARCHITECTURE.md](03_SYSTEM_ARCHITECTURE.md)
+- [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md)
+- [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md)
+- [CLAUDE.md](../../CLAUDE.md)

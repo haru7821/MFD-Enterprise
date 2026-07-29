@@ -2,7 +2,7 @@
 
 > Architecture for MFD-E. Status: proposal, partially implemented as of v0.1 Alpha.
 >
-> **Scope authority:** [MFD-E_TS_EDITION_SPEC.md](product/MFD-E_TS_EDITION_SPEC.md) defines
+> **Scope authority:** [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md) defines
 > what is built now. CLAUDE.md supplies the engineering principles and the long-term
 > direction. Where they differ, the TS Edition specification governs.
 
@@ -159,24 +159,33 @@ engine, not by whoever remembers.
 
 ### AD-7. Domain model
 
-Follows the TS Edition workflow: import drawing → define room → place equipment →
-validate → report.
+Follows the TS Edition workflow: import drawing → define space → place equipment →
+validate → report. Defined in full in
+[PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md) and
+[OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md).
 
 ```
-Project ─ FloorPlan (imported image, scale calibration, page)
-        └─ Room (boundary polygon, function tag, name)
-             └─ Placement (equipment_id, transform, parameters)
+Project ─ Level (floor: imported plan image + scale calibration)
+        └─ Space (boundary polygon, function tag, name)
+             └─ Placement (equipment_object_id, transform, parameters)
                   └─ Port (power · RO water · drain)
-        └─ Connection (routing path between ports)   [Version 2]
+        └─ Connection (routing path between ports)   [Sprint 7+]
 ```
 
-`FloorPlan.scale` is the calibration produced in Sprint 2 — the factor that turns imported
-image pixels into millimetres. Until it is set, no measurement taken against that plan
-means anything, so it is part of the document rather than a view setting.
+`Level.scale` is the calibration produced in Sprint 4 — the factor that turns imported
+plan pixels into millimetres. Until it is set, no measurement taken against that plan
+means anything, so it belongs to the document rather than to the view.
 
-`Room.function` (hemodialysis treatment area, water treatment room, clean utility, soiled
-utility, isolation…) is the selector most rules scope on, so the room taxonomy is a
+`Space.function` (hemodialysis treatment area, water treatment room, clean utility, soiled
+utility, isolation…) is the selector most rules scope on, so the space taxonomy is a
 controlled vocabulary, not free text.
+
+**Type and instance are separate.** An *Equipment Object* is the catalogue definition
+(the AK98 as a model — its dimensions, clearances and provenance). A *Placement* is one
+machine on one drawing, referencing that object. Twenty AK98 units share one set of
+dimensions, so a manual revision updates all twenty at once. Copying the dimensions into
+each placement would let the data drift apart, and drifted equipment data is
+indistinguishable from correct equipment data until someone measures a room.
 
 ### AD-8. Document schema is versioned with migrations from v1
 
@@ -226,7 +235,9 @@ and `noImplicitOverride` — settings that are painful to enable later and cheap
 
 ## 6. Related
 
-- [CLAUDE.md](../CLAUDE.md) — governing instruction
-- [DEVELOPMENT_ROADMAP.md](roadmap/DEVELOPMENT_ROADMAP.md)
-- [MVP_PLAN.md](roadmap/MVP_PLAN.md)
-- [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) — blocking unknowns
+- [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md) — current scope authority
+- [PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md) · [OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md)
+- [DEVELOPMENT_ROADMAP.md](../roadmap/DEVELOPMENT_ROADMAP.md) · [MVP_PLAN.md](../roadmap/MVP_PLAN.md)
+- [OPEN_QUESTIONS.md](../OPEN_QUESTIONS.md) — blocking unknowns
+- [TECH_STACK.md](TECH_STACK.md)
+- [CLAUDE.md](../../CLAUDE.md) — long-term vision and engineering principles

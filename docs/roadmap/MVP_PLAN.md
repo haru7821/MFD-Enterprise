@@ -1,99 +1,149 @@
-# MVP Plan — MFD-E TS Edition Version 1
+# Sprint Plan — MFD-E TS Edition
 
-> Governed by [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).
-> Sprint 1 tasks are those defined in [CLAUDE_SPRINT1_PROMPT.md](CLAUDE_SPRINT1_PROMPT.md).
+> Plan of record. Governed by
+> [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).
+> Sprint numbering fixed in Sprint 1.5.
 
-## Definition of done for the MVP
+| Sprint | Name | Spec section | Status |
+| --- | --- | --- | --- |
+| 1 | Foundation | 5.2 | ✅ **Complete** — v0.1 Alpha |
+| 1.5 | Architecture stabilisation | — | ✅ Complete |
+| 2 | Equipment Object System | 5.3 | ◀ **Next** |
+| 3 | Rule Engine | 5.4 | ☐ |
+| 4 | PDF Workflow | 5.1 | ☐ |
+| 5 | Report Generation | 5.5 | ☐ |
+| 6 | AI Assistant | §7 Version 3 | ☐ |
 
-A Vantive TS engineer can:
+## Definition of done for the MVP (Sprints 1–5)
 
-1. Import a hospital's floor plan (PDF, PNG or JPG) and set its scale.
-2. Define the dialysis room on it.
-3. Place AK98 units at true dimensions from an equipment catalogue.
-4. See which installation requirements pass, need review, or fail — **and read the manual
-   section each result comes from**.
-5. Export a PDF installation review report.
+A Vantive TS engineer can import a hospital's floor plan, set its scale, place AK98 units
+at true dimensions, see which installation requirements pass, need review or fail — **with
+the manual section each result comes from** — and export a PDF installation review report.
 
-Point 4 is the product. Everything else is delivery mechanism.
+Sprint 3 is the product. The rest is delivery mechanism.
 
 ---
 
-## Sprint 1 — Foundation
+## Sprint 1 — Foundation ✅
 
-Tasks as written in `CLAUDE_SPRINT1_PROMPT.md`.
+Delivered as v0.1 Alpha.
 
-| Task | Deliverable | Status |
-| --- | --- | --- |
-| 1 | Project structure: `apps/web`, `packages/object-library`, `packages/rule-engine`, `packages/report-engine` | ✅ shipped in v0.1 Alpha — the three packages still need real manifests |
-| 2 | Equipment data system: JSON equipment database, first object Vantive AK98 | ☐ |
-| 3 | Canvas foundation: canvas, zoom, pan, grid | ✅ shipped in v0.1 Alpha |
-| 4 | Object renderer: load equipment JSON, display equipment, show dimensions | ☐ |
-| 5 | Rule engine foundation: rule loading system only, no fixed values | ☐ |
+| Delivered | |
+| --- | --- |
+| Monorepo, TypeScript strict, Vitest, ESLint with an enforced package boundary | ✅ |
+| `packages/cad-engine` — millimetre units, Vec2, Rect, viewport, adaptive grid | ✅ |
+| Canvas with zoom, pan and a real millimetre grid | ✅ |
+| Toolbar, status bar, scale bar | ✅ |
 
-**Acceptance criteria for the remaining tasks**
+23 unit tests; typecheck, lint and build clean.
 
-- A malformed equipment JSON file is rejected with an error naming the file and the field.
-- An AK98 placed on the canvas measures its catalogue width and depth at any zoom level.
-- Connection points (power, RO water, drain) and the service clearance area are visible.
-- Changing a value in the equipment JSON changes what is drawn, with no code change.
-- A rule record missing its source information is rejected at load time.
-- Data marked `draft` can never produce a GREEN result.
+## Sprint 2 — Equipment Object System ◀ Next
 
-**Out of scope for Sprint 1:** floor plan import, clearance evaluation logic, collision
-detection, report generation, AI, BIM, 3D.
+Spec 5.3. Implements
+[OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md) and the Placement part of
+[PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md).
 
-## Sprint 2 — Floor Plan Import and Scale Setting
+| Deliverable | Where |
+| --- | --- |
+| Equipment object schema and catalogue loader | `packages/object-library` |
+| JSON equipment database, first record: Vantive AK98 | `packages/object-library/catalog/` |
+| Object renderer — footprint, service clearance area, connection ports | `apps/web` |
+| Dimension display | `apps/web` |
+| Equipment palette, click-to-place, drag-to-move | `apps/web` |
+| Undo / redo command stack | `apps/web` |
 
-Spec section 5.1 and the "Scale Setting" item of 5.2.
+**Acceptance criteria**
 
-Raster underlay import for PDF, PNG and JPG; two-point scale calibration where the user
-picks two points on the imported plan and enters the real distance between them; the plan
-as a locked background layer beneath the design.
+- A malformed catalogue file is rejected with an error naming the file and the field.
+- An AK98 placed on the canvas measures its catalogue width and depth at any zoom.
+- Changing a value in the catalogue JSON changes what is drawn, with no code change.
+- A record marked `verified` without document, revision and section fails to load.
+- Draft data is visibly marked wherever it appears.
+- 50 placed objects hold interactive frame rate (spec section 6).
 
-**Done when:** a hospital PDF is imported, calibrated, and a 900 mm machine placed on it
-measures 900 mm against the drawing's own dimension lines.
+**Not blocked** by the missing AK98 measurements: the record ships as `draft`, and the real
+figures replace placeholders without touching code.
 
-Without this step, every clearance check on an imported plan is measuring screen distance
-rather than real distance — which is why calibration is a Sprint 2 requirement and not a
-later refinement.
+## Sprint 3 — Rule Engine
 
-Also lands here: the document model (`Project → Floor Plan → Room → Placement`) with a
-schema version from v1, and undo/redo.
+Spec 5.4. Where the product earns its purpose.
 
-## Sprint 3 — Engineering Validation
+| Deliverable | |
+| --- | --- |
+| Rule record schema, rule set loader from `standards/rules/` | `packages/rule-engine` |
+| Predicate evaluators: clearance, equipment collision, wall collision | |
+| Connection availability and maintenance access checks | |
+| GREEN / YELLOW / RED result model carrying the rule and its source | |
+| Live violation overlay on the canvas, violation list panel | `apps/web` |
+| `Space` and the space function vocabulary | |
 
-Spec section 5.4. Clearance evaluation, equipment collision, wall collision, connection
-availability, maintenance access path. Results as GREEN / YELLOW / RED per
-[DIALYSIS_RULE_ENGINE_v0.1.md](../rules/DIALYSIS_RULE_ENGINE_v0.1.md), each carrying the
-rule that produced it and that rule's source.
+**Acceptance criteria**
 
-**Done when:** moving an AK98 too close to a wall raises a RED result naming the manual
-section it violates, and editing the rule JSON changes the outcome with no code change.
+- Moving an AK98 too close to a wall raises a RED result naming the manual section it
+  violates.
+- Editing the rule JSON changes the outcome with no code change.
+- **A result derived from draft data is never GREEN.**
 
-**Blocked by:** the real clearance figures and their manual revision.
+**Blocked by:** the real clearance figures and the manual revision they come from. The
+engine can be built and tested against fixtures; it cannot be seeded with anything true.
 
-## Sprint 4 — Report Generator
+## Sprint 4 — PDF Workflow
 
-Spec section 5.5. A PDF installation review report containing project information, layout
-image, equipment list, engineering check results and an installation checklist.
+Spec 5.1 and the "Scale Setting" item of 5.2. Floor plan **import**, not report output.
+
+| Deliverable | |
+| --- | --- |
+| Import PDF, PNG and JPG as a raster underlay | |
+| Two-point scale calibration | |
+| `Level` and `PlanImage` in the document model | |
+| Locked background layer beneath the design | |
+| Project save / load with schema version and migration chain | |
+
+**Acceptance criteria**
+
+- A hospital PDF is imported, calibrated, and a 900 mm machine placed on it measures
+  900 mm against the drawing's own dimension lines.
+- An uncalibrated plan yields YELLOW with "plan not calibrated" — never GREEN.
+- A project saved on one machine opens identically on another.
+
+Scoped to raster underlay. Vector PDF geometry extraction, DXF and DWG stay in the
+specification's "Future" list.
+
+## Sprint 5 — Report Generation
+
+Spec 5.5. PDF installation review report: project information, layout image, equipment
+list, engineering check results, installation checklist.
 
 Vector output, not a canvas screenshot — the geometry already lives outside the renderer
-to make this possible.
+to make this possible (AD-2).
+
+Every finding carries its rule and source; the report stamps the rule set version and the
+equipment catalogue versions used.
 
 **Done when:** the report is something a TS engineer would send to a hospital.
 
+## Sprint 6 — AI Assistant
+
+Specification section 7, Version 3. Intent interpretation, explanation of results, drafting
+of report narrative. The solver and the validator decide; the assistant explains (AD-10).
+
+**Blocked by:** whether project data may leave the hospital network — see
+[OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-1.
+
 ---
+
+## Note on ordering
+
+Specification section 7 places routing and automatic layout in Version 2 and the AI
+assistant in Version 3. The sprint sequence above reaches the AI assistant at Sprint 6,
+ahead of routing. That is a deliberate sequencing choice by the product owner; the routing
+and automatic-layout work is not cancelled, it is simply not yet scheduled. See
+[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
 
 ## Non-functional targets (spec section 6)
 
-| Requirement | How it is met |
-| --- | --- |
-| Support 50 equipment objects minimum | Measured at the end of Sprint 1, when real objects first exist |
-| All engineering values come from the database | Equipment catalogue and rule sets are JSON files, versioned in git and loaded at runtime |
-| Every rule requires source information | Enforced at load time — a rule marked verified without a document reference, revision and section fails to load |
-
-## What would make this plan wrong
-
-If imported floor plans turn out to be mostly vector PDFs whose geometry the engineer
-expects MFD-E to read — walls detected automatically rather than traced — Sprint 2 grows
-substantially. The plan above assumes a raster underlay the engineer works on top of.
+| Requirement | How it is met | Verified |
+| --- | --- | --- |
+| Support 50 equipment objects minimum | Flat scene graph, viewport culling | Sprint 2 |
+| All engineering values come from the database | JSON catalogues and rule sets, versioned in git, loaded at runtime | Sprint 2–3 |
+| Every rule requires source information | Enforced at load time; verified records without document, revision and section fail | Sprint 3 |
