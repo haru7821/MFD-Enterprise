@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+/*
+ * MFD-E design tokens.
+ *
+ * A dark instrument panel around a dark drawing surface: the same reason CAD tools
+ * and radiology viewers go dark — the drawing must be the brightest thing on screen,
+ * and engineers sit in front of these for hours.
+ *
+ * Canvas colours are NOT defined here. Konva draws to a bitmap and cannot read CSS
+ * custom properties, so drawing colours live in
+ * src/features/canvas/canvasTheme.ts and that file is the renderer's single source.
+ */
+@theme {
+  --color-canvas: #0e1319;
+  --color-chrome: #151b24;
+  --color-chrome-raised: #1c2431;
+  --color-chrome-hover: #232d3d;
+  --color-edge: #2b3646;
+  --color-ink: #e8eef7;
+  --color-ink-muted: #8695ab;
+  --color-ink-faint: #5d6b80;
+  --color-accent: #4a9eff;
+  --color-accent-soft: #1d3a5c;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-chrome);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* The canvas owns the wheel; the page must never scroll or rubber-band under it. */
+.canvas-surface {
+  touch-action: none;
+  overscroll-behavior: none;
+}

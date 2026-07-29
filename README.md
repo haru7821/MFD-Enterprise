@@ -1,33 +1,88 @@
 # MFD-Enterprise
 
-MFD(Manufacturing Facility Design) Enterprise — 제조 설비 레이아웃 설계/검증 플랫폼.
+**MFD-E** — an AI Medical Facility Design Platform.
 
-## 저장소 구조
+MFD-E is not a CAD drawing tool. It designs, validates, documents and manages medical
+facilities, and every engineering rule it enforces is data it can cite, not code someone
+wrote from memory.
+
+**Current release: v0.1 Alpha — Sprint 1, canvas foundation.**
+
+---
+
+## Quick start
+
+Requires **Node.js ≥ 20.19** and **pnpm ≥ 10** (`npm install -g pnpm`).
+
+```bash
+pnpm install     # install dependencies for every workspace
+pnpm dev         # start the designer at http://localhost:5173
+```
+
+Other commands, all run from the repository root:
+
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Run the web client with hot reload |
+| `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
+| `pnpm preview` | Serve the production build locally |
+| `pnpm test` | Run the engine unit tests |
+| `pnpm typecheck` | Type-check every workspace |
+| `pnpm lint` | Lint every workspace |
+
+## What v0.1 Alpha does
+
+A drawing surface you can navigate at real building scale:
+
+- **Millimetre model space.** Everything is stored in millimetres. Pixels exist only
+  while drawing to the screen.
+- **Adaptive grid.** Spacing steps through 1–2–5 (…50 mm, 100 mm, 200 mm, 500 mm, 1 m…)
+  so lines stay readable at any zoom, and every major line is a whole power of ten.
+- **Zoom and pan.** Wheel pans, `Ctrl`/`Cmd` + wheel zooms about the cursor, middle-drag
+  or `Space` + drag pans. Zoom range 1 %–3200 %.
+- **Toolbar.** Select and Pan are live; Room, Measure and Equipment are shown disabled
+  with the sprint that delivers them.
+- **Status bar and scale bar.** Live cursor position in millimetres (snapped when snap is
+  on), current grid step, zoom, and a labelled scale bar.
+
+It does **not** yet draw rooms, place equipment, validate clearances, save, or export.
+Those are Sprints 2–6 — see [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md).
+
+## Repository layout
 
 ```
 MFD-Enterprise
-├── docs/         기획·아키텍처·엔진·DB·AI·로드맵 문서
-├── apps/         실행 애플리케이션 (web, api, ai-service)
-├── packages/     공용 패키지 (cad-engine, object-library, rule-engine, report-engine)
-├── database/     스키마·마이그레이션·시드 데이터
-├── assets/       아이콘·심볼·3D 모델 등 정적 리소스
-├── standards/    설계 표준·규정 원문 및 정리본
-└── tests/        통합·E2E 테스트
+├── CLAUDE.md               project instruction — the governing document
+├── docs/                   vision, architecture, engines, database, AI, roadmap
+├── apps/
+│   ├── web/                React + Vite client (the designer)          ← built
+│   ├── api/                NestJS backend                              Sprint 5
+│   └── ai-service/         Python FastAPI AI service                   Phase 2
+├── packages/
+│   ├── cad-engine/         geometry, units, viewport, grid             ← built
+│   ├── object-library/     equipment catalogue                         Sprint 3
+│   ├── rule-engine/        medical standard evaluation                 Sprint 4
+│   └── report-engine/      PDF and drawing output                      Sprint 6
+├── database/               schema, migrations, seed data
+├── standards/              medical rule sets as versioned data
+├── assets/                 symbols, icons, models
+└── tests/                  cross-package integration and E2E tests
 ```
 
-## 문서
+The dependency rule is one-way: `apps/` may import `packages/`, never the reverse, and
+`packages/` may not import a UI framework, a renderer or a Node built-in. That boundary
+is enforced by ESLint, not by memory — see `eslint.config.js`.
 
-| 문서 | 설명 |
+## Documentation
+
+| Document | Read it for |
 | --- | --- |
-| [docs/00_VISION.md](docs/00_VISION.md) | 제품 비전 |
-| [docs/01_MASTER_SPEC.md](docs/01_MASTER_SPEC.md) | 마스터 명세 |
-| [docs/02_PRODUCT_REQUIREMENTS.md](docs/02_PRODUCT_REQUIREMENTS.md) | 제품 요구사항 (PRD) |
-| [docs/03_SYSTEM_ARCHITECTURE.md](docs/03_SYSTEM_ARCHITECTURE.md) | 시스템 아키텍처 |
-| [docs/04_TECH_STACK.md](docs/04_TECH_STACK.md) | 기술 스택 |
-| [docs/05_UI_UX_SPEC.md](docs/05_UI_UX_SPEC.md) | UI/UX 명세 |
-| [docs/engines/](docs/engines/) | 엔진별 상세 설계 |
-| [docs/database/](docs/database/) | 데이터 스키마 |
-| [docs/ai/](docs/ai/) | AI 에이전트·프롬프트·지식베이스 |
-| [docs/roadmap/](docs/roadmap/) | MVP 및 개발 로드맵 |
+| [CLAUDE.md](CLAUDE.md) | The product instruction every decision answers to |
+| [docs/03_SYSTEM_ARCHITECTURE.md](docs/03_SYSTEM_ARCHITECTURE.md) | Architecture and the decisions behind it |
+| [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Phases 0–4 and the risk register |
+| [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint MVP scope |
+| [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | **What we still need from the product owner** |
 
-작업 규칙은 [CLAUDE.md](CLAUDE.md)를 참고하세요.
+`docs/OPEN_QUESTIONS.md` is the important one. Several items there block Sprints 3–4
+outright: without the governing medical standard and real equipment dimensions, a rule
+engine has nothing true to enforce.

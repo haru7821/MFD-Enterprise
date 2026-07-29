@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM" on purpose: this package must never touch a browser API.
+       If someone adds `document.` here, the build fails — which is the point. */
+    "lib": ["ES2022"]
+  },
+  "include": ["src"]
+}
