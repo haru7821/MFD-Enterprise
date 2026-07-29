@@ -3,6 +3,36 @@
 > Everything the architecture depends on that CLAUDE.md does not yet specify.
 > Ordered by how much damage a wrong assumption causes.
 
+## Status after the TS Edition document package
+
+The TS Edition spec package resolves the product questions. What remains open is almost
+entirely **data**: the real numbers, and where they are published.
+
+| # | Was | Now |
+| --- | --- | --- |
+| A-1 | Which code basis governs? | **Reframed.** The authority is the **manufacturer installation manual**, not a national building code. Still need the actual manual, with its revision. |
+| A-2 | Import a plan, or draw from scratch? | **Answered — import.** PDF / PNG / JPG floor plan import is an MVP feature, with a scale-setting step. This is the largest scope change; see below. |
+| A-3 | Real clearance values | **Still open.** The rule example (`AK98_FRONT_CLEARANCE`, 1200 mm) is illustrative. Need the manual's actual front / rear / left / right figures. |
+| A-4 | Equipment catalogue source | **Partly answered.** First object is the Vantive AK98. The 900 × 750 mm in the object spec is marked "Example" — real width, depth, height and weight are still needed. |
+| A-5 | Who is the primary user? | **Answered.** Vantive TS engineer, evaluating installation feasibility. |
+| A-6 | Accepted deliverable format | **Answered for the MVP.** A PDF installation review report. DXF moves out of Phase 1. |
+| A-7 | Deployment and tenancy | **Still open.** |
+| A-8 | UI language | **Still open.** |
+| B-3 | Optimisation objective | Deferred — no automatic layout until Version 2. |
+
+**What A-2 costs.** Importing a PDF or image plan means the drawing arrives with no known
+scale, so the MVP needs a calibration step: the user picks two points on the imported plan
+and types the real distance between them, and everything after that is measured in true
+millimetres. That step is small to build but must exist before any clearance check on an
+imported plan means anything. It also means Sprint 2 carries a raster underlay layer and a
+PDF page renderer, which the earlier "draw from scratch" plan did not.
+
+**The remaining risk is unchanged and is now sharper.** Section 6 of the TS Edition spec
+requires that every rule carry source information. A rule whose source reads only
+"Manufacturer Manual" does not meet that bar — it needs the manual identifier, revision,
+and the section the number comes from. Until those arrive, the rule engine can be built
+but cannot be seeded with anything true.
+
 ## A. Blocking — cannot start Phase 1 without an answer
 
 ### A-1. Which code basis governs? (highest impact)
