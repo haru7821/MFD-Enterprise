@@ -105,6 +105,9 @@ apart.
 - **`polygonsOverlap`** — separating axis theorem, returning penetration depth.
   Exact edge contact is *not* an overlap: two machines pushed flat together are a
   clearance question, and firing here would flag every tidy layout.
+  Each unordered pair is tested once, with footprint corners computed once per
+  machine rather than once per comparison — testing from both sides costs double
+  to learn the same symmetric fact.
 - **`gapAlongNormal`** — free distance from a face to another polygon along the face
   normal. Returns null when the other polygon is behind or beside the face, which is
   a genuine "nothing there" rather than a distance of zero.
@@ -146,7 +149,7 @@ like a rule that passes.
 
 ## Tests
 
-180 unit tests across the workspace, of which the rule engine holds 100. The ones
+199 unit tests across the workspace, of which the rule engine holds 119. The ones
 that matter most are the **invariants**: a layout's verdict is a fact about the
 arrangement, not about where it sits or which way it is turned. Rotate the whole
 layout 137° or move it a kilometre, and every result must be identical.

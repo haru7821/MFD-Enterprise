@@ -117,14 +117,26 @@ describe('collision evaluation', () => {
     expect(collision?.measured).toBe(500);
   });
 
-  it('reports one finding per pair, not two', () => {
+  it('anchors a finding on each machine involved', () => {
+    // Equipment-centred: an engineer looking at either machine must see the
+    // problem, so both report it with themselves as the subject.
     const report = evaluate({
       placements: [machineAt(1, { x: 0, y: 0 }), machineAt(2, { x: 400, y: 0 })],
       catalog: fixtureCatalog([fixtureEquipmentRecord()]),
       ruleSet: fixtureRuleSet([fixtureCollisionRule()]),
     });
 
-    expect(report.results.filter((r) => r.category === 'collision')).toHaveLength(1);
+    const collisions = report.results.filter((r) => r.category === 'collision');
+    expect(collisions).toHaveLength(2);
+    expect(collisions.map((r) => r.placementIds[0]).sort()).toEqual([
+      'placement-1',
+      'placement-2',
+    ]);
+    // placementIds[0] is the subject; [1] is the machine it collides with.
+    expect(collisions.map((r) => r.placementIds[1]).sort()).toEqual([
+      'placement-1',
+      'placement-2',
+    ]);
   });
 
   it('passes separated machines', () => {
@@ -134,7 +146,14 @@ describe('collision evaluation', () => {
       ruleSet: fixtureRuleSet([fixtureCollisionRule({ status: 'verified' })]),
     });
 
-    expect(report.results.find((r) => r.category === 'collision')?.level).toBe('GREEN');
+    const collisions = report.results.filter((r) => r.category === 'collision');
+    // One clear finding per machine, not one per pair.
+    expect(collisions).toHaveLength(2);
+    expect(collisions.every((r) => r.level === 'GREEN')).toBe(true);
+    for (const result of collisions) {
+      expect(result.placementIds).toHaveLength(1);
+      expect(result.measured).toBeNull();
+    }
   });
 
   it('reports boundary scope as not yet evaluated rather than silently passing', () => {

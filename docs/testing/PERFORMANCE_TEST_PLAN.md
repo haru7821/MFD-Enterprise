@@ -51,7 +51,7 @@ Chromium, 1440 × 900 viewport, production build, 50 AK98 objects. No rule engin
 Frame time sat on the vsync interval throughout, so rendering was not the limiting factor
 at this object count.
 
-## Results — Sprint 3.5 baseline
+## Results — Sprint 3.5 baseline (before the collision fix)
 
 ### Engine, measured in Node
 
@@ -103,18 +103,66 @@ emitting and rendering a result for every pair that is perfectly fine.
 It is also unusable as a report. A TS engineer opening the findings panel with fifty
 machines placed sees 1,225 rows saying two machines do not overlap.
 
-**Recorded here as a finding, not fixed:** the change alters which results the engine
-emits, and Sprint 3.5 was scoped to stabilisation. See the Sprint 4 readiness report.
+**Fixed after approval** — see the next section.
+
+## Results — Sprint 3.5 after the equipment-centred collision model
+
+Collision findings are now emitted per machine rather than per pair, and each unordered
+pair is tested once with footprint corners computed once per machine rather than once per
+comparison.
+
+### Engine
+
+| Objects | `evaluate()` | | Collision pass | | Results | |
+| --- | --- | --- | --- | --- | --- | --- |
+| | before | after | before | after | before | after |
+| 10 | 0.61 ms | **0.50 ms** | 0.15 ms | **0.06 ms** | 85 | **50** |
+| **50** | 5.18 ms | **4.54 ms** | 1.60 ms | **1.08 ms** | 1,425 | **250** |
+| 100 | 21.8 ms | **17.4 ms** | 9.2 ms | **4.2 ms** | 5,350 | **500** |
+| 200 | 92.3 ms | **69.6 ms** | 36.0 ms | **19.4 ms** | 20,700 | **1,000** |
+
+Findings drop 5.7× at the specification's fifty objects, and the collision pass roughly
+halves. Two changes contributed, and the second was the larger surprise:
+
+- **Per-machine findings** removed 1,175 result objects from the fifty-object case.
+- **Pairs tested once, corners computed once.** The first attempt at an equipment-centred
+  model made this *worse*, not better — each machine comparing itself against every other
+  tested every pair twice and recomputed every footprint n times. The collision pass went
+  from 1.60 ms to 2.46 ms before the pair loop was restored.
+
+Results now grow linearly with machine count rather than quadratically, which is asserted
+by `collisionVolume.test.ts` rather than left to be noticed later.
+
+### Rendering
+
+| Scenario | Before | After | Target | |
+| --- | --- | --- | --- | --- |
+| Findings rendered | 1,425 | **250** | — | ✅ |
+| Placement of 50 objects | 1,493 ms | **588 ms** | — | ✅ |
+| 50 objects, idle (p95) | 16.9 ms | 16.9 ms | ≤ 20 ms | ✅ |
+| 50 objects, panning (p95) | 27.2 ms | **16.8 ms** | ≤ 20 ms | ✅ |
+| 50 objects, dragging one (p95) | 31.9 ms | **17.2 ms** | ≤ 20 ms | ✅ |
+| 50 objects, dragging one (worst) | 123.3 ms | **63.8 ms** | ≤ 50 ms | ⚠️ |
+
+Four of the five targets are now met and the fifth halved. The remaining outlier is a
+single frame out of ninety while dragging; p95 sits at 17.2 ms, so the interaction feels
+smooth and the spike is not representative.
+
+**What is left in it:** dragging re-runs `evaluate()` on every pointer move (4.5 ms) and
+re-renders 250 rows with it. Memoising the rows, or debouncing evaluation during a drag,
+would remove the spike. Neither is done — the requested change was the reporting model, and
+a 63 ms outlier behind a 17 ms p95 does not justify more scope before Sprint 4.
 
 ## Targets, restated after the baseline
 
-| Metric | Target | Sprint 3.5 | |
-| --- | --- | --- | --- |
-| Median frame, 50 objects, panning | ≤ 16.7 ms | 16.6 ms | ✅ |
-| p95 frame, 50 objects, panning | ≤ 20 ms | 27.2 ms | ❌ |
-| Worst frame, dragging one of 50 | ≤ 50 ms | 123.3 ms | ❌ |
-| `evaluate()` at 50 objects | ≤ 5 ms | 5.18 ms | ⚠️ borderline |
-| `evaluate()` at 100 objects | ≤ 16.7 ms | 21.8 ms | ❌ |
+| Metric | Target | Baseline | After fix | |
+| --- | --- | --- | --- | --- |
+| Median frame, 50 objects, panning | ≤ 16.7 ms | 16.6 ms | 16.7 ms | ✅ |
+| p95 frame, 50 objects, panning | ≤ 20 ms | 27.2 ms | 16.8 ms | ✅ |
+| Worst frame, dragging one of 50 | ≤ 50 ms | 123.3 ms | 63.8 ms | ⚠️ |
+| `evaluate()` at 50 objects | ≤ 5 ms | 5.18 ms | 4.54 ms | ✅ |
+| `evaluate()` at 100 objects | ≤ 16.7 ms | 21.8 ms | 17.4 ms | ⚠️ |
+| Findings at 50 objects | ≤ 300 | 1,425 | 250 | ✅ |
 
 The p95 and worst-frame targets are new: Sprint 2 measured only a pan with no evaluation
 attached, and a median alone hides exactly the stutter this baseline found.

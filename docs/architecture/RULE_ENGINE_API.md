@@ -93,7 +93,7 @@ Defined in [schema.ts](../../packages/rule-engine/src/schema.ts).
 | `ruleId` | `string` | |
 | `category` | `'clearance' \| 'collision'` | |
 | `level` | `'GREEN' \| 'YELLOW' \| 'RED'` | |
-| `placementIds` | `readonly string[]` | One for clearance, two for a collision |
+| `placementIds` | `readonly string[]` | **`[0]` is always the subject of the finding.** One id for a clearance finding or a clear collision check; two when a collision names the machine involved. |
 | `measured` | `number \| null` | Free distance, or overlap depth. Null when there was nothing to measure against |
 | `appliedValue` | `number \| null` | The threshold actually applied |
 | `thresholdOrigin` | `'rule' \| 'equipment' \| 'none'` | Which source supplied it |
@@ -108,6 +108,28 @@ survive `JSON.stringify` is not part of it. A round-trip test enforces this.
 
 `measured` and `appliedValue` are `null`, never absent. An omitted field and an
 unknown value must not look the same.
+
+### Collision findings are equipment-centred
+
+A collision result is about **one machine**, named by `placementIds[0]`. A collision
+between two machines therefore produces two findings, one anchored on each — an
+engineer inspecting either machine has to see the problem.
+
+| Concept the caller needs | Contract field |
+| --- | --- |
+| Which machine the finding is about | `placementIds[0]` |
+| The machine it collides with | `placementIds[1]`, absent when clear |
+| Issue type | `category` |
+| Penetration depth in millimetres | `measured`, null when clear |
+
+No field was added for this: the contract already carried all four, so
+`EVALUATION_RESULT_VERSION` stays at 1.
+
+The alternative — one finding per *pair* — was the first implementation and was
+replaced. It produced 1,225 findings for fifty machines, almost all of them saying
+two machines do not overlap, which fails as a report before it fails as
+performance. `collisionVolume.test.ts` asserts that findings grow linearly with
+machine count so the quadratic shape cannot return unnoticed.
 
 ---
 

@@ -36,8 +36,8 @@ test('evaluates rules as soon as equipment is placed', async ({ page }) => {
 
   const results = page.getByTestId('validation-result');
   await expect(results.first()).toBeVisible();
-  // Four clearance sides for a single machine.
-  await expect(results).toHaveCount(4);
+  // Four clearance sides plus one collision finding, per machine.
+  await expect(results).toHaveCount(5);
 });
 
 test('reports an unknown threshold as YELLOW rather than inventing a status', async ({
@@ -69,8 +69,29 @@ test('raises RED when two machines overlap', async ({ page }) => {
   await placeAt(page, 0.37, 0.32);
 
   await expect(page.getByTestId('result-badge-RED').first()).toBeVisible();
-  await expect(page.getByTestId('validation-panel')).toContainText('overlap by');
+  await expect(page.getByTestId('validation-panel')).toContainText('overlaps');
   await expect(page.getByTestId('findings-summary')).toContainText('RED');
+});
+
+test('anchors the collision on both machines', async ({ page }) => {
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await placeAt(page, 0.35, 0.3);
+  await placeAt(page, 0.37, 0.32);
+
+  // Equipment-centred reporting: an engineer looking at either machine sees it.
+  await expect(page.getByTestId('result-badge-RED')).toHaveCount(2);
+});
+
+test('keeps the findings list proportional to the layout', async ({ page }) => {
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  for (let i = 0; i < 8; i += 1) {
+    await placeAt(page, 0.15 + (i % 4) * 0.2, 0.2 + Math.floor(i / 4) * 0.35);
+  }
+
+  // Four clearance findings plus one collision finding per machine. The
+  // pair-centred model produced 4n + n(n-1)/2 — 60 rows for eight machines,
+  // and 1,425 for fifty.
+  await expect(page.getByTestId('validation-result')).toHaveCount(40);
 });
 
 test('clears the collision once the machines are separated', async ({ page }) => {
