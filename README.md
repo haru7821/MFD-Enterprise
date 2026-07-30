@@ -7,7 +7,7 @@ It is not a replacement for CAD. Its job is to help a TS engineer evaluate dialy
 installation feasibility quickly and accurately, and every engineering value it applies is
 data it can cite back to a manual, not a number someone wrote from memory.
 
-**Current release: v0.4.5 Alpha — Sprints 1–4 plus Phase 4.5 delivered.** Import a hospital
+**Current release: v0.4 Alpha — Sprint 4 closed, Phase 4.5 delivered.** Import a hospital
 floor plan, calibrate it, set its origin, trace the rooms and the things in the way, place
 equipment across several floors, and see every installation requirement checked live.
 
@@ -34,14 +34,14 @@ Other commands, all run from the repository root:
 | `pnpm dev` | Run the web client with hot reload |
 | `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
 | `pnpm preview` | Serve the production build locally |
-| `pnpm test` | Run the engine unit tests (390) |
-| `pnpm test:e2e` | Run the browser specs against a production build (62) |
+| `pnpm test` | Run the engine unit tests (402) |
+| `pnpm test:e2e` | Run the browser specs against a production build (65) |
 | `pnpm bench` | Rule engine performance baseline |
 | `pnpm test:perf` | Frame-time measurement — an instrument, not a gate |
 | `pnpm typecheck` | Type-check every workspace |
 | `pnpm lint` | Lint every workspace |
 
-## What v0.4.5 Alpha does
+## What v0.4 Alpha does
 
 A complete feasibility-review workflow, minus the report:
 
@@ -86,6 +86,11 @@ Underneath:
 
 It does **not** yet generate the PDF report (Sprint 5), read vector geometry from a PDF,
 or parse DWG or IFC. See [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md).
+
+The report will be **bilingual Korean and English** — every section title and field label in
+both — and will carry a fixed liability notice in both languages. Both were owner decisions
+taken before implementation started, because embedding a Korean font is the one choice in that
+sprint that is painful to retrofit.
 
 ## Repository layout
 
@@ -133,7 +138,9 @@ Read in this order:
 | [docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md](docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md) | Rule categories, result levels, rule data structure |
 | [docs/architecture/DOCUMENT_MODEL.md](docs/architecture/DOCUMENT_MODEL.md) | What a project *is*, and why undo is commands rather than snapshots |
 | [docs/roadmap/PHASE_4_5_REPORT.md](docs/roadmap/PHASE_4_5_REPORT.md) | What finishing the gestures turned up that the model work had not |
+| [docs/roadmap/SPRINT_4_CLOSURE.md](docs/roadmap/SPRINT_4_CLOSURE.md) | What Sprint 4 shipped, the one criterion it did not meet, and what carried forward |
 | [docs/architecture/REPORT_ENGINE_DESIGN.md](docs/architecture/REPORT_ENGINE_DESIGN.md) | Sprint 5 architecture — **awaiting review, not implemented** |
+| [docs/roadmap/SPRINT_5_PLAN.md](docs/roadmap/SPRINT_5_PLAN.md) | Sprint 5 implementation plan — order, estimate, risks |
 | [docs/architecture/RULE_ENGINE_API.md](docs/architecture/RULE_ENGINE_API.md) | The frozen finding contract every consumer reads |
 | [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
 | [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |

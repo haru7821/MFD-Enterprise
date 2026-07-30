@@ -10,8 +10,9 @@
 | 1.5 | Architecture stabilisation | — | ✅ Complete |
 | 2 | Equipment Object System | 5.3 | ✅ **Complete** — v0.2 Alpha |
 | 3 | Rule Engine | 5.4 | ✅ **Complete** — v0.3 Alpha |
-| 4 | PDF Workflow + Spatial Model | 5.1 | ◀ **Next** |
-| 5 | Report Generation | 5.5 | ☐ |
+| 4 | PDF Workflow + Spatial Model | 5.1 | ✅ **Complete and closed** — v0.4 |
+| 4.5 | UX Completion | — | ✅ Complete |
+| 5 | Report Generation | 5.5 | ◀ **Next** — architecture awaiting review |
 | 6 | AI Assistant | §7 Version 3 | ☐ |
 
 ## Definition of done for the MVP (Sprints 1–5)
@@ -189,6 +190,10 @@ printed dimension line and confirming the result. That needs a drawing we do not
 Scoped to raster underlay. Vector PDF geometry extraction, DXF and DWG stay in the
 specification's "Future" list.
 
+**Closed by the product owner** after Browser CI passed on `84cdaf3`. Full account, including
+the criterion that was **not** met and the five items carried forward, in
+[SPRINT_4_CLOSURE.md](SPRINT_4_CLOSURE.md).
+
 ## Phase 4.5 — UX Completion ✅
 
 Inserted between Sprint 4 and Sprint 5 by the product owner. Not new capability — the
@@ -214,8 +219,15 @@ how its scale was established, and which rule set produced every verdict — the
 a report has to be able to state and cannot reconstruct later.
 
 **Architecture written and awaiting review:**
-[../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md). Two
-decisions block starting — the report's language, and the liability sentence.
+[../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md).
+**Implementation plan:** [SPRINT_5_PLAN.md](SPRINT_5_PLAN.md) — six steps, ~15 working days.
+
+Both blocking decisions are settled: the report is **bilingual Korean + English** throughout,
+and the liability notice is fixed verbatim in both languages at the end of every report. Font
+embedding is therefore mandatory rather than optional, which is exactly why the language
+question was asked before the emit stage existed.
+
+Implementation waits on approval of the architecture, not on a decision.
 
 Vector output, not a canvas screenshot — the geometry already lives outside the renderer
 to make this possible (AD-2).
