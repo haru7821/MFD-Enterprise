@@ -304,7 +304,20 @@ describe('Korean in the PDF text layer', () => {
     expect(text.replace(/\s+/g, ' ')).toContain('Final installation approval shall be based on');
   });
 
-  it('puts the liability notice on the last page, on a report of any length', async () => {
+  /*
+   * Sixty seconds, and only for this test.
+   *
+   * It renders **three** PDFs — a normal report, a sixty-machine one, and an empty one — and each
+   * render embeds and subsets a 2.7 MB Korean font. That is legitimately the slowest thing in the
+   * suite, and it had been running at ~29 s against the global 30 s budget: passing, but with no
+   * margin, so any change to how much else runs in parallel would tip it over. Sprint 6's new
+   * package did exactly that.
+   *
+   * Raised here rather than globally on purpose. The global 30 s is the suite's hang detector — a
+   * geometry test that takes half a minute is a bug — and widening it for everything to
+   * accommodate one known-slow case would retire that check for every other test.
+   */
+  it('puts the liability notice on the last page, on a report of any length', { timeout: 60_000 }, async () => {
     // The notice's space is reserved before layout begins, so it cannot be the block that
     // falls off the end of a full page. That is the difference between "usually present" and
     // "present", and it is only testable through the rendered output.
@@ -334,9 +347,11 @@ describe('Korean in the PDF text layer', () => {
       },
     };
 
+    // Resolved once rather than per iteration. It was inside the loop, which bought nothing.
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
     for (const source of [model(), model(long), model(emptyDocument())]) {
       const bytes = await renderPdf(source, { fonts: fonts() });
-      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
       const parsed = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
       const last = await parsed.getPage(parsed.numPages);
       const content = await last.getTextContent();

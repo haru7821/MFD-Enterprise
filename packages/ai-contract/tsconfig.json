@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM": this contract is read by the browser solver, by the editor, and by anything
+       server-side that later re-validates a response (AD-3). */
+    "lib": ["ES2022"],
+    "resolveJsonModule": true
+  },
+  "include": ["src", "scoring", "fixtures"]
+}

@@ -43,6 +43,31 @@ export default tseslint.config(
               message:
                 'packages/ holds the framework-free domain core. Put renderer or server code in apps/ instead.',
             },
+            /*
+             * AD-11, Sprint 6. Owner decision: "Do NOT implement LLM-specific code inside business
+             * logic." Made structural, so the boundary is held at build time rather than by memory.
+             *
+             * `@mfd/ai-contract` is deliberately *not* here, and the distinction is the whole
+             * architecture: the contract is the vocabulary in which a request and a proposal are
+             * expressed, and it would be equally valid if the other side were a person. A model
+             * client is the thing that cannot be in the domain core.
+             */
+            {
+              group: [
+                'openai',
+                'openai/*',
+                '@anthropic-ai/*',
+                '@google/generative-ai',
+                '@langchain/*',
+                'langchain',
+                'langchain/*',
+                'ollama',
+                'cohere-ai',
+                '@mistralai/*',
+              ],
+              message:
+                'AD-11: no package under packages/ may import an AI client, a model name or a prompt. The AI service is reached from apps/, and packages/ai-contract holds the vocabulary — not the caller.',
+            },
           ],
         },
       ],

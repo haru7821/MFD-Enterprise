@@ -1,0 +1,32 @@
+{
+  "name": "@mfd/ai-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The vocabulary in which an AI request and an AI proposal are expressed: requests, responses, the scoring model, the installation plan, Zod schemas and the response validator. Pure TypeScript, and no AI in it.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./scoring": {
+      "types": "./scoring/index.ts",
+      "default": "./scoring/index.ts"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "scoring"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mfd/cad-engine": "workspace:*",
+    "@mfd/document-model": "workspace:*",
+    "@mfd/object-library": "workspace:*",
+    "@mfd/rule-engine": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}
