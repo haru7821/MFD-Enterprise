@@ -7,6 +7,7 @@ import {
   EquipmentIcon,
   GridIcon,
   MeasureIcon,
+  ObstructionIcon,
   PanIcon,
   PlanIcon,
   RedoIcon,
@@ -28,6 +29,7 @@ const TOOL_ICONS: Record<ToolId, ReactNode> = {
   select: <SelectIcon />,
   pan: <PanIcon />,
   room: <RoomIcon />,
+  obstruction: <ObstructionIcon />,
   measure: <MeasureIcon />,
   equipment: <EquipmentIcon />,
 };

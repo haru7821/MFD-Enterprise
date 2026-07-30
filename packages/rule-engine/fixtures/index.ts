@@ -193,6 +193,8 @@ export function fixtureBoundary(
       { x: origin.x, y: origin.y + height },
     ],
     label,
+    // The schema requires a type on an obstruction and refuses one anywhere else.
+    obstructionType: kind === 'obstruction' ? 'column' : null,
   };
 }
 
@@ -221,6 +223,7 @@ export function fixtureLShapedRoom(id = 'room-l', label = 'Treatment area'): Bou
       { x: 0, y: 9_000 },
     ],
     label,
+    obstructionType: null,
   };
 }
 

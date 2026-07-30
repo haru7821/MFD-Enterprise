@@ -6,9 +6,11 @@ import {
   createViewport,
 } from '@mfd/cad-engine';
 import {
+  type Boundary,
   type DocumentState,
   type Level,
   type MfdDocument,
+  type ObstructionType,
   type Placement,
   type SpaceFunction,
   createDocument,
@@ -49,9 +51,24 @@ export const PROVISIONAL_PLAN_TRANSFORM: PlanTransform = {
   rotation: 0,
 };
 
-/** Calibration in progress: the points picked so far, in image pixels. */
-export interface CalibrationDraft {
-  readonly points: readonly Vec2[];
+/**
+ * A modal pick in progress on the plan.
+ *
+ * One field rather than a boolean each, because the two are mutually exclusive and a
+ * pair of booleans would eventually be true at the same time. Both take precedence over
+ * every tool: an engineer who deliberately started picking should not have a stray click
+ * place a machine instead.
+ */
+export type PlanPick =
+  /** Two points on a known distance, for the scale. Held in image pixels. */
+  | { readonly kind: 'calibrate'; readonly points: readonly Vec2[] }
+  /** One point, to become model (0, 0). */
+  | { readonly kind: 'origin' };
+
+/** A vertex of a boundary, while it is being edited. */
+export interface VertexRef {
+  readonly boundaryId: string;
+  readonly index: number;
 }
 
 export interface EditorState {
@@ -83,11 +100,22 @@ export interface EditorState {
   readonly armedEquipmentObjectId: string | null;
   readonly selectedPlacementId: string | null;
   readonly selectedSpaceId: string | null;
+  /**
+   * The boundary whose geometry is being edited.
+   *
+   * Separate from `selectedSpaceId` because not every boundary belongs to a room — a
+   * structural column has no room-hood at all, and its vertices still have to be
+   * draggable. Selecting a room selects its boundary too.
+   */
+  readonly selectedBoundaryId: string | null;
+  readonly selectedVertex: VertexRef | null;
 
-  /** Vertices of a room being traced, in model millimetres. Empty when idle. */
+  /** Vertices of a boundary being traced, in model millimetres. Empty when idle. */
   readonly draftRoomVertices: readonly Vec2[];
-  /** Non-null while the engineer is picking calibration points. */
-  readonly calibration: CalibrationDraft | null;
+  /** What the obstruction tool creates. Room outlines carry none. */
+  readonly draftObstructionType: ObstructionType;
+  /** Non-null while a modal pick on the plan is in progress. */
+  readonly pick: PlanPick | null;
 
   /** Monotonic counter behind entity ids, so ids stay deterministic within a session. */
   readonly nextEntityNumber: number;
@@ -130,8 +158,11 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   armedEquipmentObjectId: null,
   selectedPlacementId: null,
   selectedSpaceId: null,
+  selectedBoundaryId: null,
+  selectedVertex: null,
   draftRoomVertices: [],
-  calibration: null,
+  draftObstructionType: 'column',
+  pick: null,
   nextEntityNumber: 1,
 };
 
@@ -180,3 +211,24 @@ export function defaultSpaceName(index: number): string {
 }
 
 export const DEFAULT_SPACE_FUNCTION: SpaceFunction = 'hemodialysis_treatment';
+
+/** The boundary being edited, or null. */
+export function selectedBoundary(state: EditorState): Boundary | null {
+  if (state.selectedBoundaryId === null) return null;
+  return (
+    activeLevel(state).boundaries.find(
+      (boundary) => boundary.id === state.selectedBoundaryId,
+    ) ?? null
+  );
+}
+
+/** Does the active tool trace a polygon? */
+export function isTracingTool(state: EditorState): boolean {
+  return state.activeTool === 'room' || state.activeTool === 'obstruction';
+}
+
+/** Default label for a newly drawn obstruction, so no two read the same. */
+export function defaultObstructionLabel(type: ObstructionType, index: number): string {
+  const noun = type === 'fixed_equipment' ? 'Fixed equipment' : type;
+  return `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${index}`;
+}

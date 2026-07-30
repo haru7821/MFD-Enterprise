@@ -172,3 +172,77 @@ describe('file naming', () => {
     expect(suggestedFileName(unnamed)).toBe('project.mfd.json');
   });
 });
+
+describe('v1 → v2 migration', () => {
+  /** A document as version 1 wrote it: boundaries with no `obstructionType`. */
+  function v1Document(): Record<string, unknown> {
+    const current = JSON.parse(JSON.stringify(populated())) as Record<string, unknown>;
+    const project = current['project'] as { levels: Record<string, unknown>[] };
+    const level = project.levels[0];
+    if (level) {
+      level['boundaries'] = [
+        { id: 'b1', kind: 'space_outline', vertices: room(), label: 'Treatment area' },
+        { id: 'b2', kind: 'wall', vertices: room(), label: 'Party wall' },
+        { id: 'b3', kind: 'obstruction', vertices: room(), label: '' },
+      ];
+      level['spaces'] = [
+        { id: 'space-1', name: 'Treatment area', function: 'hemodialysis_treatment', boundaryId: 'b1' },
+      ];
+    }
+    return { ...current, documentVersion: 1 };
+  }
+
+  function room() {
+    return [
+      { x: 0, y: 0 },
+      { x: 1_000, y: 0 },
+      { x: 1_000, y: 1_000 },
+    ];
+  }
+
+  it('opens a version 1 document', () => {
+    // The first real migration. Before this, the chain was a mechanism with nothing
+    // to run — which is a claim, not a mechanism.
+    const migrated = parseDocument(v1Document());
+    expect(migrated.documentVersion).toBe(DOCUMENT_VERSION);
+    expect(migrated.project.levels[0]?.boundaries).toHaveLength(3);
+  });
+
+  it('leaves room outlines and walls untyped', () => {
+    const boundaries = parseDocument(v1Document()).project.levels[0]?.boundaries ?? [];
+    expect(boundaries.find((entry) => entry.id === 'b1')?.obstructionType).toBeNull();
+    expect(boundaries.find((entry) => entry.id === 'b2')?.obstructionType).toBeNull();
+  });
+
+  it('types a version 1 obstruction as "other" rather than guessing', () => {
+    // A v1 obstruction says something is in the way and nothing about what. "other"
+    // records that honestly; "column" would be an invention the engineer would then
+    // have to notice was wrong.
+    const boundaries = parseDocument(v1Document()).project.levels[0]?.boundaries ?? [];
+    expect(boundaries.find((entry) => entry.id === 'b3')?.obstructionType).toBe('other');
+  });
+
+  it('re-saves at the current version, so the migration runs once', () => {
+    const migrated = parseDocument(v1Document());
+    const reopened = loadDocument(saveDocument(migrated, { now: SAVED_AT }));
+    expect(reopened.documentVersion).toBe(DOCUMENT_VERSION);
+    expect(reopened).toEqual({ ...migrated, project: { ...migrated.project, updatedAt: SAVED_AT } });
+  });
+
+  it('survives a v1 document with no boundaries at all', () => {
+    const bare = JSON.parse(JSON.stringify(populated())) as Record<string, unknown>;
+    const project = bare['project'] as { levels: Record<string, unknown>[] };
+    const level = project.levels[0];
+    if (level) level['boundaries'] = [];
+    expect(() => parseDocument({ ...bare, documentVersion: 1 })).not.toThrow();
+  });
+
+  it('does not crash on a v1 file whose shape is not what we expect', () => {
+    // A migration receives unvalidated JSON by necessity. It has to fail at the
+    // schema check that follows, not with a TypeError halfway through.
+    expect(() => parseDocument({ documentVersion: 1, project: 'not an object' })).toThrow(
+      DocumentValidationError,
+    );
+    expect(() => parseDocument({ documentVersion: 1 })).toThrow(DocumentValidationError);
+  });
+});

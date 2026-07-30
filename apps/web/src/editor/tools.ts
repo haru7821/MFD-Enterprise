@@ -6,7 +6,7 @@
  * "Sprint 3" is honest; a button that looks live and does nothing is not.
  */
 
-export type ToolId = 'select' | 'pan' | 'room' | 'equipment' | 'measure';
+export type ToolId = 'select' | 'pan' | 'room' | 'obstruction' | 'equipment' | 'measure';
 
 export interface ToolDefinition {
   readonly id: ToolId;
@@ -53,6 +53,13 @@ export const TOOLS: readonly ToolDefinition[] = [
     label: 'Room',
     shortcut: 'r',
     hint: 'Click to trace a room — click the first point again, or double-click, to close it',
+    availableFrom: 4,
+  },
+  {
+    id: 'obstruction',
+    label: 'Obstruction',
+    shortcut: 'o',
+    hint: 'Trace a column, shaft or fixed obstacle — equipment must not overlap it',
     availableFrom: 4,
   },
   {

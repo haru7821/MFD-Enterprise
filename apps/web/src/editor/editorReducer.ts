@@ -14,27 +14,40 @@ import {
   type Boundary,
   type CoordinateMapping,
   type MfdDocument,
+  type ObstructionType,
   type PlanImage,
   type Space,
   type SpaceFunction,
+  clearPlanImage,
   createBoundary,
+  createBoundaryCommand,
   createDocumentState,
+  createLevelCommand,
+  createObstruction,
   createPlacement,
   createPlacementCommand,
   createSpace,
   createSpaceCommand,
+  deleteBoundaryCommand,
+  deleteLevelCommand,
   deletePlacementCommand,
   deleteSpaceCommand,
+  describeBoundaryCommand,
   execute,
+  insertBoundaryVertexCommand,
+  moveBoundaryVertexCommand,
   movePlacementCommand,
+  planOriginShift,
   redo,
+  removeBoundaryVertexCommand,
+  renameLevelCommand,
   renameSpaceCommand,
   rotatePlacementCommand,
   seal,
   setBoundaryVerticesCommand,
-  setPlanImage,
-  clearPlanImage,
   setCoordinateMapping,
+  setPlanImage,
+  setPlanOriginCommand,
   undo,
 } from '@mfd/document-model';
 import type { EquipmentObject } from '@mfd/object-library';
@@ -42,7 +55,9 @@ import type { EquipmentObject } from '@mfd/object-library';
 import {
   DEFAULT_SPACE_FUNCTION,
   type EditorState,
+  type VertexRef,
   activeLevel,
+  defaultObstructionLabel,
   defaultSpaceName,
   emptyDocument,
 } from './editorState';
@@ -94,6 +109,43 @@ export type EditorAction =
   | { readonly type: 'placement/select'; readonly placementId: string | null }
   | { readonly type: 'placement/delete'; readonly placementId: string; readonly at: number }
   | { readonly type: 'space/select'; readonly spaceId: string | null }
+  | { readonly type: 'boundary/select'; readonly boundaryId: string | null }
+  | { readonly type: 'vertex/select'; readonly vertex: VertexRef | null }
+  | {
+      readonly type: 'vertex/move';
+      readonly vertex: VertexRef;
+      readonly position: Vec2;
+      readonly at: number;
+    }
+  | {
+      readonly type: 'vertex/insert';
+      readonly boundaryId: string;
+      readonly afterIndex: number;
+      readonly position: Vec2;
+      readonly at: number;
+    }
+  | { readonly type: 'vertex/delete'; readonly vertex: VertexRef; readonly at: number }
+  | {
+      readonly type: 'boundary/describe';
+      readonly boundaryId: string;
+      readonly label: string;
+      readonly obstructionType: ObstructionType | null;
+      readonly at: number;
+    }
+  | { readonly type: 'boundary/delete'; readonly boundaryId: string; readonly at: number }
+  | { readonly type: 'obstruction/setType'; readonly obstructionType: ObstructionType }
+  | { readonly type: 'level/select'; readonly levelId: string }
+  | { readonly type: 'level/add'; readonly name: string; readonly at: number }
+  | {
+      readonly type: 'level/rename';
+      readonly levelId: string;
+      readonly name: string;
+      readonly elevation: number;
+      readonly at: number;
+    }
+  | { readonly type: 'level/delete'; readonly levelId: string; readonly at: number }
+  | { readonly type: 'origin/start' }
+  | { readonly type: 'origin/set'; readonly pixel: Vec2; readonly at: number }
   | {
       readonly type: 'space/rename';
       readonly spaceId: string;
@@ -119,7 +171,7 @@ export type EditorAction =
   | { readonly type: 'plan/setMapping'; readonly mapping: CoordinateMapping | null }
   | { readonly type: 'calibration/start' }
   | { readonly type: 'calibration/pick'; readonly pixel: Vec2 }
-  | { readonly type: 'calibration/cancel' }
+  | { readonly type: 'pick/cancel' }
   | { readonly type: 'history/undo' }
   | { readonly type: 'history/redo' }
   | { readonly type: 'history/seal' }
@@ -134,6 +186,44 @@ function resetView(screen: ScreenSize): EditorState['viewport'] {
 /** Apply a plan-level change, which is not undoable. */
 function withDocument(state: EditorState, document: MfdDocument): EditorState {
   return { ...state, doc: { ...state.doc, document } };
+}
+
+/** Replace the document *and* its history — for changes that are undoable. */
+function withDocumentState(state: EditorState, doc: EditorState['doc']): EditorState {
+  return { ...state, doc };
+}
+
+/**
+ * Replace the document, panning the view so the drawing does not appear to move.
+ *
+ * Setting the plan origin translates every placement and boundary vertex in model
+ * space, and moves the plan image with them, so their positions *relative to the
+ * drawing* are unchanged. Relative to the **viewport** they all move together, which on
+ * screen looks like the whole floor sliding — not something an engineer asked for by
+ * clicking a point and calling it zero.
+ *
+ * So this compensates: whenever the active level's plan origin changes, the view moves
+ * with it. Stated as a rule over the before-and-after origins rather than as a special
+ * case inside one action, because undo and redo change the origin too — and a
+ * compensation applied on the way in but not on the way out is the same bug with an
+ * extra keystroke in front of it.
+ */
+function withOriginCompensation(state: EditorState, doc: EditorState['doc']): EditorState {
+  const before = activeLevel(state).coordinateMapping;
+  const next = withDocumentState(state, doc);
+  const after = activeLevel(next).coordinateMapping;
+
+  if (!before || !after) return next;
+  if (before.origin.x === after.origin.x && before.origin.y === after.origin.y) return next;
+
+  const shift = planOriginShift(before, after.origin);
+  return {
+    ...next,
+    viewport: panBy(next.viewport, {
+      x: shift.x * next.viewport.scale,
+      y: shift.y * next.viewport.scale,
+    }),
+  };
 }
 
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -166,9 +256,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         // survives a tool change places a machine on the next unrelated click.
         armedEquipmentObjectId:
           action.tool === 'equipment' ? state.armedEquipmentObjectId : null,
-        // A half-traced room does not belong to any other tool. Abandoning it on the
-        // tool change is less surprising than having it reappear later.
-        draftRoomVertices: action.tool === 'room' ? state.draftRoomVertices : [],
+        // A half-traced ring does not belong to any other tool. Abandoning it on the
+        // tool change is less surprising than having it reappear later. Switching
+        // between the room and obstruction tools abandons it too: the two produce
+        // different entities, and finishing a room as a column is not a thing to offer.
+        draftRoomVertices: action.tool === state.activeTool ? state.draftRoomVertices : [],
       };
 
     case 'viewport/panBy':
@@ -249,7 +341,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'placement/select':
       return state.selectedPlacementId === action.placementId
         ? state
-        : { ...state, selectedPlacementId: action.placementId, selectedSpaceId: null };
+        : {
+            ...state,
+            selectedPlacementId: action.placementId,
+            selectedSpaceId: null,
+            selectedBoundaryId: null,
+            selectedVertex: null,
+          };
 
     case 'placement/delete':
       return {
@@ -261,10 +359,123 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           state.selectedPlacementId === action.placementId ? null : state.selectedPlacementId,
       };
 
-    case 'space/select':
-      return state.selectedSpaceId === action.spaceId
-        ? state
-        : { ...state, selectedSpaceId: action.spaceId, selectedPlacementId: null };
+    case 'space/select': {
+      if (state.selectedSpaceId === action.spaceId) return state;
+      // Selecting a room selects its outline too, so its vertices become editable
+      // without a second click into a different concept.
+      const space =
+        action.spaceId === null
+          ? null
+          : activeLevel(state).spaces.find((entry) => entry.id === action.spaceId) ?? null;
+
+      return {
+        ...state,
+        selectedSpaceId: action.spaceId,
+        selectedBoundaryId: space?.boundaryId ?? null,
+        selectedVertex: null,
+        selectedPlacementId: null,
+      };
+    }
+
+    case 'boundary/select': {
+      if (state.selectedBoundaryId === action.boundaryId) return state;
+      // A boundary may or may not be a room's. Reflecting that into the room
+      // selection keeps the two inspectors showing the same thing.
+      const owningSpace =
+        action.boundaryId === null
+          ? null
+          : activeLevel(state).spaces.find(
+              (entry) => entry.boundaryId === action.boundaryId,
+            ) ?? null;
+
+      return {
+        ...state,
+        selectedBoundaryId: action.boundaryId,
+        selectedSpaceId: owningSpace?.id ?? null,
+        selectedVertex: null,
+        selectedPlacementId: null,
+      };
+    }
+
+    case 'vertex/select':
+      return { ...state, selectedVertex: action.vertex };
+
+    case 'vertex/move':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          moveBoundaryVertexCommand(
+            levelId,
+            action.vertex.boundaryId,
+            action.vertex.index,
+            action.position,
+          ),
+          action.at,
+        ),
+      };
+
+    case 'vertex/insert':
+      return {
+        ...state,
+        doc: seal(
+          execute(
+            state.doc,
+            insertBoundaryVertexCommand(
+              levelId,
+              action.boundaryId,
+              action.afterIndex,
+              action.position,
+            ),
+            action.at,
+          ),
+        ),
+        // Select the vertex just inserted, so it can be dragged straight away.
+        selectedVertex: { boundaryId: action.boundaryId, index: action.afterIndex + 1 },
+      };
+
+    case 'vertex/delete':
+      return {
+        ...state,
+        doc: seal(
+          execute(
+            state.doc,
+            removeBoundaryVertexCommand(levelId, action.vertex.boundaryId, action.vertex.index),
+            action.at,
+          ),
+        ),
+        // The index no longer refers to what the engineer had selected.
+        selectedVertex: null,
+      };
+
+    case 'boundary/describe':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          describeBoundaryCommand(
+            levelId,
+            action.boundaryId,
+            action.label,
+            action.obstructionType,
+          ),
+          action.at,
+        ),
+      };
+
+    case 'boundary/delete':
+      return {
+        ...state,
+        doc: seal(
+          execute(state.doc, deleteBoundaryCommand(levelId, action.boundaryId), action.at),
+        ),
+        selectedBoundaryId:
+          state.selectedBoundaryId === action.boundaryId ? null : state.selectedBoundaryId,
+        selectedVertex: null,
+      };
+
+    case 'obstruction/setType':
+      return { ...state, draftObstructionType: action.obstructionType };
 
     case 'space/rename':
       // Not sealed here: the field seals on blur, so one editing session is one
@@ -278,12 +489,19 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         ),
       };
 
-    case 'space/delete':
+    case 'space/delete': {
+      const space = activeLevel(state).spaces.find((entry) => entry.id === action.spaceId);
       return {
         ...state,
         doc: seal(execute(state.doc, deleteSpaceCommand(levelId, action.spaceId), action.at)),
         selectedSpaceId: state.selectedSpaceId === action.spaceId ? null : state.selectedSpaceId,
+        selectedBoundaryId:
+          space && state.selectedBoundaryId === space.boundaryId
+            ? null
+            : state.selectedBoundaryId,
+        selectedVertex: null,
       };
+    }
 
     case 'boundary/setVertices':
       return {
@@ -306,7 +524,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'room/close': {
       // Vertices traced by hand collect repeats and points that merely sit along a
-      // wall. Neither changes the room; both make every later edge test slower and
+      // wall. Neither changes the shape; both make every later edge test slower and
       // every vertex handle harder to grab.
       const vertices = simplifyPolygon(state.draftRoomVertices);
       // Fewer than three vertices encloses nothing. Silently creating it would give
@@ -314,6 +532,33 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (vertices.length < 3) return { ...state, draftRoomVertices: [] };
 
       const number = state.nextEntityNumber;
+
+      // The obstruction tool produces a bare boundary; the room tool produces a
+      // boundary and the room record that names it. Same gesture, two entities,
+      // because a column is not a room and giving it one would be a fiction the
+      // rule engine and the report would both have to work around.
+      if (state.activeTool === 'obstruction') {
+        const obstruction: Boundary = createObstruction(
+          `boundary-${number}`,
+          state.draftObstructionType,
+          vertices,
+          defaultObstructionLabel(state.draftObstructionType, number),
+        );
+
+        return {
+          ...state,
+          doc: seal(
+            execute(state.doc, createBoundaryCommand(levelId, obstruction), action.at),
+          ),
+          draftRoomVertices: [],
+          nextEntityNumber: number + 1,
+          selectedBoundaryId: obstruction.id,
+          selectedSpaceId: null,
+          selectedPlacementId: null,
+          selectedVertex: null,
+        };
+      }
+
       const boundary: Boundary = createBoundary(
         `boundary-${number}`,
         'space_outline',
@@ -333,20 +578,22 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         draftRoomVertices: [],
         nextEntityNumber: number + 1,
         selectedSpaceId: space.id,
+        selectedBoundaryId: boundary.id,
         selectedPlacementId: null,
+        selectedVertex: null,
       };
     }
 
     case 'plan/import':
       return {
         ...withDocument(state, setPlanImage(state.doc.document, levelId, action.planImage)),
-        calibration: null,
+        pick: null,
       };
 
     case 'plan/clear':
       return {
         ...withDocument(state, clearPlanImage(state.doc.document, levelId)),
-        calibration: null,
+        pick: null,
       };
 
     case 'plan/setMapping':
@@ -355,28 +602,111 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           state,
           setCoordinateMapping(state.doc.document, levelId, action.mapping),
         ),
-        calibration: null,
+        pick: null,
       };
 
     case 'calibration/start':
       return activeLevel(state).planImage === null
         ? state
-        : { ...state, calibration: { points: [] }, activeTool: 'select' };
+        : { ...state, pick: { kind: 'calibrate', points: [] }, activeTool: 'select' };
 
     case 'calibration/pick': {
-      if (!state.calibration) return state;
-      const points = [...state.calibration.points, action.pixel].slice(-2);
-      return { ...state, calibration: { points } };
+      if (state.pick?.kind !== 'calibrate') return state;
+      const points = [...state.pick.points, action.pixel].slice(-2);
+      return { ...state, pick: { kind: 'calibrate', points } };
     }
 
-    case 'calibration/cancel':
-      return state.calibration === null ? state : { ...state, calibration: null };
+    case 'origin/start':
+      // Requires a mapping, not just a drawing: there is nothing to be the origin of
+      // until a scale exists, and offering the control before then would let an
+      // engineer set an origin that silently did nothing.
+      return activeLevel(state).coordinateMapping === null
+        ? state
+        : { ...state, pick: { kind: 'origin' }, activeTool: 'select' };
+
+    case 'origin/set':
+      return {
+        ...withOriginCompensation(
+          state,
+          seal(execute(state.doc, setPlanOriginCommand(levelId, action.pixel), action.at)),
+        ),
+        pick: null,
+      };
+
+    case 'pick/cancel':
+      return state.pick === null ? state : { ...state, pick: null };
+
+    case 'level/select': {
+      if (action.levelId === state.activeLevelId) return state;
+      // Selections name entities on the level being left. Carrying them across would
+      // leave the inspector describing something the engineer can no longer see.
+      return {
+        ...state,
+        activeLevelId: action.levelId,
+        selectedPlacementId: null,
+        selectedSpaceId: null,
+        selectedBoundaryId: null,
+        selectedVertex: null,
+        draftRoomVertices: [],
+        pick: null,
+      };
+    }
+
+    case 'level/add': {
+      const number = state.nextEntityNumber;
+      const levelNewId = `level-${number}`;
+      return {
+        ...state,
+        doc: seal(
+          execute(state.doc, createLevelCommand(levelNewId, action.name), action.at),
+        ),
+        activeLevelId: levelNewId,
+        nextEntityNumber: number + 1,
+        selectedPlacementId: null,
+        selectedSpaceId: null,
+        selectedBoundaryId: null,
+        selectedVertex: null,
+        draftRoomVertices: [],
+        pick: null,
+      };
+    }
+
+    case 'level/rename':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          renameLevelCommand(action.levelId, action.name, action.elevation),
+          action.at,
+        ),
+      };
+
+    case 'level/delete': {
+      const next = seal(execute(state.doc, deleteLevelCommand(action.levelId), action.at));
+      const remaining = next.document.project.levels;
+      // The command refuses to remove the last level, so `remaining` is never empty.
+      const stillThere = remaining.some((level) => level.id === state.activeLevelId);
+
+      return {
+        ...state,
+        doc: next,
+        activeLevelId: stillThere
+          ? state.activeLevelId
+          : remaining[0]?.id ?? state.activeLevelId,
+        selectedPlacementId: null,
+        selectedSpaceId: null,
+        selectedBoundaryId: null,
+        selectedVertex: null,
+        draftRoomVertices: [],
+        pick: null,
+      };
+    }
 
     case 'history/undo':
-      return { ...state, doc: undo(state.doc) };
+      return withOriginCompensation(state, undo(state.doc));
 
     case 'history/redo':
-      return { ...state, doc: redo(state.doc) };
+      return withOriginCompensation(state, redo(state.doc));
 
     case 'history/seal':
       return { ...state, doc: seal(state.doc) };
@@ -391,8 +721,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         activeLevelId: level?.id ?? state.activeLevelId,
         selectedPlacementId: null,
         selectedSpaceId: null,
+        selectedBoundaryId: null,
+        selectedVertex: null,
         draftRoomVertices: [],
-        calibration: null,
+        pick: null,
         // Ids in a loaded document were numbered in another session. Restarting the
         // counter past the largest number already present avoids colliding with them.
         nextEntityNumber: nextFreeNumber(action.document),
@@ -419,8 +751,10 @@ function INITIAL_EDITOR_STATE_VIEW(state: EditorState): EditorState {
     armedEquipmentObjectId: null,
     selectedPlacementId: null,
     selectedSpaceId: null,
+    selectedBoundaryId: null,
+    selectedVertex: null,
     draftRoomVertices: [],
-    calibration: null,
+    pick: null,
     nextEntityNumber: 1,
   };
 }

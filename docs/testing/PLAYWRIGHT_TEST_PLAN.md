@@ -187,7 +187,69 @@ It was then verified by temporarily disabling coalescing and confirming the fail
 | S1 | Round trip | Save, start a new project, reopen the file — rooms, names and machines return |
 | S2 | Rejection | A JSON file that is not a project raises `project-error` |
 
-## 7. Screenshot validation
+## 7. Origin, vertices, obstructions and levels (Phase 4.5)
+
+`tests/e2e/uxCompletion.spec.ts`, 22 specs. All four items are gestures, and a gesture is
+the one thing a unit test cannot speak to: whether a handle is grabbable, whether a
+midpoint click inserts where the engineer aimed, whether switching floors leaves the
+previous floor's selection describing something invisible.
+
+### Origin placement
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| O1 | Gated | The control does not exist until a scale is set |
+| O2 | Renumber | The picked point reads 0 mm afterwards; it read a real distance before |
+| O3 | **Layout stays put** | The machine's drawn footprint does not move — re-datuming without translating would slide the plan out from under everything on it |
+| O4 | Undo | Ctrl+Z restores the previous origin *and* the view |
+| O5 | Escape | Cancels without changing anything |
+
+O2 samples **off-centre** deliberately. The view opens with model (0, 0) at the middle of
+the canvas, so a reading taken there would be zero before and after, and the assertion
+would have held whatever the command did — the first version of this spec did exactly that.
+
+### Vertex editing
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| E1 | Drag | Dragging a corner changes the room's area |
+| E2 | One drag, one step | A 10-move drag undoes in one step |
+| E3 | Insert | Clicking an edge midpoint takes the ring from 4 vertices to 5 |
+| E4 | Delete, and the floor | Delete removes the selected vertex; at three it refuses |
+| E5 | **Snap** | A corner dragged near a neighbouring room's corner lands on it **exactly** — checked in the saved document, because "exactly" is a claim about coordinates and only the file settles it |
+
+These specs turn snapping **off** first. The grid step at the opening zoom is about a metre
+— 70 screen pixels — so a traced corner lands up to half a step from where it was clicked,
+far outside the 9 px grab radius. That is correct behaviour and a spec that ignored it
+would be testing the grid, not the handle.
+
+### Obstructions
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| B1 | Trace | A column appears in the obstruction list and the status bar count |
+| B2 | Not a room | Tracing an obstruction creates no room record |
+| B3 | Describe | Label and type both editable; type is a controlled dropdown |
+| B4 | Next one | The type chosen for the next obstruction is remembered |
+| B5 | **Evaluated** | A machine standing on a traced column reports RED |
+| B6 | Undo | One undo removes the obstruction |
+
+B5 is the one that matters. Obstruction *evaluation* shipped in Sprint 4 with the boundary
+evaluator; Phase 4.5 added only the means to draw one. B5 is the spec that proves the two
+meet.
+
+### Levels
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| L1 | Add and switch | A new floor is empty; the machine is still on the one it was placed on |
+| L2 | Rename | Reflected in the selector and the status bar |
+| L3 | Floor | The only level cannot be deleted |
+| L4 | **Delete and undo** | A floor holding a machine is deleted whole and comes back whole |
+| L5 | Isolation | Each level's rooms and plan stay its own |
+| L6 | Round trip | Two levels survive a save and reopen |
+
+## 8. Screenshot validation
 
 Screenshots are captured as evidence rather than compared pixel-by-pixel. Pixel-diff
 baselines are not adopted here: font rendering and anti-aliasing differ between machines,
@@ -232,3 +294,8 @@ Stable `data-testid` attributes, so selectors do not depend on layout or copy:
 | `project-file-input` · `open-project` · `save-project` · `new-project` | File operations |
 | `project-error` | Save or open failure |
 | `project-name` | Title bar project name |
+| `set-origin` | Start the origin pick |
+| `space-vertex-count` · `obstruction-vertex-count` | Vertex count and the editing hint. Two hooks, because the room inspector and the obstruction inspector each describe only their own — one panel reporting the other's boundary was a real defect found writing these specs |
+| `obstruction-list` · `obstruction-label` · `obstruction-type` · `delete-obstruction` | Obstruction inspector |
+| `draft-obstruction-type` | The type the next traced obstruction gets |
+| `level-select` · `level-name` · `add-level` · `delete-level` | Level panel |

@@ -68,7 +68,7 @@ export function PlanPanel() {
   const [busy, setBusy] = useState(false);
   const [distance, setDistance] = useState('');
 
-  const picked = state.calibration?.points ?? [];
+  const picked = state.pick?.kind === 'calibrate' ? state.pick.points : [];
   const readyToCalibrate = picked.length === 2;
 
   async function onFile(file: File | undefined) {
@@ -178,7 +178,7 @@ export function PlanPanel() {
         <Step index={2} title="Set the scale" done={status === 'calibrated'}>
           {status === 'none' ? (
             <p className="text-[10px] text-ink-faint">Import a drawing first.</p>
-          ) : state.calibration ? (
+          ) : state.pick?.kind === 'calibrate' ? (
             <div className="mt-1 flex flex-col gap-1.5">
               <p className="text-[10px] text-ink-faint">
                 {picked.length === 0
@@ -215,7 +215,7 @@ export function PlanPanel() {
               <button
                 type="button"
                 className="self-start text-[10px] text-ink-faint underline-offset-2 hover:text-ink-muted hover:underline"
-                onClick={() => dispatch({ type: 'calibration/cancel' })}
+                onClick={() => dispatch({ type: 'pick/cancel' })}
               >
                 cancel
               </button>
@@ -252,16 +252,41 @@ export function PlanPanel() {
           )}
         </Step>
 
-        <Step
-          index={3}
-          title="Set the origin"
-          done={status === 'calibrated'}
-        >
-          <p className="text-[10px] text-ink-faint">
-            {status === 'calibrated'
-              ? `Model (0, 0) at pixel ${Math.round(level.coordinateMapping?.origin.x ?? 0)}, ${Math.round(level.coordinateMapping?.origin.y ?? 0)}`
-              : 'Defaults to the top-left of the drawing.'}
-          </p>
+        <Step index={3} title="Set the origin" done={status === 'calibrated'}>
+          {status !== 'calibrated' ? (
+            <p className="text-[10px] text-ink-faint">
+              Set the scale first — there is nothing to be the origin of until then.
+            </p>
+          ) : state.pick?.kind === 'origin' ? (
+            <div className="mt-1 flex flex-col gap-1">
+              <p className="text-[10px] text-ink-faint">
+                Click the point on the drawing that is model (0, 0). The layout stays where
+                it is; its coordinates are renumbered from there.
+              </p>
+              <button
+                type="button"
+                className="self-start text-[10px] text-ink-faint underline-offset-2 hover:text-ink-muted hover:underline"
+                onClick={() => dispatch({ type: 'pick/cancel' })}
+              >
+                cancel
+              </button>
+            </div>
+          ) : (
+            <div className="mt-0.5">
+              <p className="font-mono text-[10px] text-ink-faint">
+                pixel {Math.round(level.coordinateMapping?.origin.x ?? 0)},{' '}
+                {Math.round(level.coordinateMapping?.origin.y ?? 0)}
+              </p>
+              <button
+                type="button"
+                data-testid="set-origin"
+                className="mt-1 rounded border border-edge px-1.5 py-0.5 text-[10px] text-ink-muted hover:border-accent hover:text-ink"
+                onClick={() => dispatch({ type: 'origin/start' })}
+              >
+                Pick on drawing
+              </button>
+            </div>
+          )}
         </Step>
 
         <Step index={4} title="Square the drawing" done={status === 'calibrated'}>

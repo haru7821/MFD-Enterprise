@@ -1,7 +1,8 @@
 # Document Model
 
 > The published interface of `@mfd/document-model`.
-> Delivered in Sprint 4. Schema in [../data-model/PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md).
+> Delivered in Sprint 4; extended in Phase 4.5. Schema in
+> [../data-model/PROJECT_MODEL.md](../data-model/PROJECT_MODEL.md).
 
 ## Why this package exists
 
@@ -76,11 +77,19 @@ issued — rather than as a document that appeared from nowhere with no account 
 | `placement.assignSpace` | no | |
 | `placement.delete` | no | Restored at its original index — draw order is what an engineer sees when machines overlap |
 | `boundary.create` | no | |
-| `boundary.setVertices` | per boundary | Vertex dragging |
+| `boundary.setVertices` | per boundary | Replaces the whole ring |
+| ↳ move a vertex | **per vertex** | Keyed on `(boundary, index)`, so one drag is one step and two vertices stay apart |
+| ↳ insert a vertex | no | Inserted **after** the given index — an edge is identified by the vertex it leaves, so the implied closing edge needs no special case |
+| ↳ remove a vertex | no | Declines below three vertices |
+| `boundary.describe` | per boundary | Obstruction label and type, in one editing act |
 | `boundary.delete` | no | Restored at its original index |
 | `space.create` | no | Creates the outline **and** the room, in one step |
 | `space.rename` | per room | Typing emits one per keystroke |
 | `space.delete` | no | Takes the outline; unassigns its machines rather than deleting them |
+| `plan.setOrigin` | no | See below — the one plan operation that *is* a command |
+| `level.create` | no | |
+| `level.rename` | per level | |
+| `level.delete` | no | The most destructive command in the set |
 
 `space.create` is deliberately one command rather than two. A space with no boundary has
 no shape and an outline with no space has no name or function; splitting them would let
@@ -103,10 +112,45 @@ nothing anywhere saying so.
 
 ### What is deliberately outside undo
 
-**Importing a plan, and calibrating it.** Undoing a calibration would leave every
+**Importing a plan, and setting its scale.** Undoing a scale change would leave every
 placement at a millimetre position derived from a mapping that no longer exists —
 geometry silently reinterpreted, which is the failure mode this product exists to
 prevent. Both are explicit, deliberate acts, and both are re-doable by repeating them.
+
+### The plan origin *is* a command, and why that is not a contradiction
+
+Setting the origin does not reinterpret anything. It declares which image pixel is model
+(0, 0) and **translates every placement and boundary vertex by the same delta**, so each
+of them stays over the pixel of the drawing it was over before. The coordinates renumber;
+the layout does not move. Translating back by the same delta restores the document field
+for field, which is what makes it safely undoable when a scale change is not.
+
+Two consequences worth knowing about:
+
+- On an empty level — the ordinary case, since the origin is set right after calibration
+  — the translation is a no-op. It earns its keep when the origin is set *late*, which is
+  exactly when getting it wrong would be hardest to notice.
+- The plan image moves in model space too, by the same delta, so relative to each other
+  nothing changes. Relative to the **viewport** everything moves together, which on screen
+  looks like the whole floor sliding. The editor therefore pans the view to compensate —
+  stated as a rule over the before-and-after origins rather than as a special case in one
+  action, because undo and redo change the origin too, and a compensation applied on the
+  way in but not on the way out is the same bug with an extra keystroke in front of it.
+
+### Refusals are no-ops, not exceptions
+
+Three commands decline rather than throw:
+
+| Command | Declines when | Why not throw |
+| --- | --- | --- |
+| `removeBoundaryVertexCommand` | The ring is already at three vertices | A two-vertex "room" would report every machine in the building as outside it |
+| `deleteLevelCommand` | It is the last level | A project with no floor is not a project, and the schema requires one |
+| `setPlanOriginCommand` | The level has no coordinate mapping | There is nothing to be the origin of until a scale exists |
+
+Each still records an inverse, so the history stays consistent whether the edit took
+effect or not. A UI that offers an impossible control is the thing to fix; crashing the
+editor is not how to report it. `canRemoveBoundaryVertex` and `canDeleteLevel` let a
+caller disable the control instead of offering a no-op.
 
 ### Depth
 
@@ -182,11 +226,34 @@ The document is validated on the way **out** as well as in. An editor bug that p
 invalid document would otherwise be discovered by the engineer who tried to reopen the
 file, long after the state that caused it was gone.
 
-The migration chain (`MIGRATIONS`) is empty at version 1. It exists from the first release
-rather than from the first release that needed it: retrofitting versioning means writing
-migrations against files you cannot inspect. A test asserts that every version step below
-the current one has a migration, so bumping `DOCUMENT_VERSION` without writing one fails
-the build rather than an engineer's reopened project.
+### Migration
+
+`DOCUMENT_VERSION` is **2**. The chain has one real step, added in Phase 4.5 when
+`obstructionType` arrived on `Boundary`:
+
+| Step | Does |
+| --- | --- |
+| v1 → v2 | Adds `obstructionType` to every boundary: `null` for room outlines and walls, `"other"` for anything already marked `kind: "obstruction"` |
+
+A v1 obstruction says something is in the way and nothing about what. `"other"` records
+that honestly; guessing `"column"` would be an invention the engineer would then have to
+notice was wrong.
+
+Two things the first real migration taught, both fixed:
+
+1. **`parseDocument` was migrating the content and leaving the version stamp alone.** The
+   file on disk was always written correctly, because `saveDocument` restamps — so nothing
+   on disk would ever have shown it. The in-memory document claimed v1 while holding v2
+   content, and every later consumer would have been reading a document that lied about
+   its own shape.
+2. **A migration takes unvalidated JSON by necessity**, because the type it would want is
+   the *old* schema, which this build no longer has. So it has to survive a shape that is
+   not what it expects and fail at the schema check that follows — not with a `TypeError`
+   halfway through. There is a test for exactly that.
+
+A test asserts that every version step below the current one has a migration, so bumping
+`DOCUMENT_VERSION` without writing one fails the build rather than an engineer's reopened
+project.
 
 ---
 

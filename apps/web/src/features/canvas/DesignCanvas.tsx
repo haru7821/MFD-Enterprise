@@ -4,7 +4,7 @@ import { Layer, Stage } from 'react-konva';
 import { catalog } from '@mfd/object-library/catalog';
 import type { EvaluationReport } from '@mfd/rule-engine';
 
-import { activeLevel, planDisplayTransform } from '@/editor/editorState';
+import { activeLevel, isTracingTool, planDisplayTransform } from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
 import { EquipmentLayer } from '@/features/equipment/EquipmentLayer';
 import { CalibrationOverlay } from '@/features/plan/CalibrationOverlay';
@@ -77,7 +77,9 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
             <SpaceLayer
               level={level}
               viewport={state.viewport}
-              selectedSpaceId={state.selectedSpaceId}
+              selectedBoundaryId={state.selectedBoundaryId}
+              selectedVertex={state.selectedVertex}
+              showHandles={!isTracingTool(state)}
             />
             <EquipmentLayer
               placements={level.placements}
@@ -97,9 +99,9 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
               cursorScreen={state.cursorScreen}
               viewport={state.viewport}
             />
-            {state.calibration && (
+            {state.pick?.kind === 'calibrate' && (
               <CalibrationOverlay
-                points={state.calibration.points}
+                points={state.pick.points}
                 transform={planTransform}
                 viewport={state.viewport}
                 cursorScreen={state.cursorScreen}

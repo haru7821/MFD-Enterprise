@@ -136,7 +136,7 @@ export function TopBar() {
       )}
 
       <span className="ml-auto font-mono text-[11px] text-ink-faint">
-        v0.4 Alpha · Sprint 4 — plan workflow &amp; spatial model
+        v0.4.5 Alpha · Phase 4.5 — UX completion
       </span>
     </header>
   );

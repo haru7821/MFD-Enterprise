@@ -7,9 +7,9 @@ It is not a replacement for CAD. Its job is to help a TS engineer evaluate dialy
 installation feasibility quickly and accurately, and every engineering value it applies is
 data it can cite back to a manual, not a number someone wrote from memory.
 
-**Current release: v0.4 Alpha — Sprints 1–4 delivered.** Import a hospital floor plan,
-calibrate its scale, trace the rooms, place equipment, and see every installation
-requirement checked live.
+**Current release: v0.4.5 Alpha — Sprints 1–4 plus Phase 4.5 delivered.** Import a hospital
+floor plan, calibrate it, set its origin, trace the rooms and the things in the way, place
+equipment across several floors, and see every installation requirement checked live.
 
 Current scope is defined by
 [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md).
@@ -34,33 +34,39 @@ Other commands, all run from the repository root:
 | `pnpm dev` | Run the web client with hot reload |
 | `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
 | `pnpm preview` | Serve the production build locally |
-| `pnpm test` | Run the engine unit tests (362) |
-| `pnpm test:e2e` | Run the browser specs against a production build (40) |
+| `pnpm test` | Run the engine unit tests (390) |
+| `pnpm test:e2e` | Run the browser specs against a production build (62) |
 | `pnpm bench` | Rule engine performance baseline |
 | `pnpm test:perf` | Frame-time measurement — an instrument, not a gate |
 | `pnpm typecheck` | Type-check every workspace |
 | `pnpm lint` | Lint every workspace |
 
-## What v0.4 Alpha does
+## What v0.4.5 Alpha does
 
 A complete feasibility-review workflow, minus the report:
 
-1. **Import the hospital's drawing** — PDF, PNG or JPG. PDF pages are rasterised; the
+1. **Pick the floor.** A project holds as many levels as the building has; each one keeps
+   its own drawing, rooms and equipment.
+2. **Import the hospital's drawing** — PDF, PNG or JPG. PDF pages are rasterised; the
    image is embedded in the project file, so a project emailed to a colleague arrives with
    its floor plan.
-2. **Calibrate it.** Pick two points on a known distance and type the distance. There is
+3. **Calibrate it.** Pick two points on a known distance and type the distance. There is
    no skip: until the scale is set the drawing has no millimetres in it, the status bar
    says so, and every finding is capped at YELLOW.
-3. **Trace the rooms.** Click to place vertices, close the ring on the first point or with
-   Enter. Live segment length and running area while drawing.
-4. **Place equipment** from the catalogue, drag it, rotate it, delete it.
-5. **Read the findings.** Clearance, equipment collision and room-boundary checks, each
-   naming the machine, the threshold applied, where that threshold came from, and whether
-   the data behind it is verified or provisional.
-6. **Save and reopen** as a `.mfd.json` file, validated in both directions.
+4. **Set the origin** by clicking the point on the drawing that is (0, 0). The layout stays
+   exactly where it is; only the coordinates renumber.
+5. **Trace the rooms**, and the **columns, shafts and fixed obstacles** equipment must not
+   overlap. Live segment length and running area while drawing. Reshape afterwards by
+   dragging a vertex, clicking a midpoint to add one, or Delete to remove one — vertices
+   snap onto a neighbouring room's corner, so a shared party wall is shared exactly.
+6. **Place equipment** from the catalogue, drag it, rotate it with `[` and `]`, delete it.
+7. **Read the findings.** Clearance, equipment collision and boundary checks, each naming
+   the machine, the threshold applied, where that threshold came from, and whether the data
+   behind it is verified or provisional.
+8. **Save and reopen** as a `.mfd.json` file, validated in both directions.
 
 Undo and redo cover all of it. One drag is one undo step; one renaming session is one undo
-step.
+step; deleting a whole floor comes back whole.
 
 Underneath:
 
@@ -121,6 +127,7 @@ Read in this order:
 | [docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md](docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md) | The first equipment object |
 | [docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md](docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md) | Rule categories, result levels, rule data structure |
 | [docs/architecture/DOCUMENT_MODEL.md](docs/architecture/DOCUMENT_MODEL.md) | What a project *is*, and why undo is commands rather than snapshots |
+| [docs/roadmap/PHASE_4_5_REPORT.md](docs/roadmap/PHASE_4_5_REPORT.md) | What finishing the gestures turned up that the model work had not |
 | [docs/architecture/RULE_ENGINE_API.md](docs/architecture/RULE_ENGINE_API.md) | The frozen finding contract every consumer reads |
 | [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
 | [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |

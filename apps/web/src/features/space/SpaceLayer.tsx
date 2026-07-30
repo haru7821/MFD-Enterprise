@@ -36,7 +36,23 @@ function flatten(vertices: readonly Vec2[], viewport: Viewport): number[] {
 export interface SpaceLayerProps {
   readonly level: Level;
   readonly viewport: Viewport;
-  readonly selectedSpaceId: string | null;
+  /**
+   * Drives every highlight, including a room's.
+   *
+   * Room selection is not passed separately: selecting a room selects its boundary, so
+   * a second source of "which thing is highlighted" could only ever disagree with this
+   * one.
+   */
+  readonly selectedBoundaryId: string | null;
+  readonly selectedVertex: { readonly boundaryId: string; readonly index: number } | null;
+  /**
+   * Whether the editing handles are drawn.
+   *
+   * False while a tracing tool is active, because a click then starts the next ring
+   * rather than grabbing a handle. Drawing handles that cannot be grabbed is a UI that
+   * lies about what a click will do — worse than no handles at all.
+   */
+  readonly showHandles: boolean;
 }
 
 function BoundaryShape({
@@ -68,22 +84,27 @@ function BoundaryShape({
   );
 }
 
-export function SpaceLayer({ level, viewport, selectedSpaceId }: SpaceLayerProps) {
+export function SpaceLayer({
+  level,
+  viewport,
+  selectedBoundaryId,
+  selectedVertex,
+  showHandles,
+}: SpaceLayerProps) {
   const boundaryById = new Map(level.boundaries.map((boundary) => [boundary.id, boundary]));
+  const editing =
+    !showHandles || selectedBoundaryId === null ? null : boundaryById.get(selectedBoundaryId);
 
   return (
     <>
-      {level.boundaries.map((boundary) => {
-        const space = level.spaces.find((entry) => entry.boundaryId === boundary.id);
-        return (
-          <BoundaryShape
-            key={boundary.id}
-            boundary={boundary}
-            viewport={viewport}
-            isSelected={space !== undefined && space.id === selectedSpaceId}
-          />
-        );
-      })}
+      {level.boundaries.map((boundary) => (
+        <BoundaryShape
+          key={boundary.id}
+          boundary={boundary}
+          viewport={viewport}
+          isSelected={boundary.id === selectedBoundaryId}
+        />
+      ))}
 
       {level.spaces.map((space) => {
         const boundary = boundaryById.get(space.boundaryId);
@@ -127,28 +148,51 @@ export function SpaceLayer({ level, viewport, selectedSpaceId }: SpaceLayerProps
         );
       })}
 
-      {/* Vertex handles on the selected room, so its shape can be corrected. */}
-      {level.spaces
-        .filter((space) => space.id === selectedSpaceId)
-        .map((space) => boundaryById.get(space.boundaryId))
-        .filter((boundary): boundary is Boundary => boundary !== undefined)
-        .flatMap((boundary) =>
-          boundary.vertices.map((vertex, index) => {
-            const screen = worldToScreen(viewport, vertex);
-            return (
-              <Circle
-                key={`${boundary.id}-${index}`}
-                x={screen.x}
-                y={screen.y}
-                radius={4}
-                fill={SPACE_THEME.vertexHandle.fill}
-                stroke={SPACE_THEME.vertexHandle.stroke}
-                strokeWidth={1}
-                listening={false}
-              />
-            );
-          }),
-        )}
+      {/*
+        Editing handles on the selected boundary.
+        Midpoints first, so a vertex handle overlapping one is the shape drawn on top —
+        which matches the hit-testing order in useCanvasInteraction. Handles that looked
+        one way and hit-tested another would be worse than none.
+      */}
+      {editing?.vertices.map((vertex, index) => {
+        const next = editing.vertices[(index + 1) % editing.vertices.length];
+        if (!next) return null;
+        const midpoint = worldToScreen(viewport, {
+          x: (vertex.x + next.x) / 2,
+          y: (vertex.y + next.y) / 2,
+        });
+
+        return (
+          <Circle
+            key={`mid-${editing.id}-${index}`}
+            x={midpoint.x}
+            y={midpoint.y}
+            radius={3}
+            stroke={SPACE_THEME.vertexHandle.fill}
+            strokeWidth={1}
+            listening={false}
+          />
+        );
+      })}
+
+      {editing?.vertices.map((vertex, index) => {
+        const screen = worldToScreen(viewport, vertex);
+        const isActive =
+          selectedVertex?.boundaryId === editing.id && selectedVertex.index === index;
+
+        return (
+          <Circle
+            key={`vertex-${editing.id}-${index}`}
+            x={screen.x}
+            y={screen.y}
+            radius={isActive ? 5.5 : 4}
+            fill={isActive ? SPACE_THEME.selected.stroke : SPACE_THEME.vertexHandle.fill}
+            stroke={SPACE_THEME.vertexHandle.stroke}
+            strokeWidth={1}
+            listening={false}
+          />
+        );
+      })}
     </>
   );
 }

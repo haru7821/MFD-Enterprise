@@ -189,6 +189,21 @@ printed dimension line and confirming the result. That needs a drawing we do not
 Scoped to raster underlay. Vector PDF geometry extraction, DXF and DWG stay in the
 specification's "Future" list.
 
+## Phase 4.5 — UX Completion ✅
+
+Inserted between Sprint 4 and Sprint 5 by the product owner. Not new capability — the
+gestures that make Sprint 4's model reachable.
+
+| Item | Delivered |
+| --- | --- |
+| Origin placement by mouse click, with undo | ✅ and it renumbers the coordinates without moving the layout |
+| Boundary vertex editing — select, drag, insert, delete, snapping | ✅ |
+| Obstruction objects — columns, shafts, fixed obstacles | ✅ stored, typed, and checked by the Sprint 4 boundary evaluator |
+| Level switcher | ✅ add, rename, delete, switch |
+
+Full account, including the six defects that only a gesture could expose, in
+[PHASE_4_5_REPORT.md](PHASE_4_5_REPORT.md).
+
 ## Sprint 5 — Report Generation
 
 Spec 5.5. PDF installation review report: project information, layout image, equipment

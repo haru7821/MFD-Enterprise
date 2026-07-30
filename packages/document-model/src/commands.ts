@@ -1,9 +1,16 @@
 import type { Vec2 } from '@mfd/cad-engine';
-import { normaliseRotation } from '@mfd/cad-engine';
+import { millidegreesToRadians, normaliseRotation } from '@mfd/cad-engine';
 
-import { requireLevel } from './document';
+import { createLevel, requireLevel } from './document';
 import { EntityNotFoundError } from './errors';
-import type { Boundary, Level, MfdDocument, Placement, Space } from './schema';
+import type {
+  Boundary,
+  CoordinateMapping,
+  Level,
+  MfdDocument,
+  Placement,
+  Space,
+} from './schema';
 
 /**
  * Editing commands.
@@ -33,11 +40,15 @@ import type { Boundary, Level, MfdDocument, Placement, Space } from './schema';
  *
  * ## What is deliberately not undoable
  *
- * Importing a plan and calibrating it are not commands. Undoing a calibration would
- * leave placements sitting at millimetre positions derived from a mapping that no
- * longer exists — geometry silently reinterpreted, which is the failure mode this
- * whole product exists to prevent. Both are explicit, deliberate acts with their own
- * confirmation, and both are re-doable by repeating them.
+ * Importing a plan, and setting its **scale**, are not commands. Undoing a scale change
+ * would leave placements at millimetre positions derived from a mapping that no longer
+ * exists — geometry silently reinterpreted, which is the failure mode this whole product
+ * exists to prevent. Both are explicit, deliberate acts, and both are re-doable by
+ * repeating them.
+ *
+ * Setting the **origin** is different, and is a command — see
+ * {@link setPlanOriginCommand}. It does not reinterpret anything: it re-datums the
+ * drawing and renumbers the layout to match, which is exactly reversible.
  */
 
 export type CommandType =
@@ -48,10 +59,15 @@ export type CommandType =
   | 'placement.delete'
   | 'boundary.create'
   | 'boundary.setVertices'
+  | 'boundary.describe'
   | 'boundary.delete'
   | 'space.create'
   | 'space.rename'
-  | 'space.delete';
+  | 'space.delete'
+  | 'level.create'
+  | 'level.rename'
+  | 'level.delete'
+  | 'plan.setOrigin';
 
 export interface CommandResult {
   readonly document: MfdDocument;
@@ -525,4 +541,381 @@ function restoreSpaceCommand(levelId: string, removed: RemovedSpace): Command {
       return { document: next, inverse: deleteSpaceCommand(levelId, removed.space.id) };
     },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Boundary vertex editing
+// ---------------------------------------------------------------------------
+
+/**
+ * The smallest ring that encloses anything.
+ *
+ * Deleting past this is refused rather than clamped: a two-vertex "room" would report
+ * every machine in the building as outside it, and silently keeping the third vertex
+ * would leave the engineer unsure which of their clicks took effect.
+ */
+export const MIN_BOUNDARY_VERTICES = 3;
+
+function replaceVertices(
+  levelId: string,
+  boundaryId: string,
+  label: string,
+  mergeKey: string | null,
+  type: CommandType,
+  compute: (vertices: readonly Vec2[]) => readonly Vec2[] | null,
+): Command {
+  return command({
+    type,
+    label,
+    mergeKey,
+    apply(document) {
+      const level = requireLevel(document, levelId);
+      const previous = requireBoundary(level, boundaryId).vertices;
+      const next = compute(previous);
+
+      // A refused edit is a no-op that still records an inverse, so the history stays
+      // consistent rather than the caller having to know which edits are legal.
+      const vertices = next ?? previous;
+
+      const document_ = withLevel(document, levelId, (current) => ({
+        ...current,
+        boundaries: current.boundaries.map((boundary) =>
+          boundary.id === boundaryId ? { ...boundary, vertices: [...vertices] } : boundary,
+        ),
+      }));
+
+      return {
+        document: document_,
+        inverse: setBoundaryVerticesCommand(levelId, boundaryId, previous),
+      };
+    },
+  });
+}
+
+/** Move one vertex. Coalesces per vertex, so a drag is one undo step. */
+export function moveBoundaryVertexCommand(
+  levelId: string,
+  boundaryId: string,
+  index: number,
+  position: Vec2,
+): Command {
+  return replaceVertices(
+    levelId,
+    boundaryId,
+    'Move vertex',
+    `boundary.vertex:${boundaryId}:${index}`,
+    'boundary.setVertices',
+    (vertices) => {
+      if (index < 0 || index >= vertices.length) return null;
+      const next = [...vertices];
+      next[index] = position;
+      return next;
+    },
+  );
+}
+
+/**
+ * Insert a vertex **after** `index`.
+ *
+ * After rather than at: the caller has hit-tested an edge, and an edge is identified by
+ * the vertex it leaves. Inserting "at" an index would make the last edge — the implied
+ * closing one — the awkward special case it does not need to be.
+ */
+export function insertBoundaryVertexCommand(
+  levelId: string,
+  boundaryId: string,
+  afterIndex: number,
+  position: Vec2,
+): Command {
+  return replaceVertices(
+    levelId,
+    boundaryId,
+    'Insert vertex',
+    null,
+    'boundary.setVertices',
+    (vertices) => {
+      if (afterIndex < 0 || afterIndex >= vertices.length) return null;
+      const next = [...vertices];
+      next.splice(afterIndex + 1, 0, position);
+      return next;
+    },
+  );
+}
+
+/** Remove one vertex, unless doing so would leave a ring that encloses nothing. */
+export function removeBoundaryVertexCommand(
+  levelId: string,
+  boundaryId: string,
+  index: number,
+): Command {
+  return replaceVertices(
+    levelId,
+    boundaryId,
+    'Delete vertex',
+    null,
+    'boundary.setVertices',
+    (vertices) => {
+      if (index < 0 || index >= vertices.length) return null;
+      if (vertices.length <= MIN_BOUNDARY_VERTICES) return null;
+      return vertices.filter((_, at) => at !== index);
+    },
+  );
+}
+
+/** Can this vertex be removed at all? Lets a caller disable the control rather than offer a no-op. */
+export function canRemoveBoundaryVertex(boundary: Boundary): boolean {
+  return boundary.vertices.length > MIN_BOUNDARY_VERTICES;
+}
+
+/**
+ * Rename an obstruction, or change what kind of obstruction it is.
+ *
+ * Both in one command because they are one editing act — an engineer correcting
+ * "obstruction 3" to "Column C4" is usually setting its type in the same breath, and
+ * two undo steps for one correction is a worse answer than one.
+ */
+export function describeBoundaryCommand(
+  levelId: string,
+  boundaryId: string,
+  label: string,
+  obstructionType: Boundary['obstructionType'],
+): Command {
+  return command({
+    type: 'boundary.describe',
+    label: 'Rename obstruction',
+    // Typing emits a command per keystroke; the field seals on blur.
+    mergeKey: `boundary.describe:${boundaryId}`,
+    apply(document) {
+      const level = requireLevel(document, levelId);
+      const previous = requireBoundary(level, boundaryId);
+
+      const next = withLevel(document, levelId, (current) => ({
+        ...current,
+        boundaries: current.boundaries.map((boundary) =>
+          boundary.id === boundaryId ? { ...boundary, label, obstructionType } : boundary,
+        ),
+      }));
+
+      return {
+        document: next,
+        inverse: describeBoundaryCommand(
+          levelId,
+          boundaryId,
+          previous.label,
+          previous.obstructionType,
+        ),
+      };
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Plan origin
+// ---------------------------------------------------------------------------
+
+/**
+ * Declare which image pixel is model (0, 0), and renumber the layout to match.
+ *
+ * ## Why this moves the geometry
+ *
+ * The transform is `model_mm = rotate(px − origin, θ) × mmPerPixel`. Moving the origin
+ * changes where the *drawing* sits in model space — so on its own, it would slide the
+ * plan out from under every machine already placed on it.
+ *
+ * That is not what an engineer means. "Set the origin here" means *call this point zero*:
+ * the layout must not move on the drawing, the coordinates must renumber. So every
+ * placement and every boundary vertex is translated by the same delta, leaving each of
+ * them over the same pixel of the plan it was over before.
+ *
+ * On an empty level — the ordinary case, since the origin is set right after calibration
+ * — the translation is a no-op. It only earns its keep when the origin is set late, which
+ * is exactly when getting it wrong would be hardest to notice.
+ *
+ * ## Why this one is undoable when setting the scale is not
+ *
+ * Because it is exactly reversible. A scale change reinterprets what a millimetre *is*;
+ * a re-datum only changes what the numbers are measured from, and translating back by
+ * the same delta restores the document field for field.
+ *
+ * Refused, as a no-op, on a level with no coordinate mapping: there is nothing to be the
+ * origin of until a scale exists.
+ */
+export function setPlanOriginCommand(levelId: string, originPixel: Vec2): Command {
+  return command({
+    type: 'plan.setOrigin',
+    label: 'Set drawing origin',
+    mergeKey: null,
+    apply(document) {
+      const level = requireLevel(document, levelId);
+      const mapping = level.coordinateMapping;
+
+      if (!mapping) {
+        return { document, inverse: setPlanOriginCommand(levelId, originPixel) };
+      }
+
+      const previousOrigin = mapping.origin;
+      const delta = originShift(previousOrigin, originPixel, mapping);
+
+      const next = withLevel(document, levelId, (current) => ({
+        ...current,
+        coordinateMapping: current.coordinateMapping
+          ? { ...current.coordinateMapping, origin: originPixel }
+          : null,
+        placements: current.placements.map((placement) => ({
+          ...placement,
+          transform: {
+            ...placement.transform,
+            position: {
+              x: placement.transform.position.x - delta.x,
+              y: placement.transform.position.y - delta.y,
+            },
+          },
+        })),
+        boundaries: current.boundaries.map((boundary) => ({
+          ...boundary,
+          vertices: boundary.vertices.map((vertex) => ({
+            x: vertex.x - delta.x,
+            y: vertex.y - delta.y,
+          })),
+        })),
+      }));
+
+      return { document: next, inverse: setPlanOriginCommand(levelId, previousOrigin) };
+    },
+  });
+}
+
+/**
+ * How far model space shifts when the origin pixel moves to `to`.
+ *
+ * `delta = rotate(newOrigin − oldOrigin, θ) × mmPerPixel`, which is the difference
+ * between what the two transforms report for any given pixel. Everything on the drawing
+ * moves by `−delta` in model space to stay where it is on the drawing.
+ *
+ * Exported because the editor needs it as well as the command: the *document* geometry
+ * moves by `−delta`, so the **viewport** has to move with it or the whole drawing jumps
+ * on screen the moment an engineer picks an origin. Two callers, one arithmetic —
+ * duplicating it is how the picture and the coordinates come to disagree.
+ */
+export function planOriginShift(mapping: CoordinateMapping, to: Vec2): Vec2 {
+  return originShift(mapping.origin, to, mapping);
+}
+
+function originShift(from: Vec2, to: Vec2, mapping: CoordinateMapping): Vec2 {
+  const shifted = { x: to.x - from.x, y: to.y - from.y };
+  const radians = millidegreesToRadians(mapping.rotation);
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return {
+    x: (shifted.x * cos - shifted.y * sin) * mapping.millimetresPerPixel,
+    y: (shifted.x * sin + shifted.y * cos) * mapping.millimetresPerPixel,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Levels
+// ---------------------------------------------------------------------------
+
+export function createLevelCommand(levelId: string, name: string, elevation = 0): Command {
+  return command({
+    type: 'level.create',
+    label: `Add ${name}`,
+    mergeKey: null,
+    apply(document) {
+      const next: MfdDocument = {
+        ...document,
+        project: {
+          ...document.project,
+          levels: [...document.project.levels, createLevel(levelId, name, elevation)],
+        },
+      };
+      return { document: next, inverse: deleteLevelCommand(levelId) };
+    },
+  });
+}
+
+export function renameLevelCommand(levelId: string, name: string, elevation: number): Command {
+  return command({
+    type: 'level.rename',
+    label: 'Rename level',
+    mergeKey: `level.rename:${levelId}`,
+    apply(document) {
+      const previous = requireLevel(document, levelId);
+
+      const next: MfdDocument = {
+        ...document,
+        project: {
+          ...document.project,
+          levels: document.project.levels.map((level) =>
+            level.id === levelId ? { ...level, name, elevation } : level,
+          ),
+        },
+      };
+
+      return {
+        document: next,
+        inverse: renameLevelCommand(levelId, previous.name, previous.elevation),
+      };
+    },
+  });
+}
+
+/**
+ * Delete a level, with everything on it.
+ *
+ * The last level cannot be deleted — the schema requires at least one, and a project
+ * with no floor is not a project. The attempt is a no-op rather than a throw: a UI that
+ * offers the control is the thing to fix, and crashing the editor is not how to report it.
+ *
+ * This is the single most destructive command in the set, which is exactly why it is a
+ * command. A floor holding fifty machines and a calibrated plan is restored whole,
+ * at its original position in the level order.
+ */
+export function deleteLevelCommand(levelId: string): Command {
+  return command({
+    type: 'level.delete',
+    label: 'Delete level',
+    mergeKey: null,
+    apply(document) {
+      const removed = requireLevel(document, levelId);
+      if (document.project.levels.length <= 1) {
+        return { document, inverse: deleteLevelCommand(levelId) };
+      }
+
+      const index = document.project.levels.indexOf(removed);
+
+      const next: MfdDocument = {
+        ...document,
+        project: {
+          ...document.project,
+          levels: document.project.levels.filter((level) => level.id !== levelId),
+        },
+      };
+
+      return { document: next, inverse: restoreLevelCommand(removed, index) };
+    },
+  });
+}
+
+function restoreLevelCommand(level: Level, index: number): Command {
+  return command({
+    type: 'level.create',
+    label: `Restore ${level.name}`,
+    mergeKey: null,
+    apply(document) {
+      const levels = [...document.project.levels];
+      levels.splice(Math.min(index, levels.length), 0, level);
+
+      return {
+        document: { ...document, project: { ...document.project, levels } },
+        inverse: deleteLevelCommand(level.id),
+      };
+    },
+  });
+}
+
+/** Can this level be deleted? A project needs at least one floor. */
+export function canDeleteLevel(document: MfdDocument): boolean {
+  return document.project.levels.length > 1;
 }

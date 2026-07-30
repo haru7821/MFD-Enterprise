@@ -20,10 +20,14 @@ import { DOCUMENT_VERSION, type MfdDocument, documentSchema } from './schema';
  * ## Migration
  *
  * The chain runs one step at a time: v1 → v2 → v3. Each migration only has to know
- * about the version immediately before it. There is nothing to migrate yet; the
- * mechanism exists from the first release rather than from the first release that
- * needed it, because retrofitting it means writing migrations against files you
- * cannot inspect.
+ * about the version immediately before it, which is what keeps the chain from becoming
+ * a pile of special cases as versions accumulate.
+ *
+ * A migration takes **unvalidated JSON** and returns unvalidated JSON. It cannot take a
+ * typed document, because the type it would need is the *old* schema — which this build
+ * no longer has. That is not sloppiness to tidy up later: a migration's whole job is to
+ * handle a shape the current code does not model, and the validation that follows is
+ * what makes the result safe.
  */
 
 /** A migration from `from` to `from + 1`. Input is unvalidated JSON, by necessity. */
@@ -33,8 +37,46 @@ export interface Migration {
   migrate(document: Record<string, unknown>): Record<string, unknown>;
 }
 
-/** Ordered by `from`. Empty until the schema changes shape. */
-export const MIGRATIONS: readonly Migration[] = [];
+/**
+ * Ordered by `from`.
+ *
+ * **v1 → v2** added `obstructionType` to `Boundary`. Every v1 boundary predates
+ * obstruction typing, so it gets `null` — which is exactly right for a room outline or
+ * a wall. A v1 boundary already marked `kind: "obstruction"` is the one case that
+ * cannot be answered from the file: it says something is in the way and nothing about
+ * what. `"other"` records that honestly rather than guessing "column", and the engineer
+ * can correct it in the inspector.
+ */
+export const MIGRATIONS: readonly Migration[] = [
+  {
+    from: 1,
+    to: 2,
+    migrate(document) {
+      const project = document['project'];
+      if (!isRecord(project) || !Array.isArray(project['levels'])) return document;
+
+      const levels = project['levels'].map((level) => {
+        if (!isRecord(level) || !Array.isArray(level['boundaries'])) return level;
+
+        const boundaries = level['boundaries'].map((boundary) => {
+          if (!isRecord(boundary)) return boundary;
+          return {
+            ...boundary,
+            obstructionType: boundary['kind'] === 'obstruction' ? 'other' : null,
+          };
+        });
+
+        return { ...level, boundaries };
+      });
+
+      return { ...document, project: { ...project, levels } };
+    },
+  },
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 const versionProbeSchema = z.looseObject({
   documentVersion: z.number().int().positive(),
@@ -87,7 +129,13 @@ export function parseDocument(value: unknown): MfdDocument {
     migrated = migration.migrate(migrated);
   }
 
-  const parsed = documentSchema.safeParse(migrated);
+  // Stamp the version the content is now at. Without this a migrated document keeps
+  // claiming the version it arrived as, and every later consumer — a report, a diff,
+  // a second migration pass — would be reading a document that lies about its own
+  // shape. `saveDocument` restamps on the way out, so the file was always written
+  // correctly; it was the in-memory document that was wrong, which is worse: nothing
+  // on disk would ever have shown it.
+  const parsed = documentSchema.safeParse({ ...migrated, documentVersion: DOCUMENT_VERSION });
   if (!parsed.success) throw new DocumentValidationError(issuesFrom(parsed.error));
 
   return parsed.data;

@@ -2,7 +2,8 @@
 
 > The document a TS engineer creates, saves and reports on.
 > Governed by [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).
-> Version 0.2 — implemented in Sprint 4 as `packages/document-model`.
+> Version 0.3 — implemented in Sprint 4 as `packages/document-model`; obstruction typing
+> added in Phase 4.5. **Document schema version 2.**
 
 ## Hierarchy
 
@@ -177,6 +178,15 @@ geometry is a room.
 | `kind` | `space_outline` \| `wall` \| `obstruction` | What the rule engine does with it |
 | `vertices` | Vec2[] | Closed ring, millimetres. At least three. |
 | `label` | string | e.g. "Column C4" |
+| `obstructionType` | ObstructionType \| null | `column` · `shaft` · `duct` · `fixed_equipment` · `other`. Required when `kind` is `obstruction`, and rejected otherwise. |
+
+**`obstructionType` is descriptive, not behavioural.** The rule engine asks one question —
+is this a room outline, or something equipment must not overlap — and that is `kind`. The
+type exists so a report can say "overlaps Column C4" rather than "overlaps obstruction 3",
+and so a floor's obstructions can be grouped and counted.
+
+Keeping the two apart is what stops a new type needing an evaluator change, and stops an
+unrecognised type silently ceasing to be checked.
 
 The ring is **closed implicitly** — the closing edge is never stored, so "is this ring
 closed" has one answer rather than two.
@@ -272,6 +282,8 @@ stale verdict in a feasibility report is worse than no verdict.
 | PlanImage, CoordinateMapping, ScaleCalibration | 4 | ✅ |
 | Project, save / load, document versioning | 4 | ✅ |
 | Command stack (undo / redo) | 4 | ✅ |
+| `obstructionType`, plan origin as a command, level commands | 4.5 | ✅ |
+| Document migration v1 → v2 | 4.5 | ✅ the first real one |
 | Port | after the routing model | declared, not derived yet |
 | Placement `parameters` (per-instance overrides) | when an object declares one | not modelled |
-| Multiple levels in the UI | 5 | model supports it; the editor shows one |
+| Multiple levels in the UI | 4.5 | ✅ level selector, add, rename, delete |

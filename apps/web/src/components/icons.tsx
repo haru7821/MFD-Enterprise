@@ -146,3 +146,12 @@ export function PlanIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function ObstructionIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 3.5h9v9h-9z" />
+      <path d="M3.5 6.5 6.5 3.5M3.5 9.5 9.5 3.5M3.5 12.5 12.5 3.5M6.5 12.5 12.5 6.5M9.5 12.5 12.5 9.5" />
+    </Icon>
+  );
+}

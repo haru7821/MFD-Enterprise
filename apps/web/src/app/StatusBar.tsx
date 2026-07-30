@@ -5,10 +5,11 @@ import {
   snapToStep,
   zoomPercent,
 } from '@mfd/cad-engine';
+import { obstructionBoundaries } from '@mfd/document-model';
 import { catalog } from '@mfd/object-library/catalog';
 import type { EvaluationReport } from '@mfd/rule-engine';
 
-import { activeLevel, planStatusOf } from '@/editor/editorState';
+import { activeLevel, isTracingTool, planStatusOf } from '@/editor/editorState';
 import { getTool } from '@/editor/tools';
 import { useEditor } from '@/editor/useEditor';
 
@@ -73,9 +74,17 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
       <span className="text-ink-muted">
         <span className="font-medium text-ink">{tool.label}</span>
         <span className="ml-2 text-ink-faint">
-          {state.selectedPlacementId
-            ? 'Drag to move · [ and ] rotate a quarter turn · Delete removes'
-            : tool.hint}
+          {state.pick?.kind === 'origin'
+            ? 'Click the drawing to set model (0, 0)'
+            : state.pick?.kind === 'calibrate'
+              ? 'Click two points a known distance apart'
+              : state.selectedVertex
+                ? 'Drag to move · Delete removes · Escape deselects'
+                : state.selectedBoundaryId && !isTracingTool(state)
+                  ? 'Drag a handle to reshape · click a midpoint to add a vertex'
+                  : state.selectedPlacementId
+                    ? 'Drag to move · [ and ] rotate a quarter turn · Delete removes'
+                    : tool.hint}
         </span>
       </span>
 
@@ -114,8 +123,10 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
       )}
 
       <div className="ml-auto flex items-center gap-4">
+        <Field label="Level" value={level.name} />
         <Field label="Placed" value={`${level.placements.length}`} />
         <Field label="Rooms" value={`${level.spaces.length}`} />
+        <Field label="Obstructions" value={`${obstructionBoundaries(level).length}`} />
         <Field label="X" value={cursor ? formatCoordinate(cursor.x) : '—'} />
         <Field label="Y" value={cursor ? formatCoordinate(cursor.y) : '—'} />
         <Field label="Grid" value={state.showGrid ? formatLength(grid.step) : 'off'} />

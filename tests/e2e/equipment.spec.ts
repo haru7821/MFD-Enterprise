@@ -181,7 +181,9 @@ test('moves a placed machine without changing its size', async ({ page }) => {
   await page.mouse.up();
 
   await expect(page.getByTestId('field-placed')).toHaveText('1');
-  expect(await measureFootprint(page)).toEqual(before);
+  // Polled for the same reason as the delete case below: the canvas rasterises a frame
+  // after the DOM settles.
+  await expect.poll(async () => measureFootprint(page)).toEqual(before);
 });
 
 test('deletes the selected machine', async ({ page }) => {
@@ -194,5 +196,10 @@ test('deletes the selected machine', async ({ page }) => {
 
   await page.keyboard.press('Delete');
   await expect(page.getByTestId('field-placed')).toHaveText('0');
-  expect(await measureFootprint(page)).toBeNull();
+
+  // Polled, not read once. The status bar updates in the React commit; Konva rasterises
+  // in a later frame, so a single `getImageData` here can still see the deleted machine.
+  // It passed nearly always and failed under parallel load, which is the worst way for a
+  // race to present itself.
+  await expect.poll(async () => measureFootprint(page)).toBeNull();
 });

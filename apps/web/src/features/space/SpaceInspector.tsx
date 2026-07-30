@@ -1,7 +1,7 @@
 import { SPACE_FUNCTIONS, findBoundary, spaceArea } from '@mfd/document-model';
 
 import { now } from '@/editor/clock';
-import { activeLevel } from '@/editor/editorState';
+import { activeLevel, isTracingTool } from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
 
 /**
@@ -104,8 +104,14 @@ export function SpaceInspector() {
             </select>
           </label>
 
-          <p className="font-mono text-[10px] text-ink-faint">
-            {findBoundary(level, selected.boundaryId)?.vertices.length ?? 0} vertices
+          <p
+            data-testid="space-vertex-count"
+            className="font-mono text-[10px] text-ink-faint"
+          >
+            {findBoundary(level, selected.boundaryId)?.vertices.length ?? 0} vertices ·{' '}
+            {isTracingTool(state)
+              ? 'press V to reshape it'
+              : 'drag a handle to reshape · click a midpoint to add one'}
           </p>
 
           <button

@@ -43,3 +43,12 @@ export const MIN_PIXELS_FOR_ROOM_LABEL = 90;
 
 /** Screen-pixel radius within which clicking the first vertex closes the ring. */
 export const CLOSE_TARGET_RADIUS_PX = 10;
+
+/**
+ * Screen-pixel radius for grabbing a vertex or a midpoint handle.
+ *
+ * In **screen** pixels, not millimetres: a target that shrank as the engineer zoomed
+ * out would become ungrabbable at exactly the zoom where they are trying to reshape a
+ * whole floor.
+ */
+export const VERTEX_GRAB_RADIUS_PX = 9;

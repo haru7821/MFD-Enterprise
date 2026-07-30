@@ -69,10 +69,26 @@ export function useKeyboardShortcuts(): void {
           return;
         }
 
+        // A selected vertex is the most specific thing Delete could mean.
+        const vertex = stateRef.current.selectedVertex;
+        if (vertex) {
+          event.preventDefault();
+          dispatch({ type: 'vertex/delete', vertex, at: now() });
+          return;
+        }
+
         const selectedSpace = stateRef.current.selectedSpaceId;
         if (selectedSpace) {
           event.preventDefault();
           dispatch({ type: 'space/delete', spaceId: selectedSpace, at: now() });
+          return;
+        }
+
+        // A boundary with no room is an obstruction; Delete removes it outright.
+        const boundary = stateRef.current.selectedBoundaryId;
+        if (boundary) {
+          event.preventDefault();
+          dispatch({ type: 'boundary/delete', boundaryId: boundary, at: now() });
           return;
         }
 
@@ -111,17 +127,21 @@ export function useKeyboardShortcuts(): void {
       if (key === 'escape') {
         event.preventDefault();
         // Escape cancels the most specific thing in progress, one level at a time.
-        if (stateRef.current.calibration) {
-          dispatch({ type: 'calibration/cancel' });
+        if (stateRef.current.pick) {
+          dispatch({ type: 'pick/cancel' });
           return;
         }
         if (stateRef.current.draftRoomVertices.length > 0) {
           dispatch({ type: 'room/cancel' });
           return;
         }
+        if (stateRef.current.selectedVertex) {
+          dispatch({ type: 'vertex/select', vertex: null });
+          return;
+        }
         dispatch({ type: 'equipment/arm', equipmentObjectId: null });
         dispatch({ type: 'placement/select', placementId: null });
-        dispatch({ type: 'space/select', spaceId: null });
+        dispatch({ type: 'boundary/select', boundaryId: null });
         return;
       }
 

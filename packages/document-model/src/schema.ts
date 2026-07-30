@@ -81,7 +81,7 @@ const identifierSchema = z.string().min(1);
  * it. Adding it later means either abandoning real project documents or writing the
  * migration you skipped, under pressure, against files you cannot inspect.
  */
-export const DOCUMENT_VERSION = 1;
+export const DOCUMENT_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Placement
@@ -130,19 +130,67 @@ export const BOUNDARY_KINDS = [
 export type BoundaryKind = (typeof BOUNDARY_KINDS)[number];
 
 /**
+ * What kind of obstruction this is.
+ *
+ * Descriptive, not behavioural. The rule engine asks only "is this a room outline or
+ * something equipment must not overlap" — which is `kind`. This field exists because a
+ * report that says "overlaps Column C4" is useful and one that says "overlaps
+ * obstruction 3" is not, and because an engineer scanning a floor needs to tell a
+ * structural column from a duct riser.
+ *
+ * Keeping the two apart matters: if the type drove the check, adding a type would mean
+ * touching the evaluator, and an unrecognised type would silently stop being checked.
+ */
+export const OBSTRUCTION_TYPES = [
+  /** Structural column. */
+  'column',
+  /** Vertical shaft — lift, stair, service riser. */
+  'shaft',
+  /** Duct, pipe run or bulkhead. */
+  'duct',
+  /** Fixed equipment or furniture that cannot be moved. */
+  'fixed_equipment',
+  'other',
+] as const;
+
+export type ObstructionType = (typeof OBSTRUCTION_TYPES)[number];
+
+/**
  * A traced polygon in model space.
  *
  * At least three vertices, because fewer encloses nothing. The ring is closed
  * implicitly — the closing edge is never stored, so "is this ring closed" has one
  * answer rather than two.
  */
-export const boundarySchema = z.strictObject({
-  id: identifierSchema,
-  kind: z.enum(BOUNDARY_KINDS),
-  /** Closed polygon, model millimetres. */
-  vertices: z.array(vec2Schema).min(3, 'a boundary needs at least three vertices'),
-  label: z.string(),
-});
+export const boundarySchema = z
+  .strictObject({
+    id: identifierSchema,
+    kind: z.enum(BOUNDARY_KINDS),
+    /** Closed polygon, model millimetres. */
+    vertices: z.array(vec2Schema).min(3, 'a boundary needs at least three vertices'),
+    label: z.string(),
+    /** Set only when `kind` is `obstruction`. Null otherwise. */
+    obstructionType: z.enum(OBSTRUCTION_TYPES).nullable(),
+  })
+  .superRefine((boundary, ctx) => {
+    // Enforced both ways. An obstruction with no type produces a report row an
+    // engineer cannot act on; a room outline carrying one is a record that two
+    // different things were meant, with no way to tell which.
+    if (boundary.kind === 'obstruction' && boundary.obstructionType === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['obstructionType'],
+        message: 'kind "obstruction" requires an obstructionType',
+      });
+    }
+    if (boundary.kind !== 'obstruction' && boundary.obstructionType !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['obstructionType'],
+        message: `obstructionType belongs to kind "obstruction", not "${boundary.kind}"`,
+      });
+    }
+  });
 
 export const SPACE_FUNCTIONS = [
   'hemodialysis_treatment',

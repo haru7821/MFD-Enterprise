@@ -122,6 +122,7 @@ function building(count: number): Boundary[] {
         { x: -1_000, y: height },
       ],
       label: 'Bench treatment area',
+      obstructionType: null,
     },
   ];
 
@@ -138,6 +139,7 @@ function building(count: number): Boundary[] {
         { x, y: y + 400 },
       ],
       label: `Column ${row}`,
+      obstructionType: 'column',
     });
   }
 

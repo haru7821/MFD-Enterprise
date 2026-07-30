@@ -4,6 +4,8 @@ import {
   type Vec2,
   chooseGridSpec,
   modelToPixel,
+  polygonArea,
+  polygonContains,
   screenToWorld,
   snapToStep,
   vec2,
@@ -13,9 +15,15 @@ import { footprintContains } from '@mfd/object-library';
 import { catalog } from '@mfd/object-library/catalog';
 
 import { now } from '@/editor/clock';
-import { type EditorState, activeLevel, planDisplayTransform } from '@/editor/editorState';
-import { CLOSE_TARGET_RADIUS_PX } from '@/features/space/spaceTheme';
+import type { VertexRef } from '@/editor/editorState';
+import {
+  type EditorState,
+  activeLevel,
+  isTracingTool,
+  planDisplayTransform,
+} from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
+import { CLOSE_TARGET_RADIUS_PX, VERTEX_GRAB_RADIUS_PX } from '@/features/space/spaceTheme';
 
 /**
  * Pointer and wheel navigation for the design canvas.
@@ -64,6 +72,118 @@ function placementAt(state: EditorState, point: Vec2): string | null {
   return null;
 }
 
+/**
+ * Snap a vertex being dragged.
+ *
+ * Grid snapping, plus a stronger pull towards **other vertices of other boundaries**.
+ * Two rooms sharing a party wall have to share its coordinates exactly, and getting
+ * them within a few millimetres by eye leaves a sliver of floor that belongs to
+ * neither room — the containment test would then place a machine near that wall in
+ * neither of them.
+ *
+ * Vertices of the *same* boundary are excluded: snapping a vertex onto its own
+ * neighbour collapses the edge between them, which `simplifyPolygon` would then
+ * quietly delete.
+ */
+function snapVertex(state: EditorState, moving: VertexRef, point: Vec2): Vec2 {
+  const grabWorld = VERTEX_GRAB_RADIUS_PX / state.viewport.scale;
+  let best: Vec2 | null = null;
+  let bestDistance = grabWorld;
+
+  for (const boundary of activeLevel(state).boundaries) {
+    if (boundary.id === moving.boundaryId) continue;
+    for (const vertex of boundary.vertices) {
+      const distance = Math.hypot(vertex.x - point.x, vertex.y - point.y);
+      if (distance < bestDistance) {
+        best = vertex;
+        bestDistance = distance;
+      }
+    }
+  }
+
+  return best ?? applySnap(state, point);
+}
+
+/** The nearest vertex handle to a screen point, within grabbing distance. */
+function vertexAt(state: EditorState, pointer: Vec2): VertexRef | null {
+  const boundaryId = state.selectedBoundaryId;
+  if (boundaryId === null) return null;
+
+  const boundary = activeLevel(state).boundaries.find((entry) => entry.id === boundaryId);
+  if (!boundary) return null;
+
+  let best: VertexRef | null = null;
+  let bestDistance = VERTEX_GRAB_RADIUS_PX;
+
+  for (const [index, vertex] of boundary.vertices.entries()) {
+    const screen = worldToScreen(state.viewport, vertex);
+    const distance = Math.hypot(screen.x - pointer.x, screen.y - pointer.y);
+    if (distance <= bestDistance) {
+      best = { boundaryId, index };
+      bestDistance = distance;
+    }
+  }
+
+  return best;
+}
+
+/**
+ * The edge midpoint handle nearest a screen point, within grabbing distance.
+ *
+ * Insertion is offered on midpoints rather than anywhere along an edge, so that
+ * clicking an edge to insert and clicking near a vertex to grab it cannot be confused.
+ * The returned index is the vertex the edge *leaves*, which is what
+ * `insertBoundaryVertexCommand` takes.
+ */
+function edgeMidpointAt(
+  state: EditorState,
+  pointer: Vec2,
+): { readonly afterIndex: number; readonly position: Vec2 } | null {
+  const boundaryId = state.selectedBoundaryId;
+  if (boundaryId === null) return null;
+
+  const boundary = activeLevel(state).boundaries.find((entry) => entry.id === boundaryId);
+  if (!boundary) return null;
+
+  let best: { afterIndex: number; position: Vec2 } | null = null;
+  let bestDistance = VERTEX_GRAB_RADIUS_PX;
+
+  for (let index = 0; index < boundary.vertices.length; index += 1) {
+    const a = boundary.vertices[index];
+    const b = boundary.vertices[(index + 1) % boundary.vertices.length];
+    if (!a || !b) continue;
+
+    const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const screen = worldToScreen(state.viewport, midpoint);
+    const distance = Math.hypot(screen.x - pointer.x, screen.y - pointer.y);
+    if (distance <= bestDistance) {
+      best = { afterIndex: index, position: midpoint };
+      bestDistance = distance;
+    }
+  }
+
+  return best;
+}
+
+/** The topmost boundary whose outline contains a model point. */
+function boundaryAt(state: EditorState, point: Vec2): string | null {
+  const boundaries = activeLevel(state).boundaries;
+  // Back to front, and smallest-first among containers: a column drawn inside a room
+  // is the more specific answer, and the one being pointed at.
+  let best: string | null = null;
+  let bestArea = Number.POSITIVE_INFINITY;
+
+  for (const boundary of boundaries) {
+    if (!polygonContains(boundary.vertices, point)) continue;
+    const area = polygonArea(boundary.vertices);
+    if (area <= bestArea) {
+      best = boundary.id;
+      bestArea = area;
+    }
+  }
+  return best;
+}
+
 function normaliseWheelDelta(event: WheelEvent): { x: number; y: number } {
   const unit =
     event.deltaMode === 1
@@ -94,6 +214,7 @@ export function useCanvasInteraction(
   const dragRef = useRef<{ pointerId: number; placementId: string; grabOffset: Vec2 } | null>(
     null,
   );
+  const vertexDragRef = useRef<{ pointerId: number; vertex: VertexRef } | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -147,22 +268,24 @@ export function useCanvasInteraction(
       if (event.button !== 0) return;
       const world = screenToWorld(current.viewport, localPoint(event));
 
-      // Calibration takes precedence over every tool: it is a modal act the engineer
+      // A modal pick takes precedence over every tool: it is something the engineer
       // started deliberately, and a stray click that placed a machine instead would
       // leave them wondering which of the two things happened.
-      if (current.calibration) {
+      if (current.pick) {
         event.preventDefault();
-        // Recorded in image pixels, not millimetres. A calibration is a statement
-        // about the drawing, made before the drawing has any millimetres in it.
-        dispatch({
-          type: 'calibration/pick',
-          pixel: modelToPixel(planDisplayTransform(current), world),
-        });
+        // Recorded in image pixels, not millimetres. Both picks are statements about
+        // the drawing — one of them made before the drawing has any millimetres in it.
+        const pixel = modelToPixel(planDisplayTransform(current), world);
+        dispatch(
+          current.pick.kind === 'calibrate'
+            ? { type: 'calibration/pick', pixel }
+            : { type: 'origin/set', pixel, at: now() },
+        );
         return;
       }
 
-      // Room tool: trace a ring, click the first vertex again to close it.
-      if (current.activeTool === 'room') {
+      // Tracing: a ring, closed by clicking the first vertex again.
+      if (isTracingTool(current)) {
         event.preventDefault();
         const point = applySnap(current, world);
         const first = current.draftRoomVertices[0];
@@ -198,30 +321,87 @@ export function useCanvasInteraction(
         return;
       }
 
-      // Otherwise: select what is under the pointer, and start dragging it.
+      const pointer = localPoint(event);
+
+      // A vertex handle on the selected boundary beats everything else under the
+      // pointer. The handles are only drawn once a boundary is selected, so this can
+      // never steal a click the engineer meant for a machine.
+      const grabbed = vertexAt(current, pointer);
+      if (grabbed) {
+        event.preventDefault();
+        element.setPointerCapture(event.pointerId);
+        dispatch({ type: 'vertex/select', vertex: grabbed });
+        vertexDragRef.current = { pointerId: event.pointerId, vertex: grabbed };
+        return;
+      }
+
+      // Then a midpoint handle, which inserts a vertex there.
+      const midpoint = edgeMidpointAt(current, pointer);
+      if (midpoint) {
+        event.preventDefault();
+        element.setPointerCapture(event.pointerId);
+        dispatch({
+          type: 'vertex/insert',
+          boundaryId: current.selectedBoundaryId ?? '',
+          afterIndex: midpoint.afterIndex,
+          position: midpoint.position,
+          at: now(),
+        });
+        // Drag the vertex that was just inserted, so inserting and positioning it are
+        // one gesture rather than two.
+        vertexDragRef.current = {
+          pointerId: event.pointerId,
+          vertex: {
+            boundaryId: current.selectedBoundaryId ?? '',
+            index: midpoint.afterIndex + 1,
+          },
+        };
+        return;
+      }
+
+      // Then equipment, which sits above the building in the drawing and in intent.
       const hitId = placementAt(current, world);
-      dispatch({ type: 'placement/select', placementId: hitId });
-      if (!hitId) return;
+      if (hitId) {
+        dispatch({ type: 'placement/select', placementId: hitId });
 
-      const placement = activeLevel(current).placements.find(
-        (candidate) => candidate.id === hitId,
-      );
-      if (!placement) return;
+        const placement = activeLevel(current).placements.find(
+          (candidate) => candidate.id === hitId,
+        );
+        if (!placement) return;
 
-      event.preventDefault();
-      element.setPointerCapture(event.pointerId);
-      dragRef.current = {
-        pointerId: event.pointerId,
-        placementId: hitId,
-        grabOffset: vec2(
-          placement.transform.position.x - world.x,
-          placement.transform.position.y - world.y,
-        ),
-      };
+        event.preventDefault();
+        element.setPointerCapture(event.pointerId);
+        dragRef.current = {
+          pointerId: event.pointerId,
+          placementId: hitId,
+          grabOffset: vec2(
+            placement.transform.position.x - world.x,
+            placement.transform.position.y - world.y,
+          ),
+        };
+        return;
+      }
+
+      // Finally the building itself. Selecting a boundary is what puts its vertex
+      // handles on screen, so this is the click that makes geometry editable.
+      dispatch({ type: 'boundary/select', boundaryId: boundaryAt(current, world) });
     };
 
     const onPointerMove = (event: PointerEvent) => {
       dispatch({ type: 'cursor/move', position: localPoint(event) });
+
+      const vertexDrag = vertexDragRef.current;
+      if (vertexDrag && vertexDrag.pointerId === event.pointerId) {
+        const current = stateRef.current;
+        const world = screenToWorld(current.viewport, localPoint(event));
+        dispatch({
+          type: 'vertex/move',
+          vertex: vertexDrag.vertex,
+          position: snapVertex(current, vertexDrag.vertex, world),
+          at: now(),
+        });
+        return;
+      }
 
       const drag = dragRef.current;
       if (drag && drag.pointerId === event.pointerId) {
@@ -251,6 +431,19 @@ export function useCanvasInteraction(
     };
 
     const endGesture = (event: PointerEvent) => {
+      const vertexDrag = vertexDragRef.current;
+      if (vertexDrag && vertexDrag.pointerId === event.pointerId) {
+        const current = stateRef.current;
+        const world = screenToWorld(current.viewport, localPoint(event));
+        dispatch({
+          type: 'vertex/move',
+          vertex: vertexDrag.vertex,
+          position: snapVertex(current, vertexDrag.vertex, world),
+          at: now(),
+        });
+        return;
+      }
+
       const drag = dragRef.current;
       if (drag && drag.pointerId === event.pointerId) {
         if (element.hasPointerCapture(event.pointerId)) {
@@ -280,7 +473,7 @@ export function useCanvasInteraction(
     // Double-click closes a room, for engineers who expect the polygon-tool
     // convention rather than clicking the first vertex again.
     const onDoubleClick = (event: MouseEvent) => {
-      if (stateRef.current.activeTool !== 'room') return;
+      if (!isTracingTool(stateRef.current)) return;
       if (stateRef.current.draftRoomVertices.length < 3) return;
       event.preventDefault();
       dispatch({ type: 'room/close', at: now() });

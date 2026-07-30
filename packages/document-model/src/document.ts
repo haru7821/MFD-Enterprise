@@ -8,6 +8,7 @@ import {
   type Boundary,
   type Level,
   type MfdDocument,
+  type ObstructionType,
   type Placement,
   type Project,
   type Space,
@@ -136,6 +137,29 @@ export function placementsInSpace(level: Level, spaceId: string): Placement[] {
   return level.placements.filter((placement) => placement.spaceId === spaceId);
 }
 
+/** Rooms on this level, worst-first is irrelevant; source order is the drawing order. */
+export function levelSummary(level: Level): {
+  readonly placements: number;
+  readonly spaces: number;
+  readonly obstructions: number;
+} {
+  return {
+    placements: level.placements.length,
+    spaces: level.spaces.length,
+    obstructions: obstructionBoundaries(level).length,
+  };
+}
+
+/** True when nothing has been drawn or placed on this level. */
+export function isLevelEmpty(level: Level): boolean {
+  return (
+    level.placements.length === 0 &&
+    level.boundaries.length === 0 &&
+    level.spaces.length === 0 &&
+    level.planImage === null
+  );
+}
+
 /** Is this level calibrated well enough to measure against? */
 export function isCalibrated(level: Level): boolean {
   return level.coordinateMapping !== null;
@@ -193,7 +217,18 @@ export function createBoundary(
   vertices: readonly Vec2[],
   label = '',
 ): Boundary {
-  return { id, kind, vertices: [...vertices], label };
+  // A room outline or wall carries no obstruction type, and the schema rejects one
+  // that does. Obstructions go through createObstruction instead.
+  return { id, kind, vertices: [...vertices], label, obstructionType: null };
+}
+
+export function createObstruction(
+  id: string,
+  obstructionType: ObstructionType,
+  vertices: readonly Vec2[],
+  label = '',
+): Boundary {
+  return { id, kind: 'obstruction', vertices: [...vertices], label, obstructionType };
 }
 
 export function createSpace(
