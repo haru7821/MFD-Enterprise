@@ -24,9 +24,10 @@ Read in this order:
 7. docs/architecture/RULE_ENGINE_API.md
 8. docs/architecture/REPORT_ENGINE_DESIGN.md
 9. docs/architecture/AI_SYSTEM_ARCHITECTURE.md
-10. docs/roadmap/MVP_PLAN.md
-11. docs/architecture/SYSTEM_ARCHITECTURE.md
-12. CLAUDE.md (this document — direction, not current scope)
+10. docs/architecture/PLATFORM_SUPPORT.md
+11. docs/roadmap/MVP_PLAN.md
+12. docs/architecture/SYSTEM_ARCHITECTURE.md
+13. CLAUDE.md (this document — direction, not current scope)
 
 # MFD-E Project Instruction
 
@@ -71,9 +72,13 @@ Frontend:
 
 React + TypeScript
 
-Desktop:
+Platform:
 
-Electron
+**Web-native. Desktop browsers primary, tablet browsers secondary, installable as a PWA.
+Chrome, Edge and Safari from one codebase.**
+
+Superseded by owner decision: this document previously specified **Electron**. There is no
+desktop shell and no desktop-only architecture. See docs/architecture/PLATFORM_SUPPORT.md.
 
 Backend:
 

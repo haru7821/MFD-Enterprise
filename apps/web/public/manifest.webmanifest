@@ -1,0 +1,44 @@
+{
+  "id": "/",
+  "name": "MFD-E · 투석실 설치 검토 / Dialysis Installation Review",
+  "short_name": "MFD-E",
+  "description": "AI-assisted dialysis facility engineering platform for Vantive Technical Service engineers.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "orientation": "any",
+  "background_color": "#0e1319",
+  "theme_color": "#0e1319",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "application/json": [".mfd.json"]
+      }
+    }
+  ]
+}

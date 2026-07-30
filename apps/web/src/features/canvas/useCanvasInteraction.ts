@@ -215,6 +215,18 @@ export function useCanvasInteraction(
     null,
   );
   const vertexDragRef = useRef<{ pointerId: number; vertex: VertexRef } | null>(null);
+  /**
+   * Live touch points, for pinch.
+   *
+   * Owner decision: tablet browsers are a supported platform. A tablet has no wheel and no
+   * keyboard, so without this the only way to zoom is the toolbar's ± buttons — technically
+   * reachable, and not how anyone zooms a drawing on a touch screen.
+   *
+   * Only `touch` pointers are tracked. A mouse and a pen produce one pointer each and are
+   * already handled; treating two simultaneous mice as a pinch would be inventing a gesture.
+   */
+  const touchesRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ distance: number; centre: Vec2 } | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -248,8 +260,44 @@ export function useCanvasInteraction(
       dispatch({ type: 'viewport/panBy', delta: pan });
     };
 
+    /** The gap between two touch points, and their midpoint in element coordinates. */
+    const pinchGeometry = () => {
+      const [first, second] = [...touchesRef.current.values()];
+      if (!first || !second) return null;
+
+      const bounds = element.getBoundingClientRect();
+      return {
+        distance: Math.hypot(second.x - first.x, second.y - first.y),
+        centre: vec2(
+          (first.x + second.x) / 2 - bounds.left,
+          (first.y + second.y) / 2 - bounds.top,
+        ),
+      };
+    };
+
     const onPointerDown = (event: PointerEvent) => {
       const current = stateRef.current;
+
+      if (event.pointerType === 'touch') {
+        touchesRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+        // Second finger down: this is a pinch, so whatever the first finger had started is
+        // abandoned. Without that, a two-finger zoom would also drag whichever machine the
+        // first finger happened to land on — and the drag would win, because it moves the
+        // document while the zoom only moves the view.
+        if (touchesRef.current.size === 2) {
+          const geometry = pinchGeometry();
+          if (geometry) {
+            pinchRef.current = geometry;
+            dragRef.current = null;
+            vertexDragRef.current = null;
+            panRef.current = null;
+            dispatch({ type: 'pan/end' });
+          }
+          return;
+        }
+      }
+
       const wantsPan =
         event.button === 1 || spaceHeldRef.current || current.activeTool === 'pan';
 
@@ -388,6 +436,36 @@ export function useCanvasInteraction(
     };
 
     const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' && touchesRef.current.has(event.pointerId)) {
+        touchesRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+        const active = pinchRef.current;
+        if (active) {
+          const geometry = pinchGeometry();
+          // A pinch that has collapsed to nothing has no ratio; ignoring the frame is better
+          // than dividing by a number approaching zero and jumping the viewport.
+          if (!geometry || active.distance < 1) return;
+
+          // Zoom about the midpoint and pan by how far the midpoint moved, so a two-finger
+          // gesture that also slides does both — which is what a hand actually does.
+          dispatch({
+            type: 'viewport/zoomBy',
+            anchor: geometry.centre,
+            factor: geometry.distance / active.distance,
+          });
+          const shift = vec2(
+            geometry.centre.x - active.centre.x,
+            geometry.centre.y - active.centre.y,
+          );
+          if (shift.x !== 0 || shift.y !== 0) {
+            dispatch({ type: 'viewport/panBy', delta: shift });
+          }
+
+          pinchRef.current = geometry;
+          return;
+        }
+      }
+
       dispatch({ type: 'cursor/move', position: localPoint(event) });
 
       const vertexDrag = vertexDragRef.current;
@@ -431,6 +509,18 @@ export function useCanvasInteraction(
     };
 
     const endGesture = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') {
+        touchesRef.current.delete(event.pointerId);
+        // A pinch ends when it stops being two fingers. The remaining finger does **not**
+        // become a drag: lifting one finger mid-pinch would otherwise grab whatever is under
+        // the other one and move it, which is a document change nobody asked for.
+        if (touchesRef.current.size < 2) pinchRef.current = null;
+        if (touchesRef.current.size >= 1 && pinchRef.current === null) {
+          dragRef.current = null;
+          vertexDragRef.current = null;
+        }
+      }
+
       const vertexDrag = vertexDragRef.current;
       if (vertexDrag && vertexDrag.pointerId === event.pointerId) {
         const current = stateRef.current;
@@ -502,9 +592,17 @@ export function useCanvasInteraction(
     };
 
     // Held keys are lost when the tab loses focus; clear the latch.
+    // A window that loses focus mid-gesture must not keep phantom fingers down: the next
+    // touch would be read as the second half of a pinch that ended minutes ago.
+    const clearTouches = () => {
+      touchesRef.current.clear();
+      pinchRef.current = null;
+    };
+
     const onBlur = () => {
       spaceHeldRef.current = false;
       setIsSpacePanReady(false);
+      clearTouches();
     };
 
     element.addEventListener('wheel', onWheel, { passive: false });

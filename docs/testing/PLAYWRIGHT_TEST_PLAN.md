@@ -5,9 +5,11 @@
 
 ## Status — committed and running in CI as of Sprint 3
 
-77 specs in `tests/e2e/`, run by `.github/workflows/browser.yml`, **separate from the fast
-`ci.yml`**. Since Sprint 5 that workflow reports only PASS/FAIL and the execution time; the
-failing spec, its error, its screenshot and its retry trace are in the uploaded artifact. Installing a browser costs minutes; the typecheck / lint / unit gate answers in
+87 specs in `tests/e2e/`, run by `.github/workflows/browser.yml`, **separate from the fast
+`ci.yml`**. Since Sprint 5 that workflow reports only PASS/FAIL and the execution time; the failing
+spec, its error, its screenshot and its retry trace are in the uploaded artifact.
+
+Installing a browser costs minutes; the typecheck / lint / unit gate answers in
 under one, and should keep doing so. The two workflows run alongside each other, so a
 failing lint reports in seconds rather than queueing behind a browser download.
 
@@ -286,7 +288,38 @@ pushing a PDF reader into the application to satisfy a test would be the wrong w
 default project — no drawing at all — as uncalibrated. A level with no plan is not uncalibrated;
 its geometry is exact. The model now carries three plan states, and the spec asserts the absence.
 
-## 9. Screenshot validation
+## 9. Platform (web-first decision)
+
+`tests/e2e/platform.spec.ts`, 8 specs. Owner decision: web-native, desktop primary, tablet
+secondary, installable as a PWA, one codebase across Chrome, Edge and Safari.
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| W1 | Manifest | Served, `display: standalone`, 192/512 plus a maskable icon, **and every icon resolves and is a real PNG** |
+| W2 | iPadOS | `apple-touch-icon` and the `apple-mobile-web-app-*` meta tags — Safari ignores the manifest for home-screen installs |
+| W3 | Service worker policy | Hashed assets cache-first, navigations network-first, GET and same-origin only, and **exactly two** response paths |
+| W4 | No service worker | The whole workflow, report included, with every registration removed |
+| W5 | No desktop-only API | No Electron bridge; the save path does not need the File System Access API |
+| W6 | Tablet layout | No horizontal page scroll at 1024 × 768 |
+| W7 | Tablet touch | A tap places equipment — pointer events, no touch-specific code path |
+| W8 | Tablet pinch | A two-finger spread zooms in. **Verified by disabling the handler** — the spec failed as it should |
+
+**W3's assertion is a count.** Two `respondWith` branches means nothing else is cached; a third is
+a new caching policy that has to be a deliberate edit to the test rather than a line somebody added.
+The first version of this spec asserted the absence of the string `.mfd.json` and failed — on the
+comment in `sw.js` explaining that project files are never cached.
+
+**One behaviour is deliberately not automated.** "A second finger must not drag the machine the
+first one landed on" is implemented, and the spec for it **passed with the pinch handler disabled** —
+CDP touch injection cannot reproduce a real two-finger sequence closely enough to distinguish the
+cases. It was removed rather than kept, because a green test that cannot fail reports coverage that
+does not exist. Recorded in
+[../architecture/PLATFORM_SUPPORT.md](../architecture/PLATFORM_SUPPORT.md) § E.
+
+**Safari and Edge are not executed.** This suite is Chromium. They are covered by the browser
+baseline and by using no engine-specific API, which is a weaker guarantee and is stated as one.
+
+## 10. Screenshot validation
 
 Screenshots are captured as evidence rather than compared pixel-by-pixel. Pixel-diff
 baselines are not adopted here: font rendering and anti-aliasing differ between machines,

@@ -171,7 +171,7 @@ Not blocking; recorded so they are visible and can be corrected.
 | --- | --- |
 | C-1 | Metric units, millimetres, throughout. |
 | C-2 | Single user per project; no real-time collaboration in Version 1. |
-| C-3 | Web application. Electron is not in the TS Edition specification. |
+| ~~C-3~~ | **Now a decision, not an assumption.** Web-native: desktop browsers primary, tablet secondary, installable as a PWA, Chrome/Edge/Safari from one codebase, no desktop-only architecture. Supersedes CLAUDE.md's Electron line. See [PLATFORM_SUPPORT.md](architecture/PLATFORM_SUPPORT.md). |
 | C-4 | Repository documentation is written in English. The **report** is bilingual (B-2); internal engineering documents are not, and nobody has asked for them to be. |
 | C-5 | Equipment catalogues and rule sets are versioned in git and loaded at runtime. |
 | C-6 | Imported floor plans are used as a raster underlay the engineer works on top of, not parsed for geometry. |
@@ -209,4 +209,6 @@ Not blocking; recorded so they are visible and can be corrected.
 | Which font? | Pretendard, OFL 1.1 — smaller, complete Hangul coverage, verified rendering. Not to be replaced unless a requirement cannot be met. | Sprint 5 close |
 | What happens to a glyph the font cannot draw? | An explicit rendering error. **Never a silent substitution.** | Sprint 5 close |
 | Does the AI decide anything? | **No.** It proposes, explains, retrieves and summarises; the rule engine judges and a person decides. | Sprint 5 close |
+| Desktop application or web? | **Web-native**, no exceptions. Desktop browsers primary, tablet secondary, installable as a PWA. No Electron. | Sprint 5 close |
+| Offline? | The **application** caches itself. Remembering recent **projects** offline is a future sprint — it means storing hospital floor plans in browser storage, which touches B-4. | Sprint 5 close |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |

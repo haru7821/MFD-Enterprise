@@ -82,6 +82,18 @@ export default tseslint.config(
     },
   },
 
+  /*
+   * The service worker runs in a worker scope, not a window: `self`, `caches` and `clients`
+   * exist and `document` and `window` do not. Given its own config rather than being added to
+   * the browser globals, so a *component* reaching for `caches` still fails.
+   */
+  {
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      globals: { ...globals.serviceworker },
+    },
+  },
+
   {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: {

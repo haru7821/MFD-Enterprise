@@ -39,7 +39,7 @@ Other commands, all run from the repository root:
 | `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
 | `pnpm preview` | Serve the production build locally |
 | `pnpm test` | Run the engine unit tests (506) |
-| `pnpm test:e2e` | Run the browser specs against a production build (79) |
+| `pnpm test:e2e` | Run the browser specs against a production build (87) |
 | `pnpm bench` | Rule engine performance baseline |
 | `pnpm test:perf` | Frame-time measurement — an instrument, not a gate |
 | `pnpm typecheck` | Type-check every workspace |
@@ -77,6 +77,12 @@ The complete feasibility-review workflow, end to end:
 
 Undo and redo cover all of it. One drag is one undo step; one renaming session is one undo
 step; deleting a whole floor comes back whole.
+
+**Web-native, and installable.** Desktop browsers are the primary target and tablets the secondary
+one: the canvas is driven by pointer events, so touch works, and a two-finger pinch zooms. The
+application installs as a PWA and its own shell is cached, so a second visit opens with no network.
+Remembering recent *projects* offline is a later sprint. No Electron, no desktop-only code path —
+see [docs/architecture/PLATFORM_SUPPORT.md](docs/architecture/PLATFORM_SUPPORT.md).
 
 Underneath:
 
@@ -157,6 +163,7 @@ Read in this order:
 | [docs/roadmap/SPRINT_5_REPORT.md](docs/roadmap/SPRINT_5_REPORT.md) | What Sprint 5 shipped, what it did not, and the defects it turned up |
 | [docs/architecture/AI_SYSTEM_ARCHITECTURE.md](docs/architecture/AI_SYSTEM_ARCHITECTURE.md) | Sprint 6 — where the AI sits, and what it may not assert. **For review, not implemented** |
 | [docs/roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md](docs/roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md) | Sprint 6 plan — order, estimate, what B-4 gates |
+| [docs/architecture/PLATFORM_SUPPORT.md](docs/architecture/PLATFORM_SUPPORT.md) | Web-first: browsers, tablet, PWA — and what is **not** verified |
 | [docs/architecture/RULE_ENGINE_API.md](docs/architecture/RULE_ENGINE_API.md) | The frozen finding contract every consumer reads |
 | [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
 | [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |
