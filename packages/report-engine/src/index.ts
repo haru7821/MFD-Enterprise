@@ -48,3 +48,10 @@ export * from './checklist';
 export * from './checklistTemplate';
 export * from './standards';
 export * from './build';
+
+export * from './render/types';
+export * from './render/paper';
+export * from './render/fonts';
+export * from './render/json';
+export * from './render/html';
+export * from './render/pdf';

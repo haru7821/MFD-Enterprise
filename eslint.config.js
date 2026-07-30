@@ -49,6 +49,39 @@ export default tseslint.config(
     },
   },
 
+  /*
+   * One narrow exemption: a **test** may read a fixture file from disk.
+   *
+   * The rule above is about shipped code — a package that imports node:fs is a package that
+   * runs in exactly one of the three places this architecture requires. A test is not shipped,
+   * and the PDF renderer's test has to get 5 MB of font bytes from somewhere. The renderer
+   * itself still takes bytes as an argument, which is the property the rule exists to protect,
+   * and `no-restricted-imports` cannot express "except for the argument".
+   *
+   * Scoped to test files so it cannot quietly widen: a non-test file under packages/ that
+   * imports node:fs still fails.
+   */
+  {
+    files: ['packages/*/**/*.test.ts'],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react-dom', 'konva', 'react-konva', '@nestjs/*'],
+              message:
+                'packages/ holds the framework-free domain core. Put renderer or server code in apps/ instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: {
