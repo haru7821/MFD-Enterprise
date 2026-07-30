@@ -1,11 +1,14 @@
 # MFD-Enterprise
 
-**MFD-E TS Edition** — an AI-assisted dialysis facility design application for Vantive
+**MFD-E TS Edition** — an **AI-assisted dialysis facility engineering platform** for Vantive
 Technical Service engineers.
 
-It is not a replacement for CAD. Its job is to help a TS engineer evaluate dialysis
-installation feasibility quickly and accurately, and every engineering value it applies is
-data it can cite back to a manual, not a number someone wrote from memory.
+It is not a replacement for CAD. Its job is to help a TS engineer evaluate dialysis installation
+feasibility quickly and accurately, and every engineering value it applies is data it can cite back
+to a manual, not a number someone wrote from memory.
+
+That discipline is what shapes the AI work in Sprint 6: the assistant proposes, explains, retrieves
+and summarises. The rule engine judges, the report states, and a person decides.
 
 **Current release: v0.5 Alpha — Sprint 5 delivered: the engineering report.** Import a hospital
 floor plan, calibrate it, set its origin, trace the rooms and the things in the way, place
@@ -35,8 +38,8 @@ Other commands, all run from the repository root:
 | `pnpm dev` | Run the web client with hot reload |
 | `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
 | `pnpm preview` | Serve the production build locally |
-| `pnpm test` | Run the engine unit tests (493) |
-| `pnpm test:e2e` | Run the browser specs against a production build (77) |
+| `pnpm test` | Run the engine unit tests (506) |
+| `pnpm test:e2e` | Run the browser specs against a production build (79) |
 | `pnpm bench` | Rule engine performance baseline |
 | `pnpm test:perf` | Frame-time measurement — an instrument, not a gate |
 | `pnpm typecheck` | Type-check every workspace |
@@ -68,7 +71,8 @@ The complete feasibility-review workflow, end to end:
    cover, executive summary, equipment schedule, floor plan with numbered equipment,
    validation results with the threshold and its source, an installation checklist, equipment
    datasheets, every applied standard, and a fixed liability statement. Preview it on screen,
-   then download PDF, HTML or JSON.
+   then download PDF, HTML or JSON. The drawing is **vector by default**; the scanned plan can be
+   shown beneath it, or alone as a debug output, and the choice is stored in the project.
 9. **Save and reopen** as a `.mfd.json` file, validated in both directions.
 
 Undo and redo cover all of it. One drag is one undo step; one renaming session is one undo
@@ -121,7 +125,9 @@ MFD-Enterprise
 │   ├── object-library/     equipment catalogue                                  ← built
 │   ├── document-model/     the project document, commands, save/load            ← built
 │   ├── rule-engine/        installation requirement evaluation                  ← built
-│   └── report-engine/      the bilingual engineering report                  ← built
+│   ├── report-engine/      the bilingual engineering report                  ← built
+│   ├── ai-contract/        AI request/response types — no AI in it         Sprint 6
+│   └── ai-local/           deterministic layout solver, no LLM            Sprint 6
 ├── database/               schema, migrations, seed data
 ├── standards/              rule sets as versioned data
 ├── assets/                 symbols, icons, models
@@ -149,6 +155,8 @@ Read in this order:
 | [docs/architecture/REPORT_ENGINE_DESIGN.md](docs/architecture/REPORT_ENGINE_DESIGN.md) | Sprint 5 architecture — **awaiting review, not implemented** |
 | [docs/roadmap/SPRINT_5_PLAN.md](docs/roadmap/SPRINT_5_PLAN.md) | Sprint 5 implementation plan — order, estimate, risks |
 | [docs/roadmap/SPRINT_5_REPORT.md](docs/roadmap/SPRINT_5_REPORT.md) | What Sprint 5 shipped, what it did not, and the defects it turned up |
+| [docs/architecture/AI_SYSTEM_ARCHITECTURE.md](docs/architecture/AI_SYSTEM_ARCHITECTURE.md) | Sprint 6 — where the AI sits, and what it may not assert. **For review, not implemented** |
+| [docs/roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md](docs/roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md) | Sprint 6 plan — order, estimate, what B-4 gates |
 | [docs/architecture/RULE_ENGINE_API.md](docs/architecture/RULE_ENGINE_API.md) | The frozen finding contract every consumer reads |
 | [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
 | [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |

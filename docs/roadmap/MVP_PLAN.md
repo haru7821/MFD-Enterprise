@@ -13,7 +13,7 @@
 | 4 | PDF Workflow + Spatial Model | 5.1 | ✅ **Complete and closed** — v0.4 |
 | 4.5 | UX Completion | — | ✅ Complete |
 | 5 | Report Generation | 5.5 | ✅ **Complete** — v0.5, awaiting owner review |
-| 6 | AI Assistant | §7 Version 3 | ☐ **Blocked** — not to start before Sprint 5 is approved |
+| 6 | AI Engineering Assistant | §7 Version 3 | ◀ **Architecture for review** — no code before approval |
 
 ## Definition of done for the MVP (Sprints 1–5)
 
@@ -242,13 +242,31 @@ equipment catalogue versions used.
 
 **Done when:** the report is something a TS engineer would send to a hospital.
 
-## Sprint 6 — AI Assistant
+## Sprint 6 — AI Engineering Assistant
 
-Specification section 7, Version 3. Intent interpretation, explanation of results, drafting
-of report narrative. The solver and the validator decide; the assistant explains (AD-10).
+Named and scoped by the product owner after Sprint 5. Eight features: AI-assisted placement,
+layout optimisation, automatic room layout, natural-language queries, an installation
+recommendation engine, rule explanation, report summarisation, and engineering knowledge
+retrieval.
 
-**Blocked by:** whether project data may leave the hospital network — see
-[OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-1.
+**Architecture for review, no code yet:**
+[AI_SYSTEM_ARCHITECTURE.md](../architecture/AI_SYSTEM_ARCHITECTURE.md) ·
+[AI_SERVICE_API.md](../architecture/AI_SERVICE_API.md) ·
+[AI_WORKFLOW.md](../architecture/AI_WORKFLOW.md) ·
+[AI_PROMPT_GUIDELINES.md](../architecture/AI_PROMPT_GUIDELINES.md) ·
+[SPRINT_6_IMPLEMENTATION_PLAN.md](SPRINT_6_IMPLEMENTATION_PLAN.md)
+
+Owner constraint: **no LLM-specific code inside business logic**, and an AI service layer that
+communicates only through stable interfaces. Made structural — no package under `packages/` may
+import an AI client, a model name or a prompt, enforced by the linter like every other boundary.
+
+**Five of the eight features need no language model.** Placement, layout, optimisation and
+recommendation are a packing problem with the rule engine as its oracle; a solver does them
+reproducibly, offline, and can say exactly why it chose what it chose. So the sprint's first
+eleven days are unaffected by B-4 (data residency), which is the only real gate.
+
+**Blocked by:** B-4 for the language half. B-5 blocks the optimiser's *ranking*, not the
+optimiser.
 
 ---
 

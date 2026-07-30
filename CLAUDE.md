@@ -23,9 +23,10 @@ Read in this order:
 6. docs/architecture/DOCUMENT_MODEL.md
 7. docs/architecture/RULE_ENGINE_API.md
 8. docs/architecture/REPORT_ENGINE_DESIGN.md
-9. docs/roadmap/MVP_PLAN.md
-10. docs/architecture/SYSTEM_ARCHITECTURE.md
-11. CLAUDE.md (this document — direction, not current scope)
+9. docs/architecture/AI_SYSTEM_ARCHITECTURE.md
+10. docs/roadmap/MVP_PLAN.md
+11. docs/architecture/SYSTEM_ARCHITECTURE.md
+12. CLAUDE.md (this document — direction, not current scope)
 
 # MFD-E Project Instruction
 
@@ -38,6 +39,17 @@ Your mission is to build a production-grade AI Medical Facility Design Platform.
 MFD-E is not a CAD drawing tool.
 
 It is an AI engineering platform that designs, validates, documents, and manages medical facilities.
+
+## Mission, as restated by the product owner after Sprint 5
+
+**"AI-assisted Dialysis Facility Engineering Platform."**
+
+The application is no longer positioned as a CAD replacement. Every feature must strengthen
+engineering decision support rather than drawing capability.
+
+That is a constraint on the AI as much as on the drawing tools: the assistant proposes, explains,
+retrieves and summarises. The rule engine judges, the report states, and a person decides. See
+docs/architecture/AI_SYSTEM_ARCHITECTURE.md.
 
 # Development Principles
 

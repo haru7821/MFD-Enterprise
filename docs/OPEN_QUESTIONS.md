@@ -123,18 +123,37 @@ is a well-meant edit.
 Traceability was already designed in; this settles the wording. Placement details in
 [REPORT_ENGINE_DESIGN.md § G-2](architecture/REPORT_ENGINE_DESIGN.md).
 
-### B-4. AI assistant scope and data residency — before Sprint 6
+### B-4. Data residency — gates half of Sprint 6, not all of it
 
-- May project data (floor plans, hospital names, equipment lists) leave the hospital
-  network? If not, the assistant must run self-hosted, which changes its architecture.
-- Does "AI assistant" mean generating layouts, or interpreting and explaining the
-  validator's results? AD-10 recommends the latter.
+**May project data (floor plans, hospital names, equipment lists) leave the hospital network?**
 
-### B-5. Optimisation objective — before automatic layout
+Still open, and the Sprint 6 architecture is arranged so that it does not block the start:
 
-When several layouts satisfy every rule, what makes one better? Station count, staff
-walking distance, service run length, construction cost? An optimiser cannot be built
-without a ranked objective. Automatic layout is currently unscheduled.
+| If the answer is | Then |
+| --- | --- |
+| Data may not leave | The deterministic solver ships. **Five of the eight features work with no service at all.** |
+| Data may leave | Both halves ship. No request ever carries the plan image — that is a constraint in the contract, not a habit. |
+| Self-hosted model | Only `apps/ai-service` configuration differs. |
+
+The second part of this question is **settled**: the assistant interprets and explains; it does not
+decide. Layout generation is a deterministic solver with the rule engine as its oracle, not a
+language model (AD-14). See
+[AI_SYSTEM_ARCHITECTURE.md](architecture/AI_SYSTEM_ARCHITECTURE.md) § E for the exact list of what
+the model may and may not assert.
+
+**Needed before steps 5–7 of [SPRINT_6_IMPLEMENTATION_PLAN.md](roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md).**
+
+### B-5. Optimisation objective — blocks the ranking, not the optimiser
+
+When several layouts satisfy every rule, what makes one better? Station count, staff walking
+distance, service run length, construction cost?
+
+Scheduled now: automatic layout is in Sprint 6. Until this is answered the solver optimises
+**station count** and *measures* the other objectives without ranking on them — an optimiser that
+silently ranked on walking distance would impose a preference nobody chose, inside a document an
+engineer signs.
+
+When it is answered it is one comparator and one contract field (`LayoutObjective.primary`).
 
 ### B-6. Digital twin scope — Version 4
 
@@ -186,4 +205,8 @@ Not blocking; recorded so they are visible and can be corrected.
 | Report language? | **Bilingual Korean + English** — every section title, field label, finding, warning and recommendation. Findings carry language-independent reason codes. | Sprint 4 close, extended at Sprint 5 |
 | Is Sprint 5 a PDF exporter? | **No.** An engineering report engine: the model is the deliverable, and PDF/HTML/JSON are renderers behind one interface. | Sprint 5 |
 | Which output formats? | PDF, HTML and JSON implemented; DOCX addable without touching business logic. | Sprint 5 |
+| Should the report embed the scanned drawing? | **No, not by default.** Three stored modes: vector-only (default), vector over the scan, scan-only (debug). | Sprint 5 close |
+| Which font? | Pretendard, OFL 1.1 — smaller, complete Hangul coverage, verified rendering. Not to be replaced unless a requirement cannot be met. | Sprint 5 close |
+| What happens to a glyph the font cannot draw? | An explicit rendering error. **Never a silent substitution.** | Sprint 5 close |
+| Does the AI decide anything? | **No.** It proposes, explains, retrieves and summarises; the rule engine judges and a person decides. | Sprint 5 close |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |
