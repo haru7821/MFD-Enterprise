@@ -30,6 +30,7 @@ import {
   createPlacement,
   createPlacementCommand,
   createReferencePointCommand,
+  groupCommand,
   createSpace,
   createSpaceCommand,
   deleteBoundaryCommand,
@@ -70,6 +71,7 @@ import {
   defaultSpaceName,
   emptyDocument,
 } from './editorState';
+import type { LayoutProposal, LayoutProposalSet } from './editorState';
 import type { ToolId } from './tools';
 
 /**
@@ -121,6 +123,12 @@ export type EditorAction =
     }
   | { readonly type: 'referencePoint/delete'; readonly pointId: string; readonly at: number }
   | { readonly type: 'referencePoint/select'; readonly pointId: string | null }
+  /** Store what the solver returned. The solver runs at the call site, not in the reducer. */
+  | { readonly type: 'layout/propose'; readonly proposals: LayoutProposalSet }
+  | { readonly type: 'layout/preview'; readonly proposalId: string | null }
+  /** The engineer's explicit approval — the only action that touches the document. */
+  | { readonly type: 'layout/approve'; readonly proposalId: string; readonly at: number }
+  | { readonly type: 'layout/discard' }
   | {
       readonly type: 'placement/add';
       readonly object: EquipmentObject;
@@ -406,6 +414,58 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'referencePoint/select':
       return { ...state, selectedReferencePointId: action.pointId };
+
+    case 'layout/propose':
+      return {
+        ...state,
+        layoutProposals: action.proposals,
+        // The best one previews immediately. An engineer who asked for layouts wants to see one,
+        // and the ranking already says which is first.
+        previewedProposalId: action.proposals.proposals[0]?.id ?? null,
+      };
+
+    case 'layout/preview':
+      return { ...state, previewedProposalId: action.proposalId };
+
+    case 'layout/approve': {
+      const proposal = state.layoutProposals?.proposals.find(
+        (entry) => entry.id === action.proposalId,
+      );
+      // A proposal that is no longer there is not an error worth throwing over — the panel is
+      // closed and the approval is stale. Doing nothing is the honest response.
+      if (!proposal) return state;
+
+      /*
+       * **One command group, so one undo press.**
+       *
+       * An engineer who accepts twelve stations and changes their mind should not have to press
+       * undo twelve times. The group's inverse un-does the steps in reverse, which is the only
+       * order they are valid in — see `groupCommand`.
+       */
+      const commands = proposal.placements.map((placement) =>
+        createPlacementCommand(levelId, placement),
+      );
+
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          groupCommand(
+            `Apply layout — ${proposal.placements.length} × ${equipmentModel(proposal)}`,
+            commands,
+          ),
+          action.at,
+        ),
+        // The proposals are spent. Leaving them on screen would invite a second approval that
+        // would place the same machines again.
+        layoutProposals: null,
+        previewedProposalId: null,
+        nextEntityNumber: state.nextEntityNumber + proposal.placements.length,
+      };
+    }
+
+    case 'layout/discard':
+      return { ...state, layoutProposals: null, previewedProposalId: null };
 
     case 'placement/add': {
       const number = state.nextEntityNumber;
@@ -899,4 +959,10 @@ function nextFreeNumber(document: MfdDocument): number {
     }
   }
   return highest + 1;
+}
+
+
+/** What the history entry calls the equipment. The catalogue id, which is stable and unambiguous. */
+function equipmentModel(proposal: LayoutProposal): string {
+  return proposal.placements[0]?.equipmentObjectId ?? 'equipment';
 }

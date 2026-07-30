@@ -301,6 +301,42 @@ describe('the pipeline', () => {
     }
   });
 
+  it('resolves "as many as fit" to a count that survives the gates, not one that merely fits', () => {
+    /*
+     * The gap a browser spec found and these fixtures did not.
+     *
+     * An earlier version resolved the count from the *generator* alone — walk down until an
+     * arrangement of that size exists, then gate it. On a real room that resolves to the densest
+     * packing the geometry allows, and every candidate at that density then failed Gate 2: the
+     * engineer got "no layout satisfies the rules" for a request with a perfectly good answer two
+     * machines down.
+     *
+     * The fixtures missed it because their rooms are generous enough that the densest packing is
+     * also compliant. This one is not: an existing machine occupies part of the room, so the
+     * densest arrangement collides with it and the walk has to keep going.
+     */
+    const existing = [
+      {
+        id: 'existing-1',
+        equipmentObjectId: machine.id,
+        equipmentObjectVersion: machine.version,
+        label: 'Existing 1',
+        transform: { position: { x: 1_000, y: 1_000 }, rotation: 0, mirrored: false },
+        spaceId: null,
+      },
+    ];
+
+    const result = pipeline({ stationTarget: null, existing });
+
+    expect(result.countWasDerived).toBe(true);
+    expect(result.feasible.length).toBeGreaterThan(0);
+    expect(result.resolvedStationCount).toBeGreaterThan(0);
+    for (const entry of result.feasible) {
+      expect(entry.placements).toHaveLength(result.resolvedStationCount);
+      expect(entry.gates.rejection).toBeNull();
+    }
+  });
+
   it('is deterministic end to end', () => {
     expect(JSON.stringify(pipeline())).toBe(JSON.stringify(pipeline()));
     expect(JSON.stringify(pipeline({ stationTarget: null }))).toBe(
@@ -324,15 +360,19 @@ describe('the pipeline', () => {
     expect(achievable.feasible.length).toBeGreaterThan(0);
   });
 
-  it('discards every candidate that would stand on an existing machine', () => {
+  it('works around an existing machine rather than proposing its square', () => {
     /*
-     * An optimisation runs on a room that already holds machines. Those are a decision the
-     * engineer made, and a candidate overlapping one is a collision — Gate 2's job.
+     * This test previously asserted the opposite — that **every** candidate was rejected — and it
+     * was passing for a bad reason.
      *
-     * The existing machine here sits on the first grid slot, so **every** candidate collides and
-     * the correct outcome is that nothing survives. Asserting the rejections rather than looping
-     * over an empty `feasible` is the point: the first version of this test iterated the
-     * survivors, found none, and passed while proving nothing.
+     * The generator only saw `obstructions`, never `existing`, so it proposed the slot a machine
+     * was already standing in and Gate 2 rejected the whole candidate for the collision. With the
+     * existing machine on the first slot that rejected every candidate at every count: an engineer
+     * asking to fill the rest of a partly-occupied room was told no layout satisfied the rules,
+     * when the truth was that the solver kept suggesting the one square it could not use.
+     *
+     * Existing footprints are now obstructions to the generator too. Gate 2 still catches an
+     * overlap; the generator no longer manufactures them.
      */
     const existing = [
       {
@@ -347,10 +387,15 @@ describe('the pipeline', () => {
 
     const result = pipeline({ existing, stationTarget: 4 });
 
-    expect(result.feasible).toEqual([]);
-    expect(result.rejected.length).toBeGreaterThan(0);
-    for (const rejection of result.rejected) {
-      expect(rejection.rejection.code).toBe('GX-201');
+    expect(result.feasible.length).toBeGreaterThan(0);
+
+    const half = { x: machine.designFootprint.width / 2, y: machine.designFootprint.depth / 2 };
+    for (const entry of result.feasible) {
+      for (const position of entry.placements.map((p) => p.transform.position)) {
+        const clear =
+          Math.abs(position.x - 1_000) >= half.x * 2 || Math.abs(position.y - 1_000) >= half.y * 2;
+        expect(clear, `${position.x}, ${position.y}`).toBe(true);
+      }
     }
   });
 

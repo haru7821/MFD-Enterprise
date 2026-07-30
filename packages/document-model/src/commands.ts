@@ -75,7 +75,8 @@ export type CommandType =
   | 'level.delete'
   | 'plan.setOrigin'
   | 'project.setDetails'
-  | 'project.setReportRenderMode';
+  | 'project.setReportRenderMode'
+  | 'command.group';
 
 export interface CommandResult {
   readonly document: MfdDocument;
@@ -1166,6 +1167,60 @@ function restoreReferencePointCommand(
         return { ...level, referencePoints };
       });
       return { document: next, inverse: deleteReferencePointCommand(levelId, point.id) };
+    },
+  });
+}
+
+
+// ---------------------------------------------------------------------------
+// Grouping
+// ---------------------------------------------------------------------------
+
+/**
+ * Several commands, one undo step.
+ *
+ * An engineer who accepts a twelve-station layout and changes their mind presses undo **once**.
+ * Twelve separate entries would be technically truthful and practically unusable — and the history
+ * would read as twelve decisions when one was made.
+ *
+ * ## The inverse runs backwards, and that is the whole correctness argument
+ *
+ * Each command's inverse is produced by *applying* it, against the document as it stood at that
+ * moment. So the inverses are only valid in the reverse order: undoing a move-then-rotate by
+ * un-moving first would un-move against a document that has since rotated.
+ *
+ * Collected during `apply` rather than up front for the same reason — a command cannot produce its
+ * inverse until it has seen the document it is applied to.
+ */
+export function groupCommand(
+  label: string,
+  commands: readonly Command[],
+  type: CommandType = 'command.group',
+): Command {
+  if (commands.length === 0) {
+    throw new Error('groupCommand: an empty group is not an edit, and undoing it would be a no-op');
+  }
+
+  return command({
+    type,
+    label,
+    // Never merges. A group is a deliberate act — accepting a proposal, applying a layout — and
+    // coalescing two of them would hide one behind the other in the history.
+    mergeKey: null,
+    apply(document) {
+      let current = document;
+      const inverses: Command[] = [];
+
+      for (const step of commands) {
+        const result = step.apply(current);
+        current = result.document;
+        inverses.push(result.inverse);
+      }
+
+      return {
+        document: current,
+        inverse: groupCommand(`Undo ${label}`, [...inverses].reverse(), type),
+      };
     },
   });
 }

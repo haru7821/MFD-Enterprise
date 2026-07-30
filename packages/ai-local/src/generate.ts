@@ -96,22 +96,56 @@ export interface PipelineResult {
  * ids. Nothing here reads a clock, a random source, or an unordered collection.
  */
 export function generateFeasibleCandidates(input: PipelineInput): PipelineResult {
-  const resolved = resolveStationCount(input);
+  if (input.stationTarget !== null) {
+    return gateAt(input, input.stationTarget, false);
+  }
 
-  if (resolved.count <= 0) {
-    return {
-      resolvedStationCount: 0,
-      countWasDerived: resolved.derived,
-      feasible: [],
-      rejected: [],
-    };
+  /*
+   * "As many as fit" means as many as fit **and pass the gates**, and the difference is not
+   * academic.
+   *
+   * An earlier version resolved the count by asking the generator alone: walk down until an
+   * arrangement of that size exists, then gate it. On a real room that resolved to the densest
+   * packing the geometry allows — and every candidate at that density then failed Gate 2, so the
+   * engineer got "no layout satisfies the rules" for a request that had a perfectly good answer two
+   * machines down. Found by a browser spec; the unit fixtures used rooms where the two counts
+   * happened to coincide.
+   *
+   * So the walk runs the whole pipeline at each count and stops at the first that survives. It is
+   * more work — the gates run once per count tried — and it is the only version that answers the
+   * question actually asked.
+   */
+  const ceiling = maximumSlots(input);
+  for (let count = ceiling; count > 0; count -= 1) {
+    const attempt = gateAt(input, count, true);
+    if (attempt.feasible.length > 0) return attempt;
+  }
+
+  return { resolvedStationCount: 0, countWasDerived: true, feasible: [], rejected: [] };
+}
+
+/** Generate at one count and put every candidate through both gates. */
+function gateAt(input: PipelineInput, count: number, derived: boolean): PipelineResult {
+  if (count <= 0) {
+    return { resolvedStationCount: 0, countWasDerived: derived, feasible: [], rejected: [] };
   }
 
   const candidates = generateCandidates({
     room: input.room,
-    obstructions: input.obstructions,
+    /*
+     * Existing machines are obstructions to the new ones.
+     *
+     * The generator used to see only `input.obstructions`, so it happily proposed a slot a machine
+     * was already standing in — and Gate 2 then rejected the whole candidate for the collision.
+     * With an existing machine on the first slot that rejected *every* candidate at *every* count,
+     * and the engineer was told no layout satisfied the rules when the truth was that the solver
+     * kept suggesting the one square it could not use.
+     *
+     * Gate 2 still catches an overlap; this stops the generator manufacturing them.
+     */
+    obstructions: [...input.obstructions, ...occupiedPolygons(input)],
     object: input.object,
-    stationCount: resolved.count,
+    stationCount: count,
     pitchPadding: input.pitchPadding,
   });
 
@@ -131,7 +165,7 @@ export function generateFeasibleCandidates(input: PipelineInput): PipelineResult
         planStatus: input.planStatus,
       },
       candidate.positions.length,
-      resolved.count,
+      count,
     );
 
     if (gates.rejection) {
@@ -153,40 +187,7 @@ export function generateFeasibleCandidates(input: PipelineInput): PipelineResult
     });
   }
 
-  return {
-    resolvedStationCount: resolved.count,
-    countWasDerived: resolved.derived,
-    feasible,
-    rejected,
-  };
-}
-
-/**
- * The engineer's number, or the largest count the room will hold.
- *
- * "As many as fit" is answered by asking the generator for successively smaller counts until one
- * produces a candidate, rather than by a closed-form estimate from floor area. Area over footprint
- * ignores the obstructions and the room's shape, and would produce a target Gate 1 then rejects
- * every candidate against — a solver reporting "no layout holds 14 stations" when nothing ever
- * proposed 14.
- *
- * Bounded by the slots the room actually has, so this terminates on any geometry.
- */
-function resolveStationCount(input: PipelineInput): { count: number; derived: boolean } {
-  if (input.stationTarget !== null) return { count: input.stationTarget, derived: false };
-
-  const ceiling = maximumSlots(input);
-  for (let count = ceiling; count > 0; count -= 1) {
-    const candidates = generateCandidates({
-      room: input.room,
-      obstructions: input.obstructions,
-      object: input.object,
-      stationCount: count,
-      pitchPadding: input.pitchPadding,
-    });
-    if (candidates.length > 0) return { count, derived: true };
-  }
-  return { count: 0, derived: true };
+  return { resolvedStationCount: count, countWasDerived: derived, feasible, rejected };
 }
 
 /**
@@ -199,7 +200,7 @@ function resolveStationCount(input: PipelineInput): { count: number; derived: bo
 function maximumSlots(input: PipelineInput): number {
   const probe = generateCandidates({
     room: input.room,
-    obstructions: input.obstructions,
+    obstructions: [...input.obstructions, ...occupiedPolygons(input)],
     object: input.object,
     stationCount: 1,
     pitchPadding: input.pitchPadding,
@@ -212,6 +213,27 @@ function maximumSlots(input: PipelineInput): number {
   const columns = Math.floor(width / (footprint.width + input.pitchPadding));
   const rows = Math.floor(depth / (footprint.depth + input.pitchPadding));
   return Math.max(0, columns * rows);
+}
+
+/** The footprints of machines already placed, as polygons the generator can avoid. */
+function occupiedPolygons(input: PipelineInput): Vec2[][] {
+  return input.existing.flatMap((placement) => {
+    const object = input.catalog.get(placement.equipmentObjectId);
+    if (!object) return [];
+    const half = {
+      x: object.designFootprint.width / 2,
+      y: object.designFootprint.depth / 2,
+    };
+    const { x, y } = placement.transform.position;
+    return [
+      [
+        { x: x - half.x, y: y - half.y },
+        { x: x + half.x, y: y - half.y },
+        { x: x + half.x, y: y + half.y },
+        { x: x - half.x, y: y + half.y },
+      ],
+    ];
+  });
 }
 
 function placementsFor(candidate: Candidate, input: PipelineInput): Placement[] {

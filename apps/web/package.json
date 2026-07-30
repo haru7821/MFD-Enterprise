@@ -2,7 +2,7 @@
   "name": "@mfd/web",
   "version": "0.1.0",
   "private": true,
-  "description": "MFD-E web client — medical layout designer canvas.",
+  "description": "MFD-E web client \u2014 medical layout designer canvas.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,8 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json"
   },
   "dependencies": {
+    "@mfd/ai-contract": "workspace:*",
+    "@mfd/ai-local": "workspace:*",
     "@mfd/cad-engine": "workspace:*",
     "@mfd/document-model": "workspace:*",
     "@mfd/object-library": "workspace:*",

@@ -15,6 +15,7 @@ import {
   canDeleteLevel,
   canRemoveBoundaryVertex,
   createBoundaryCommand,
+  groupCommand,
   createReferencePointCommand,
   createLevelCommand,
   createPlacementCommand,
@@ -298,6 +299,66 @@ describe('reference point commands', () => {
   it('refuses to move a point that is not there', () => {
     expect(() => moveReferencePointCommand(LEVEL, 'missing', { x: 0, y: 0 }).apply(withPoints()))
       .toThrow(/reference point/);
+  });
+});
+
+describe('command groups', () => {
+  it('applies every step and undoes them all in one', () => {
+    const before = fixtureDocument();
+    const after = expectRoundTrip(
+      before,
+      groupCommand('Apply layout', [
+        createPlacementCommand(LEVEL, fixturePlacement('p1', { x: 100, y: 200 })),
+        createPlacementCommand(LEVEL, fixturePlacement('p2', { x: 900, y: 200 })),
+        createPlacementCommand(LEVEL, fixturePlacement('p3', { x: 1_700, y: 200 })),
+      ]),
+    );
+
+    expect(requireLevel(after, LEVEL).placements).toHaveLength(3);
+  });
+
+  it('undoes in reverse, which is the only order the inverses are valid in', () => {
+    /*
+     * The correctness argument, made testable. Each inverse is produced against the document as it
+     * stood when its command ran, so un-moving before un-rotating would un-move against a document
+     * that has since rotated.
+     *
+     * A move and a rotate on the same machine: applying the inverses forwards instead of backwards
+     * gives a different document, and the round trip catches it.
+     */
+    const before = withPlacements();
+    const after = expectRoundTrip(
+      before,
+      groupCommand('Adjust', [
+        movePlacementCommand(LEVEL, 'p1', { x: 4_000, y: 4_000 }),
+        rotatePlacementCommand(LEVEL, 'p1', 90_000),
+        movePlacementCommand(LEVEL, 'p1', { x: 5_000, y: 5_000 }),
+      ]),
+    );
+
+    const placement = findPlacement(requireLevel(after, LEVEL), 'p1');
+    expect(placement?.transform.position).toEqual({ x: 5_000, y: 5_000 });
+    expect(placement?.transform.rotation).toBe(90_000);
+  });
+
+  it('never merges, so two accepted proposals stay two undo steps', () => {
+    const group = groupCommand('Apply layout', [
+      createPlacementCommand(LEVEL, fixturePlacement('p1', { x: 0, y: 0 })),
+    ]);
+    expect(group.mergeKey).toBeNull();
+  });
+
+  it('refuses an empty group', () => {
+    // An empty group is not an edit, and undoing it would be a no-op that consumed an undo press.
+    expect(() => groupCommand('Nothing', [])).toThrow(/empty group/);
+  });
+
+  it('carries a label an engineer can read in the history', () => {
+    expect(
+      groupCommand('Apply layout — 12 stations', [
+        createPlacementCommand(LEVEL, fixturePlacement('p1', { x: 0, y: 0 })),
+      ]).label,
+    ).toBe('Apply layout — 12 stations');
   });
 });
 

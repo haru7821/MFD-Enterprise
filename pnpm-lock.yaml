@@ -47,6 +47,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@mfd/ai-contract':
+        specifier: workspace:*
+        version: link:../../packages/ai-contract
+      '@mfd/ai-local':
+        specifier: workspace:*
+        version: link:../../packages/ai-local
       '@mfd/cad-engine':
         specifier: workspace:*
         version: link:../../packages/cad-engine

@@ -5,6 +5,7 @@ import {
   type Viewport,
   createViewport,
 } from '@mfd/cad-engine';
+import type { ScoreBreakdown } from '@mfd/ai-contract';
 import {
   type Boundary,
   type DocumentState,
@@ -21,6 +22,39 @@ import {
 } from '@mfd/document-model';
 
 import type { ToolId } from './tools';
+
+/**
+ * What the solver returned, and what it was asked.
+ *
+ * The request is kept beside the results so the panel can say *"three layouts for 12 stations in
+ * Treatment Area A"* rather than showing scores detached from the question they answer — and so a
+ * stale result set is recognisable when the room selection changes underneath it.
+ */
+export interface LayoutProposalSet {
+  readonly spaceId: string;
+  readonly equipmentObjectId: string;
+  readonly requestedCount: number | null;
+  readonly resolvedCount: number;
+  readonly countWasDerived: boolean;
+  readonly proposals: readonly LayoutProposal[];
+  /** Why nothing came back, when nothing did. An empty list is not self-explanatory. */
+  readonly emptyReason: LayoutEmptyReason | null;
+}
+
+export const LAYOUT_EMPTY_REASONS = [
+  'no_room_selected',
+  'no_position_satisfies_rules',
+  'room_too_small',
+] as const;
+export type LayoutEmptyReason = (typeof LAYOUT_EMPTY_REASONS)[number];
+
+export interface LayoutProposal {
+  readonly id: string;
+  readonly rank: number;
+  readonly placements: readonly Placement[];
+  readonly score: ScoreBreakdown;
+  readonly explanation: readonly { readonly code: string; readonly params: Readonly<Record<string, string | number>> }[];
+}
 
 /**
  * The editor's entire state.
@@ -108,6 +142,17 @@ export interface EditorState {
    */
   readonly armedReferencePointKind: ReferencePointKind | null;
   readonly selectedReferencePointId: string | null;
+
+  /**
+   * Layout proposals awaiting the engineer's decision.
+   *
+   * **Not applied to the document.** They live here, beside it, until somebody approves one — the
+   * owner's fourth requirement, and the reason a proposal is state rather than an edit. A solver
+   * that wrote to the document and offered an undo would have already changed the drawing.
+   */
+  readonly layoutProposals: LayoutProposalSet | null;
+  /** Which proposal is being previewed. Null means the current layout is shown as it is. */
+  readonly previewedProposalId: string | null;
   readonly selectedPlacementId: string | null;
   readonly selectedSpaceId: string | null;
   /**
@@ -168,6 +213,8 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   armedEquipmentObjectId: null,
   armedReferencePointKind: null,
   selectedReferencePointId: null,
+  layoutProposals: null,
+  previewedProposalId: null,
   selectedPlacementId: null,
   selectedSpaceId: null,
   selectedBoundaryId: null,

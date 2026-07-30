@@ -16,6 +16,8 @@ import { ValidationOverlay } from '@/features/validation/ValidationOverlay';
 import { GridLayer } from './GridLayer';
 import { NavigationHint } from './NavigationHint';
 import { OriginMarker } from './OriginMarker';
+import { ProposalGhostLayer } from '@/features/layout/ProposalGhostLayer';
+
 import { ReferencePointLayer } from './ReferencePointLayer';
 import { ScaleBar } from './ScaleBar';
 import { useCanvasInteraction } from './useCanvasInteraction';
@@ -39,6 +41,16 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
   useEffect(() => {
     dispatch({ type: 'screen/resize', size });
   }, [dispatch, size]);
+
+  /*
+   * The proposal being previewed, or nothing. Derived rather than stored: the previewed id and the
+   * proposal set are both editor state, and a third copy of the placements could go stale against
+   * either of them.
+   */
+  const previewedPlacements =
+    state.layoutProposals?.proposals.find(
+      (proposal) => proposal.id === state.previewedProposalId,
+    )?.placements ?? [];
 
   const cursor = state.isPanning
     ? 'cursor-grabbing'
@@ -99,6 +111,17 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
               viewport={state.viewport}
               selectedReferencePointId={state.selectedReferencePointId}
             />
+            {/*
+              Above the placed equipment so a proposal is visible over what it would replace, and
+              below the findings, which are what stop an installation.
+            */}
+            {previewedPlacements.length > 0 && (
+              <ProposalGhostLayer
+                placements={previewedPlacements}
+                catalog={catalog}
+                viewport={state.viewport}
+              />
+            )}
             <ValidationOverlay
               report={report}
               placements={level.placements}
