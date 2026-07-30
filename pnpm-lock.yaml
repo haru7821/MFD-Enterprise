@@ -119,12 +119,27 @@ importers:
 
   packages/report-engine:
     dependencies:
+      '@mfd/cad-engine':
+        specifier: workspace:*
+        version: link:../cad-engine
+      '@mfd/document-model':
+        specifier: workspace:*
+        version: link:../document-model
+      '@mfd/object-library':
+        specifier: workspace:*
+        version: link:../object-library
+      '@mfd/rule-engine':
+        specifier: workspace:*
+        version: link:../rule-engine
       '@pdf-lib/fontkit':
         specifier: ^1.1.1
         version: 1.1.1
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/rule-engine:
     dependencies:

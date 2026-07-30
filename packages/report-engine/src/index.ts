@@ -1,19 +1,50 @@
 /**
- * @mfd/report-engine — the installation review report.
+ * @mfd/report-engine — the MFD-E engineering report engine.
  *
- * Scaffold only. Implemented in Sprint 5, where it produces the PDF defined in
- * section 5.5 of the TS Edition specification: project information, layout image,
- * equipment list, engineering check results and an installation checklist.
+ * Pure TypeScript. No React, no Konva, no NestJS, no DOM, no filesystem: the PDF renderer
+ * takes font bytes as an argument rather than reading a file, which is what keeps the same
+ * code runnable in a browser and on a server (AD-3).
  *
- * The package exists now so the workspace is real rather than a directory holding a
- * README — `pnpm -r` skips a folder with no manifest, which makes an empty package
- * look like a wired-up one.
+ * ## Not a PDF exporter
  *
- * Output will be vector, not a canvas screenshot. That is why the geometry lives in
- * `@mfd/cad-engine` and `@mfd/object-library` rather than inside the renderer
- * (architecture decision AD-2): this package will build the same drawing without a
- * browser.
+ * Owner decision, Sprint 5: *"Sprint 5 is NOT a PDF export sprint. Sprint 5 is the
+ * Engineering Report Engine"*, and it must later render PDF, DOCX, HTML and JSON **without
+ * changing business logic**.
+ *
+ * That requirement is met by one boundary:
+ *
+ * ```
+ * document + catalogue + rule set ──► ReportModel ──► renderer
+ *           business logic              data          typography
+ * ```
+ *
+ * Everything the report *claims* — the verdict, which findings are provisional, which
+ * figures are cited — is decided building the model. A renderer chooses fonts and page
+ * breaks. So a new format is a new file under ./render/, and the proof that the boundary
+ * holds is that the JSON renderer is three lines.
+ *
+ * ## Bilingual
+ *
+ * Every section title, field label, finding, warning and recommendation exists in Korean
+ * and English:
+ *
+ * | | Mechanism |
+ * | --- | --- |
+ * | Labels and titles | `LabelKey` into ./labels.ts — one reviewable file |
+ * | Findings | `ReasonCode` from the rule engine, composed per language |
+ * | Rule names | The rule file, because a rule's name is part of the rule |
+ * | Names, citations, numbers | Printed once, as typed |
  */
 
-/** Placeholder so the package has a checkable surface before Sprint 5. */
-export const REPORT_ENGINE_STATUS = 'scaffold' as const;
+export * from './model';
+export * from './labels';
+export * from './groups';
+export * from './notice';
+export * from './conclusion';
+export * from './equipment';
+export * from './floorPlan';
+export * from './validation';
+export * from './checklist';
+export * from './checklistTemplate';
+export * from './standards';
+export * from './build';

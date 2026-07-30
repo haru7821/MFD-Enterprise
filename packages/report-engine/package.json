@@ -2,23 +2,34 @@
   "name": "@mfd/report-engine",
   "version": "0.1.0",
   "private": true,
-  "description": "Installation review report generation for MFD-E. Scaffold only — implemented in Sprint 5.",
+  "description": "The MFD-E engineering report engine: document + catalogue + rules to a bilingual installation review report.",
   "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./checklists": {
+      "types": "./checklists/index.ts",
+      "default": "./checklists/index.ts"
     }
   },
   "types": "./src/index.ts",
   "files": [
-    "src"
+    "src",
+    "checklists",
+    "assets"
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@mfd/cad-engine": "workspace:*",
+    "@mfd/document-model": "workspace:*",
+    "@mfd/object-library": "workspace:*",
+    "@mfd/rule-engine": "workspace:*",
     "@pdf-lib/fontkit": "^1.1.1",
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "zod": "^4.4.3"
   }
 }

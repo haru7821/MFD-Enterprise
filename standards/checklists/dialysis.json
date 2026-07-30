@@ -1,0 +1,154 @@
+{
+  "id": "dialysis_installation",
+  "version": "0.1.0",
+  "categories": [
+    {
+      "id": "electrical",
+      "title": { "ko": "전기", "en": "Electrical" },
+      "items": [
+        {
+          "id": "supply_capacity",
+          "text": {
+            "ko": "각 장비 위치의 전원 용량과 회로 구성이 제조사 요구사항을 충족하는지 확인",
+            "en": "Confirm supply capacity and circuit arrangement at each equipment position against the manufacturer's requirement"
+          }
+        },
+        {
+          "id": "outlet_position",
+          "text": {
+            "ko": "콘센트 위치가 장비 전원 접속부에 도달하며 통행을 방해하지 않는지 확인",
+            "en": "Confirm outlet positions reach each machine's power inlet without crossing a walkway"
+          }
+        },
+        {
+          "id": "earthing",
+          "text": {
+            "ko": "의료용 접지 및 등전위 본딩 확인",
+            "en": "Verify medical earthing and equipotential bonding"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ro_water",
+      "title": { "ko": "RO 수", "en": "RO Water" },
+      "items": [
+        {
+          "id": "loop_pressure",
+          "text": {
+            "ko": "루프 말단 압력과 유량이 동시 운전 조건에서 요구치를 충족하는지 확인",
+            "en": "Confirm loop pressure and flow at the far end under simultaneous operation"
+          }
+        },
+        {
+          "id": "connection_point",
+          "text": {
+            "ko": "각 장비의 급수 접속 위치와 접속 규격 확인",
+            "en": "Confirm the supply connection position and fitting type at each machine"
+          }
+        },
+        {
+          "id": "water_quality",
+          "text": {
+            "ko": "수질 시험 결과가 투석용 수질 기준을 충족하는지 확인",
+            "en": "Confirm water quality test results meet the dialysis water standard"
+          }
+        }
+      ]
+    },
+    {
+      "id": "drain",
+      "title": { "ko": "배수", "en": "Drain" },
+      "items": [
+        {
+          "id": "drain_capacity",
+          "text": {
+            "ko": "배수 구경과 구배가 동시 배출량을 처리할 수 있는지 확인",
+            "en": "Confirm drain diameter and fall can carry the simultaneous discharge"
+          }
+        },
+        {
+          "id": "air_gap",
+          "text": {
+            "ko": "역류 방지를 위한 에어 갭 또는 동등 조치 확인",
+            "en": "Verify an air gap or equivalent measure against backflow"
+          }
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "title": { "ko": "네트워크", "en": "Network" },
+      "items": [
+        {
+          "id": "data_point",
+          "text": {
+            "ko": "장비 데이터 연동이 필요한 경우 정보 콘센트 위치와 수량 확인",
+            "en": "Where machine data integration is required, confirm the position and count of data outlets"
+          }
+        },
+        {
+          "id": "segregation",
+          "text": {
+            "ko": "의료기기 네트워크 분리 정책 확인",
+            "en": "Confirm the network segregation policy for medical devices"
+          }
+        }
+      ]
+    },
+    {
+      "id": "accessibility",
+      "title": { "ko": "접근성", "en": "Accessibility" },
+      "items": [
+        {
+          "id": "bed_route",
+          "text": {
+            "ko": "침상 및 휠체어 이동 경로가 확보되는지 확인",
+            "en": "Confirm a clear route for beds and wheelchairs"
+          }
+        },
+        {
+          "id": "evacuation",
+          "text": {
+            "ko": "피난 경로와 비상구 접근이 배치로 인해 좁아지지 않는지 확인",
+            "en": "Confirm the layout does not narrow an escape route or exit approach"
+          }
+        },
+        {
+          "id": "staff_observation",
+          "text": {
+            "ko": "간호 관찰 위치에서 각 스테이션이 보이는지 확인",
+            "en": "Confirm each station is visible from the nursing observation position"
+          }
+        }
+      ]
+    },
+    {
+      "id": "final_engineer_check",
+      "title": { "ko": "최종 엔지니어 확인", "en": "Final Engineer Check" },
+      "items": [
+        {
+          "id": "as_built",
+          "text": {
+            "ko": "실제 시공 결과가 본 보고서의 배치와 일치하는지 확인",
+            "en": "Confirm the as-built installation matches the layout in this report"
+          }
+        },
+        {
+          "id": "manual_reference",
+          "text": {
+            "ko": "본 보고서의 미검증 항목이 제조사 공식 문서로 대체되었는지 확인",
+            "en": "Confirm every item marked Draft in this report has been replaced by manufacturer documentation"
+          }
+        },
+        {
+          "id": "sign_off",
+          "text": {
+            "ko": "검토자 서명 및 일자 기재",
+            "en": "Record the reviewing engineer's signature and date"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -78,11 +78,32 @@ function isBilingual(value: ReasonParamValue): value is Bilingual {
   return typeof value === 'object' && 'ko' in value && 'en' in value;
 }
 
+/**
+ * What kind of statement a code makes.
+ *
+ * Carried here rather than inferred by consumers, because every consumer would infer it the
+ * same way and one of them would get it wrong. The report's verdict turns on this
+ * distinction: a YELLOW that is a *pass downgraded for provenance* is not the same as a
+ * YELLOW that is *a violation of a YELLOW-severity rule*, and calling both "review
+ * required" would tell a reader the drawing has concerns when the real problem is that
+ * nothing is cited.
+ *
+ * | Kind | Means |
+ * | --- | --- |
+ * | `violation` | A requirement was compared against and not met |
+ * | `pass` | A requirement was compared against and met |
+ * | `unevaluable` | Nothing was compared — no threshold, nothing drawn, no evaluator |
+ * | `caveat` | Qualifies another finding; never stands alone |
+ */
+export const REASON_KINDS = ['violation', 'pass', 'unevaluable', 'caveat'] as const;
+export type ReasonKind = (typeof REASON_KINDS)[number];
+
 interface ReasonEntry {
   /** Short title, the same in both languages except for the words. */
   readonly title: Bilingual;
   /** The sentence, with `{parameter}` placeholders. */
   readonly template: Bilingual;
+  readonly kind: ReasonKind;
 }
 
 /**
@@ -100,6 +121,7 @@ export const REASON_CODES = {
       ko: '{label}의 {side} 정비 공간이 {measured} mm로, 요구치 {required} mm에 미달합니다.',
       en: '{label} has {measured} mm of {side} clearance, less than the {required} mm required.',
     },
+    kind: 'violation',
   },
   'RC-102': {
     title: { ko: '정비 공간 확보', en: 'Service Clearance Satisfied' },
@@ -107,6 +129,7 @@ export const REASON_CODES = {
       ko: '{label}의 {side} 정비 공간 {measured} mm는 요구치 {required} mm를 충족합니다.',
       en: '{label} has {measured} mm of {side} clearance against the {required} mm required.',
     },
+    kind: 'pass',
   },
   'RC-103': {
     title: { ko: '정비 공간 내 장애물 없음', en: 'Service Clearance Clear' },
@@ -114,6 +137,7 @@ export const REASON_CODES = {
       ko: '{label}의 {side} 정비 공간 {required} mm 내에 다른 장비가 없습니다.',
       en: 'Nothing stands within {label}’s {required} mm {side} clearance.',
     },
+    kind: 'pass',
   },
   'RC-110': {
     title: { ko: '요구치 미확인', en: 'Threshold Unknown' },
@@ -121,6 +145,7 @@ export const REASON_CODES = {
       ko: '{label}의 {side} 정비 공간 요구치가 규정과 장비 자료 어디에도 없어 판정할 수 없습니다.',
       en: 'No {side} clearance requirement for {label} exists in either the rule or the equipment record, so it cannot be judged.',
     },
+    kind: 'unevaluable',
   },
 
   // ── Equipment collision ─────────────────────────────────────────────────────
@@ -130,6 +155,7 @@ export const REASON_CODES = {
       ko: '{label}이(가) {other}과(와) {measured} mm 겹칩니다.',
       en: '{label} overlaps {other} by {measured} mm.',
     },
+    kind: 'violation',
   },
   'RC-202': {
     title: { ko: '장비 간 간섭 없음', en: 'No Equipment Overlap' },
@@ -137,6 +163,7 @@ export const REASON_CODES = {
       ko: '{label}은(는) 다른 장비와 겹치지 않습니다.',
       en: '{label} does not overlap any other equipment.',
     },
+    kind: 'pass',
   },
 
   // ── Boundary: rooms and obstructions ────────────────────────────────────────
@@ -146,6 +173,7 @@ export const REASON_CODES = {
       ko: '{label}이(가) {room} 경계를 {measured} mm 벗어납니다.',
       en: '{label} extends {measured} mm beyond {room}.',
     },
+    kind: 'violation',
   },
   'RC-302': {
     title: { ko: '실 경계 초과', en: 'Extends Beyond Room' },
@@ -153,6 +181,7 @@ export const REASON_CODES = {
       ko: '{label}이(가) {room} 경계를 벗어납니다.',
       en: '{label} extends beyond {room}.',
     },
+    kind: 'violation',
   },
   'RC-303': {
     title: { ko: '실 외부 배치', en: 'Outside Every Room' },
@@ -160,6 +189,7 @@ export const REASON_CODES = {
       ko: '{label}이(가) 어느 실 경계에도 속하지 않습니다.',
       en: '{label} is outside every room outline.',
     },
+    kind: 'violation',
   },
   'RC-311': {
     title: { ko: '장애물과 간섭', en: 'Overlaps Obstruction' },
@@ -167,6 +197,7 @@ export const REASON_CODES = {
       ko: '{label}이(가) {obstruction}과(와) {measured} mm 겹칩니다.',
       en: '{label} overlaps {obstruction} by {measured} mm.',
     },
+    kind: 'violation',
   },
   'RC-312': {
     title: { ko: '장애물과 간섭', en: 'Overlaps Obstruction' },
@@ -174,6 +205,7 @@ export const REASON_CODES = {
       ko: '{label}이(가) {obstruction}과(와) 겹칩니다.',
       en: '{label} overlaps {obstruction}.',
     },
+    kind: 'violation',
   },
   'RC-321': {
     title: { ko: '실 내부 배치 적합', en: 'Inside Room, Clear of Obstructions' },
@@ -181,6 +213,7 @@ export const REASON_CODES = {
       ko: '{label}은(는) {room} 내부에 있으며 장애물과 겹치지 않습니다.',
       en: '{label} is inside {room} and clears every obstruction.',
     },
+    kind: 'pass',
   },
   'RC-322': {
     title: { ko: '장애물과 간섭 없음', en: 'Clear of Obstructions' },
@@ -188,6 +221,7 @@ export const REASON_CODES = {
       ko: '{label}은(는) 모든 장애물을 피해 있습니다.',
       en: '{label} clears every obstruction.',
     },
+    kind: 'pass',
   },
 
   // ── The rule set could not answer ───────────────────────────────────────────
@@ -197,6 +231,7 @@ export const REASON_CODES = {
       ko: '실 경계나 장애물이 작도되지 않아 경계 검토를 수행하지 못했습니다.',
       en: 'No room outline or obstruction has been drawn, so nothing was checked.',
     },
+    kind: 'unevaluable',
   },
   'RC-902': {
     title: { ko: '평가기 없음', en: 'No Evaluator' },
@@ -204,6 +239,7 @@ export const REASON_CODES = {
       ko: '충돌 검토 범위 "{scope}"에 해당하는 평가기가 없습니다.',
       en: 'Collision scope “{scope}” has no evaluator.',
     },
+    kind: 'unevaluable',
   },
 
   // ── Caveats: qualify a finding without replacing it ─────────────────────────
@@ -213,6 +249,7 @@ export const REASON_CODES = {
       ko: '도면 축척이 설정되지 않아 이 결과는 실제 건물과 대조되지 않았습니다.',
       en: 'The plan is not calibrated, so this has not been checked against the building.',
     },
+    kind: 'caveat',
   },
 } as const satisfies Record<string, ReasonEntry>;
 
@@ -258,4 +295,9 @@ export function renderReason(
 /** The finding's short title, for a table column too narrow for the sentence. */
 export function reasonTitle(code: ReasonCode): Bilingual {
   return REASON_CODES[code].title;
+}
+
+/** What kind of statement the code makes. See {@link REASON_KINDS}. */
+export function reasonKind(code: ReasonCode): ReasonKind {
+  return REASON_CODES[code].kind;
 }
