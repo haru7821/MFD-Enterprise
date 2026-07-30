@@ -1,16 +1,22 @@
 # AI System Architecture
 
-> **Revised for review. Not implemented.**
+> **Approved. Implementation in progress.**
 > Sprint 6 — AI Engineering Assistant.
 > Product mission, owner decision: *"AI-assisted Dialysis Facility Engineering Platform."*
 >
-> **Revision 2**, folding in four owner decisions taken after the first review:
+> **Revision 3** — the owner's approved engineering weights (B-5a) in § C-4, with two criteria the
+> weight table introduced (installation feasibility, walking distance) defined, and § C-4a added for
+> the one thing the table could not do literally: station count as a constraint rather than a
+> zero-weight criterion. `UtilityOrigin` is renamed `ReferencePoint`, because two of the new criteria
+> measure from a goods entrance and a nurse base.
+>
+> **Revision 2** folded in four owner decisions taken after the first review:
 >
 > | # | Decision | Where it lands |
 > | --- | --- | --- |
 > | 1 | A **Knowledge Engine**. Retrieval happens **before** any LLM reasoning; the model never answers from memory | § C-2, and AD-16 |
 > | 2 | An **Installation Planner Agent** — sequence, commissioning checklist, planning | § C-3 |
-> | 3 | A **weighted scoring engine** replacing station-count-only optimisation, over seven criteria, configurable | § C-4, and AD-14 rewritten |
+> | 3 | A **weighted scoring engine** replacing station-count-only optimisation, over seven weighted criteria, configurable | § C-4, and AD-14 rewritten |
 > | 4 | The solver maximises **total engineering score** | § C-4 |
 >
 > Two of these change earlier positions in this document rather than adding to them, and both are
@@ -122,7 +128,7 @@ absent:
 | Feature | Needs the LLM? |
 | --- | --- |
 | AI-assisted equipment placement | No — solver |
-| Layout optimisation, **weighted over seven criteria** | No — solver |
+| Layout optimisation, **weighted over the owner's seven criteria** | No — solver |
 | Automatic room layout proposals | No — solver |
 | Installation recommendation engine | No — rules + solver, ranked |
 | **Installation sequence and commissioning plan** | No — planner |
@@ -310,22 +316,103 @@ dangerous thing in this design:
 So "Rule compliance" in the owner's list is implemented as *margin*, and hard compliance is the gate
 that runs before scoring. Stated plainly because the two readings look alike and only one is safe.
 
-### The seven criteria
+### The criteria, with the owner's approved weights
 
-| Criterion | Measured as | Direction | Needs |
-| --- | --- | --- | --- |
-| Rule compliance margin | Minimum clearance headroom across every governed face, normalised against the requirement | More is better | `rule-engine` |
-| Station count | Placements of the requested category | More is better | — |
-| RO piping length | Manhattan run from the loop origin to each machine's water port, summed | Less is better | **A utility origin** |
-| Drain routing | Manhattan run to the drain origin, plus a penalty per fall-direction reversal | Less is better | **A utility origin** |
-| Electrical routing | Manhattan run to the panel, summed | Less is better | **A utility origin** |
-| Maintenance access | Fraction of machines whose rear and side clearances are reachable from a circulation route without crossing another machine's envelope | More is better | Geometry |
-| Future expansion | How many more machines the solver can add to the remaining floor **without moving any existing one** | More is better | The solver, recursively |
+> Owner decision B-5a. **The weights are the owner's; they are not a developer default.**
 
-### The gap this exposes: the document has no utility origins
+| Criterion | Weight | Measured as | Direction | Needs |
+| --- | --- | --- | --- | --- |
+| Rule compliance margin | **40 %** | Minimum clearance headroom across every governed face, as a ratio of the requirement | More is better | `rule-engine` |
+| Installation feasibility | **20 %** | Fraction of machines that can physically be delivered to their position and installed there — see below | More is better | An `access_entry` point |
+| Maintenance access | **15 %** | Fraction of machines whose rear and side clearances are reachable from a circulation route without crossing another machine's envelope | More is better | Geometry |
+| RO piping efficiency | **10 %** | Routed run from the loop origin to each machine's water port, summed | Less is better | An `ro_supply` point |
+| Electrical routing | **5 %** | Routed run to the panel, summed | Less is better | An `electrical_panel` point |
+| Future expansion | **5 %** | How many more machines the solver can add to the remaining floor **without moving any existing one** | More is better | The solver, recursively |
+| Walking distance | **5 %** | Routed staff run from the nurse base to each machine, summed | Less is better | A `staff_base` point |
+| Drain routing | **0 %** | Routed run to the drain, plus a penalty per fall-direction reversal | Less is better | A `drain` point |
+| Station count | *constraint* | Placements of the requested category | — | — |
 
-Three of the seven criteria measure a distance **to something the document does not record**. There
-is no RO loop entry point, no drain stack, no electrical panel in `MfdDocument`.
+Weights sum to 1.00 over the seven the owner weighted. The last two rows are the reconciliation
+between B-5a's weight table and the criterion list in decision 3, and both are recorded rather than
+resolved silently:
+
+**`drain_routing` is measured at weight 0.** It was named as a criterion and is absent from the
+approved weight table. So it is measured, normalised and printed in every breakdown, contributing
+nothing — visible, and weightable by editing one number in
+[`standards/scoring/dialysis.json`](../../standards/scoring/dialysis.json).
+
+**`station_count` is a constraint, not a criterion**, and this one is a judgement I had to make rather
+than a transcription. See § C-4a.
+
+### The two criteria B-5a introduced
+
+Both were new in the weight table, so both need a definition that a solver can compute and an
+engineer can check.
+
+**Installation feasibility (20 %)** — *can this actually be installed?* Deterministic, and it is where
+the scoring engine and the installation planner meet:
+
+| Component | Measured as |
+| --- | --- |
+| Delivery path | For each machine, is there a route from the level's `access_entry` to its position clear enough for its **crated** footprint? A machine that cannot be carried to where it is drawn is not installed. |
+| Working space | Is there room for an installer at the connection faces during installation, which is not the same envelope as service clearance in use? |
+| Planner blockers | Does `ai-planner` report a blocker for the stage that installs it? |
+
+Scored as the fraction of machines with all three satisfied. The delivery-path term is the reason
+`access_entry` exists: a layout can satisfy every clearance rule and still require a machine to pass
+through a 700 mm door.
+
+**Walking distance (5 %)** — staff circulation from a nurse base to each station, routed rather than
+straight-line, summed and normalised per station. This is the criterion B-5 originally floated as
+"staff walking distance", and it is the one whose weight I would have guessed highest and the owner
+set lowest — recorded because it is exactly the kind of assumption a developer default would have
+baked in wrongly.
+
+### C-4a. Why station count is a constraint rather than a weighted criterion
+
+This is the one place the approved weight table cannot be implemented literally, and the reason is
+arithmetic rather than preference.
+
+**Every other criterion improves as machines are removed.** One machine in a large room has enormous
+compliance margin, perfect maintenance access, the shortest possible pipe run, the most expansion
+room and the shortest walk. So in a model that maximises a weighted total, station count at weight 0
+is not neutral:
+
+| Layout | compliance | feasibility | maintenance | RO | electrical | expansion | walking | **total** |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 station | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | **1.00** |
+| 12 stations | 0.62 | 0.90 | 0.83 | 0.31 | 0.44 | 0.20 | 0.55 | **0.65** |
+
+A solver told to maximise that total empties the room. Which is not a subtle mis-ranking — it is the
+opposite of the feature.
+
+So station count enters as a **target the engineer sets** — "twelve stations", or "as many as fit" —
+and the solver satisfies it; the weights then rank the arrangements that *meet* it. Concretely:
+
+| | |
+| --- | --- |
+| `propose_layout` | The engineer's target count, or the maximum achievable, is the constraint. Candidates below it are not ranked low, they are **not candidates**. |
+| `optimise_layout` | **May never emit `placement.delete`.** An optimisation that improves a score by removing a machine is not an optimisation of the design. |
+| The breakdown | Station count is measured and printed with the criteria, marked *constraint*, so it is visible without being tradeable. |
+
+**This is the same shape as the compliance filter, one level down**, and the owner's closing sentence
+is what makes it the right shape: *"Rule Compliance always has the highest priority and may never be
+outweighed by optimization metrics."* The mechanism that guarantees that for compliance — remove it
+from the weighted sum entirely — is the mechanism that has to guarantee it for station count too,
+because a 40 % weight is still a weight and 60 % of the model can outvote it. Compliance is a filter
+before scoring; station count is a constraint on the candidate set. Neither is purchasable.
+
+**What I need confirmed:** whether station count was intended to drop out of the weighting (which
+this reading assumes and which I think is right — you do not optimise *how many machines you want*,
+you state it), or whether **installation feasibility** was meant to subsume it. If the latter, the
+definition above changes and the weight table does not.
+
+### The gap this exposes: the document records no reference points
+
+**Five** of the criteria measure a distance **to something the document does not record**. There is
+no RO loop entry, no drain stack, no electrical panel, no goods entrance and no nurse base in
+`MfdDocument`. B-5a widened this from three criteria to five: installation feasibility needs an
+entrance and walking distance needs a staff base.
 
 That cannot be estimated. A piping score computed from a guessed origin is a number that looks like
 engineering and is not, and it would rank layouts by an assumption nobody made.
@@ -333,22 +420,54 @@ engineering and is not, and it would rank layouts by an assumption nobody made.
 So Sprint 6 adds them, and it is a document change:
 
 ```ts
-/** Where a service enters the level. Model millimetres, traced by the engineer. */
-interface UtilityOrigin {
+/**
+ * A named point on a level that engines measure distances from.
+ *
+ * Model millimetres, placed by the engineer, undoable like every other edit.
+ */
+interface ReferencePoint {
   readonly id: string;
-  readonly kind: 'ro_supply' | 'ro_return' | 'drain' | 'electrical_panel' | 'data';
+  readonly kind:
+    | 'ro_supply'
+    | 'ro_return'
+    | 'drain'
+    | 'electrical_panel'
+    | 'data'
+    /** Where equipment is delivered onto the level. Installation feasibility. */
+    | 'access_entry'
+    /** Nurse station or staff base. Walking distance. */
+    | 'staff_base';
   readonly position: Vec2;
   /** e.g. "Panel DB-3F-2". Null when the engineer has not named it — nullable rather than "" so
-   *  an unnamed origin and one named with an empty string cannot look alike. */
+   *  an unnamed point and one named with an empty string cannot look alike. */
   readonly label: string | null;
 }
 ```
 
-`Level.utilityOrigins: UtilityOrigin[]`, `DOCUMENT_VERSION` 3 → **4**, with a migration adding an
-empty array. And the consequence has to be stated rather than discovered: **a layout cannot be
-scored on routing until the engineer has placed the origins.** The scoring engine reports those
-criteria as *unavailable*, not as zero — a zero would rank a layout as having no pipe run at all,
-which is the best possible score for a measurement that was never taken.
+`Level.referencePoints: ReferencePoint[]`, `DOCUMENT_VERSION` 3 → **4**, with a migration adding an
+empty array.
+
+**Renamed from `UtilityOrigin` / `Level.utilityOrigins`**, which is what revision 2 of this document
+specified. B-5a's two new criteria need a goods entrance and a nurse base, and neither is a utility:
+a type called `UtilityOrigin` with `kind: 'staff_base'` would be a name that lies about half its
+values. The rename costs nothing because none of this is implemented yet, and it is cheaper now than
+in the migration that would inherit it.
+
+And the consequence has to be stated rather than discovered: **a layout cannot be scored on routing,
+feasibility or walking distance until the engineer has placed the points.** The scoring engine reports
+those criteria as *unavailable*, not as zero — a zero would rank a layout as having no pipe run at
+all, which is the best possible score for a measurement that was never taken (AD-18).
+
+With B-5a's weights that has a consequence worth naming. Four weighted criteria need a reference
+point — feasibility 20 %, RO 10 %, electrical 5 %, walking 5 % — so **40 % of the model is
+unmeasurable on a level with no points placed**, and the total is renormalised over the remaining
+60 %.
+
+A renormalised total still reads 0…1, which means **two layouts scored with different criteria
+available are not comparable even though their totals look alike**. So the breakdown always prints
+what was unavailable beside the total, comparison is only ever offered within one scoring request,
+and a level with no reference points is flagged as such rather than being given a number that quietly
+answers a different question.
 
 ### Normalisation, without which the weights mean nothing
 
@@ -361,57 +480,95 @@ the configuration rather than hidden in the code:
 ```json
 {
   "id": "dialysis_default",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "criteria": {
-    "compliance_margin": { "weight": 0.30, "direction": "maximise", "reference": { "target": 1.5 } },
-    "station_count":     { "weight": 0.25, "direction": "maximise", "reference": { "perRoomArea": 12.0 } },
-    "ro_piping_length":  { "weight": 0.10, "direction": "minimise", "reference": { "perStation": 8000 } },
-    "drain_routing":     { "weight": 0.10, "direction": "minimise", "reference": { "perStation": 6000 } },
-    "electrical_routing":{ "weight": 0.05, "direction": "minimise", "reference": { "perStation": 10000 } },
-    "maintenance_access":{ "weight": 0.15, "direction": "maximise", "reference": { "target": 1.0 } },
-    "future_expansion":  { "weight": 0.05, "direction": "maximise", "reference": { "target": 4 } }
+    "compliance_margin":        { "weight": 0.40, "direction": "maximise", "reference": { "marginRatioTarget": 1.5 } },
+    "installation_feasibility": { "weight": 0.20, "direction": "maximise", "reference": { "fractionTarget": 1.0 } },
+    "maintenance_access":       { "weight": 0.15, "direction": "maximise", "reference": { "fractionTarget": 1.0 } },
+    "ro_piping_length":         { "weight": 0.10, "direction": "minimise", "reference": { "perStation": 8000 } },
+    "electrical_routing":       { "weight": 0.05, "direction": "minimise", "reference": { "perStation": 10000 } },
+    "future_expansion":         { "weight": 0.05, "direction": "maximise", "reference": { "additionalStations": 4 } },
+    "walking_distance":         { "weight": 0.05, "direction": "minimise", "reference": { "perStation": 12000 } },
+    "drain_routing":            { "weight": 0.00, "direction": "minimise", "reference": { "perStation": 6000 }, "measuredOnly": true }
+  },
+  "constraints": {
+    "station_count": { "unit": "count" }
   }
 }
 ```
 
-**These weights are a starting point I chose, not an engineering judgement anybody has made.** They
-are in `standards/scoring/` so that changing them is a data change, and they are the thing I most
-want the owner to correct — see the open question at the end of this section.
+**The weights are the owner's decision (B-5a), not a developer default** — which is a change from
+revision 2, where they were mine and flagged as a guess. The file carries an `authority` block saying
+so, because the next person to edit it should know they are changing a decision rather than tuning a
+constant.
+
+**The references are still mine**, and that distinction matters: a weight says how much a criterion
+counts, a reference says what counts as a full score in that criterion's own unit. 8,000 mm of RO pipe
+per station scoring 0 is a developer's estimate of what "bad" looks like, and it is as load-bearing as
+the weight above it. Recorded as the residue of B-5a rather than treated as settled — a weighted sum
+is only as meaningful as its normalisation, so these deserve an engineer's eye too.
+
+`version` moves to **1.0.0** with this decision. A scoring model that has been approved is not a
+0.x file, and every `ScoreBreakdown` names the id and version that produced it, so a score in a report
+from today remains reproducible after the weights are next revised.
 
 ### Every proposal shows its score broken down
+
+> Owner decision B-5a: *"The UI must always display a per-criterion score breakdown. Never display
+> only a single total score."*
 
 A total is not an explanation. A proposal carries the per-criterion measurement, its normalised
 value, its weight and its contribution:
 
 ```
-Total engineering score  0.71
-  compliance margin    1.8× requirement   0.90 × 0.30 = 0.270
-  station count        10 in 96 m²        0.80 × 0.25 = 0.200
-  RO piping            94 m (9.4 m/stn)   0.15 × 0.10 = 0.015   ← the weakest term
-  drain routing        62 m, 1 reversal   0.48 × 0.10 = 0.048
-  electrical           unavailable — no panel origin placed
-  maintenance access   9 of 10 reachable  0.90 × 0.15 = 0.135
-  future expansion     2 more stations    0.50 × 0.05 = 0.025
+Total engineering score  0.68   (over 95 % of the model — 1 criterion unavailable)
+
+  compliance margin        1.8× requirement    0.90 × 0.40 = 0.360
+  installation feasibility 10 of 10 deliverable 1.00 × 0.20 = 0.200
+  maintenance access       9 of 10 reachable   0.90 × 0.15 = 0.135
+  RO piping                94 m (9.4 m/stn)    0.15 × 0.10 = 0.015   ← the weakest term
+  electrical routing       unavailable — no electrical_panel point placed
+  future expansion         2 more stations      0.50 × 0.05 = 0.025
+  walking distance         86 m (8.6 m/stn)    0.28 × 0.05 = 0.014
+
+  station count            10 in 96 m²          constraint — not scored
+  drain routing            62 m, 1 reversal     0.48 × 0.00 = 0.000   (measured only)
 ```
 
-Two properties this gives, both of which the earlier single-objective design could not:
+Three properties this gives, none of which a single-objective design could:
 
 1. **An engineer can disagree specifically.** "The pipe run matters more than that here" is a
    weight change, not an argument about the tool.
 2. **A trade is visible.** A layout with one more station and 30 m more pipe shows exactly what it
    bought and what it cost.
+3. **The shape of what was not measured is visible.** The header states the fraction of the model
+   the total was computed over, so a renormalised score cannot be mistaken for a complete one.
 
-### What the solver now maximises
+**Never printing a bare total is now an owner requirement, and it is enforced structurally rather
+than by convention**: `ScoreBreakdown` with a `total` and an empty `criteria` array is
+schema-invalid, so a renderer cannot be written that has only the total to show. See
+[AI_SERVICE_API.md § C](AI_SERVICE_API.md).
 
-Total weighted score, over candidates that have already passed the hard-compliance filter. Ties
-break on compliance margin — if two layouts score the same, the safer one wins, and that is a
-policy choice rather than an implementation detail.
+### What the solver maximises
 
-> **Owner decision needed:** the **default weights**. Mine are above and they are a guess with a
-> defensible shape (compliance and station count dominate, routing is secondary, expansion is a
-> tiebreaker) and no authority behind it. Whatever a TS engineer would actually trade is what
-> belongs in that file. Until it is answered the solver works and its ranking reflects my guess —
-> which is why every proposal shows the breakdown rather than only the total.
+Total weighted score, over candidates that have already passed **both** gates — the hard-compliance
+filter and the station-count constraint. Ties break on compliance margin: if two layouts score the
+same, the safer one wins. That is a policy choice rather than an implementation detail, and it is the
+tie-break the owner's *"Rule Compliance always has the highest priority"* implies.
+
+### Multiple scoring profiles — designed for, not built
+
+> Owner note, B-5a: *"Future versions may define multiple scoring profiles."*
+
+Nothing in Sprint 6 needs more than one profile, and nothing in Sprint 6 prevents a second. The
+contract already carries the model **by value** in every request and names its `{ id, version }` in
+every breakdown, so a profile is a file in `standards/scoring/` and a selection stored in project
+settings — the same shape `reportRenderMode` already has.
+
+What is deliberately **not** built now: a profile picker, per-project weight overrides, or a UI for
+editing weights. Each of those is a way for a score in a signed report to have been produced by
+weights nobody reviewed, and none is needed until a second profile exists. The extension point is the
+contract; the machinery waits for the requirement.
 
 ---
 
@@ -522,7 +679,7 @@ edits, not a paragraph that appears in a PDF a hospital receives.
 | Service unreachable | Language features report unavailable. Nothing about the layout, the findings or the report changes. |
 | Service returns nonsense | Schema validation rejects it. The panel says the assistant could not answer. |
 | **Nothing indexed** | Retrieval returns nothing and the LLM is never called. The panel says the corpus holds no answer — which is true, and is not the same as "no". |
-| **No utility origins placed** | Routing criteria report **unavailable**, not zero. A zero would score an unmeasured pipe run as the best possible one. |
+| **No reference points placed** | Routing criteria report **unavailable**, not zero. A zero would score an unmeasured pipe run as the best possible one. |
 | **No scoring model configured** | The shipped default in `standards/scoring/` is used, and the proposal names which model produced the score. |
 
 **The report never depends on the AI.** `buildReport` gains no parameter in Sprint 6. That is the
@@ -561,7 +718,7 @@ rather than a habit — see AI_SERVICE_API.md § D.
 | Voice or image input | Not in the owner's scope |
 | **Durations or dates in an installation plan** | Nobody has supplied labour rates or crew sizes. Sequence is derivable from dependencies; duration is not derivable from anything the project holds, and an invented one is a schedule somebody would resource against. |
 | **A model that reorders a plan or adds a stage** | The dependency graph is data. A model may explain the order; changing it is a data change with a diff. |
-| **Scoring a routing criterion without a utility origin** | Reported unavailable. See § C-4. |
+| **Scoring a routing criterion without a reference point** | Reported unavailable. See § C-4. |
 
 ---
 
@@ -572,9 +729,9 @@ rather than a habit — see AI_SERVICE_API.md § D.
 | AD-11 | **No package under `packages/` may import an AI client, a model name or a prompt.** Enforced by the linter, like every other boundary. |
 | AD-12 | **The AI proposes; the engines decide.** Every AI-originated change is a command list plus a rule-engine evaluation, accepted by a person. |
 | AD-13 | **Every AI numeric claim carries the id of the engine output it came from.** Unsourced numbers fail validation and never render. |
-| AD-14 | **Layout optimisation is deterministic, and maximises a weighted engineering score.** A solver with the rule engine as its oracle, over seven criteria whose weights are data in `standards/scoring/`. *(Revised: the first version optimised station count alone.)* |
+| AD-14 | **Layout optimisation is deterministic, and maximises a weighted engineering score.** A solver with the rule engine as its oracle, over criteria whose weights are the owner's decision (B-5a) and are data in `standards/scoring/`. Hard compliance and station count are gates rather than weights. *(Revised: the first version optimised station count alone.)* |
 | AD-15 | **The application works with no AI service.** Absence hides features; it never breaks the review or the report. |
 | AD-16 | **Retrieval precedes reasoning.** The LLM stage takes retrieved passages as a required, non-empty argument; a request that retrieves nothing is answered "not in the indexed corpus" with no model call. The model never answers from memory. |
 | AD-17 | **Hard compliance is a filter, never a weight.** A candidate breaching a rule is discarded, not scored lower. Only compliance *margin* is scored, so no arrangement of other criteria can purchase a violation. |
-| AD-18 | **A measurement that was not taken is reported unavailable, never zero.** Routing criteria without a utility origin, retrieval with nothing indexed, a duration with no labour data. |
+| AD-18 | **A measurement that was not taken is reported unavailable, never zero.** Routing criteria without a reference point, retrieval with nothing indexed, a duration with no labour data. |
 | AD-19 | **Sequence is derived; duration is not invented.** The installation plan orders stages from a dependency graph in `standards/sequences/` and carries no durations or dates. |

@@ -151,51 +151,65 @@ hospital's own reports are project data, so where the corpus is indexed is the s
 
 ### B-5. ~~Optimisation objective~~ — **decided**
 
-**A weighted scoring engine over seven criteria, configurable, and the solver maximises total
-engineering score.** Owner decision, at the Sprint 6 architecture review.
-
-| Criterion | Direction |
-| --- | --- |
-| Rule compliance | see below |
-| Number of dialysis stations | maximise |
-| RO piping length | minimise |
-| Drain routing | minimise |
-| Electrical routing | minimise |
-| Maintenance access | maximise |
-| Future expansion | maximise |
-
-Two consequences worth recording, because both are places this could have gone wrong:
+**A weighted scoring engine, configurable, and the solver maximises total engineering score.** Owner
+decision, at the Sprint 6 architecture review. The weights followed in B-5a below.
 
 **Rule compliance is a filter, not a weight.** *Does it comply* is applied before scoring, so no
 weight configuration can rank a violating layout at all. What is weighted is `compliance_margin` —
 *by how much* — which is real engineering information the old station-count objective discarded
 (AD-17).
 
-**Three criteria measure distance from a utility origin, and the document has none.** Sprint 6 adds
-`Level.utilityOrigins` at `DOCUMENT_VERSION` 4. Until an engineer places them those criteria report
-`unavailable`, never zero — zero is a *perfect* score for a criterion that minimises, so a default
-would rank the layout that ignores every service run highest (AD-18).
-
 `LayoutObjective` is deleted; `ScoringModel` and `ScoreBreakdown` replace it. Designed in
 [AI_WORKFLOW.md § D](architecture/AI_WORKFLOW.md).
 
-### B-5a. The default weights — opened by the decision above
+### B-5a. ~~The default weights~~ — **decided**
 
-The criteria are the owner's. **The weights are not.** The defaults that will ship in
-`standards/scoring/dialysis.json` are a plausible-looking guess by a developer, and they decide which
-layout an engineer is shown first.
+**Owner decision.** The approved engineering weights, now in
+[`standards/scoring/dialysis.json`](../standards/scoring/dialysis.json) at version 1.0.0:
 
-Not blocking, and deliberately so: the model is data, referenced by id and version in every
-`ScoreBreakdown`, so changing it changes no code. But two things follow while it is open:
+| Criterion | Weight |
+| --- | --- |
+| Rule compliance *(margin)* | 40 % |
+| Installation feasibility | 20 % |
+| Maintenance access | 15 % |
+| RO piping efficiency | 10 % |
+| Electrical routing | 5 % |
+| Future expansion | 5 % |
+| Walking distance | 5 % |
 
-- **Every proposal shows its per-criterion breakdown**, never a bare total. A single number computed
-  from unreviewed weights is a number with no standing, and the breakdown is the only form in which a
-  weighting can be disagreed with.
-- The shipped defaults are marked in the file as provisional, so nobody inherits them as a decision.
+Also decided: the model stays data-driven; future versions may define multiple scoring profiles; and
+**the UI must always show a per-criterion breakdown, never a bare total.** That last one is enforced
+in the schema rather than left to each renderer — a `ScoreBreakdown` with a total and no criteria is
+invalid.
 
-The question, concretely: for a typical dialysis ward, how should station count, RO run length,
-maintenance access and future expansion trade against each other? An engineer's answer replaces the
-file.
+Two things the weight table required, both recorded rather than resolved silently:
+
+**Drain routing is measured at weight 0.** It was named in B-5's criterion list and is absent from
+this table. So it is measured, normalised and printed in every breakdown, contributing nothing —
+visible, and weightable by changing one number.
+
+**Station count became a constraint, not a zero-weight criterion.** This is the one part interpreted
+rather than transcribed, and the reason is arithmetic: every other criterion *improves as machines are
+removed*, so at weight 0 station count would not sit the ranking out, it would win it — a one-station
+room scores 1.00 and a twelve-station room 0.65. "Maximise total engineering score" would empty the
+room. So the engineer sets a target, the solver satisfies it, the weights rank what meets it, and
+`optimise_layout` may never propose deleting a machine. Detail and the numbers in
+[AI_SYSTEM_ARCHITECTURE § C-4a](architecture/AI_SYSTEM_ARCHITECTURE.md).
+
+**Still open, and smaller: the normalisation references.** A weight says how much a criterion counts;
+a *reference* says what counts as a full score in its own unit. "8,000 mm of RO pipe per station scores
+zero" is a developer's estimate of what bad looks like, and a weighted sum is only as meaningful as its
+normalisation. Recorded as B-5b rather than treated as settled by B-5a.
+
+### B-5b. The normalisation references
+
+Not blocking; the shipped values are in the same file as the weights and changing one is a data change.
+The question is what each criterion's *full score* should be for a typical dialysis ward — 8 m of RO
+pipe per station, 12 m of staff walk per station, four addable stations for full marks on expansion.
+
+Worth an engineer's eye because a reference can distort a weight: a criterion whose reference is set
+too generously scores near 1.0 for every layout and stops discriminating, which makes its weight
+decorative regardless of the number in the table.
 
 ### B-6. Digital twin scope — Version 4
 
@@ -255,7 +269,10 @@ Not blocking; recorded so they are visible and can be corrected.
 | Who produces the installation sequence? | **A deterministic planner** (`packages/ai-planner`), from declared stage dependencies in `standards/sequences/`. Not a model — an installation order must be the same on a second run. | Sprint 6 architecture review |
 | Does the plan carry durations or dates? | **No.** Order and dependency only. Duration depends on crew, access, lead times and a contract, none of which this platform holds. | Sprint 6 architecture review |
 | Where does the planner's commissioning checklist come from? | **The report's existing checklist**, by item id. A second list could disagree with the signed document. | Sprint 6 architecture review |
-| What does the layout solver optimise? | **A weighted engineering score** over seven criteria, configurable as data. Not station count. See B-5. | Sprint 6 architecture review |
+| What does the layout solver optimise? | **A weighted engineering score**, configurable as data. Not station count. See B-5. | Sprint 6 architecture review |
+| What are the weights? | Compliance 40 · feasibility 20 · maintenance 15 · RO 10 · electrical 5 · expansion 5 · walking 5. Owner decision B-5a. | B-5a |
+| May the UI show only a total score? | **No.** A per-criterion breakdown is always displayed; a `ScoreBreakdown` with a total and no criteria is schema-invalid. | B-5a |
+| Is station count weighted? | **No — it is a constraint.** At weight 0 in a maximise-total model it would rank the emptiest room first, because every other criterion improves as machines are removed. | B-5a |
 | Desktop application or web? | **Web-native**, no exceptions. Desktop browsers primary, tablet secondary, installable as a PWA. No Electron. | Sprint 5 close |
 | Offline? | The **application** caches itself. Remembering recent **projects** offline is a future sprint — it means storing hospital floor plans in browser storage, which touches B-4. | Sprint 5 close |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |

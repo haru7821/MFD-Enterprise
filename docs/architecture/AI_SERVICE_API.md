@@ -1,10 +1,16 @@
 # AI Service API
 
-> **Revised for review. Not implemented.**
+> **Approved. Implemented in `packages/ai-contract`.**
 > The contract between the editor and the AI, in both directions.
 > Companion to [AI_SYSTEM_ARCHITECTURE.md](AI_SYSTEM_ARCHITECTURE.md).
 >
-> **Revision 2** adds the knowledge engine as a *stage* rather than a peer capability, the
+> **Revision 3** carries the owner's approved scoring weights (B-5a) and the two things they required:
+> `ScoreBreakdown.coverage`, so a renormalised total cannot pass for a complete one, and
+> `constraints`, because station count had to leave the weighted sum rather than sit in it at zero.
+> `UtilityOrigin` becomes `ReferencePoint` — B-5a's two new criteria measure from a goods entrance
+> and a nurse base, neither of which is a utility.
+>
+> **Revision 2** added the knowledge engine as a *stage* rather than a peer capability, the
 > installation planner, and the weighted scoring model. `LayoutObjective` is gone — replaced by
 > `ScoringModel` and `ScoreBreakdown`.
 
@@ -121,14 +127,21 @@ export interface ProposalRequest {
   /** For `resolve_finding`: which finding to try to clear. */
   readonly findingRuleId: string | null;
   /**
-   * Where the services enter this level, in model millimetres.
+   * Named points on this level that criteria measure distances from, in model millimetres.
    *
-   * Required by three of the seven scoring criteria, and **empty is a legitimate value**: the
-   * routing criteria then report `unavailable` rather than zero. A zero would score an unmeasured
-   * pipe run as the best possible one (AD-18).
+   * Required by **four** of the weighted criteria — 40 % of the approved model — and **empty is a
+   * legitimate value**: those criteria then report `unavailable` rather than zero. A zero would
+   * score an unmeasured pipe run as the best possible one (AD-18).
    */
-  readonly utilityOrigins: readonly UtilityOriginSummary[];
+  readonly referencePoints: readonly ReferencePointSummary[];
   readonly scoring: ScoringModel;
+  /**
+   * The station-count constraint, not a scored criterion.
+   *
+   * `null` means "as many as fit". Either way, candidates that do not meet it are not ranked low —
+   * they are not candidates. See `ScoringModel` below for why this cannot be a weight.
+   */
+  readonly stationTarget: number | null;
 }
 
 /**
@@ -143,14 +156,20 @@ export interface ScoringModel {
   readonly criteria: Readonly<Record<ScoringCriterion, CriterionConfig>>;
 }
 
+/**
+ * The scored criteria, as approved in B-5a with their default weights.
+ *
+ * `station_count` is deliberately **not** in this list — see below. Neither is hard compliance.
+ */
 export const SCORING_CRITERIA = [
-  'compliance_margin',
-  'station_count',
-  'ro_piping_length',
-  'drain_routing',
-  'electrical_routing',
-  'maintenance_access',
-  'future_expansion',
+  'compliance_margin', // 40 %
+  'installation_feasibility', // 20 %
+  'maintenance_access', // 15 %
+  'ro_piping_length', // 10 %
+  'electrical_routing', // 5 %
+  'future_expansion', // 5 %
+  'walking_distance', // 5 %
+  'drain_routing', // 0 % — measured only; named as a criterion, unweighted in B-5a
 ] as const;
 
 export interface CriterionConfig {
@@ -165,6 +184,14 @@ export interface CriterionConfig {
    * reference, and the reference is configuration rather than a constant in the solver.
    */
   readonly reference: Readonly<Record<string, number>>;
+  /**
+   * True for a criterion that is measured and displayed but contributes nothing.
+   *
+   * `drain_routing` is the case: named in the owner's criterion list, absent from the approved
+   * weight table. Marked rather than dropped, so the breakdown shows it and weighting it is a
+   * one-number data change.
+   */
+  readonly measuredOnly?: boolean;
 }
 ```
 
@@ -172,36 +199,75 @@ export interface CriterionConfig {
 because B-5 was open; the owner's decision closes it, and a single primary would now be a way to
 reintroduce the thing it replaced.
 
+### Two things are kept out of the weighted sum, for the same reason
+
 **Hard compliance is not in `SCORING_CRITERIA`.** `compliance_margin` is headroom above a
 requirement and is scored; a *violation* is a filter applied before scoring, so no weighting can
-purchase one (AD-17). The two readings of "rule compliance" look alike and only one is safe.
+purchase one (AD-17). The two readings of "rule compliance" look alike and only one is safe. The
+owner's B-5a wording — *"Rule Compliance always has the highest priority and may never be outweighed
+by optimization metrics"* — is satisfied by the filter, not by the 40 % weight: 40 % is still a
+minority of the model, and a weight can always be outvoted by the rest.
+
+**`station_count` is not in `SCORING_CRITERIA` either**, and this is the one place the approved
+weight table cannot be implemented literally. Every other criterion *improves as machines are
+removed* — a single machine has the most clearance margin, the best access, the shortest pipe run
+and the most expansion room — so a station count at weight 0 does not sit out the ranking, it
+**wins** it, and the solver empties the room.
+
+So it is a constraint on the candidate set (`ProposalRequest.stationTarget`), measured and printed
+with the criteria and never traded against one. The same mechanism as the compliance filter, one
+level down. Recorded in AI_SYSTEM_ARCHITECTURE § C-4a with the arithmetic, and flagged to the owner —
+it is the one part of B-5a I interpreted rather than transcribed.
 
 `existing` carries a *summary* — id, transform, catalogue id — not equipment records. The solver
 resolves dimensions from the catalogue itself, so a proposal cannot rest on a stale copy of a
 footprint. That is the same rule that makes a `Placement` reference a catalogue entry rather than
 embed one.
 
-### `UtilityOriginSummary` — the geometry three criteria need
+### `ReferencePointSummary` — the geometry four weighted criteria need
 
 ```ts
 /**
- * Where a service enters the level. New in Sprint 6; requires `DOCUMENT_VERSION` 4.
+ * A named point on the level that a criterion measures from. New in Sprint 6; requires
+ * `DOCUMENT_VERSION` 4.
  *
- * RO piping length, drain routing and electrical routing are distances **from somewhere**, and the
- * document has no somewhere today. So the sprint adds `Level.utilityOrigins`, and this is its
- * request-side projection.
+ * Four weighted criteria are distances **from somewhere**, and the document has no somewhere today.
+ * So the sprint adds `Level.referencePoints`, and this is its request-side projection.
  */
-export interface UtilityOriginSummary {
+export interface ReferencePointSummary {
   readonly id: string;
-  readonly kind: 'ro_supply' | 'ro_return' | 'drain' | 'electrical_panel' | 'data';
+  readonly kind: ReferencePointKind;
   readonly position: Vec2;
 }
+
+export const REFERENCE_POINT_KINDS = [
+  'ro_supply',
+  'ro_return',
+  'drain',
+  'electrical_panel',
+  'data',
+  /** Where equipment is delivered onto the level. `installation_feasibility`. */
+  'access_entry',
+  /** Nurse station or staff base. `walking_distance`. */
+  'staff_base',
+] as const;
 ```
 
-**A missing origin is `unavailable`, never a distance of zero** (AD-18). Zero is the *best* possible
+**Named `ReferencePoint`, not `UtilityOrigin`.** The earlier revision called this a utility origin,
+which stopped being true when B-5a added installation feasibility and walking distance: a goods
+entrance and a nurse base are not utilities. A type whose name describes five of its seven values is
+the kind of small inaccuracy that survives into a migration, so it is renamed before anything is
+built.
+
+**A missing point is `unavailable`, never a distance of zero** (AD-18). Zero is the *best* possible
 score for a criterion whose direction is `minimise`, so defaulting to it would reward an unplaced
 service by ranking the layout that ignores it highest. `ScoreBreakdown` carries the distinction, and
-a proposal produced without origins says so on its face.
+a proposal produced without points says so on its face.
+
+**With the B-5a weights, missing points cost 40 % of the model** — feasibility 20, RO 10, electrical
+5, walking 5. That is high enough that the editor should prompt for them rather than let a score be
+quietly computed over the remaining 60 %, and it is why `ScoreBreakdown` reports what fraction of the
+model a total covers.
 
 ### `ScoreRequest` — score a layout that already exists
 
@@ -218,10 +284,14 @@ export interface ScoreRequest {
   readonly room: { readonly vertices: readonly Vec2[]; readonly name: string };
   readonly obstructions: readonly { readonly vertices: readonly Vec2[]; readonly kind: string }[];
   readonly placements: readonly PlacementSummary[];
-  readonly utilityOrigins: readonly UtilityOriginSummary[];
+  readonly referencePoints: readonly ReferencePointSummary[];
   readonly scoring: ScoringModel;
 }
 ```
+
+**No `stationTarget` here.** Scoring an existing layout measures what is there; a target would imply
+the engineer's own arrangement could fail a constraint, which is not the scoring engine's business to
+say. The constraint belongs to *proposing*.
 
 ### `PlanRequest` — installation sequence and commissioning
 
@@ -230,7 +300,7 @@ export interface PlanRequest {
   readonly context: AiRequestContext;
   /** What is being installed. Catalogue ids and transforms, as everywhere else. */
   readonly placements: readonly PlacementSummary[];
-  readonly utilityOrigins: readonly UtilityOriginSummary[];
+  readonly referencePoints: readonly ReferencePointSummary[];
   /** The stage set to sequence against — `standards/sequences/dialysis.json`. */
   readonly sequenceSetRef: { readonly id: string; readonly version: string };
   /**
@@ -421,26 +491,45 @@ export interface ScoreBreakdown {
   readonly scoringModel: { readonly id: string; readonly version: string };
   /** 0…1, the weighted sum over criteria that could be measured. */
   readonly total: number;
+  /**
+   * The fraction of the model's total weight that `total` was computed over.
+   *
+   * 1.0 when everything was measurable. Lower when reference points are missing — and with the
+   * B-5a weights, a level with none scores over 0.60 of the model. Carried because a renormalised
+   * total and a complete one both read 0…1 and mean different things; a reader shown only the
+   * number cannot tell which they have.
+   */
+  readonly coverage: number;
   readonly criteria: readonly CriterionScore[];
   /**
    * Criteria that could not be measured, and why.
    *
-   * Non-empty is normal, not an error. A total computed over five of seven criteria is a total the
+   * Non-empty is normal, not an error. A total computed over five of eight criteria is a total the
    * reader must be able to see the shape of, so it is reported alongside rather than folded in.
    */
   readonly unavailable: readonly UnavailableCriterion[];
+  /**
+   * Measured, printed, never traded — `station_count` today.
+   *
+   * A constraint is not a criterion with weight 0: at weight 0 in a maximise-total model, station
+   * count would rank the emptiest room first, because every other criterion improves as machines
+   * are removed. Kept structurally separate so no weight configuration can reach it.
+   */
+  readonly constraints: readonly ConstraintMeasurement[];
 }
 
 export interface CriterionScore {
   readonly criterion: ScoringCriterion;
-  /** The measurement, in the criterion's own unit — 12 stations, 8,400 mm of pipe. */
+  /** The measurement, in the criterion's own unit — 8,400 mm of pipe, 0.9 of machines reachable. */
   readonly measured: number;
   readonly unit: string;
   /** 0…1 after normalising `measured` against `CriterionConfig.reference`. */
   readonly normalised: number;
   readonly weight: number;
-  /** `normalised × weight ÷ Σweights`. Stated so the arithmetic is checkable. */
+  /** `normalised × weight ÷ Σ available weights`. Stated so the arithmetic is checkable. */
   readonly contribution: number;
+  /** True for a weight-0 criterion measured for information only — `drain_routing`. */
+  readonly measuredOnly: boolean;
 }
 
 export interface UnavailableCriterion {
@@ -448,19 +537,30 @@ export interface UnavailableCriterion {
   /** `RC`-style and language-independent, so the panel and the report say the same thing. */
   readonly reasonCode: string;
 }
+
+export interface ConstraintMeasurement {
+  readonly constraint: 'station_count';
+  readonly measured: number;
+  readonly unit: string;
+  /** The target it was solved against, or null for "as many as fit". */
+  readonly target: number | null;
+}
 ```
 
-**A `ScoreBreakdown` with a `total` and no `criteria` is schema-invalid.** This is the same
-enforcement as the report's Inconclusive rule, applied to optimisation: a single number ranking two
-layouts is unarguable-with, and the criteria are where an engineer disagrees usefully — *"you scored
-maintenance access above expansion, and for this ward that is backwards."* The breakdown is also the
-only way the default weights can be reviewed at all, and they are currently a guess awaiting an owner
-decision.
+**A `ScoreBreakdown` with a `total` and no `criteria` is schema-invalid**, and B-5a makes that an
+owner requirement rather than a design preference: *"The UI must always display a per-criterion score
+breakdown. Never display only a single total score."* Enforcing it in the schema is what makes it hold
+— a renderer cannot be written that has only a total to show, so the rule cannot be lost to a later
+refactor that found the breakdown noisy.
 
-**Renormalising by the weights that were measurable** — `÷ Σweights` over available criteria — is a
-choice with a cost worth naming: two layouts scored with different criteria available are not
-comparable, even though both totals read 0…1. The client compares only within one `ScoreRequest`, and
-the report prints `unavailable` beside the total rather than a bare figure.
+It is also the mechanism by which the weights stay reviewable. They are now an owner decision rather
+than my guess, but a decision is still a thing to revisit, and *"you scored maintenance access above
+expansion and for this ward that is backwards"* is only sayable if the contributions are on screen.
+
+**Renormalising by the weights that were measurable** — `÷ Σ available weights` — is a choice with a
+cost worth naming: two layouts scored with different criteria available are not comparable, even
+though both totals read 0…1. `coverage` exists so that cost is visible rather than latent; the client
+compares only within one request, and the report prints coverage and `unavailable` beside the total.
 
 ### `InstallationPlan` — order and dependency, no calendar
 
@@ -469,7 +569,7 @@ export interface InstallationPlan {
   readonly sequenceSet: { readonly id: string; readonly version: string };
   readonly stages: readonly InstallationStage[];
   /**
-   * Why the plan is not complete, if it is not: an open RED finding, a missing utility origin, a
+   * Why the plan is not complete, if it is not: an open RED finding, a missing reference point, a
    * stage whose prerequisite is not in this project.
    */
   readonly blockers: readonly PlanBlocker[];
@@ -659,8 +759,16 @@ risk — arithmetic drift and silent gaps are:
 | `total` equals the sum of `contribution` | A breakdown whose parts do not make its whole |
 | `criteria` ∪ `unavailable` covers every `SCORING_CRITERIA` member | A criterion quietly dropped instead of reported unmeasurable |
 | No `CriterionScore` for a criterion listed `unavailable` | A measurement and an admission of no measurement, at once |
+| `criteria` is non-empty whenever `total` is present | A bare total — forbidden by B-5a, enforced here rather than trusted to a renderer |
+| `coverage` equals Σ available weights ÷ Σ all weights | A renormalised total presented as a complete one |
+| A `measuredOnly` criterion contributes exactly 0 | `drain_routing` silently acquiring influence through a weight edit that left the flag behind |
+| `station_count` appears in `constraints`, never in `criteria` | The emptiest-room failure of § B, reintroduced by treating a constraint as a zero-weight criterion |
 | Every `dependsOn` names a stage in `stages` | A sequence with a dangling prerequisite |
 | `stages` is acyclic and `order` is a topological order of it | A plan that cannot be executed in the order it prints |
+
+The last two scoring checks are worth their cost. Both guard against the *same* class of mistake — a
+criterion gaining influence it was never granted — and both are cheap to state and impossible to
+notice by reading a number on a screen.
 
 ---
 
@@ -672,7 +780,7 @@ risk — arithmetic drift and silent gaps are:
 | The whole `MfdDocument` | A request carries what answers it. `GroundingBundle` is assembled per call. |
 | Customer contact details | Not needed to answer an engineering question |
 | Credentials or file paths | Nothing in the document holds them, and nothing should |
-| Room geometry, placements, utility origins | `propose`, `score` and `plan` are not HTTP endpoints. The solver, the scoring engine and the planner run in the browser, so the layout itself never crosses a network |
+| Room geometry, placements, reference points | `propose`, `score` and `plan` are not HTTP endpoints. The solver, the scoring engine and the planner run in the browser, so the layout itself never crosses a network |
 
 `GroundingBundle` being assembled at each call site is the load-bearing part: exposure is decided
 per question by code a reviewer can read, not by a connection being open.

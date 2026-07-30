@@ -252,7 +252,7 @@ commissioning plan**.
 
 Three further owner decisions at that review shape the sprint: a **Knowledge Engine** whose retrieval
 precedes any LLM reasoning, an **Installation Planner Agent**, and a **weighted scoring engine** over
-seven criteria replacing station-count optimisation.
+weighted criteria replacing station-count optimisation.
 
 **Architecture for review, no code yet:**
 [AI_SYSTEM_ARCHITECTURE.md](../architecture/AI_SYSTEM_ARCHITECTURE.md) ·
@@ -272,8 +272,9 @@ chose. Retrieval needs an index but no model either. So the sprint's first twent
 unaffected by B-4 (data residency), which is the only real gate.
 
 **Blocked by:** B-4 for the language half — three features of nine, and the knowledge index's
-location. **B-5 is now decided** (weighted scoring over seven criteria); what remains open is
-**B-5a**, the default weights, which blocks nothing because the model is data.
+location. **B-5 and B-5a are now decided** — weighted scoring, with the owner's approved weights in
+`standards/scoring/dialysis.json`. What remains open is **B-5b**, the normalisation references,
+which blocks nothing because the model is data.
 
 ---
 

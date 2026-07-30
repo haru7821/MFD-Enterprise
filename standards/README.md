@@ -7,10 +7,15 @@ This directory is that path.
 
 ```
 standards/
-└── rules/
-    └── dialysis/
-        ├── equipment_clearance.json
-        └── equipment_collision.json
+├── rules/
+│   └── dialysis/
+│       ├── boundary_collision.json
+│       ├── equipment_clearance.json
+│       └── equipment_collision.json
+├── checklists/
+│   └── dialysis.json
+└── scoring/
+    └── dialysis.json
 ```
 
 ## Why the rules live in git rather than only in the database
@@ -105,4 +110,32 @@ unsourced field groups, in the same categories. A checklist of only standing ite
 assessment; a checklist of only derived items is empty on a drawing with no equipment placed, and
 a water loop still needs commissioning.
 
-Full reference: [docs/rules/RULE_ENGINE_IMPLEMENTATION.md](../docs/rules/RULE_ENGINE_IMPLEMENTATION.md).
+## Scoring
+
+`scoring/dialysis.json` holds the weights the layout solver ranks arrangements by. **Owner
+decision B-5a**, and the file says so in an `authority` block, because these numbers are the
+difference between two defensible layouts and the reason one is shown first.
+
+Three properties are deliberate:
+
+| | |
+| --- | --- |
+| Every criterion normalises against an explicit `reference` | A weighted sum over a count and a length in millimetres is not a quantity. The reference is what makes the weights comparable, and it is data rather than a constant in the solver. |
+| `drain_routing` sits at **weight 0** with `measuredOnly` | Named in the owner's criterion list, absent from the approved weight table. Measured and printed in every breakdown so it is visible, and weightable by editing one number. Neither deleted nor silently weighted. |
+| `station_count` is under `constraints`, not `criteria` | See below. It is the one entry whose placement is an engineering judgement rather than a transcription. |
+
+### Why station count is a constraint and not a weight
+
+Every other criterion **improves as machines are removed**: a single machine in a large room has
+enormous clearance margin, perfect maintenance access, the shortest possible pipe run and the most
+expansion room. So in a model that maximises a weighted total, giving station count a weight of zero
+does not make it neutral — it makes the emptiest room the winner.
+
+Station count is therefore a **target the engineer sets** and the solver satisfies; the weights then
+rank the arrangements that meet it. It is measured and displayed like a criterion, and it is never
+traded against one. Rule compliance is excluded from trading in the same way and for the same
+reason, one level up: a violation is a filter applied before any scoring, so no weight can purchase
+one.
+
+Full reference: [docs/rules/RULE_ENGINE_IMPLEMENTATION.md](../docs/rules/RULE_ENGINE_IMPLEMENTATION.md)
+and [docs/architecture/AI_WORKFLOW.md § D](../docs/architecture/AI_WORKFLOW.md).

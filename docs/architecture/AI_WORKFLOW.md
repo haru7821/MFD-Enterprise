@@ -1,18 +1,22 @@
 # AI Workflow
 
-> **Revised for review. Not implemented.**
+> **Approved. Implementation in progress.**
 > What an engineer actually does, feature by feature, and what happens underneath.
 > Companion to [AI_SYSTEM_ARCHITECTURE.md](AI_SYSTEM_ARCHITECTURE.md) and
 > [AI_SERVICE_API.md](AI_SERVICE_API.md).
 >
-> **Revision 2** — four owner decisions, and two of them change workflows that were already written
-> here rather than adding new ones:
+> **Revision 3** — the owner's approved scoring weights (B-5a). § D carries them, and two
+> reconciliations the weight table required are recorded there rather than resolved silently: drain
+> routing is measured at weight 0, and station count is a **constraint** rather than a zero-weight
+> criterion, because at weight 0 it would rank the emptiest room first.
+>
+> **Revision 2** — four owner decisions, two of which changed workflows already written here:
 >
 > | # | Decision | Effect on this document |
 > | --- | --- | --- |
 > | 1 | Retrieval before any LLM reasoning | § A gains a stage; §§ E, F, I are rewritten around it |
 > | 2 | An Installation Planner Agent | New § G-2 |
-> | 3 | A weighted scoring engine, seven criteria, configurable | **§ D replaced** — the B-5 workaround is gone |
+> | 3 | A weighted scoring engine, configurable | **§ D replaced** — the B-5 workaround is gone |
 > | 4 | The solver maximises total engineering score | § B and § C now carry a `ScoringModel` |
 
 ---
@@ -67,11 +71,11 @@ branch is now the wider one. Six of the nine features never enter stage ②.
 | Step | What happens | Where |
 | --- | --- | --- |
 | 1 | Engineer selects a room and a catalogue item, clicks **Suggest position** | `apps/web` |
-| 2 | Client assembles a `ProposalRequest`: room polygon, obstructions, existing placements, utility origins, **`ScoringModel`** | `apps/web` |
+| 2 | Client assembles a `ProposalRequest`: room polygon, obstructions, existing placements, reference points, **`ScoringModel`** | `apps/web` |
 | 3 | Solver generates candidate positions on a grid, then refines | `ai-local` |
 | 4 | **Each candidate is evaluated by `rule-engine`** — clearance, collision, boundary | `ai-local` |
 | 5 | Candidates that violate a RED rule are discarded, not ranked low | `ai-local` |
-| 6 | Survivors **scored over the seven criteria**; top three returned with their breakdowns | `ai-local` |
+| 6 | Survivors **scored over every criterion**; top three returned with their breakdowns | `ai-local` |
 | 7 | Editor shows three ghosted positions with their findings and scores, before and after | `apps/web` |
 | 8 | Engineer accepts one → `placement.create` command → undoable | `apps/web` |
 
@@ -87,7 +91,7 @@ authority.
 
 **Steps 5 and 6 are two different mechanisms and must stay that way.** Step 5 is a filter over
 compliance; step 6 is a weighted sum. A violation is never a low score — if it were, a high enough
-weight elsewhere could outvote it, and the owner's seven criteria would have quietly become seven
+weight elsewhere could outvote it, and the owner's criteria would have quietly become a list of
 ways to approve a non-compliant layout (AD-17).
 
 ### When every candidate fails
@@ -141,30 +145,61 @@ placeholder because [OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-5 was open. B-5 is 
 placeholder is deleted rather than kept alongside — a solver with two ranking modes is a solver whose
 output depends on which one somebody left selected.
 
-### The seven criteria
+### The criteria, with the weights the owner approved in B-5a
 
-| Criterion | Unit | Direction | Measured how |
-| --- | --- | --- | --- |
-| Rule compliance *(margin)* | mm | maximise | Smallest headroom above any threshold, from `evaluate()` |
-| Number of dialysis stations | count | maximise | Placements of station-class equipment |
-| RO piping length | mm | minimise | Routed distance from `ro_supply` / `ro_return` origins |
-| Drain routing | mm | minimise | Routed distance from the `drain` origin |
-| Electrical routing | mm | minimise | Routed distance from the `electrical_panel` origin |
-| Maintenance access | mm | maximise | Reachable service clearance per machine, worst case |
-| Future expansion | mm² | maximise | Largest contiguous free area that could take another station |
+| Criterion | Weight | Unit | Direction | Measured how |
+| --- | --- | --- | --- | --- |
+| Rule compliance *(margin)* | **40 %** | ratio | maximise | Smallest headroom above any threshold, as a ratio of it, from `evaluate()` |
+| Installation feasibility | **20 %** | fraction | maximise | Machines with a clear delivery path from `access_entry`, working space at the connection faces, and no planner blocker |
+| Maintenance access | **15 %** | fraction | maximise | Machines whose service clearances are reachable from a circulation route |
+| RO piping efficiency | **10 %** | mm | minimise | Routed distance from `ro_supply` / `ro_return` |
+| Electrical routing | **5 %** | mm | minimise | Routed distance from `electrical_panel` |
+| Future expansion | **5 %** | count | maximise | Machines addable without moving an existing one |
+| Walking distance | **5 %** | mm | minimise | Routed staff distance from `staff_base` |
+| Drain routing | **0 %** | mm | minimise | Routed distance from `drain`, plus a penalty per fall reversal. **Measured only** |
+| Number of dialysis stations | *constraint* | count | — | Placements of station-class equipment. Measured, printed, never traded |
+
+The last two rows reconcile B-5a's weight table with the criterion list in decision 3, which are not
+the same seven. **Drain routing** was named as a criterion and left out of the weights, so it is
+measured at 0 and printed — visible, and weightable by editing one number. **Station count** was named
+as a criterion and left out of the weights, and that one could not be taken literally; see below.
 
 ### The workflow
 
 | Step | | Where |
 | --- | --- | --- |
 | 1 | Engineer clicks **Optimise**, or **Score this layout** on their own arrangement | `apps/web` |
-| 2 | Client loads the scoring model from `standards/scoring/dialysis.json`, overridden by project settings | `apps/web` |
+| 2 | Client loads the scoring model from `standards/scoring/dialysis.json` | `apps/web` |
 | 3 | Candidates generated; **every one filtered against the rule engine first** | `ai-local` |
-| 4 | Each surviving candidate measured on all seven criteria | `ai-local` |
-| 5 | Criteria that cannot be measured reported `unavailable` — **never zero** | `ai-local` |
-| 6 | Each measurement normalised 0…1 against its configured reference, then weighted | `ai-local` |
-| 7 | Ranked by total; the engineer's own layout scored on the same model for comparison | `ai-local` |
-| 8 | Proposal shows the total **and the per-criterion breakdown**, side by side with the current layout | `apps/web` |
+| 4 | Candidates that miss the **station target** are discarded — a constraint, not a score | `ai-local` |
+| 5 | Each survivor measured on every criterion | `ai-local` |
+| 6 | Criteria that cannot be measured reported `unavailable` — **never zero** | `ai-local` |
+| 7 | Each measurement normalised 0…1 against its configured reference, then weighted | `ai-local` |
+| 8 | Ranked by total; the engineer's own layout scored on the same model for comparison | `ai-local` |
+| 9 | Proposal shows the total, its **coverage**, and the **per-criterion breakdown** beside the current layout | `apps/web` |
+
+**Steps 3 and 4 are both gates, and step 5 is the only scoring.** Two things are kept out of the
+weighted sum entirely, and for the same reason: anything inside a weighted sum can be outvoted by the
+rest of it.
+
+### Why station count cannot be a weight — the arithmetic
+
+Every other criterion **improves as machines are removed**. One machine in a large room has the most
+clearance margin, the best maintenance access, the shortest pipe run, the shortest walk and the most
+expansion room:
+
+| Layout | compliance | feasibility | maintenance | RO | electrical | expansion | walking | **total** |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 station | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | **1.00** |
+| 12 stations | 0.62 | 0.90 | 0.83 | 0.31 | 0.44 | 0.20 | 0.55 | **0.65** |
+
+So a station count at weight 0 does not sit the ranking out — it **wins** it, and "maximise total
+engineering score" empties the room. Station count is therefore a target the engineer sets (step 4)
+and the weights rank the arrangements that meet it. `optimise_layout` may never emit
+`placement.delete` for the same reason.
+
+Flagged as the one part of B-5a interpreted rather than transcribed. Detail in
+[AI_SYSTEM_ARCHITECTURE § C-4a](AI_SYSTEM_ARCHITECTURE.md).
 
 ### Rule compliance is a filter *and* a criterion, and they are not the same thing
 
@@ -180,41 +215,56 @@ clearance never reaches step 4, so no combination of weights can rank it first. 
 the difference between clearing a requirement by 5 mm and clearing it by 300 mm — which is real
 engineering information, and which the previous station-count objective threw away.
 
-### Step 2 exists because the weights are not ours to choose
+### Step 2 exists because the weights are not the solver's to hold
 
 The scoring model is data — `standards/scoring/dialysis.json`, versioned in git, referenced by id and
-version in every `ScoreBreakdown`. Two consequences:
+version in every `ScoreBreakdown`. Three consequences:
 
 - A score is reproducible: the same layout, model and rule set produce the same total.
-- The weights can be argued with. **They currently need to be**: the defaults I wrote are a
-  reasonable-looking guess, not an engineering position, and they are the sprint's open question
-  (see [OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-5a).
+- **The weights are an owner decision (B-5a), and the file records that.** Whoever edits it next is
+  changing a decision, not tuning a constant.
+- The *references* — what counts as a full score in each criterion's own unit — are still a
+  developer's estimate, and they are as load-bearing as the weights above them. 8,000 mm of RO pipe
+  per station scoring zero is a judgement about what "bad" looks like. Recorded as the residue of
+  B-5a rather than treated as settled.
 
-### Step 5 is the honest part
+Nothing here supports multiple profiles yet, and nothing prevents one: the model travels by value in
+every request, so a second profile is a file plus a stored selection. Not built, because a profile
+picker with no second profile is a way for a signed report to carry weights nobody reviewed.
 
-Three of the seven criteria measure distance *from a utility origin*, and the document has no utility
-origins today — Sprint 6 adds `Level.utilityOrigins` at `DOCUMENT_VERSION` 4. Until an engineer places
-them:
+### Step 6 is the honest part
+
+**Four weighted criteria — 40 % of the approved model — measure distance from a reference point**, and
+the document records none today. Sprint 6 adds `Level.referencePoints` at `DOCUMENT_VERSION` 4. Until
+an engineer places them:
 
 ```
-RO piping length      —  unavailable (no ro_supply origin placed)
-Drain routing         —  unavailable (no drain origin placed)
-Electrical routing    —  unavailable (no electrical_panel origin placed)
+Installation feasibility  —  unavailable (no access_entry placed)      20 %
+RO piping efficiency      —  unavailable (no ro_supply placed)         10 %
+Electrical routing        —  unavailable (no electrical_panel placed)    5 %
+Walking distance          —  unavailable (no staff_base placed)          5 %
+Drain routing             —  unavailable (no drain placed)               0 %
+
+Total 0.83  (coverage 0.60 — 40 % of the model could not be measured)
 ```
 
-**Not zero.** Those three criteria minimise, so zero is a perfect score: defaulting to it would make
-the layout that ignores every service run score highest, and the optimiser would confidently recommend
-it (AD-18). `unavailable` is visible in the panel and in the report, and it is a prompt to place the
-origins rather than a silent discount.
+**Not zero.** Three of those minimise, so zero is a perfect score: defaulting to it would make the
+layout that ignores every service run score highest, and the optimiser would confidently recommend it
+(AD-18). And feasibility at zero would be the opposite error — condemning a layout for a point nobody
+placed.
+
+**`coverage` is why the total above is not a lie.** 0.83 over 60 % of the model is not comparable with
+0.83 over all of it, and both read the same. So the fraction is printed with the number, everywhere.
 
 ### What optimisation still refuses to do
 
 | | |
 | --- | --- |
 | Never moves a machine that is already satisfying every rule, unless the engineer asks | A layout an engineer has settled is a decision, not a starting point |
+| **Never removes a machine to improve a score** | `optimise_layout` cannot emit `placement.delete`. Removal improves almost every criterion, which makes it the cheapest way for an optimiser to look effective. |
 | Reports the improvement per criterion | "One more station, 6 m less RO pipe, 120 mm less service clearance at station 4" — not "better" |
 | Shows what it costs | Every optimisation trades something, and a weighted sum is exactly the mechanism that can hide it. The breakdown is what makes the trade visible. |
-| Never presents a total without its criteria | A single number is unarguable-with; the criteria are where an engineer disagrees usefully |
+| Never presents a total without its criteria | Owner requirement, B-5a. Enforced in the schema — a `ScoreBreakdown` with a total and no criteria is invalid — rather than left to each renderer. |
 
 ---
 
@@ -326,7 +376,7 @@ different order on a second run, which for a document a site team works from is 
 | Step | | Where |
 | --- | --- | --- |
 | 1 | Engineer opens **Installation plan** for a level | `apps/web` |
-| 2 | Client assembles a `PlanRequest`: placements, utility origins, open findings, the sequence set ref | `apps/web` |
+| 2 | Client assembles a `PlanRequest`: placements, reference points, open findings, the sequence set ref | `apps/web` |
 | 3 | Planner loads the stage set and its declared dependencies | `ai-planner` |
 | 4 | Stages instantiated **only where the project has something for them** — no RO stage without RO equipment | `ai-planner` |
 | 5 | Dependencies resolved; cycle → an error, never a guessed order | `ai-planner` |
@@ -449,7 +499,7 @@ implies coverage the deployment does not have.
 | A proposal makes findings worse | The before/after shows it; accept is still theirs | Nothing until accepted |
 | Solver finds nothing legal | "No position in this room satisfies the rules", with the binding constraint | Nothing |
 | **A criterion cannot be measured** | `unavailable` beside the score, naming what is missing — never a zero | Nothing |
-| **No utility origins placed** | Three criteria `unavailable`; the panel prompts for the origins | Nothing |
+| **No reference points placed** | Four weighted criteria `unavailable` — 40 % of the model — with `coverage` printed beside the total; the panel prompts for the points | Nothing |
 | **A sequence set has a dependency cycle** | An error naming the stages in the cycle | Nothing |
 | **A plan has an open RED blocker** | The plan, with the blocker first | Nothing |
 | Contract version mismatch | Capability reported unavailable | Nothing |

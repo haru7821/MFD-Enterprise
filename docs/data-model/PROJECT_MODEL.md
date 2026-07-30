@@ -79,9 +79,9 @@ that floor rather than of the view.
 | `boundaries` | Boundary[] | Traced geometry |
 | `spaces` | Space[] | Named rooms |
 | `placements` | Placement[] | Machines on this floor |
-| `utilityOrigins` | UtilityOrigin[] | **Planned, Sprint 6** — `DOCUMENT_VERSION` 4. Where the services enter this floor. |
+| `referencePoints` | ReferencePoint[] | **Planned, Sprint 6** — `DOCUMENT_VERSION` 4. Where the services enter this floor. |
 
-### UtilityOrigin — planned, not implemented
+### ReferencePoint — planned, not implemented
 
 | Field | Type | Notes |
 | --- | --- | --- |

@@ -1,0 +1,80 @@
+{
+  "id": "dialysis_default",
+  "version": "1.0.0",
+  "title": {
+    "ko": "투석실 기본 엔지니어링 평가 모델",
+    "en": "Dialysis Unit Default Engineering Scoring Model"
+  },
+  "authority": {
+    "decidedBy": "product owner",
+    "decision": "B-5a",
+    "note": "Weights are an owner decision, not a developer default. Editing this file changes how layouts are ranked and is a reviewable change; see docs/OPEN_QUESTIONS.md B-5a."
+  },
+  "criteria": {
+    "compliance_margin": {
+      "weight": 0.4,
+      "direction": "maximise",
+      "reference": { "marginRatioTarget": 1.5 },
+      "title": { "ko": "규정 준수 여유", "en": "Rule Compliance Margin" },
+      "unit": "ratio"
+    },
+    "installation_feasibility": {
+      "weight": 0.2,
+      "direction": "maximise",
+      "reference": { "fractionTarget": 1.0 },
+      "title": { "ko": "설치 실현성", "en": "Installation Feasibility" },
+      "unit": "fraction"
+    },
+    "maintenance_access": {
+      "weight": 0.15,
+      "direction": "maximise",
+      "reference": { "fractionTarget": 1.0 },
+      "title": { "ko": "유지보수 접근성", "en": "Maintenance Access" },
+      "unit": "fraction"
+    },
+    "ro_piping_length": {
+      "weight": 0.1,
+      "direction": "minimise",
+      "reference": { "perStation": 8000 },
+      "title": { "ko": "RO 배관 효율", "en": "RO Piping Efficiency" },
+      "unit": "mm"
+    },
+    "electrical_routing": {
+      "weight": 0.05,
+      "direction": "minimise",
+      "reference": { "perStation": 10000 },
+      "title": { "ko": "전기 배선 경로", "en": "Electrical Routing" },
+      "unit": "mm"
+    },
+    "future_expansion": {
+      "weight": 0.05,
+      "direction": "maximise",
+      "reference": { "additionalStations": 4 },
+      "title": { "ko": "향후 확장성", "en": "Future Expansion" },
+      "unit": "count"
+    },
+    "walking_distance": {
+      "weight": 0.05,
+      "direction": "minimise",
+      "reference": { "perStation": 12000 },
+      "title": { "ko": "동선 거리", "en": "Walking Distance" },
+      "unit": "mm"
+    },
+    "drain_routing": {
+      "weight": 0,
+      "direction": "minimise",
+      "reference": { "perStation": 6000 },
+      "title": { "ko": "배수 경로", "en": "Drain Routing" },
+      "unit": "mm",
+      "measuredOnly": true,
+      "note": "Named in the owner's criterion list but absent from the approved B-5a weight table. Measured and shown in every breakdown at weight 0 so it is visible and can be weighted by editing this file. Not silently deleted, and not silently weighted."
+    }
+  },
+  "constraints": {
+    "station_count": {
+      "note": "Deliberately NOT a weighted criterion. Station count is a target the engineer sets and the solver satisfies; scoring then ranks arrangements that meet it. A weight of 0 in a maximise-total model would rank the emptiest room first, because every other criterion improves as machines are removed. Measured and displayed like a criterion; never traded against one.",
+      "title": { "ko": "투석기 수량", "en": "Number of Dialysis Stations" },
+      "unit": "count"
+    }
+  }
+}

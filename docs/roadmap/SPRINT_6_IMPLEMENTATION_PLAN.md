@@ -1,8 +1,12 @@
 # Sprint 6 — Implementation Plan
 
-> **Not started. Implementation waits on approval of this plan and the four architecture
-> documents.**
+> **Approved. Implementation in progress.**
 > Sprint 6 — AI Engineering Assistant.
+>
+> **Revision 3** — B-5a's weights are decided and in `standards/scoring/dialysis.json`, so step 4 has
+> its numbers. Two reconciliations the weight table required are recorded in § B. Step 2's entity is
+> renamed `ReferencePoint` and gains two kinds, because two of B-5a's criteria measure from a goods
+> entrance and a nurse base.
 >
 > **Revision 2**, for the owner's four decisions. Three of them add components, and the plan grew
 > accordingly — from seven steps and 18 days to ten steps and 30. The growth is real work, not
@@ -12,8 +16,8 @@
 > | --- | --- | --- |
 > | 1 | Knowledge retrieval before any LLM reasoning | **Step 8 is new** and now gates steps 9–10 |
 > | 2 | An Installation Planner Agent | **Step 6 is new** — `packages/ai-planner` |
-> | 3 | A weighted scoring engine, seven criteria, configurable | **Steps 2 and 4 are new**; step 5's ranking is rewritten |
-> | 4 | The solver maximises total engineering score | B-5 closes; **B-5a opens** |
+> | 3 | A weighted scoring engine, configurable | **Steps 2 and 4 are new**; step 5's ranking is rewritten |
+> | 4 | The solver maximises total engineering score | B-5 closes; B-5a opened, and is now decided too |
 >
 > [AI_SYSTEM_ARCHITECTURE.md](../architecture/AI_SYSTEM_ARCHITECTURE.md) ·
 > [AI_SERVICE_API.md](../architecture/AI_SERVICE_API.md) ·
@@ -40,36 +44,57 @@ browser, so the deterministic half is now two thirds of the sprint rather than h
 | | |
 | --- | --- |
 | **Settled** | The mission is engineering decision support. No LLM in business logic. An AI service layer behind stable interfaces. **Retrieval precedes reasoning.** **The solver maximises a weighted engineering score.** An installation planner is in scope. |
-| **Awaiting review** | These five documents, at revision 2. |
+| **Approved** | The architecture, at revision 2, plus the B-5a weights. **Implementation has started.** |
 | **Blocks the language half** | **B-4** — may project data leave the hospital network? |
-| **Newly opened, blocks nothing** | **B-5a** — the *default weights* for the seven criteria. |
 | **Closed by decision 3** | **B-5** — what makes one satisfying layout better than another. |
+| **Closed by the owner** | **B-5a** — the default engineering weights. |
+| **Open, blocks nothing** | **B-5b** — the normalisation *references*, which are still a developer's estimate. |
 | **Blocks nothing here, still blocks the product** | **A-1** — the AK98 manual. |
 
 ### B-5 is closed, and the placeholder is deleted rather than kept
 
-Revision 1 shipped station-count maximisation because B-5 was open. Decision 3 answers it: seven
-criteria, weighted, configurable. The station-count comparator is **removed**, not retained behind a
-flag — a solver with two ranking modes produces output that depends on which mode somebody left
-selected, and that is not reproducible in the sense this product needs.
+Revision 1 shipped station-count maximisation because B-5 was open. Decision 3 answers it: weighted
+criteria, configurable. The station-count comparator is **removed**, not retained behind a flag — a
+solver with two ranking modes produces output that depends on which mode somebody left selected, and
+that is not reproducible in the sense this product needs.
 
-### B-5a is what decision 3 opens, and it is smaller
+### B-5a is decided, and two parts of it needed reconciling
 
-The *criteria* are the owner's. The **weights** are not: the defaults I will write are a
-reasonable-looking guess, not an engineering position. This does not block the sprint — the model is
-data, loaded from `standards/scoring/dialysis.json`, and changing it changes no code — but it does mean
-**every proposal must show its per-criterion breakdown** rather than a total, because a total computed
-from unreviewed weights is a number with no standing. See [OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-5a.
+The approved weights are in
+[`standards/scoring/dialysis.json`](../../standards/scoring/dialysis.json) at version 1.0.0:
+compliance 40, feasibility 20, maintenance 15, RO 10, electrical 5, expansion 5, walking 5. Two of
+those criteria are new and are defined in the architecture; two criteria from B-5's list are absent
+from the weight table and are handled explicitly rather than dropped:
 
-### Three criteria need geometry the document does not have
+| | |
+| --- | --- |
+| `drain_routing` | Measured at **weight 0** and printed in every breakdown. Weightable by changing one number. |
+| `station_count` | A **constraint**, not a zero-weight criterion. Interpreted rather than transcribed, and flagged to the owner. |
 
-RO piping length, drain routing and electrical routing are distances *from somewhere*. The document has
-no somewhere. So **step 2 adds `Level.utilityOrigins` and `DOCUMENT_VERSION` 4** with a real 3 → 4
-migration, and until an engineer places the origins those three criteria report `unavailable` — never
-zero, because zero is a perfect score for a criterion that minimises (AD-18).
+The station-count reasoning matters for step 4's implementation, so it is here as well as in the
+architecture: every other criterion improves as machines are removed, so at weight 0 station count
+would not sit out the ranking, it would win it. A one-station room scores 1.00 against a
+twelve-station room's 0.65. So the target is a constraint on the candidate set, and `optimise_layout`
+may never emit `placement.delete`.
 
-This is the kind of thing that is cheap now and expensive in step 4. Finding out mid-solver that three
-of seven criteria are unmeasurable would have produced exactly the silent default the rest of this
+Also decided: **the UI must never show a bare total.** Enforced in `ai-contract`'s schema — a
+`ScoreBreakdown` with a total and no criteria is invalid — so no renderer can be written that has only
+a total to show.
+
+### Four weighted criteria need geometry the document does not have
+
+Installation feasibility, RO piping, electrical routing and walking distance are distances *from
+somewhere* — **40 % of the approved model.** The document has no somewhere. So **step 2 adds
+`Level.referencePoints` and `DOCUMENT_VERSION` 4** with a real 3 → 4 migration, and until an engineer
+places the points those criteria report `unavailable` — never zero, because zero is a perfect score
+for a criterion that minimises (AD-18).
+
+B-5a raised the stakes on this from three criteria to four and from 25 % of the model to 40 %, which
+is what makes `ScoreBreakdown.coverage` necessary rather than tidy: a total computed over 60 % of the
+model reads the same as a complete one.
+
+This is the kind of thing that is cheap now and expensive in step 4. Finding out mid-solver that four
+of the eight criteria are unmeasurable would have produced exactly the silent default the rest of this
 codebase exists to prevent.
 
 ### B-4 is still the only real gate, and it now gates less
@@ -94,7 +119,7 @@ Ten steps. Each ends green, and each is useful on its own.
 | Files | |
 | --- | --- |
 | `src/client.ts` | `AiClient`, `AiCapability` — including `score`, `plan`, `retrieve` |
-| `src/requests.ts` | Every request type, with `GroundingBundle`, `UtilityOriginSummary`, `ScoringModel`, `planImage?: never` |
+| `src/requests.ts` | Every request type, with `GroundingBundle`, `ReferencePointSummary`, `ScoringModel`, `planImage?: never` |
 | `src/responses.ts` | `AiProposal`, `ScoreBreakdown`, `InstallationPlan`, `RetrievalResult`, `AiExplanation`, `AiAnswer`, `AiSummary`, `Citation` |
 | `src/scoring.ts` | `SCORING_CRITERIA`, `CriterionConfig`, the normalisation function |
 | `src/schema.ts` | Zod schemas: bilingual, citation, **retrieval non-empty**, breakdown arithmetic, plan acyclicity |
@@ -111,18 +136,18 @@ response with an uncited number; a response missing Korean; a citation naming an
 language response with an empty `retrieved` array**; **a `ScoreBreakdown` whose `total` does not equal
 the sum of its contributions**; **a plan with a dependency cycle**.
 
-### Step 2 — utility origins, `DOCUMENT_VERSION` 4 (≈2 days)
+### Step 2 — reference points, `DOCUMENT_VERSION` 4 (≈2 days)
 
 | Files | |
 | --- | --- |
-| `packages/document-model/src/schema.ts` | `UtilityOrigin`, `Level.utilityOrigins`, `DOCUMENT_VERSION = 4` |
+| `packages/document-model/src/schema.ts` | `ReferencePoint`, `Level.referencePoints`, `DOCUMENT_VERSION = 4` |
 | `src/migrate.ts` | 3 → 4: existing levels gain an empty array |
-| `src/commands.ts` | `utilityOrigin.create` / `.move` / `.delete`, undoable like every other command |
-| `apps/web/.../UtilityOriginTool.tsx` | Place an origin on the canvas; the properties panel names its kind |
+| `src/commands.ts` | `referencePoint.create` / `.move` / `.delete`, undoable like every other command |
+| `apps/web/.../ReferencePointTool.tsx` | Place an origin on the canvas; the properties panel names its kind |
 | `packages/report-engine` | Origins appear on the floor plan and in the equipment schedule's utility block |
 | Tests | Migration round trip, command undo, the report renders origins |
 
-**Why a separate step, and why before the scoring engine.** Three criteria are unmeasurable without it,
+**Why a separate step, and why before the scoring engine.** Four weighted criteria are unmeasurable without it,
 and a document-version change is the kind of work that must not be squeezed alongside a solver. The
 migration is real — a version bump with no data change would be dishonest about what version 4 means.
 
@@ -147,13 +172,13 @@ the binding constraint.
 | Files | |
 | --- | --- |
 | `packages/ai-local/src/criteria/*.ts` | One measurement per criterion: compliance margin, station count, RO run, drain run, electrical run, maintenance access, expansion area |
-| `src/route.ts` | Manhattan-ish routed distance from a utility origin, respecting obstructions |
+| `src/route.ts` | Manhattan-ish routed distance from a reference point, respecting obstructions |
 | `src/normalise.ts` | Measurement → 0…1 against `CriterionConfig.reference` |
 | `src/score.ts` | `scoreLayout` → `ScoreBreakdown`, including `unavailable` |
 | `standards/scoring/dialysis.json` | The default model. **Weights flagged as B-5a.** |
 | Tests | Per-criterion measurement, normalisation bounds, renormalisation over available criteria, `unavailable` never zero |
 
-**Done when** a layout scores identically twice; a layout with no utility origins reports three
+**Done when** a layout scores identically twice; a layout with no reference points reports three
 criteria `unavailable` and a total over the remaining four; and **the `unavailable`-is-not-zero property
 is verified by making it fail** — substitute zero for a missing RO run and confirm the ignore-the-services
 layout wins, then restore it.
@@ -289,7 +314,7 @@ Two steps I expect to slip, for different reasons:
 
 - **Step 4**, because routed distance is where geometry gets fiddly. A straight line from an origin to
   a machine is easy and wrong — it ignores walls. The routing quality determines whether three of the
-  seven criteria mean anything.
+  criteria mean anything.
 - **Step 9**, because prompt evaluation is not finished when it works once. The citation-stability and
   memory sets are what will take the time, and they are the tests that decide whether the feature can
   be trusted.

@@ -241,11 +241,11 @@ notice was wrong.
 
 ### Version 4, planned but not written
 
-Sprint 6 adds **`Level.utilityOrigins`** — where the RO supply and return, the drain, the electrical
+Sprint 6 adds **`Level.referencePoints`** — where the RO supply and return, the drain, the electrical
 panel and the data service enter a level, as model millimetres:
 
 ```ts
-interface UtilityOrigin {
+interface ReferencePoint {
   id: string;
   kind: 'ro_supply' | 'ro_return' | 'drain' | 'electrical_panel' | 'data';
   position: Vec2;
@@ -253,8 +253,8 @@ interface UtilityOrigin {
 }
 ```
 
-**Why the document needs it rather than the solver holding it.** Three of the seven criteria the
-layout scoring engine ranks on are distances *from* one of these points
+**Why the document needs it rather than the solver holding it.** Four of the criteria the layout
+scoring engine ranks on — 40 % of the approved weights — are distances *from* one of these points
 ([AI_WORKFLOW.md § D](AI_WORKFLOW.md)). A distance from a position nobody recorded is not a
 measurement, so the positions belong in the document an engineer saves, alongside the geometry they
 are measured against — and they are placed with an undoable command like everything else.
