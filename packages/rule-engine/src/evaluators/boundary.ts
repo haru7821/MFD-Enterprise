@@ -41,13 +41,19 @@ import type { BoundaryEvaluationContext, ResolvedPlacement } from './types';
  * A machine in no room at all is a violation, not a pass. An engineer who has drawn
  * the rooms and left a machine in the corridor needs to see that.
  *
- * ## What a traced boundary does to `dataStatus`
+ * ## Provenance
  *
- * Nothing. `dataStatus` tracks the provenance of *engineering standards* — a
- * manufacturer's clearance figure against a placeholder. A room outline is project
- * data the engineer traced themselves, and its reliability is the calibration's,
- * which is handled by the plan-status gate in `evaluate.ts` rather than by pretending
- * a traced wall is a draft manual figure.
+ * A boundary check reads a **design footprint** and a **traced boundary**, and no
+ * manufacturer figure at all.
+ *
+ * The footprint is an owner-defined planning property with no citation. The boundary is
+ * project data the engineer traced, and its reliability is the calibration's — handled by
+ * the plan-status gate in `evaluate.ts` rather than by pretending a traced wall is a draft
+ * manual figure.
+ *
+ * So no equipment field group feeds this conclusion, and `dataStatus` is the rule's own
+ * status. An unknown service clearance does not make "this machine is outside the room"
+ * provisional; it is a fact about a polygon and a rectangle.
  */
 
 /** The room a machine is judged against, or null when it is in none. */
@@ -156,7 +162,8 @@ export function evaluateBoundaryCollision(
   const results: EvaluationResult[] = [];
 
   for (const { placement, object } of subjects) {
-    const dataStatus = weakestStatus(rule.status, object.dataStatus);
+    // Footprint and traced geometry only — see the note above.
+    const dataStatus = weakestStatus(rule.status);
     const corners = footprintCorners(object, placement.transform);
     const entry = { ...base, dataStatus };
 

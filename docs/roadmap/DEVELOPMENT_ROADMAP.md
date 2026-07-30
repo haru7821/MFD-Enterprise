@@ -59,7 +59,7 @@ See [OPEN_QUESTIONS](../OPEN_QUESTIONS.md).
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Real AK98 data never arrives | Fatal — the product becomes invented numbers wearing a citation field | Records carry `dataStatus`. Draft data can never produce GREEN, so an unverified figure cannot silently pass an installation. |
+| Real AK98 data never arrives | Fatal — the product becomes invented numbers wearing a citation field | Every field group carries its own verification status. A finding that reads a draft group can never produce GREEN, so an unverified figure cannot silently pass an installation — and a group that *is* cited counts, so partial data is worth supplying. |
 | Rule schema too narrow for the second machine | Rewrite during Version 2 | Test the schema against a second manufacturer's manual *on paper* during Sprint 3, before freezing it. |
 | PDF import complexity underestimated | Sprint 4 overruns | Scope to raster underlay plus two-point calibration. Vector extraction and DXF stay in the specification's Future list. |
 | Konva performance at 50 objects | Specification section 6 unmet | Measure at the end of Sprint 2, when real objects first exist. |

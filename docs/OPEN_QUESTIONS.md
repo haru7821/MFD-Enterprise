@@ -33,18 +33,25 @@ report a TS engineer might sign.
 | --- | --- |
 | Manual document number and **revision** | A clearance is true "for the AK98 at revision X". Without the revision we cannot say what a report was based on, or what a future revision invalidates. |
 | Section reference for each figure | Specification section 6 requires source information per rule. "Manufacturer Manual" alone does not meet that bar. |
-| ~~Width · Depth · Height~~ | **Supplied** — 585 × 620 × 1305 mm, Phase 4.5. Still uncited, so the record stays `draft`. |
+| ~~Width · Depth · Height~~ | **Supplied** — 585 × 620 × 1305 mm, Phase 4.5. Still uncited, so that group stays `draft`. |
 | Weight | Not supplied |
 | Front · Rear · Left · Right service clearance | **The remaining blocker.** The 1200 mm in the rule specification is illustrative. Every clearance finding reads "threshold unknown" until these arrive. |
-| One sentence for `designFootprint.basis` | Why 800 × 800 for a 585 × 620 machine. A report that prints the footprint with no account of it invites a question it cannot answer, and the schema refuses `verified` without it. |
 | Power specification | Voltage, phase, rating |
 | RO water specification | Supply pressure, flow, connection type |
 | Drain specification | Diameter, connection type, height |
+| Environmental specification | Ambient temperature, humidity, heat output |
+| ~~One sentence for `designFootprint.basis`~~ | Still wanted for the report, but **not a verification item.** The footprint is an owner planning decision with no manufacturer citation (Phase 4.5), so nothing gates on it. |
 
-**Until this arrives:** the AK98 catalogue record ships as `dataStatus: "draft"`, and the
-engine caps any result derived from it at YELLOW. GREEN becomes reachable the moment the
-real figures land — flipping one field, no code change. See
-[OBJECT_MODEL.md](data-model/OBJECT_MODEL.md).
+**Until this arrives:** every field group on the AK98 record ships as `draft`, and the engine
+caps any result that *reads one of them* at YELLOW.
+
+Verification is per group, so these can arrive in any order and each is worth having on its
+own — citing the dimensions alone makes the dimension and collision reporting verified while
+the clearance findings stay provisional. Flipping a group is a data change; no code change.
+See [OBJECT_MODEL.md](data-model/OBJECT_MODEL.md).
+
+Note also that every rule in `standards/rules/dialysis/` is itself `draft`, which caps its
+own findings independently. Both sides need their sources before anything reads GREEN.
 
 ### A-2. Left / right side convention — check this first when the manual arrives
 

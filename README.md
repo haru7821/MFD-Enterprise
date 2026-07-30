@@ -128,7 +128,7 @@ Read in this order:
 | --- | --- |
 | [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md) | **What we are building now** — product definition, user, MVP features |
 | [docs/data-model/PROJECT_MODEL.md](docs/data-model/PROJECT_MODEL.md) | Project · Level · Boundary · Space · Placement |
-| [docs/data-model/OBJECT_MODEL.md](docs/data-model/OBJECT_MODEL.md) | Equipment object: catalogue record, provenance, draft vs verified |
+| [docs/data-model/OBJECT_MODEL.md](docs/data-model/OBJECT_MODEL.md) | Equipment object: catalogue record, manufacturer dimensions vs design footprint, per-field-group verification |
 | [docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md](docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md) | The first equipment object |
 | [docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md](docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md) | Rule categories, result levels, rule data structure |
 | [docs/architecture/DOCUMENT_MODEL.md](docs/architecture/DOCUMENT_MODEL.md) | What a project *is*, and why undo is commands rather than snapshots |

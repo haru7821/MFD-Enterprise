@@ -1,10 +1,14 @@
 /**
- * Marks equipment whose figures are placeholders rather than manual values.
+ * Marks equipment with **any** field group still on placeholder figures.
  *
  * Required by the sprint brief: draft data must load, and must be visually obvious.
  * The badge appears in the catalogue palette, on the placed object, and in the
  * status bar — a TS engineer should not be able to reach a conclusion from this
  * drawing without having seen it.
+ *
+ * It is deliberately coarse. Verification is per field group, and the palette's chips
+ * say which groups are sourced; the badge only says "this record is not finished". Pass
+ * `title` to name the count, so the tooltip is specific where the badge cannot be.
  */
 export function DraftDataBadge({ title }: { readonly title?: string }) {
   return (

@@ -39,6 +39,7 @@ export interface FixtureEquipmentOptions {
   readonly id?: string;
   readonly width?: number;
   readonly depth?: number;
+  /** The **service clearance** group's status — the only equipment group evaluators read. */
   readonly dataStatus?: 'draft' | 'verified';
   readonly serviceClearance?: {
     front: number | null;
@@ -48,10 +49,28 @@ export interface FixtureEquipmentOptions {
   };
 }
 
+/** An unsourced group. Verification is per group, so a record states it six times. */
+function draftGroup(): Record<string, unknown> {
+  return { status: 'draft', source: { ...DRAFT_SOURCE } };
+}
+
+/** A sourced group. */
+function verifiedGroup(): Record<string, unknown> {
+  return { status: 'verified', source: { ...VERIFIED_SOURCE } };
+}
+
+/**
+ * A fixture equipment record.
+ *
+ * `dataStatus` names the status of the **service clearance** group, because that is the
+ * only equipment group any evaluator reads. Everything else stays draft on purpose: a
+ * fixture where all six groups moved together could not tell a per-group verdict from a
+ * record-level one, which is the distinction these tests exist to hold.
+ */
 export function fixtureEquipmentRecord(
   options: FixtureEquipmentOptions = {},
 ): Record<string, unknown> {
-  const verified = options.dataStatus === 'verified';
+  const clearanceGroup = options.dataStatus === 'verified' ? verifiedGroup() : draftGroup();
 
   return {
     id: options.id ?? 'fixture_machine',
@@ -59,35 +78,31 @@ export function fixtureEquipmentRecord(
     model: 'FX1',
     category: 'dialysis_machine',
     version: '0.1.0',
-    dataStatus: options.dataStatus ?? 'draft',
-    manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+    manufacturerDimensions: {
+      width: null,
+      depth: null,
+      height: null,
+      weight: null,
+      verification: draftGroup(),
+    },
     // The design footprint is what every geometric check measures, so it is the one the
-    // fixtures set. Manufacturer dimensions are reference data no evaluator reads.
+    // fixtures set. Manufacturer dimensions are reference data no evaluator reads, and the
+    // footprint carries no verification at all — it is an owner planning property.
     designFootprint: {
       width: options.width ?? 900,
       depth: options.depth ?? 750,
-      basis: verified ? 'Fixture planning allowance' : null,
+      basis: 'Fixture planning allowance',
     },
     connections: {
-      power: { required: true, port: null, specification: null },
-      roWater: { required: true, port: null, specification: null },
-      drain: { required: true, port: null, specification: null },
+      power: { required: true, port: null, specification: null, verification: draftGroup() },
+      roWater: { required: true, port: null, specification: null, verification: draftGroup() },
+      drain: { required: true, port: null, specification: null, verification: draftGroup() },
     },
-    serviceClearance: options.serviceClearance ?? {
-      front: null,
-      rear: null,
-      left: null,
-      right: null,
+    serviceClearance: {
+      ...(options.serviceClearance ?? { front: null, rear: null, left: null, right: null }),
+      verification: clearanceGroup,
     },
-    source: verified
-      ? {
-          document: 'Fixture Manual',
-          revision: 'Rev. 1',
-          section: '2.0 Dimensions',
-          type: 'manufacturer_manual',
-          lastUpdated: '2026-07-29',
-        }
-      : { ...DRAFT_SOURCE },
+    environmental: { specification: null, verification: draftGroup() },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
   };
 }

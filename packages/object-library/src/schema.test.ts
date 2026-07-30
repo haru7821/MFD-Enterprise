@@ -1,8 +1,46 @@
 import { describe, expect, it } from 'vitest';
 
+/**
+ * An unsourced group. Verification is **per group** now, so a fixture has to say it
+ * once per group rather than once per record.
+ */
+function draftVerification() {
+  return {
+    status: 'draft',
+    source: {
+      document: null,
+      revision: null,
+      section: null,
+      type: 'estimate',
+      lastUpdated: '2026-07-29',
+    },
+  };
+}
+
+/** A sourced group. */
+function verifiedVerification(section = '3.2 Installation clearances') {
+  return {
+    status: 'verified',
+    source: {
+      document: 'AK 98 Installation Manual',
+      revision: 'Rev. 4',
+      section,
+      type: 'manufacturer_manual',
+      lastUpdated: '2026-07-29',
+    },
+  };
+}
+
 import { CatalogValidationError } from './errors';
 import { parseEquipmentObject } from './catalog';
-import type { EquipmentObject } from './schema';
+import {
+  type EquipmentObject,
+  fieldStatus,
+  fieldVerification,
+  groupsWithStatus,
+  hasDraftFields,
+  isFullyVerified,
+} from './schema';
 
 /**
  * A record that must always pass, used as the base for every rejection case below.
@@ -16,22 +54,15 @@ function validRecord(): Record<string, unknown> {
     model: 'AK98',
     category: 'dialysis_machine',
     version: '0.1.0',
-    dataStatus: 'draft',
-    manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null },
+    manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null, verification: draftVerification() },
       designFootprint: { width: 900, depth: 750, basis: null },
     connections: {
-      power: { required: true, port: null, specification: null },
-      roWater: { required: true, port: null, specification: null },
-      drain: { required: true, port: null, specification: null },
+      power: { required: true, port: null, specification: null, verification: draftVerification() },
+      roWater: { required: true, port: null, specification: null, verification: draftVerification() },
+      drain: { required: true, port: null, specification: null, verification: draftVerification() },
     },
-    serviceClearance: { front: null, rear: null, left: null, right: null },
-    source: {
-      document: null,
-      revision: null,
-      section: null,
-      type: 'estimate',
-      lastUpdated: '2026-07-29',
-    },
+    serviceClearance: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+    environmental: { specification: null, verification: draftVerification() },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
   };
 }
@@ -60,7 +91,41 @@ describe('a valid record', () => {
     expect(object.id).toBe('vantive_ak98');
     expect(object.designFootprint.width).toBe(900);
     expect(object.manufacturerDimensions.width).toBe(585);
-    expect(object.dataStatus).toBe('draft');
+    expect(fieldStatus(object, 'manufacturerDimensions')).toBe('draft');
+  });
+
+  it('lets a verified group sit beside a draft one', () => {
+    // The whole point of per-group verification. A manual arrives in pieces: the
+    // dimensions are citable months before anyone pins down the clearances, and a
+    // record-level status forced the sourced figure to be reported as provisional.
+    const record = validRecord();
+    (record['manufacturerDimensions'] as Record<string, unknown>)['verification'] =
+      verifiedVerification('2.1 Dimensions');
+
+    const object = parse(record);
+
+    expect(fieldStatus(object, 'manufacturerDimensions')).toBe('verified');
+    expect(fieldStatus(object, 'serviceClearance')).toBe('draft');
+    // Not downgraded by its neighbours — which is exactly what this replaces.
+    expect(groupsWithStatus(object, 'verified')).toEqual(['manufacturerDimensions']);
+    expect(hasDraftFields(object)).toBe(true);
+    expect(isFullyVerified(object)).toBe(false);
+  });
+
+  it('reports fully verified only when every group is sourced', () => {
+    const record = validRecord();
+    for (const group of ['manufacturerDimensions', 'serviceClearance', 'environmental']) {
+      (record[group] as Record<string, unknown>)['verification'] = verifiedVerification();
+    }
+    for (const kind of ['power', 'roWater', 'drain']) {
+      ((record['connections'] as Record<string, Record<string, unknown>>)[kind] ?? {})[
+        'verification'
+      ] = verifiedVerification();
+    }
+
+    const object = parse(record);
+    expect(isFullyVerified(object)).toBe(true);
+    expect(groupsWithStatus(object, 'draft')).toEqual([]);
   });
 });
 
@@ -71,12 +136,11 @@ describe('missing fields are rejected', () => {
     'model',
     'category',
     'version',
-    'dataStatus',
     'manufacturerDimensions',
-  'designFootprint',
+    'designFootprint',
     'connections',
     'serviceClearance',
-    'source',
+    'environmental',
     'symbol',
   ])('rejects a record with no "%s"', (field) => {
     const record = validRecord();
@@ -133,11 +197,31 @@ describe('invalid types are rejected', () => {
     expect(issuePathsOf(record)).toContain('category');
   });
 
-  it('rejects an unknown dataStatus', () => {
+  it('rejects an unknown verification status', () => {
     const record = validRecord();
-    record['dataStatus'] = 'approved';
+    (record['serviceClearance'] as Record<string, unknown>)['verification'] = {
+      ...draftVerification(),
+      status: 'approved',
+    };
 
-    expect(issuePathsOf(record)).toContain('dataStatus');
+    expect(issuePathsOf(record)).toContain('serviceClearance.verification.status');
+  });
+
+  it('rejects a group with no verification block at all', () => {
+    const record = validRecord();
+    delete (record['serviceClearance'] as Record<string, unknown>)['verification'];
+
+    expect(issuePathsOf(record)).toContain('serviceClearance.verification');
+  });
+
+  it('refuses a verification block on the design footprint', () => {
+    // It is an owner-defined planning property with no manufacturer citation. A
+    // verification block there would be a record that two different things were meant.
+    const record = validRecord();
+    (record['designFootprint'] as Record<string, unknown>)['verification'] =
+      verifiedVerification();
+
+    expect(() => parse(record)).toThrow(CatalogValidationError);
   });
 
   it('rejects a non-semver version', () => {
@@ -149,9 +233,12 @@ describe('invalid types are rejected', () => {
 
   it('rejects a malformed date', () => {
     const record = validRecord();
-    (record['source'] as Record<string, unknown>)['lastUpdated'] = '29/07/2026';
+    (record['environmental'] as Record<string, Record<string, unknown>>)['verification'] = {
+      ...draftVerification(),
+      source: { ...draftVerification().source, lastUpdated: '29/07/2026' },
+    };
 
-    expect(issuePathsOf(record)).toContain('source.lastUpdated');
+    expect(issuePathsOf(record)).toContain('environmental.verification.source.lastUpdated');
   });
 
   it('rejects an unknown key, so a misspelled field cannot be silently dropped', () => {
@@ -162,89 +249,78 @@ describe('invalid types are rejected', () => {
   });
 });
 
-describe('verified records must carry their source', () => {
-  it('rejects verified with no document, revision or section', () => {
+describe('a verified group must carry its source', () => {
+  /** Put a bare `verified` status on one group, with no citation behind it. */
+  function claimVerified(group: string): Record<string, unknown> {
     const record = validRecord();
-    record['dataStatus'] = 'verified';
+    (record[group] as Record<string, unknown>)['verification'] = {
+      ...draftVerification(),
+      status: 'verified',
+    };
+    return record;
+  }
 
-    const paths = issuePathsOf(record);
+  it('rejects verified with no document, revision or section', () => {
+    const paths = issuePathsOf(claimVerified('serviceClearance'));
 
-    expect(paths).toContain('source.document');
-    expect(paths).toContain('source.revision');
-    expect(paths).toContain('source.section');
+    expect(paths).toContain('serviceClearance.verification.source.document');
+    expect(paths).toContain('serviceClearance.verification.source.revision');
+    expect(paths).toContain('serviceClearance.verification.source.section');
   });
 
   it.each(['document', 'revision', 'section'])(
     'rejects verified when only source.%s is missing',
     (field) => {
       const record = validRecord();
-      record['dataStatus'] = 'verified';
-      record['source'] = {
-        document: 'AK 98 Installation Manual',
-        revision: 'Rev. 4',
-        section: '3.2 Installation clearances',
-        type: 'manufacturer_manual',
-        lastUpdated: '2026-07-29',
-      };
-      (record['source'] as Record<string, unknown>)[field] = null;
+      const verification = verifiedVerification();
+      (verification.source as Record<string, unknown>)[field] = null;
+      (record['manufacturerDimensions'] as Record<string, unknown>)['verification'] =
+        verification;
 
-      expect(issuePathsOf(record)).toContain(`source.${field}`);
+      expect(issuePathsOf(record)).toContain(
+        `manufacturerDimensions.verification.source.${field}`,
+      );
     },
   );
 
-  it('accepts verified once the source and the footprint basis are complete', () => {
-    const record = validRecord();
-    record['dataStatus'] = 'verified';
-    record['source'] = {
-      document: 'AK 98 Installation Manual',
-      revision: 'Rev. 4',
-      section: '3.2 Installation clearances',
-      type: 'manufacturer_manual',
-      lastUpdated: '2026-07-29',
-    };
-    record['designFootprint'] = {
-      width: 800,
-      depth: 800,
-      basis: 'Manufacturer envelope plus service allowance',
-    };
-
-    expect(parse(record).dataStatus).toBe('verified');
+  it('names the group that failed, not just the field', () => {
+    // Six groups can each be verified independently, so "source.revision is missing"
+    // would send an engineer looking through all of them.
+    const paths = issuePathsOf(claimVerified('environmental'));
+    expect(paths.every((path) => path.startsWith('environmental.'))).toBe(true);
   });
 
-  it('refuses verified while the design footprint has no basis', () => {
-    // The hole the manufacturer/design split opens: a record whose *manufacturer*
-    // figures are sourced but whose *planning* area is not. The footprint is what every
-    // clearance and collision check measures, so an unaccounted-for one must not be able
-    // to reach GREEN (AD-6a).
+  it('accepts verified once that group can cite itself', () => {
     const record = validRecord();
-    record['dataStatus'] = 'verified';
-    record['source'] = {
-      document: 'AK 98 Installation Manual',
-      revision: 'Rev. 4',
-      section: '3.2 Installation clearances',
-      type: 'manufacturer_manual',
-      lastUpdated: '2026-07-29',
-    };
+    (record['serviceClearance'] as Record<string, unknown>)['verification'] =
+      verifiedVerification();
 
-    expect(issuePathsOf(record)).toContain('designFootprint.basis');
+    expect(fieldStatus(parse(record), 'serviceClearance')).toBe('verified');
+  });
+
+  it('does not require a design footprint basis for a verified group', () => {
+    // An earlier version did, which treated an owner planning decision as unsourced
+    // data. The footprint has no citation by design and gates nothing.
+    const record = validRecord();
+    (record['designFootprint'] as Record<string, unknown>)['basis'] = null;
+    (record['manufacturerDimensions'] as Record<string, unknown>)['verification'] =
+      verifiedVerification('2.1 Dimensions');
+
+    expect(fieldStatus(parse(record), 'manufacturerDimensions')).toBe('verified');
   });
 
   it('allows draft to omit its source, because that is what draft means', () => {
-    expect(parse(validRecord()).source.document).toBeNull();
+    const object = parse(validRecord());
+    expect(fieldVerification(object, 'serviceClearance').source.document).toBeNull();
   });
 
   it('rejects an empty string standing in for a real reference', () => {
     const record = validRecord();
-    record['dataStatus'] = 'verified';
-    record['source'] = {
-      document: '',
-      revision: 'Rev. 4',
-      section: '3.2',
-      type: 'manufacturer_manual',
-      lastUpdated: '2026-07-29',
-    };
+    const verification = verifiedVerification();
+    (verification.source as Record<string, unknown>)['document'] = '';
+    (record['serviceClearance'] as Record<string, unknown>)['verification'] = verification;
 
-    expect(issuePathsOf(record)).toContain('source.document');
+    expect(issuePathsOf(record)).toContain('serviceClearance.verification.source.document');
   });
 });
 

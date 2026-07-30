@@ -6,9 +6,10 @@
 
 ## Verdict
 
-**Complete.** All four items are delivered, tested and documented, plus a fifth change the
-owner added afterwards: separating manufacturer dimensions from the design footprint.
-394 unit tests and 64 browser specs pass; typecheck, lint and production build are clean.
+**Complete.** All four items are delivered, tested and documented, plus two changes the owner
+added afterwards: separating manufacturer dimensions from the design footprint, and moving
+data verification from the record to the field group. 402 unit tests and 65 browser specs
+pass; typecheck, lint and production build are clean.
 
 Phase 4.5 was described as finishing the interface, and most of it was. But building the
 gestures turned up **five defects and one incomplete model decision** that the model-level
@@ -235,16 +236,19 @@ the owner's list, and I added it because a report printing "800 × 800" with no 
 where it came from invites a question it cannot answer, and an unsourced number is exactly
 what the rest of this product refuses.
 
-**`verified` now requires `basis`.** This closes the hole the split would otherwise open: a
-record whose *manufacturer* figures are sourced but whose *planning* area is not could
-carry an unaccounted-for footprint into GREEN — and the footprint is what every clearance
-and collision check actually measures (AD-6a).
+**`verified` briefly required `basis`, and that was wrong.** I added the gate reasoning that
+a sourced manufacturer figure must not carry an unaccounted-for planning area into GREEN. The
+owner then settled what the footprint *is* — a planning property with no manufacturer
+citation — which makes the gate a category error: it demanded a source for a decision, and
+would have held the manufacturer's real, cited dimensions at `draft` over a missing sentence
+about a different field. Removed when verification moved to field level. What actually
+protects AD-6a is that every finding declares which groups it read.
 
-### The AK98 record is still `draft`, deliberately
+### The AK98 record is still `draft` in every group, deliberately
 
 The dimensions are now real. The **citation is not**: no document, no revision, no section
-— and the service clearances are still null. `verified` means citable, not correct, so the
-record stays `draft` and nothing computed from it can reach GREEN.
+— and the service clearances are still null. `verified` means citable, not correct, so every
+group stays `draft` and nothing that reads one of them can reach GREEN.
 
 `source.type` moved from `estimate` to `datasheet`, which describes owner-supplied
 manufacturer figures better than "estimate" did without claiming a manual has been read.
@@ -259,6 +263,74 @@ and 800 is not 585.
 
 The bed's dimension spec is the complementary case: 1,000 × 2,100 is not square, so it also
 proves width and depth are not being read from the same field.
+
+---
+
+## 6. Verification moved from the record to the field group
+
+> Owner decision: *"Verified data may coexist with draft data inside the same equipment
+> object. Do not downgrade verified fields because other fields remain unknown."*
+
+### The change
+
+`dataStatus` and `source` are gone from the top of an equipment record. Six groups now each
+carry their own `{ status, source }`: manufacturer dimensions, service clearance, the three
+connection specifications, and a new environmental group.
+
+| Before | After |
+| --- | --- |
+| One status for the record | One per field group |
+| One citation for everything | One per group — a datasheet for the dimensions and a manual for the clearances is the ordinary case |
+| `weakestStatus(rule, equipment)` | `weakestStatus(rule, ...groupsThisEvaluatorRead)` |
+
+`environmental` is new. The owner's example lists environmental specifications as a
+separately verifiable thing, and the record had nowhere to put them.
+
+### What it actually changes
+
+The old model was not merely coarse; it produced a statement that was false. An unsourced
+service clearance made **every** finding on that machine provisional — including "these two
+machines overlap by 500 mm", which reads no manual figure at all. So each evaluator now
+declares its inputs:
+
+| Evaluator | Groups read | Effect |
+| --- | --- | --- |
+| Clearance, threshold from the record | `serviceClearance` | Provisional while that group is uncited |
+| Clearance, threshold from the rule | none | Not provisional on equipment grounds |
+| Equipment collision | none — footprints | Not provisional on equipment grounds |
+| Boundary collision | none — footprint and traced geometry | Not provisional on equipment grounds |
+
+`weakestStatus(rule.status)` with no equipment argument is now a **meaningful** call meaning
+"this conclusion read no equipment figure", which is why it became variadic rather than
+taking an optional second argument that reads like an oversight.
+
+Nothing on screen changes colour today: every rule in `standards/rules/dialysis/` is itself
+`draft` and caps its own findings. What changed is which unknowns can hold a result back.
+
+### In the interface
+
+The palette was the record-level UI, and a single badge cannot express this. Each catalogue
+entry now shows **six chips**, one per group, green for cited and amber for not, each with a
+tooltip carrying either the citation or the reason there is none. The badge stays, coarsened
+honestly to "this record is not finished", with the count in its tooltip.
+
+The canvas keeps one mark, from `hasDraftFields`. Six states on a machine at 800 px is noise;
+what matters there is that a record with an unsourced clearance never draws as if it were
+complete.
+
+### Verified by breaking it, and by building the owner's example
+
+| Check | Method | Result |
+| --- | --- | --- |
+| The palette states all six groups | Rendered five of six | Failed on count, 6 ≠ 5 ✅ |
+| A mixed record renders as mixed | Temporarily cited the AK98's dimensions from a manual | Dimensions read `verified` with the citation in the tooltip, clearance stayed `draft`, badge read "5 of 6" ✅ |
+
+The second is the owner's example built end to end and then reverted — the shipped record
+still cites nothing, because nothing has been supplied.
+
+Two unit tests that had encoded the record-level rule were rewritten rather than adjusted:
+they asserted that one draft field made a collision finding provisional, which is now the
+defect, so each became the precise new rule plus the case the owner is fixing.
 
 ---
 
@@ -310,8 +382,8 @@ build actually changed.
 
 | Gate | Result |
 | --- | --- |
-| Unit tests | **394** (was 362) |
-| Browser specs | **64** (was 40) |
+| Unit tests | **402** (was 362) |
+| Browser specs | **65** (was 40) |
 | Typecheck | Clean, strict, six packages |
 | Lint | Clean |
 | Production build | Clean |
@@ -328,7 +400,8 @@ New tests by area:
 | v1 → v2 migration | 6 | — |
 | Console-clean load | — | 1 |
 | Manufacturer / design footprint split | 4 | 2 |
-| **Total** | **32** | **24** |
+| Field-level verification — schema gate per group, per-evaluator provenance, helpers | 8 | 1 |
+| **Total** | **40** | **25** |
 
 ## Deliberately not done
 

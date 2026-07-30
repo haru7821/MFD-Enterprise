@@ -161,6 +161,43 @@ test('marks placeholder data as draft', async ({ page }) => {
   await expect(page.getByTestId('provisional-warning')).toBeVisible();
 });
 
+test('states verification per field group, not per record', async ({ page }) => {
+  // Verification is per group: dimensions can be sourced while clearances are not, and
+  // the panel has to say which is which. A single record-level badge cannot, and that is
+  // what this replaces.
+  const chips = page.getByTestId('data-status-vantive_ak98').locator('[data-status]');
+  await expect(chips).toHaveCount(6);
+
+  // Every group is named, so no group can be silently missing from the readout.
+  for (const group of [
+    'manufacturerDimensions',
+    'serviceClearance',
+    'power',
+    'roWater',
+    'drain',
+    'environmental',
+  ]) {
+    await expect(page.getByTestId(`data-status-vantive_ak98-${group}`)).toBeVisible();
+  }
+
+  // Today every group on the AK98 is draft, because no group cites a document. The
+  // assertion is on the attribute rather than the colour, so a future record with sourced
+  // dimensions and unsourced clearances changes this to a mixed row and this test with it.
+  await expect(
+    page.getByTestId('data-status-vantive_ak98-manufacturerDimensions'),
+  ).toHaveAttribute('data-status', 'draft');
+  await expect(page.getByTestId('data-status-vantive_ak98-serviceClearance')).toHaveAttribute(
+    'data-status',
+    'draft',
+  );
+
+  // The tooltip says why, in a sentence an engineer can repeat to a customer.
+  await expect(page.getByTestId('data-status-vantive_ak98-serviceClearance')).toHaveAttribute(
+    'title',
+    /no manual reference recorded yet/,
+  );
+});
+
 test('draws the machine at its catalogue size, at every zoom', async ({ page }) => {
   await page.getByTestId('catalog-item-vantive_ak98').click();
   const box = await page.locator('div[role="application"]').boundingBox();

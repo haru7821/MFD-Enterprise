@@ -6,6 +6,7 @@ import {
   type EquipmentObject,
   clearanceZones,
   footprintCorners,
+  hasDraftFields,
   portPoints,
 } from '@mfd/object-library';
 
@@ -51,7 +52,11 @@ export function EquipmentShape({
   viewport,
   isSelected,
 }: EquipmentShapeProps) {
-  const isDraft = object.dataStatus === 'draft';
+  // Any group still a placeholder marks the shape. Verification is per field group, but
+  // the canvas is not the place to break a record into six states — it says "there is
+  // something here you have not sourced yet", and the palette says which. What must not
+  // happen is a machine with an unsourced clearance drawn as if the record were complete.
+  const isDraft = hasDraftFields(object);
   const tone = isDraft ? EQUIPMENT_THEME.draft : EQUIPMENT_THEME.verified;
 
   const corners = footprintCorners(object, placement.transform);

@@ -1,8 +1,45 @@
 import { describe, expect, it } from 'vitest';
 
+/**
+ * An unsourced group. Verification is **per group** now, so a fixture has to say it
+ * once per group rather than once per record.
+ */
+function draftVerification() {
+  return {
+    status: 'draft',
+    source: {
+      document: null,
+      revision: null,
+      section: null,
+      type: 'estimate',
+      lastUpdated: '2026-07-29',
+    },
+  };
+}
+
+/** A sourced group. */
+function verifiedVerification(section = '3.2 Installation clearances') {
+  return {
+    status: 'verified',
+    source: {
+      document: 'AK 98 Installation Manual',
+      revision: 'Rev. 4',
+      section,
+      type: 'manufacturer_manual',
+      lastUpdated: '2026-07-29',
+    },
+  };
+}
+
 import { catalog } from '../catalog/index';
 import { createCatalog } from './catalog';
 import { CatalogValidationError, DuplicateEquipmentIdError } from './errors';
+import {
+  CLEARANCE_SIDES,
+  VERIFIED_FIELD_GROUPS,
+  fieldVerification,
+  groupsWithStatus,
+} from './schema';
 
 function record(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -11,22 +48,15 @@ function record(overrides: Record<string, unknown> = {}): Record<string, unknown
     model: 'T1',
     category: 'dialysis_machine',
     version: '0.1.0',
-    dataStatus: 'draft',
-    manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+    manufacturerDimensions: { width: null, depth: null, height: null, weight: null, verification: draftVerification() },
     designFootprint: { width: 800, depth: 700, basis: null },
     connections: {
-      power: { required: true, port: null, specification: null },
-      roWater: { required: true, port: null, specification: null },
-      drain: { required: true, port: null, specification: null },
+      power: { required: true, port: null, specification: null, verification: draftVerification() },
+      roWater: { required: true, port: null, specification: null, verification: draftVerification() },
+      drain: { required: true, port: null, specification: null, verification: draftVerification() },
     },
-    serviceClearance: { front: null, rear: null, left: null, right: null },
-    source: {
-      document: null,
-      revision: null,
-      section: null,
-      type: 'estimate',
-      lastUpdated: '2026-07-29',
-    },
+    serviceClearance: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+    environmental: { specification: null, verification: draftVerification() },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
     ...overrides,
   };
@@ -76,27 +106,35 @@ describe('createCatalog', () => {
     expect(() => built.require('ghost')).toThrow(/ghost/);
   });
 
-  it('lists draft records separately', () => {
+  it('lists records with any draft group separately', () => {
+    const fully = record({ id: 'verified_machine' }) as Record<string, unknown>;
+    for (const group of ['manufacturerDimensions', 'serviceClearance', 'environmental']) {
+      (fully[group] as Record<string, unknown>)['verification'] = verifiedVerification();
+    }
+    for (const kind of ['power', 'roWater', 'drain']) {
+      ((fully['connections'] as Record<string, Record<string, unknown>>)[kind] ?? {})[
+        'verification'
+      ] = verifiedVerification();
+    }
+
     const built = createCatalog([
       { fileName: 'a.json', raw: record() },
-      {
-        fileName: 'b.json',
-        raw: record({
-          designFootprint: { width: 800, depth: 700, basis: 'Fixture allowance' },
-          id: 'verified_machine',
-          dataStatus: 'verified',
-          source: {
-            document: 'Manual',
-            revision: 'Rev. 1',
-            section: '2.1',
-            type: 'manufacturer_manual',
-            lastUpdated: '2026-07-29',
-          },
-        }),
-      },
+      { fileName: 'b.json', raw: fully },
     ]);
 
     expect(built.draftObjects.map((object) => object.id)).toEqual(['test_machine']);
+  });
+
+  it('counts a record with one draft group among the drafts', () => {
+    // Partly verified is still partly unknown, and the interface has to say so — even
+    // though a verdict computed only from the verified group is not downgraded.
+    const partly = record({ id: 'partly' }) as Record<string, unknown>;
+    (partly['manufacturerDimensions'] as Record<string, unknown>)['verification'] =
+      verifiedVerification('2.1 Dimensions');
+
+    const built = createCatalog([{ fileName: 'a.json', raw: partly }]);
+
+    expect(built.draftObjects.map((object) => object.id)).toEqual(['partly']);
   });
 });
 
@@ -113,10 +151,14 @@ describe('the shipped catalogue', () => {
     expect(ak98.category).toBe('dialysis_machine');
   });
 
-  it('marks the AK98 as draft, because its figures are placeholders', () => {
+  it('has no verified group on the AK98 yet, because nothing is cited', () => {
+    // Its dimensions are real figures from the product owner. What is missing is the
+    // citation — no document, revision or section — so `verified` would be a claim the
+    // record cannot support. Per-group verification means each of these flips on its own
+    // the moment its reference arrives.
     const ak98 = catalog.require('vantive_ak98');
 
-    expect(ak98.dataStatus).toBe('draft');
+    expect(groupsWithStatus(ak98, 'verified')).toEqual([]);
     expect(catalog.draftObjects).toContain(ak98);
   });
 
@@ -125,21 +167,25 @@ describe('the shipped catalogue', () => {
 
     // Everything not yet taken from a manual must be null, not a plausible number.
     expect(ak98.manufacturerDimensions.weight).toBeNull();
-    // The design footprint's basis is the one thing that stops a sourced manufacturer
-    // figure carrying an unaccounted-for planning area into GREEN.
+    expect(ak98.environmental.specification).toBeNull();
+    // The footprint is an owner decision with no manual behind it, so its basis is
+    // written as an explicit null rather than a sentence invented to fill the field.
     expect(ak98.designFootprint.basis).toBeNull();
-    expect(ak98.serviceClearance).toEqual({
-      front: null,
-      rear: null,
-      left: null,
-      right: null,
-    });
+    // Every side null, which is what makes every clearance finding read "threshold
+    // unknown". Asserted side by side rather than by comparing the whole group, which
+    // also carries a verification block checked separately.
+    for (const side of CLEARANCE_SIDES) {
+      expect(ak98.serviceClearance[side]).toBeNull();
+    }
     expect(ak98.connections.power.specification).toBeNull();
     expect(ak98.connections.roWater.specification).toBeNull();
     expect(ak98.connections.drain.specification).toBeNull();
-    expect(ak98.source.document).toBeNull();
-    expect(ak98.source.revision).toBeNull();
-    expect(ak98.source.section).toBeNull();
+    // No group can cite itself, which is why none of them is verified.
+    for (const group of VERIFIED_FIELD_GROUPS) {
+      expect(fieldVerification(ak98, group).source.document).toBeNull();
+      expect(fieldVerification(ak98, group).source.revision).toBeNull();
+      expect(fieldVerification(ak98, group).source.section).toBeNull();
+    }
   });
 
   it('records that the machine needs all three services even though the specs are unknown', () => {

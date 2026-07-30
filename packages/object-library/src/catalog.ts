@@ -1,5 +1,5 @@
 import { CatalogValidationError, DuplicateEquipmentIdError, type CatalogIssue } from './errors';
-import { type EquipmentObject, equipmentObjectSchema } from './schema';
+import { type EquipmentObject, equipmentObjectSchema, hasDraftFields } from './schema';
 
 /**
  * Catalogue loading.
@@ -41,6 +41,7 @@ export interface Catalog {
   /** Throws when no record has this id — use where absence is a bug, not a case. */
   require(equipmentObjectId: string): EquipmentObject;
   /** Records still carrying placeholder figures. */
+  /** Records with **any** draft field group. For marking the interface, not for verdicts. */
   readonly draftObjects: readonly EquipmentObject[];
 }
 
@@ -80,6 +81,6 @@ export function createCatalog(sources: readonly CatalogSource[]): Catalog {
       }
       return object;
     },
-    draftObjects: objects.filter((object) => object.dataStatus === 'draft'),
+    draftObjects: objects.filter(hasDraftFields),
   };
 }

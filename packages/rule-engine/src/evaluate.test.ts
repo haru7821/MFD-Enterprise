@@ -185,7 +185,34 @@ describe('draft policy', () => {
     expect(report.results[0]?.dataStatus).toBe('draft');
   });
 
-  it('never produces GREEN from draft equipment', () => {
+  it('never produces GREEN when the threshold came from a draft equipment group', () => {
+    // The rule sets no figure, so the clearance is read off the equipment record — and
+    // that group is unsourced. This is the case the draft policy exists for, and it is
+    // unchanged by per-group verification.
+    const report = evaluate({
+      placements: [machineAt(1, { x: 0, y: 0 })],
+      catalog: fixtureCatalog([
+        fixtureEquipmentRecord({
+          dataStatus: 'draft',
+          serviceClearance: { front: 1_200, rear: null, left: null, right: null },
+        }),
+      ]),
+      ruleSet: fixtureRuleSet([fixtureClearanceRule({ threshold: null, status: 'verified' })]),
+    });
+
+    expect(report.results[0]?.thresholdOrigin).toBe('equipment');
+    expect(report.results[0]?.dataStatus).toBe('draft');
+    expect(report.results[0]?.level).toBe('YELLOW');
+    // And it says which figure to chase, rather than "this record is provisional".
+    expect(report.results[0]?.reason).toContain('service clearance is not yet sourced');
+  });
+
+  it('does reach GREEN when the draft group was never read', () => {
+    // The change per-group verification makes. The rule carries its own verified
+    // threshold, so the equipment's service clearance is not consulted — and an unsourced
+    // clearance must not downgrade a finding that did not use it. Under record-level
+    // status this was YELLOW, which told an engineer nothing and marked a sound
+    // conclusion as provisional.
     const report = evaluate({
       placements: [machineAt(1, { x: 0, y: 0 })],
       catalog: fixtureCatalog([fixtureEquipmentRecord({ dataStatus: 'draft' })]),
@@ -194,7 +221,24 @@ describe('draft policy', () => {
       ]),
     });
 
-    expect(report.results[0]?.level).toBe('YELLOW');
+    expect(report.results[0]?.thresholdOrigin).toBe('rule');
+    expect(report.results[0]?.dataStatus).toBe('verified');
+    expect(report.results[0]?.level).toBe('GREEN');
+  });
+
+  it('does not downgrade a collision finding for an unrelated draft group', () => {
+    // An overlap check reads footprints and no manufacturer figure at all. "These two
+    // do not overlap" is a fact about two rectangles; an unknown service clearance
+    // elsewhere in the record cannot soften it.
+    const report = evaluate({
+      placements: [machineAt(1, { x: 0, y: 0 }), machineAt(2, { x: 5_000, y: 0 })],
+      catalog: fixtureCatalog([fixtureEquipmentRecord({ dataStatus: 'draft' })]),
+      ruleSet: fixtureRuleSet([fixtureCollisionRule({ status: 'verified' })]),
+    });
+
+    expect(report.results).toHaveLength(2);
+    expect(report.results.every((result) => result.dataStatus === 'verified')).toBe(true);
+    expect(report.results.every((result) => result.level === 'GREEN')).toBe(true);
   });
 
   it('still reports a violation at full severity when the data is draft', () => {

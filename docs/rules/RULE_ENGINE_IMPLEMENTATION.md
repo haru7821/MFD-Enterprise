@@ -93,9 +93,13 @@ wrong direction to fail in. The result carries `dataStatus`, so it reads as
 **A pass needs verified inputs to reach GREEN** (AD-6a). A placeholder must never be
 able to sign anything off.
 
-`dataStatus` is the weaker of the rule's status and the equipment's. Collision
-findings inherit it too: an overlap computed from placeholder footprints is a
-provisional overlap.
+`dataStatus` is the weaker of the rule's status and the status of **each equipment field
+group the evaluator actually read** — equipment verification is per group (Phase 4.5).
+
+Collision findings therefore do **not** inherit it. They read design footprints, which are
+owner planning decisions with no manufacturer citation, so an overlap is a fact about two
+rectangles and an unsourced service clearance elsewhere in the record does not soften it.
+Full table in [../architecture/RULE_ENGINE_API.md](../architecture/RULE_ENGINE_API.md).
 
 ## Geometry
 

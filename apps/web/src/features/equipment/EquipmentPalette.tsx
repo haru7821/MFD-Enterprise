@@ -1,4 +1,12 @@
-import type { EquipmentObject } from '@mfd/object-library';
+import {
+  type EquipmentObject,
+  type FieldVerification,
+  VERIFIED_FIELD_GROUPS,
+  type VerifiedFieldGroup,
+  fieldVerification,
+  groupsWithStatus,
+  hasDraftFields,
+} from '@mfd/object-library';
 import { catalog } from '@mfd/object-library/catalog';
 
 import { useEditor } from '@/editor/useEditor';
@@ -15,6 +23,42 @@ function manufacturerSize(object: EquipmentObject): string | null {
   const { width, depth, height } = object.manufacturerDimensions;
   if (width === null || depth === null) return null;
   return height === null ? `${width} × ${depth} mm` : `${width} × ${depth} × ${height} mm`;
+}
+
+/**
+ * Short wording for a field group, for a chip two centimetres wide.
+ *
+ * `FIELD_GROUP_LABELS` in the package is the wording for the report, where the row has
+ * room for "Manufacturer dimensions". This is the same set of groups abbreviated for the
+ * panel — typed as a total record, so adding a group to the package fails the build here
+ * rather than quietly dropping a chip.
+ */
+const GROUP_CHIP_LABELS: Readonly<Record<VerifiedFieldGroup, string>> = {
+  manufacturerDimensions: 'dimensions',
+  serviceClearance: 'clearance',
+  power: 'power',
+  roWater: 'RO water',
+  drain: 'drain',
+  environmental: 'environment',
+};
+
+/** Why a group carries the status it does, for the chip's tooltip. */
+function verificationNote(group: VerifiedFieldGroup, verification: FieldVerification): string {
+  const { status, source } = verification;
+  const label = GROUP_CHIP_LABELS[group];
+
+  if (status === 'verified') {
+    const citation = [source.document, source.revision, source.section]
+      .filter(Boolean)
+      .join(' · ');
+    return `${label}: verified — ${citation}`;
+  }
+
+  return `${label}: draft — no manual reference recorded yet (current figures are a ${source.type.replace('_', ' ')}). A finding that reads this group is provisional.`;
+}
+
+function draftCount(object: EquipmentObject): number {
+  return groupsWithStatus(object, 'draft').length;
 }
 
 /**
@@ -62,7 +106,11 @@ export function EquipmentPalette() {
               >
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-medium text-ink">{object.model}</span>
-                  {object.dataStatus === 'draft' && <DraftDataBadge />}
+                  {hasDraftFields(object) && (
+                    <DraftDataBadge
+                      title={`${draftCount(object)} of ${VERIFIED_FIELD_GROUPS.length} field groups are still placeholders. The chips below name them.`}
+                    />
+                  )}
                 </div>
                 <div className="mt-0.5 text-[11px] text-ink-muted">
                   {/* Null for a generic planning object, which is not a product. */}
@@ -94,6 +142,43 @@ export function EquipmentPalette() {
                     </span>
                   </div>
                 )}
+
+                {/*
+                  Verification, per field group.
+
+                  A record is no longer draft or verified as a whole, so a single badge
+                  cannot say what is known. An engineer about to place this machine needs
+                  to know that its dimensions are sourced and its clearances are not —
+                  those two facts lead to different conversations with the customer.
+
+                  Spans rather than a list, because this sits inside a button and a button
+                  may only contain phrasing content.
+                */}
+                <span
+                  data-testid={`data-status-${object.id}`}
+                  className="mt-1.5 flex flex-wrap gap-1"
+                >
+                  {VERIFIED_FIELD_GROUPS.map((group) => {
+                    const verification = fieldVerification(object, group);
+                    const isVerified = verification.status === 'verified';
+
+                    return (
+                      <span
+                        key={group}
+                        data-testid={`data-status-${object.id}-${group}`}
+                        data-status={verification.status}
+                        title={verificationNote(group, verification)}
+                        className={`rounded-sm border px-1 py-px font-mono text-[9px] leading-none ${
+                          isVerified
+                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                            : 'border-amber-500/40 bg-amber-500/10 text-amber-300/90'
+                        }`}
+                      >
+                        {GROUP_CHIP_LABELS[group]}
+                      </span>
+                    );
+                  })}
+                </span>
               </button>
             </li>
           );
@@ -104,11 +189,12 @@ export function EquipmentPalette() {
         <footer className="border-t border-edge px-3 py-2 text-[11px] leading-snug text-ink-muted">
           <span className="font-medium text-amber-300">
             {catalog.draftObjects.length === 1
-              ? '1 object uses placeholder figures.'
-              : `${catalog.draftObjects.length} objects use placeholder figures.`}
+              ? '1 object has placeholder fields.'
+              : `${catalog.draftObjects.length} objects have placeholder fields.`}
           </span>{' '}
-          Service clearances, and the reason behind each planning footprint, are pending the
-          installation manual.
+          Amber marks a group with no manual reference yet. A finding that reads one is
+          provisional; one resting only on green groups is not. Planning footprints are an
+          owner decision and carry no citation, so they are not listed here.
         </footer>
       )}
     </section>

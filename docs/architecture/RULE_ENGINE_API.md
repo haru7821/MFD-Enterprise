@@ -206,6 +206,12 @@ machine count so the quadratic shape cannot return unnoticed.
 
 Without that check, `verified` decays into a field somebody set optimistically.
 
+A rule carries one status for the whole record. An **equipment** record carries one per
+field group — dimensions, service clearance, each connection, environmental — so verified
+and draft data coexist in one object and a verified figure is never downgraded because a
+different figure is unknown. See
+[../data-model/OBJECT_MODEL.md](../data-model/OBJECT_MODEL.md).
+
 ### Result levels
 
 Per [DIALYSIS_RULE_ENGINE_v0.1.md](../rules/DIALYSIS_RULE_ENGINE_v0.1.md):
@@ -222,8 +228,8 @@ How a level is decided:
 | --- | --- |
 | No threshold from rule or equipment | `YELLOW`, reason "threshold unknown" |
 | Violation | The rule's `severity`, **whatever the provenance** |
-| Pass, every input `verified` | `GREEN` |
-| Pass, any input `draft` | `YELLOW` |
+| Pass, every input actually read is `verified` | `GREEN` |
+| Pass, any input actually read is `draft` | `YELLOW` |
 
 Three deliberate choices, each of which someone will eventually want to change:
 
@@ -237,13 +243,33 @@ The result carries `dataStatus`, so it reads as "breaches a provisional figure" 
 which is information, not concealment.
 
 **A pass needs verified inputs to reach GREEN** (AD-6a). A placeholder must never
-be able to sign anything off.
+be able to sign anything off — but only the placeholders the conclusion rested on. The
+table above is the whole list of what each evaluator reads, and it exists so this rule can
+be applied precisely rather than defensively.
 
 ### `dataStatus` propagation
 
-The weaker of the rule's status and the equipment's, across the inputs actually
-used. Collision findings inherit it too: an overlap computed from placeholder
-footprints is a provisional overlap.
+The weaker of the rule's status and the status of **each equipment field group the
+evaluator actually read**. Equipment verification is per group (Phase 4.5), so this is a
+short and explicit list rather than a property of the record:
+
+| Evaluator | Equipment groups read | `dataStatus` |
+| --- | --- | --- |
+| Clearance, `thresholdOrigin: 'equipment'` | `serviceClearance` | Weaker of the rule's status and that group's |
+| Clearance, `thresholdOrigin: 'rule'` | none | The rule's status |
+| Equipment collision | none — design footprints only | The rule's status |
+| Boundary collision | none — footprint and traced geometry | The rule's status |
+
+**Collision findings no longer inherit the record's status**, and that is the change. A
+design footprint is an owner-defined planning property with no manufacturer citation, so
+"these two machines overlap by 500 mm" is a fact about two rectangles; an unsourced service
+clearance elsewhere in the same record does not soften it. Under the previous record-level
+model it did, which meant a single unknown field made every geometric finding on that machine
+provisional — and an engineer who had sourced everything except the clearances saw the same
+amber warning as one who had sourced nothing.
+
+`weakestStatus(ruleStatus)` with no equipment argument is therefore a **meaningful** call,
+not a degenerate one: it says this conclusion read no equipment figure.
 
 ---
 

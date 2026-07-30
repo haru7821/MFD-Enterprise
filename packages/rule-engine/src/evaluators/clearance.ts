@@ -1,6 +1,7 @@
 import { type Vec2 } from '@mfd/cad-engine';
 import {
   type EquipmentObject,
+  fieldStatus,
   footprintCorners,
   localFootprintRect,
   localToModel,
@@ -89,7 +90,19 @@ export function evaluateClearance(
   for (const subject of subjects) {
     const { placement, object } = subject;
     const resolved = resolveClearanceThreshold(rule, object);
-    const dataStatus = weakestStatus(rule.status, object.dataStatus);
+
+    // Provenance follows the threshold that was actually applied.
+    //
+    // When the figure came from the equipment record, the finding rests on that
+    // record's service-clearance group and is only as good as it. When the figure came
+    // from the rule, the record's clearances were not read at all — so an unknown
+    // clearance must not make this finding provisional. The geometry comes from the
+    // design footprint, which is an owner-defined planning property and carries no
+    // verification of its own.
+    const dataStatus =
+      resolved.thresholdOrigin === 'equipment'
+        ? weakestStatus(rule.status, fieldStatus(object, 'serviceClearance'))
+        : weakestStatus(rule.status);
 
     const base = {
       ruleId: rule.ruleId,
@@ -113,6 +126,13 @@ export function evaluateClearance(
       });
       continue;
     }
+
+    // Named in the reason, so an engineer reading a YELLOW knows which figure to chase
+    // rather than being told the record as a whole is provisional.
+    const provenanceNote =
+      dataStatus === 'draft' && resolved.thresholdOrigin === 'equipment'
+        ? ` — the ${object.model} service clearance is not yet sourced`
+        : '';
 
     const normals = sideNormals(object);
     const face = faceOf(object, placement.transform, normals[rule.parameters.side]);
@@ -138,7 +158,7 @@ export function evaluateClearance(
         ...base,
         level: decideLevel({ violated: false, severity: rule.severity, dataStatus }),
         measured: null,
-        reason: `nothing within the ${rule.parameters.side} clearance zone of ${resolved.appliedValue} mm`,
+        reason: `nothing within the ${rule.parameters.side} clearance zone of ${resolved.appliedValue} mm${provenanceNote}`,
       });
       continue;
     }
@@ -148,9 +168,7 @@ export function evaluateClearance(
       ...base,
       level: decideLevel({ violated, severity: rule.severity, dataStatus }),
       measured: Math.round(nearest),
-      reason: violated
-        ? `${Math.round(nearest)} mm available, ${resolved.appliedValue} mm required at the ${rule.parameters.side}`
-        : `${Math.round(nearest)} mm available, ${resolved.appliedValue} mm required at the ${rule.parameters.side}`,
+      reason: `${Math.round(nearest)} mm available, ${resolved.appliedValue} mm required at the ${rule.parameters.side}${provenanceNote}`,
     });
   }
 

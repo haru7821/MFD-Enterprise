@@ -3,7 +3,10 @@
 > The catalogue definition of a piece of medical equipment.
 > Governed by [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md) and
 > [VANTIVE_AK98_OBJECT_SPEC.md](../equipment/VANTIVE_AK98_OBJECT_SPEC.md).
-> Version 0.1 — Sprint 1.5. Implemented in Sprint 2.
+> Version 0.3 — Sprint 1.5, revised in Phase 4.5. Implemented in Sprint 2.
+>
+> Version 0.2 separated manufacturer dimensions from the design footprint.
+> Version 0.3 moved verification from the record to the **field group**.
 
 ## Object versus Placement
 
@@ -27,14 +30,19 @@ correct equipment data until someone measures a room that was already built.
 ```
 EquipmentObject
 ├─ identity                 id · category · manufacturer · model · version
-├─ manufacturerDimensions   width · depth · height · weight        ← reference data
-├─ designFootprint          width · depth · basis                  ← what the engines use
-├─ connections              power · roWater · drain (each with a port position)
-├─ serviceClearance         front · rear · left · right
-├─ symbol                   how it draws on the canvas
-├─ provenance               manual reference · revision · source · lastUpdated
-└─ dataStatus               draft | verified
+├─ manufacturerDimensions   width · depth · height · weight    + verification  ← reference data
+├─ designFootprint          width · depth · basis              (no verification) ← the engines use this
+├─ connections
+│  ├─ power                 required · port · specification    + verification
+│  ├─ roWater               required · port · specification    + verification
+│  └─ drain                 required · port · specification    + verification
+├─ serviceClearance         front · rear · left · right        + verification
+├─ environmental            specification                     + verification
+└─ symbol                   how it draws on the canvas
 ```
+
+Six groups carry a `verification` block. There is **no record-level status** — see
+[Verification is per field group](#verification-is-per-field-group).
 
 ### identity
 
@@ -103,12 +111,23 @@ planning area is a decision, made once, and it is bigger. The AK98's is 800 × 8
 planner rounds the footprint up to make a layout work, the manufacturer's measurement is
 gone, and the record can no longer be checked against the machine that arrives.
 
-**Why `basis` exists.** A design footprint has no manual to cite. But an unsourced number
-is exactly what the rest of this product refuses, and a report printing "800 × 800" with no
-account of where it came from invites a question it cannot answer. So `basis` is that
-account — and a record **cannot claim `verified` while it is null**, which closes the hole
-the split would otherwise open: sourced manufacturer figures carrying an unaccounted-for
-planning area into GREEN (AD-6a).
+**Why the footprint carries no verification block.** Owner decision, Phase 4.5: the design
+footprint is a **planning property with no manufacturer citation**. There is no document to
+cite because the figure is not a measurement of anything — it is a decision about how much
+floor a station is given. Asking it for a document would be asking the wrong question, and a
+field that can never be satisfied is a field that gets filled with a sentence written to
+satisfy it.
+
+`basis` is the account of the decision, in prose, for the report. It is nullable, and null
+is the honest value while the decision is recorded only in the owner's message. Nothing
+gates on it: an earlier revision of this document required `basis` before any group could
+claim `verified`, which treated an owner decision as unsourced data and would have held the
+manufacturer's real, cited dimensions at `draft` over a missing sentence about a different
+field.
+
+What stops the footprint carrying an unaccounted-for area into GREEN is not a citation
+requirement — it is that a finding derived from the footprint is a fact about rectangles,
+and every finding that reads an *equipment* figure states which group it read.
 
 ### connections
 
@@ -153,49 +172,119 @@ How the object draws. Kept as data so a new machine needs no code.
 | `outline` | `rectangle` \| Vec2[] | Rectangle from the footprint, or an explicit polygon |
 | `frontEdge` | `north` \| `south` \| `east` \| `west` | Which side the front clearance applies to at zero rotation |
 
-### provenance
+### environmental
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `sourceDocument` | string \| null | Manual title or document number |
-| `revision` | string \| null | Manual revision |
-| `section` | string \| null | Where in the manual the figures come from |
-| `source` | `manufacturer_manual` \| `datasheet` \| `field_measurement` \| `estimate` | |
-| `lastUpdated` | date | |
+| `specification` | object \| null | Free-form: ambient temperature range, humidity, heat output, ventilation |
 
-### dataStatus
+Kept as one group because the manual states these together, and they are read together —
+by the ventilation and heat-load questions of a later version rather than by any Phase 1
+rule. Present now so the field-level verification the owner asked for has somewhere to
+record that the environmental section of a manual has been read.
 
-`draft` | `verified`
+---
 
-**Loading rules, enforced by the catalogue loader:**
+## Verification is per field group
 
-1. A record marked `verified` **must** carry `sourceDocument`, `revision` and `section`.
-   Missing any of them fails the load with an error naming the file and field.
-2. A record marked `verified` **must** also carry `designFootprint.basis`. The footprint is
-   what every geometric check measures, so a sourced manufacturer figure must not be able
-   to carry an unaccounted-for planning area into GREEN.
-3. A record marked `draft` loads normally and is marked in the UI.
-4. **Any validation result computed from `draft` data is capped at YELLOW.** It can never
-   be GREEN.
+Owner decision, Phase 4.5. **Verified data may coexist with draft data inside the same
+equipment object, and a verified field is never downgraded because another field is
+unknown.**
 
-Rule 4 is the important one. The AK98's manufacturer dimensions are now real figures
-supplied by the product owner — 585 × 620 × 1305 mm — but **no document, revision or
-section has been supplied with them**, and its service clearances are still null. So the
-record stays `draft`: these are the right numbers with no citation yet, and that is exactly
-the distinction `dataStatus` exists to hold. The failure this product exists to prevent is
-a plausible number quietly becoming an authoritative one, and a TS engineer signing a
-feasibility report built on it.
+Six groups each carry their own `verification`:
 
-When the manual arrives, provenance and clearances are filled in, `basis` is written,
-`dataStatus` flips to `verified`, and GREEN becomes reachable. No code changes.
+| Group | JSON path |
+| --- | --- |
+| Manufacturer dimensions | `manufacturerDimensions.verification` |
+| Service clearance | `serviceClearance.verification` |
+| Electrical specification | `connections.power.verification` |
+| RO water specification | `connections.roWater.verification` |
+| Drain specification | `connections.drain.verification` |
+| Environmental specification | `environmental.verification` |
+
+```json
+"verification": {
+  "status": "verified",
+  "source": {
+    "document": "AK 98 Operator Manual",
+    "revision": "Rev 04",
+    "section": "15 Technical data",
+    "type": "manufacturer_manual",
+    "lastUpdated": "2026-07-30"
+  }
+}
+```
+
+`type` is one of `manufacturer_manual` · `datasheet` · `field_measurement` · `estimate`.
+
+### Why per group and not per record
+
+A manual arrives in pieces. The dimensions come off a datasheet months before anyone pins
+down the service clearances; the electrical specification is often settled before either.
+
+A record-level status forces the whole object down to its weakest field. The consequence
+was not cosmetic: under the old model, an unsourced service clearance made *every* finding
+on that machine provisional — including "these two machines overlap by 500 mm", which is a
+fact about two rectangles and reads no manual figure at all. An engineer who had sourced
+the dimensions saw the same amber warning as one who had sourced nothing, so the warning
+stopped meaning anything.
+
+The owner's example is now representable exactly as stated: dimensions verified, electrical
+verified, environmental verified, service clearance draft.
+
+### Loading rules, enforced by the catalogue loader
+
+1. A group whose `status` is `verified` **must** name its `document`, `revision` and
+   `section`. Missing any of them fails the load with an error naming the file, the group
+   and the field.
+2. A group whose `status` is `draft` loads normally.
+3. `designFootprint` has **no verification block at all** and no citation is asked of it.
+4. **A finding is provisional if any group it read is draft** — and only then. A provisional
+   finding is capped at YELLOW and can never be GREEN (AD-6a).
+
+### What each finding reads
+
+Rule 4 is only meaningful if every evaluator declares its inputs, so each does:
+
+| Evaluator | Groups it reads | Effect of a draft group elsewhere in the record |
+| --- | --- | --- |
+| Clearance, threshold from the equipment record | `serviceClearance` | None |
+| Clearance, threshold from the rule | *none* | None |
+| Equipment collision | *none* — design footprints only | None |
+| Boundary collision | *none* — footprint and traced geometry | None |
+
+Two consequences worth stating plainly. A machine whose service clearance is unknown still
+produces a **non-provisional** collision finding, because nothing about the collision came
+from the manual. And a clearance finding falling back to the rule's own threshold is not
+provisional either — the number came from `standards/`, not from the record.
+
+Plan calibration is a separate gate and is unaffected: an uncalibrated underlay turns GREEN
+to YELLOW regardless of how well sourced the equipment is, because the millimetres
+themselves are then in question.
+
+### Where the AK98 stands today
+
+All six groups are `draft`. Its manufacturer dimensions are real figures supplied by the
+product owner — 585 × 620 × 1305 mm — but **no document, revision or section came with
+them**, so `verified` would be a claim the record cannot support. These are the right
+numbers with no citation yet, which is exactly the distinction the field is for.
+
+Each group flips on its own as its reference arrives. Filling in the dimensions' citation
+makes collision and dimension reporting verified while every clearance finding stays
+provisional, and that is the intended behaviour, not a transitional state to be tidied up.
+
+One thing this change does **not** do today: it does not turn any finding on screen from
+YELLOW to GREEN. Every rule in `standards/rules/dialysis/` is itself `status: "draft"`, and
+a draft rule makes its own finding provisional whatever the equipment says. So the visible
+effect arrives with the rule sources, and what changed now is which unknowns can hold a
+result back — an unsourced clearance no longer holds back a collision.
 
 ---
 
 ## Example record
 
-The shipped AK98 record. Manufacturer dimensions and design footprint are the owner's
-figures; **provenance and clearances are still null**, which is why `dataStatus` is
-`draft`.
+The shipped AK98 record, abbreviated: the three connections and the environmental group
+each carry a `verification` block of the same shape as the two shown.
 
 ```json
 {
@@ -203,28 +292,35 @@ figures; **provenance and clearances are still null**, which is why `dataStatus`
   "category": "dialysis_machine",
   "manufacturer": "Vantive",
   "model": "AK98",
-  "version": "0.2.0",
-  "dataStatus": "draft",
-  "manufacturerDimensions": { "width": 585, "depth": 620, "height": 1305, "weight": null },
-  "designFootprint": { "width": 800, "depth": 800, "basis": null },
-  "connections": {
-    "power":   { "required": true, "port": null, "specification": {} },
-    "roWater": { "required": true, "port": null, "specification": {} },
-    "drain":   { "required": true, "port": null, "specification": {} }
+  "version": "0.3.0",
+  "manufacturerDimensions": {
+    "width": 585, "depth": 620, "height": 1305, "weight": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null, "revision": null, "section": null,
+        "type": "datasheet", "lastUpdated": "2026-07-30"
+      }
+    }
   },
-  "serviceClearance": { "front": null, "rear": null, "left": null, "right": null },
-  "symbol": { "origin": "front-left", "outline": "rectangle", "frontEdge": "south" },
-  "provenance": {
-    "sourceDocument": null,
-    "revision": null,
-    "section": null,
-    "source": "estimate",
-    "lastUpdated": "2026-07-29"
-  }
+  "designFootprint": { "width": 800, "depth": 800, "basis": null },
+  "serviceClearance": {
+    "front": null, "rear": null, "left": null, "right": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null, "revision": null, "section": null,
+        "type": "estimate", "lastUpdated": "2026-07-30"
+      }
+    }
+  },
+  "symbol": { "origin": "front-left", "outline": "rectangle", "frontEdge": "south" }
 }
 ```
 
-Nulls are honest. A record that filled `serviceClearance.front` with 1200 because a
+Note the two `type` values. The dimensions are `datasheet` — real figures, uncited. The
+clearances are `estimate`, and every side is null, so nothing is being estimated yet
+either. Nulls are honest: a record that filled `serviceClearance.front` with 1200 because a
 document used it as an example would be indistinguishable from one holding a real figure.
 
 ## Reserved for later versions
@@ -239,5 +335,6 @@ their absence is a decision rather than an omission; not implemented before Vers
 | Schema, catalogue loader, validation, AK98 record | 2 |
 | Symbol rendering, footprint, ports on canvas | 2 |
 | Manufacturer / design footprint split | 4.5 |
+| Field-level verification (replacing record-level `dataStatus`) | 4.5 |
 | Clearance evaluation against these values | 3 |
-| Equipment schedule in the report | 5 |
+| Equipment schedule in the report, verified and draft sections | 5 |

@@ -52,6 +52,68 @@ export const CONNECTION_KINDS = ['power', 'roWater', 'drain'] as const;
 export const CLEARANCE_SIDES = ['front', 'rear', 'left', 'right'] as const;
 
 /**
+ * Where a group of figures came from.
+ *
+ * TS Edition specification section 6: every engineering value requires source
+ * information. A group claiming `verified` must name its document, revision and section —
+ * enforced in {@link fieldVerificationSchema}.
+ */
+export const sourceSchema = z.strictObject({
+  /** Manual title or document number. */
+  document: z.string().min(1).nullable(),
+  /** Manual revision. A clearance is true *at a revision*, not in general. */
+  revision: z.string().min(1).nullable(),
+  /** Where in the document the figures appear. */
+  section: z.string().min(1).nullable(),
+  type: z.enum(SOURCE_TYPES),
+  lastUpdated: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YYYY-MM-DD)'),
+});
+
+/**
+ * Verification of **one group of fields**, not of the whole record.
+ *
+ * ## Why per group
+ *
+ * A manual arrives in pieces. The dimensions come off a datasheet months before anyone
+ * pins down the service clearances, and the electrical specification may be settled
+ * before either. A single record-level status forces the whole object down to the level
+ * of its weakest field, which means a dimension somebody carefully sourced gets reported
+ * as provisional because a clearance is still unknown.
+ *
+ * That is not caution, it is noise: it tells an engineer nothing about *which* figure to
+ * chase, and it makes the report say "provisional" about numbers that are not.
+ *
+ * So each group carries its own status and its own citation, and **a verified group is
+ * never downgraded because another group is unknown**. A finding is provisional only when
+ * a group it actually used is.
+ *
+ * ## What is not verified this way
+ *
+ * `designFootprint`. It is an owner-defined planning property with no manufacturer
+ * citation — see {@link designFootprintSchema}.
+ */
+export const fieldVerificationSchema = z
+  .strictObject({
+    status: z.enum(DATA_STATUSES),
+    source: sourceSchema,
+  })
+  .superRefine((verification, ctx) => {
+    if (verification.status !== 'verified') return;
+
+    // A group may only claim "verified" if it can say where its numbers came from.
+    // Without this, "verified" degrades into a field someone set optimistically.
+    for (const field of ['document', 'revision', 'section'] as const) {
+      if (verification.source[field] === null) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['source', field],
+          message: `status "verified" requires source.${field}; use "draft" until the manual reference is known`,
+        });
+      }
+    }
+  });
+
+/**
  * What the manufacturer says the machine measures.
  *
  * **Immutable reference data.** These are the physical dimensions of the product, and
@@ -69,6 +131,7 @@ export const manufacturerDimensionsSchema = z.strictObject({
   height: millimetres.nullable(),
   /** Kilograms. Feeds floor loading questions in a later version. */
   weight: millimetres.nullable(),
+  verification: fieldVerificationSchema,
 });
 
 /**
@@ -91,13 +154,18 @@ export const manufacturerDimensionsSchema = z.strictObject({
  * layout work, the manufacturer's measurement is gone, and the record can no longer be
  * checked against the machine that arrives on site.
  *
- * ## Why `basis` exists
+ * ## It carries no verification, by design
  *
- * A design footprint has no manual to cite; it is the reviewing organisation's planning
- * standard. But an unsourced number is exactly what the rest of this product refuses, and
- * a report that prints "800 × 800" with no account of where it came from invites a
- * question it cannot answer. `basis` is that account, in one sentence. Null until someone
- * writes it — and a record cannot claim `verified` while it is null.
+ * Owner decision: the design footprint is an **owner-defined planning property with no
+ * manufacturer citation**. There is no manual to cite, because the owner is the authority
+ * — the same way a hospital's own stricter standard is authoritative without being a
+ * manufacturer document.
+ *
+ * So it has no `verification` block, and it never makes a finding provisional. `basis` is
+ * a plain-language account of the decision, for the report; it is not a citation and
+ * nothing is gated on it. An earlier version required it before a record could be
+ * `verified`, which was over-cautious in exactly the way this decision corrects: it
+ * treated an owner decision as unsourced data.
  */
 export const designFootprintSchema = z.strictObject({
   width: millimetres,
@@ -110,8 +178,10 @@ export const connectionSchema = z.strictObject({
   required: z.boolean(),
   /** Position on the object in local millimetres, or null when not yet known. */
   port: vec2Schema.nullable(),
-  /** Voltage/phase, supply pressure, drain diameter… Shape tightens in Sprint 3. */
+  /** Voltage/phase, supply pressure, drain diameter… Deliberately loose; see below. */
   specification: z.record(z.string(), z.unknown()).nullable(),
+  /** Each service is verified separately — power is often settled before drain. */
+  verification: fieldVerificationSchema,
 });
 
 export const connectionsSchema = z.strictObject({
@@ -125,30 +195,33 @@ export const connectionsSchema = z.strictObject({
  *
  * Every side may be null. Clearance figures come from the installation manual, and
  * inventing one would defeat the entire point of the product.
+ *
+ * Verified as one group rather than per side: a manual states its clearances together, in
+ * one section, and a record claiming the front is sourced while the rear is not would be
+ * describing a document that does not exist.
  */
 export const serviceClearanceSchema = z.strictObject({
   front: millimetres.nullable(),
   rear: millimetres.nullable(),
   left: millimetres.nullable(),
   right: millimetres.nullable(),
+  verification: fieldVerificationSchema,
 });
 
 /**
- * Where the numbers came from.
+ * Environmental requirements — operating temperature, humidity, heat output, noise.
  *
- * TS Edition specification section 6: every engineering value requires source
- * information. A record claiming `verified` must name its document, revision and
- * section — enforced below in {@link equipmentObjectSchema}.
+ * `specification` is a loose record for the same reason `connectionSchema`'s is: the real
+ * figures have not arrived, and inventing a rigid shape before seeing them would mean
+ * rewriting it. It tightens once a datasheet exists.
+ *
+ * Present as its own group because the owner's decision names it as one, and because a
+ * datasheet's environmental page is typically citable well before the installation
+ * clearances are.
  */
-export const sourceSchema = z.strictObject({
-  /** Manual title or document number. */
-  document: z.string().min(1).nullable(),
-  /** Manual revision. A clearance is true *at a revision*, not in general. */
-  revision: z.string().min(1).nullable(),
-  /** Where in the document the figures appear. */
-  section: z.string().min(1).nullable(),
-  type: z.enum(SOURCE_TYPES),
-  lastUpdated: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YYYY-MM-DD)'),
+export const environmentalSchema = z.strictObject({
+  specification: z.record(z.string(), z.unknown()).nullable(),
+  verification: fieldVerificationSchema,
 });
 
 /**
@@ -181,46 +254,19 @@ export const equipmentObjectSchema = z
     category: z.enum(EQUIPMENT_CATEGORIES),
     /** Catalogue record version, bumped whenever a value changes. */
     version: z.string().regex(/^\d+\.\d+\.\d+$/, 'must be semver (e.g. 0.1.0)'),
-    dataStatus: z.enum(DATA_STATUSES),
     manufacturerDimensions: manufacturerDimensionsSchema,
     designFootprint: designFootprintSchema,
     connections: connectionsSchema,
     serviceClearance: serviceClearanceSchema,
-    source: sourceSchema,
+    environmental: environmentalSchema,
     symbol: symbolSchema,
   })
-  .superRefine((object, ctx) => {
-    if (object.dataStatus !== 'verified') return;
+  ;
 
-    // A record may only claim "verified" if it can say where its numbers came from.
-    // Without this, "verified" degrades into a field someone set optimistically.
-    for (const field of ['document', 'revision', 'section'] as const) {
-      if (object.source[field] === null) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['source', field],
-          message: `dataStatus "verified" requires source.${field}; use dataStatus "draft" until the manual reference is known`,
-        });
-      }
-    }
-
-    // The design footprint is what every geometric check actually uses, so a record
-    // whose manufacturer figures are sourced but whose footprint is not would let an
-    // unaccounted-for number produce GREEN. That is the hole the manufacturer/design
-    // split opens, and this is what closes it (AD-6a).
-    if (object.designFootprint.basis === null) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['designFootprint', 'basis'],
-        message:
-          'dataStatus "verified" requires designFootprint.basis; the footprint is what every clearance and collision check measures, so it needs an account of where it came from',
-      });
-    }
-  });
-
-export type Vec2Data = z.infer<typeof vec2Schema>;
 export type ManufacturerDimensions = z.infer<typeof manufacturerDimensionsSchema>;
 export type DesignFootprint = z.infer<typeof designFootprintSchema>;
+export type FieldVerification = z.infer<typeof fieldVerificationSchema>;
+export type Environmental = z.infer<typeof environmentalSchema>;
 export type Connection = z.infer<typeof connectionSchema>;
 export type Connections = z.infer<typeof connectionsSchema>;
 export type ServiceClearance = z.infer<typeof serviceClearanceSchema>;
@@ -233,7 +279,77 @@ export type DataStatus = (typeof DATA_STATUSES)[number];
 export type ConnectionKind = (typeof CONNECTION_KINDS)[number];
 export type ClearanceSide = (typeof CLEARANCE_SIDES)[number];
 
-/** True when any figure in this record is still a placeholder. */
-export function isDraft(object: EquipmentObject): boolean {
-  return object.dataStatus === 'draft';
+/**
+ * The field groups that carry their own verification.
+ *
+ * `designFootprint` is deliberately absent: it is an owner-defined planning property with
+ * no manufacturer citation, and it never makes a finding provisional.
+ */
+export const VERIFIED_FIELD_GROUPS = [
+  'manufacturerDimensions',
+  'serviceClearance',
+  'power',
+  'roWater',
+  'drain',
+  'environmental',
+] as const;
+
+export type VerifiedFieldGroup = (typeof VERIFIED_FIELD_GROUPS)[number];
+
+/** Human wording for a group, for the report and the palette. */
+export const FIELD_GROUP_LABELS: Readonly<Record<VerifiedFieldGroup, string>> = {
+  manufacturerDimensions: 'Manufacturer dimensions',
+  serviceClearance: 'Service clearance',
+  power: 'Electrical specification',
+  roWater: 'RO water specification',
+  drain: 'Drain specification',
+  environmental: 'Environmental specification',
+};
+
+/** The verification block for one group. */
+export function fieldVerification(
+  object: EquipmentObject,
+  group: VerifiedFieldGroup,
+): FieldVerification {
+  switch (group) {
+    case 'manufacturerDimensions':
+      return object.manufacturerDimensions.verification;
+    case 'serviceClearance':
+      return object.serviceClearance.verification;
+    case 'power':
+      return object.connections.power.verification;
+    case 'roWater':
+      return object.connections.roWater.verification;
+    case 'drain':
+      return object.connections.drain.verification;
+    case 'environmental':
+      return object.environmental.verification;
+  }
+}
+
+export function fieldStatus(object: EquipmentObject, group: VerifiedFieldGroup): DataStatus {
+  return fieldVerification(object, group).status;
+}
+
+export function groupsWithStatus(
+  object: EquipmentObject,
+  status: DataStatus,
+): VerifiedFieldGroup[] {
+  return VERIFIED_FIELD_GROUPS.filter((group) => fieldStatus(object, group) === status);
+}
+
+/**
+ * True when **any** group is still a placeholder.
+ *
+ * For marking a record in the interface, not for deciding a verdict. A verdict looks at
+ * the groups it actually used — that is the whole point of per-group verification, and
+ * reaching for this in an evaluator would put the record-level behaviour back.
+ */
+export function hasDraftFields(object: EquipmentObject): boolean {
+  return VERIFIED_FIELD_GROUPS.some((group) => fieldStatus(object, group) === 'draft');
+}
+
+/** True when every group is sourced. */
+export function isFullyVerified(object: EquipmentObject): boolean {
+  return !hasDraftFields(object);
 }

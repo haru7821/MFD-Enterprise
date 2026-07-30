@@ -6,6 +6,7 @@ import {
   zoomPercent,
 } from '@mfd/cad-engine';
 import { obstructionBoundaries } from '@mfd/document-model';
+import { hasDraftFields } from '@mfd/object-library';
 import { catalog } from '@mfd/object-library/catalog';
 import type { EvaluationReport } from '@mfd/rule-engine';
 
@@ -57,12 +58,17 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
   const cursor =
     cursorWorld && state.snapToGrid ? snapToStep(cursorWorld, grid.step) : cursorWorld;
 
-  // Counted from the catalogue rather than stored on the placement: if a record is
-  // upgraded from draft to verified, every placement of it stops being flagged with
-  // no migration.
-  const draftPlacementCount = level.placements.filter(
-    (placement) => catalog.get(placement.equipmentObjectId)?.dataStatus === 'draft',
-  ).length;
+  // Counted from the catalogue rather than stored on the placement: if a field group is
+  // upgraded from draft to verified, every placement of that record stops being flagged
+  // with no migration.
+  //
+  // "Has any draft group", not "is a draft record" — there is no such thing now. A record
+  // with sourced dimensions and an unsourced clearance is counted, because the clearance is
+  // what the room check reads.
+  const draftPlacementCount = level.placements.filter((placement) => {
+    const object = catalog.get(placement.equipmentObjectId);
+    return object ? hasDraftFields(object) : false;
+  }).length;
 
   const planStatus = planStatusOf(level);
 
@@ -92,11 +98,11 @@ export function StatusBar({ report }: { readonly report: EvaluationReport }) {
         <span
           data-testid="draft-placement-warning"
           className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-1.5 py-px text-[10px] font-medium text-amber-300"
-          title="These objects use placeholder figures, not manual values. No result computed from them can be treated as verified."
+          title="Some fields on these objects are placeholders rather than manual values. A finding that reads one of those fields is provisional; findings resting only on sourced fields are not. The catalogue panel names which fields are which."
         >
           {draftPlacementCount === 1
-            ? '1 placed object uses draft data'
-            : `${draftPlacementCount} placed objects use draft data`}
+            ? '1 placed object has draft fields'
+            : `${draftPlacementCount} placed objects have draft fields`}
         </span>
       )}
 

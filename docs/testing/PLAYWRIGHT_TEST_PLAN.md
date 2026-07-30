@@ -100,17 +100,22 @@ Draft data must be impossible to miss. Assertions:
 
 | # | Where | Assertion |
 | --- | --- | --- |
-| D1 | Palette entry | `draft-badge` is visible on every draft record |
-| D2 | Palette footer | States how many catalogue objects use placeholder figures |
-| D3 | Canvas | Draft objects draw with a dashed amber outline, not a solid one |
-| D4 | Canvas | A "DRAFT DATA" label appears next to each draft object above the label threshold |
-| D5 | Status bar | `draft-placement-warning` appears whenever a draft object is placed, and reports the count |
-| D6 | Upgrade path | Changing a record's `dataStatus` to `verified` (with complete source) removes every marking above, with no code change |
+| D1 | Palette entry | `draft-badge` is visible on every record with a draft field group |
+| D2 | Palette footer | States how many catalogue objects have placeholder fields |
+| D3 | Canvas | Objects with any draft group draw with a dashed amber outline, not a solid one |
+| D4 | Canvas | A "DRAFT DATA" label appears next to each such object above the label threshold |
+| D5 | Status bar | `draft-placement-warning` appears whenever one is placed, and reports the count |
+| D6 | Palette entry | Six `data-status` chips per record — one per field group — each carrying its own status and a tooltip with either the citation or the reason there is none |
+| D7 | Upgrade path | Citing a field group flips that chip to `verified` and leaves the others alone, with no code change |
 
-D6 is covered at the unit level in Sprint 3 — `evaluate.test.ts` proves a verified rule and
-a verified equipment record together reach GREEN, while either being draft does not. It
-remains untested *through the browser*, which would need a fixture catalogue served to the
-app. Worth adding when a second, verified equipment record exists.
+D6 is asserted in `equipment.spec.ts` ("states verification per field group, not per record"),
+which also pins that all six groups are named — a missing chip fails on the count rather than
+passing quietly.
+
+D7 was verified by hand during Phase 4.5 by citing the AK98's dimensions from a manual and
+observing the mixed record render as mixed, then reverting. It is not a standing spec, because
+that would mean either a fixture catalogue served to the app or shipping a citation the owner
+has not supplied. Worth making standing when a second, verified equipment record exists.
 
 ## 4. Rule engine (Sprint 3)
 
@@ -141,9 +146,10 @@ and undo behaving like one step after a gesture that emitted a command per point
 | P5 | Refusal | Two identical picks raise `plan-error` and leave the level uncalibrated |
 | P6 | Re-import | Importing a second drawing discards the first one's calibration |
 
-P3 is weak today and worth saying so: the AK98 record is draft, so no GREEN is reachable
-whatever the plan status. The gate itself is proved in `evaluators/boundary.test.ts` with a
-verified fixture catalogue. P3 becomes load-bearing the moment a verified record exists.
+P3 is weak today and worth saying so: no rule in `standards/rules/dialysis/` is verified and
+no equipment field group is cited, so no GREEN is reachable whatever the plan status. The gate
+itself is proved in `evaluators/boundary.test.ts` against verified fixtures. P3 becomes
+load-bearing the moment both sides of one finding are sourced.
 
 ### Rooms
 

@@ -101,7 +101,7 @@ interface ReportModel {
 | 6 | Placement table | `LevelSection.placements` | One row per machine: label, model, position, rotation, room |
 | 7 | Rule evaluation | `LevelSection.findings` | `EvaluationReport`, grouped and ordered |
 | 8 | Threshold source | inside every finding row | `appliedValue`, `thresholdOrigin`, `source.{document, revision, section}` |
-| 9 | Draft data warning | `conclusion.dataStatus` + per-row marks | `hasDraftInputs`, `dataStatus` per finding, catalogue `dataStatus` |
+| 9 | Draft data warning | `conclusion.dataStatus` + per-row marks + `equipment[].verification` | `hasDraftInputs`, `dataStatus` per finding, per-group `fieldVerification` |
 | 10 | Installation checklist | `checklist` | Derived from findings — see E |
 | 11 | Engineer signature block | `signature` | `project.reviewedBy` + blank fields to sign |
 | — | *Provenance* | `provenance` | Rule set id/version, catalogue versions, app version, contract versions |
@@ -137,6 +137,64 @@ doorway against a planning footprint would get the wrong answer.
 A record with **no** manufacturer dimensions — a generic dialysis bed, planned at
 1,000 × 2,100 mm — leaves that column empty rather than repeating the footprint into it.
 An empty cell says "this is not a product"; a duplicated figure says something false.
+
+### The equipment data sheet: verified and draft, separated
+
+> Owner decision, Phase 4.5: *"The report shall clearly distinguish verified and draft
+> sections."* Verification is per field group, so the report cannot stamp a record
+> `DRAFT` and be done — that is the record-level behaviour the owner replaced.
+
+Each model in the BOM gets a data block **split in two**, and the split is by verification
+status rather than by subject:
+
+```
+Vantive AK98 · catalogue record 0.3.0 · 12 units
+
+VERIFIED — AK 98 Operator Manual, Rev 04, §15 Technical data
+  Manufacturer dimensions   585 × 620 × 1305 mm
+  Electrical                230 V, 1-phase, 10 A
+  Environmental             18–30 °C, 15–75 % RH
+
+DRAFT — no manual reference. Findings that read these figures are marked provisional.
+  Service clearance         not supplied
+  RO water                  not supplied
+  Drain                     not supplied
+
+PLANNING (owner decision, not a manufacturer figure)
+  Design footprint          800 × 800 mm
+  Basis                     —
+```
+
+Three blocks, not two, and the third is the point of the earlier split. The design footprint
+is neither verified nor draft: it is an owner decision with no citation, and printing it
+under a "DRAFT" heading would read as a figure someone has not got round to sourcing yet
+rather than one that will never have a document behind it. Printing it under "VERIFIED"
+would be worse.
+
+The verified block **names its citation once per group**, because two groups can come from
+different documents — a datasheet for the dimensions and the installation manual for the
+clearances is the ordinary case, not an edge one.
+
+A group whose values are all null prints "not supplied" rather than a row of dashes, so the
+reader can tell "we know this and it is unlimited" from "we do not know this".
+
+### Which findings the report marks provisional
+
+Per-group verification changes what a draft record means for the findings table, and the
+report must not overstate it:
+
+| Finding | Marked provisional when |
+| --- | --- |
+| Clearance, threshold from the equipment record | That model's service clearance group is draft |
+| Clearance, threshold from the rule | Never on equipment grounds — the number came from `standards/` |
+| Equipment collision | Never on equipment grounds — footprints only |
+| Boundary collision | Never on equipment grounds — footprint and traced geometry |
+| Anything, on an uncalibrated level | Always — the millimetres themselves are in question |
+
+The engine reads `result.dataStatus` per finding rather than recomputing this, so the table
+cannot disagree with the panel on screen. The rows above document *why* a given finding
+carries the status it does, which is what an engineer asked "why is this one provisional and
+that one not?" needs to be able to answer.
 
 ---
 
@@ -187,7 +245,7 @@ what the drawing actually shows is a form, not an engineering output.
 | One item per RED finding | "Resolve: Station 12 overlaps Column C4 by 150 mm" |
 | One item per unresolved YELLOW | "Confirm on site: front clearance for Station 4 — no manual figure available" |
 | One item per uncalibrated level | "Calibrate the 4F drawing before relying on any measurement from it" |
-| One item per draft catalogue record in use | "Replace placeholder figures for Vantive AK98 with the installation manual" |
+| One item per **draft field group** on a record in use | "Obtain the service clearance figures for Vantive AK98 from the installation manual" — one item per group, not one per record, so a record with five groups sourced does not read as wholly unverified |
 | Fixed items from the rule set | Only if the rule data declares them — never hard-coded here |
 
 Every item is traceable to a finding or a data gap, so the checklist cannot drift out of
@@ -301,8 +359,9 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | `model.shape.test.ts` | **Exact** key set of `ReportModel` and every section, like `result.shape.test.ts`. A report is a published artefact; a field appearing in one build and not another is a report that contradicts its predecessor. |
 | `build.test.ts` | Every section populated from a fixture document; JSON round-trip; same bytes twice |
 | `conclusion.test.ts` | All four verdicts, including that an all-YELLOW-for-want-of-a-threshold report is `inconclusive` and **not** `review_required` |
-| `checklist.test.ts` | One item per RED, per unresolved YELLOW, per uncalibrated level, per draft record in use; every item traceable |
+| `checklist.test.ts` | One item per RED, per unresolved YELLOW, per uncalibrated level, per **draft field group** on a record in use; every item traceable |
 | `bom.test.ts` | Grouping by model across levels; catalogue versions carried; a placement pointing at a missing record is surfaced, not dropped; **manufacturer dimensions and design footprint appear as separate values, and a record with no manufacturer dimensions leaves them empty rather than echoing the footprint** |
+| `verification.test.ts` | A record with **some** groups verified splits into a verified block and a draft block, each listing only its own groups, each verified group carrying its own citation; the design footprint appears in neither and is printed as a planning decision; a fully verified record emits no draft block at all rather than an empty heading |
 | `drawing.test.ts` | An 800 mm **design footprint** is 800 mm at the page scale — the print-side twin of the browser dimension test. Asserted against the footprint, never the manufacturer dimensions, because the drawing shows the area reserved. |
 | `layout.test.ts` | A 200-row table paginates; headers repeat; nothing is silently truncated |
 | `emit.test.ts` | Produces a parseable PDF with the expected page count. Deliberately shallow — asserting on PDF internals tests the library. |
@@ -319,6 +378,7 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | R5 | A two-level project produces sections for both |
 | R6 | An uncalibrated level is named as such in the conclusion |
 | R7 | The BOM shows 585 × 620 × 1305 mm and 800 × 800 mm as distinct values for the AK98, and leaves the manufacturer column empty for the bed |
+| R8 | With one group cited and the rest not, the AK98's data sheet shows a verified block and a draft block, and the collision findings are **not** marked provisional while the clearance findings are |
 
 ### The verification that matters most
 

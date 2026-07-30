@@ -1,6 +1,6 @@
 import type { Placement } from '@mfd/document-model';
 import { footprintCorners } from '@mfd/object-library';
-import type { DataStatus, EquipmentObject } from '@mfd/object-library';
+import type { EquipmentObject } from '@mfd/object-library';
 
 import { type EvaluationResult, decideLevel, weakestStatus } from '../result';
 import { polygonsOverlap } from '../sat';
@@ -38,19 +38,26 @@ import type { EvaluationContext, ResolvedPlacement } from './types';
  * | Issue type | `category` (`'collision'`) |
  * | Penetration depth, millimetres | `measured`, null when clear |
  *
- * Boundary collision (walls, room outlines) is Sprint 4 — see
- * `BoundaryCollisionEvaluator` in ./types.ts.
+ * ## Provenance
+ *
+ * An overlap check reads **design footprints and nothing else**. The footprint is an
+ * owner-defined planning property with no manufacturer citation, so no equipment field
+ * group feeds this conclusion and none can make it provisional: "these two machines
+ * overlap by 500 mm" is a fact about two rectangles, and an unknown service clearance
+ * elsewhere in the record does not soften it.
+ *
+ * That is the point of per-group verification. Under the old record-level status, one
+ * unsourced clearance made every collision finding on that machine provisional too.
+ *
+ * So `dataStatus` here is the rule's own status.
+ *
+ * Boundary collision (walls, room outlines) is in ./boundary.ts.
  */
 
 interface Overlap {
   readonly other: Placement;
   readonly otherObject: EquipmentObject;
   readonly penetration: number;
-}
-
-/** Weakest provenance across the footprints that fed a conclusion. */
-function weakestOf(objects: readonly EquipmentObject[]): DataStatus {
-  return objects.some((object) => object.dataStatus === 'draft') ? 'draft' : 'verified';
 }
 
 export function evaluateCollision(
@@ -92,7 +99,6 @@ export function evaluateCollision(
   });
 
   const overlapsBySubject = new Map<string, Overlap[]>();
-  let anySceneObjectIsDraft = false;
 
   // Each unordered pair tested once. The findings are per machine, but the
   // geometry is symmetric — testing A against B and then B against A would double
@@ -100,7 +106,6 @@ export function evaluateCollision(
   for (let i = 0; i < scene.length; i += 1) {
     const a = scene[i];
     if (!a) continue;
-    if (a.object.dataStatus === 'draft') anySceneObjectIsDraft = true;
 
     for (let j = i + 1; j < scene.length; j += 1) {
       const b = scene[j];
@@ -131,7 +136,7 @@ export function evaluateCollision(
   const results: EvaluationResult[] = [];
 
   for (const subject of subjects) {
-    const { placement, object } = subject;
+    const { placement } = subject;
     const overlaps = overlapsBySubject.get(placement.id) ?? [];
 
     const base = {
@@ -144,12 +149,9 @@ export function evaluateCollision(
     } as const;
 
     if (overlaps.length === 0) {
-      // "Clear" rests on every footprint it was compared against, so any of them
-      // being provisional makes the conclusion provisional.
-      const dataStatus = weakestStatus(
-        rule.status,
-        anySceneObjectIsDraft || object.dataStatus === 'draft' ? 'draft' : 'verified',
-      );
+      // Footprints only — see the note at the top of this file. Nothing in the
+      // equipment record's verified groups was read, so nothing there can downgrade it.
+      const dataStatus = weakestStatus(rule.status);
 
       results.push({
         ...base,
@@ -163,10 +165,7 @@ export function evaluateCollision(
     }
 
     for (const overlap of overlaps) {
-      const dataStatus = weakestStatus(
-        rule.status,
-        weakestOf([object, overlap.otherObject]),
-      );
+      const dataStatus = weakestStatus(rule.status);
       const penetration = Math.round(overlap.penetration);
 
       results.push({

@@ -198,30 +198,41 @@ product owner supplied real figures and separated two things that had been one.
 | | Value | Status |
 | --- | --- | --- |
 | **Manufacturer dimensions** | 585 × 620 × 1305 mm | Owner-supplied. **No document, revision or section yet.** |
-| **Design footprint** | 800 × 800 mm | Owner-supplied. `basis` not yet written. |
+| **Design footprint** | 800 × 800 mm | Owner decision. Carries no citation, by design. |
 | Weight | null | Not supplied |
 | Service clearance, all four sides | null | **Not supplied — this is the remaining blocker** |
 | Power · RO water · drain specification | null | Not supplied |
+| Environmental specification | null | Not supplied |
 
-`packages/object-library/catalog/vantive_ak98.json`, record version **0.2.0**.
+`packages/object-library/catalog/vantive_ak98.json`, record version **0.3.0**.
 
-## Why the record is still `dataStatus: "draft"`
+## Verification is now per field group
 
-Because `verified` means *citable*, not *correct*. The schema requires a document, a
-revision and a section before a record may claim it, and none has been supplied. These are
-the right numbers with no reference behind them, which is precisely the state `draft`
-exists to describe.
+Owner decision, Phase 4.5: verification moved from the record to the field group, so
+verified and draft data coexist inside one object and **a verified field is never
+downgraded because another field is unknown**. Six groups each carry a status and a source:
+manufacturer dimensions, service clearance, the three connection specifications, and the
+environmental specification.
 
-The practical consequence is unchanged: **no result computed from this record can reach
-GREEN**, and every clearance finding still reads "threshold unknown", because the
-clearances are still null.
+On this record all six are `draft`, and for one reason each: no group cites a document.
+`verified` means *citable*, not *correct* — the schema requires a document, a revision and a
+section before a group may claim it. These are the right numbers with no reference behind
+them, which is precisely what `draft` describes.
 
-`source.type` moved from `estimate` to `datasheet` — a better description of
-owner-supplied manufacturer figures than "estimate" was, and still not a claim that a
-manual has been read.
+The dimensions' `source.type` is `datasheet` — a better description of owner-supplied
+manufacturer figures than `estimate`, and still not a claim that a manual has been read.
+The other five are `estimate`, and their values are null, so nothing is being estimated
+either.
 
-> **Open:** is `datasheet` right, or did these come from the installation manual? If the
-> latter, the document number and revision would let this record become `verified`.
+**What changes when the dimensions are cited.** That group alone flips to `verified`.
+Equipment collision and boundary findings on this machine read only the design footprint,
+so they were never provisional to begin with; every clearance finding stays provisional
+until the clearance group is cited, and continues to read "threshold unknown" while the four
+sides are null. Nothing else in the record moves, and no code changes.
+
+> **Open:** is `datasheet` right for the dimensions, or did they come from the installation
+> manual? If the latter, the document number and revision would let that group become
+> `verified` on its own — no other field need be resolved first.
 
 ## Manufacturer dimensions vs design footprint
 
@@ -243,11 +254,15 @@ moment it is, the record can no longer be checked against the product.
 
 ## Still needed to complete this object
 
-| # | Item |
-| --- | --- |
-| 1 | Manual document number, **revision**, and section for each figure |
-| 2 | Front · rear · left · right service clearance |
-| 3 | Weight |
-| 4 | Power, RO water and drain specifications, and port positions on the chassis |
-| 5 | Whether the manual labels left and right from the operator's side or the service engineer's — see [../rules/RULE_ENGINE_IMPLEMENTATION.md](../rules/RULE_ENGINE_IMPLEMENTATION.md) |
-| 6 | One sentence for `designFootprint.basis` |
+Per-group verification means these can arrive in any order and each is useful on its own.
+None of them is blocked on the others.
+
+| # | Item | Which group it verifies |
+| --- | --- | --- |
+| 1 | Manual document number, **revision**, and section for the dimensions | Manufacturer dimensions |
+| 2 | Front · rear · left · right service clearance, with its citation | Service clearance |
+| 3 | Weight | Manufacturer dimensions (same citation) |
+| 4 | Power, RO water and drain specifications, port positions, and their citations | The three connection groups, separately |
+| 5 | Ambient temperature, humidity and heat output, with its citation | Environmental specification |
+| 6 | Whether the manual labels left and right from the operator's side or the service engineer's — see [../rules/RULE_ENGINE_IMPLEMENTATION.md](../rules/RULE_ENGINE_IMPLEMENTATION.md) | Affects how the clearance figures are read, not their status |
+| 7 | One sentence for `designFootprint.basis` | None — the footprint is an owner decision and is not verified |

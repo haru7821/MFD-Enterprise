@@ -1,6 +1,23 @@
 import type { Transform } from '@mfd/cad-engine';
 import { describe, expect, it } from 'vitest';
 
+/**
+ * An unsourced group. Verification is **per group** now, so a fixture has to say it
+ * once per group rather than once per record.
+ */
+function draftVerification() {
+  return {
+    status: 'draft',
+    source: {
+      document: null,
+      revision: null,
+      section: null,
+      type: 'estimate',
+      lastUpdated: '2026-07-29',
+    },
+  };
+}
+
 import { parseEquipmentObject } from './catalog';
 import {
   clearanceZones,
@@ -23,22 +40,15 @@ function machine(overrides: Record<string, unknown> = {}): EquipmentObject {
       model: 'T1',
       category: 'dialysis_machine',
       version: '0.1.0',
-      dataStatus: 'draft',
-      manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null },
+        manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null, verification: draftVerification() },
       designFootprint: { width: 900, depth: 750, basis: null },
       connections: {
-        power: { required: true, port: { x: 100, y: 0 }, specification: null },
-        roWater: { required: true, port: null, specification: null },
-        drain: { required: true, port: null, specification: null },
+        power: { required: true, port: { x: 100, y: 0 }, specification: null, verification: draftVerification() },
+        roWater: { required: true, port: null, specification: null, verification: draftVerification() },
+        drain: { required: true, port: null, specification: null, verification: draftVerification() },
       },
-      serviceClearance: { front: null, rear: null, left: null, right: null },
-      source: {
-        document: null,
-        revision: null,
-        section: null,
-        type: 'estimate',
-        lastUpdated: '2026-07-29',
-      },
+      serviceClearance: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+      environmental: { specification: null, verification: draftVerification() },
       symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
       ...overrides,
     },
@@ -75,7 +85,7 @@ describe('local footprint', () => {
     // That is the case the split was made for, so it has to be the ordinary path and
     // not an exception.
     const bed = machine({
-      manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+      manufacturerDimensions: { width: null, depth: null, height: null, weight: null, verification: draftVerification() },
       designFootprint: { width: 1_000, depth: 2_100, basis: null },
     });
 
@@ -186,7 +196,7 @@ describe('clearance zones', () => {
 
   it('produces a zone only for sides that have a figure', () => {
     const object = machine({
-      serviceClearance: { front: 1_200, rear: null, left: null, right: 500 },
+      serviceClearance: { front: 1_200, rear: null, left: null, right: 500, verification: draftVerification() },
     });
 
     const zones = clearanceZones(object, AT_ORIGIN);
@@ -196,7 +206,7 @@ describe('clearance zones', () => {
 
   it('puts the front zone beyond the front edge', () => {
     const object = machine({
-      serviceClearance: { front: 1_200, rear: null, left: null, right: null },
+      serviceClearance: { front: 1_200, rear: null, left: null, right: null, verification: draftVerification() },
     });
 
     const [zone] = clearanceZones(object, AT_ORIGIN);
@@ -209,7 +219,7 @@ describe('clearance zones', () => {
 
   it('rotates the zone with the object', () => {
     const object = machine({
-      serviceClearance: { front: 1_000, rear: null, left: null, right: null },
+      serviceClearance: { front: 1_000, rear: null, left: null, right: null, verification: draftVerification() },
     });
 
     const [zone] = clearanceZones(object, { ...AT_ORIGIN, rotation: 180_000 });

@@ -223,9 +223,31 @@ describe('nothing to check', () => {
 });
 
 describe('draft policy', () => {
-  it('cannot reach GREEN on a draft machine', () => {
-    // AD-6a: a placeholder must never sign anything off.
+  it('is not downgraded by an unrelated draft group on the machine', () => {
+    // A boundary check reads a design footprint and a traced boundary — no manufacturer
+    // figure at all. So an unsourced service clearance cannot make "this machine is
+    // inside the room" provisional; it is a fact about a polygon and a rectangle.
+    //
+    // Under record-level verification this was YELLOW, which marked a sound geometric
+    // conclusion as provisional because a different part of the record was unknown.
     const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM], { draft: true });
+
+    expect(report.results[0]?.dataStatus).toBe('verified');
+    expect(report.results[0]?.level).toBe('GREEN');
+  });
+
+  it('cannot reach GREEN from a draft rule', () => {
+    // AD-6a still holds where it applies: the rule itself is the input here, and a
+    // provisional rule must not sign anything off.
+    const draftRule = fixtureRuleSet([
+      fixtureCollisionRule({ ruleId: 'boundary_rule', scope: 'boundary', status: 'draft' }),
+    ]);
+    const report = evaluate({
+      placements: [fixturePlacement(1, { x: 2_000, y: 2_000 })],
+      catalog: VERIFIED_CATALOG,
+      ruleSet: draftRule,
+      spatial: spatial([ROOM], 'calibrated'),
+    });
 
     expect(report.results[0]?.level).toBe('YELLOW');
     expect(report.results[0]?.dataStatus).toBe('draft');
@@ -234,8 +256,18 @@ describe('draft policy', () => {
   it('still reports a violation as RED on draft data', () => {
     // A breach is never softened for being provisional — that would make poor data
     // hide problems.
-    const report = check([fixturePlacement(1, { x: 9_600, y: 2_000 })], [ROOM], { draft: true });
+    const draftRule = fixtureRuleSet([
+      fixtureCollisionRule({ ruleId: 'boundary_rule', scope: 'boundary', status: 'draft' }),
+    ]);
+    const report = evaluate({
+      placements: [fixturePlacement(1, { x: 9_600, y: 2_000 })],
+      catalog: DRAFT_CATALOG,
+      ruleSet: draftRule,
+      spatial: spatial([ROOM], 'calibrated'),
+    });
+
     expect(report.results[0]?.level).toBe('RED');
+    expect(report.results[0]?.dataStatus).toBe('draft');
   });
 });
 

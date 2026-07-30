@@ -143,17 +143,23 @@ Two honest caveats:
 | --- | --- |
 | B-3 | **Liability posture.** The first report that leaves the building needs its disclaimer wording settled. Traceability is designed in; the sentence is not. |
 | B-2 | **Report language.** Retrofitting a second language into a document generator is painful; deciding now costs almost nothing. |
-| — | **What a report says when nothing is verified.** With the catalogue in draft, today's report would be a page of "threshold unknown". That may be exactly right — a review that honestly reports it could not conclude — but it is a product decision, not a technical one. |
+| — | **What a report says when nothing is verified.** With no field group cited and every rule still draft, today's report would be a page of "threshold unknown". That may be exactly right — a review that honestly reports it could not conclude — but it is a product decision, not a technical one. |
+| — | **How the report separates verified from draft.** Settled by the owner in Phase 4.5 and designed in [../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md): a verified block, a draft block, and the design footprint in neither, because it is a planning decision rather than an uncited measurement. |
 
 ### Non-blocking
 
-| # | Item |
-| --- | --- |
-| 1 | The editor shows one level. The document model holds several; a level switcher is a small piece of UI whenever it is wanted. |
-| 2 | Obstructions (columns, risers) can be evaluated against but cannot yet be **drawn** — the room tool always creates a `space_outline`. A kind selector is a small addition. |
-| 3 | Boundary vertices are rendered as handles on the selected room but are not draggable. The command (`boundary.setVertices`) exists and is tested; only the drag gesture is missing. |
-| 4 | Plan origin and rotation are settable through the document API and default honestly, but have no UI beyond the readout. An engineer cannot yet click to place the origin. |
-| 5 | D6 — a draft record becoming verified, observed through the browser — still needs a second, verified catalogue record to test against. |
+> Items 1–4 below were the state at the end of Sprint 4. **Phase 4.5 delivered all four** —
+> level switcher, obstruction drawing, vertex dragging, and click-to-place origin. They are
+> kept here as written rather than deleted, because this document is the record of what was
+> true when Sprint 5 was assessed. See [PHASE_4_5_REPORT.md](PHASE_4_5_REPORT.md).
 
-Items 2–4 are all "the model and the commands are there, the gesture is not". None of them
-blocks a report; each is an hour or two whenever it is wanted.
+| # | Item | Now |
+| --- | --- | --- |
+| 1 | The editor shows one level. The document model holds several; a level switcher is a small piece of UI whenever it is wanted. | Done, Phase 4.5 |
+| 2 | Obstructions (columns, risers) can be evaluated against but cannot yet be **drawn** — the room tool always creates a `space_outline`. A kind selector is a small addition. | Done, Phase 4.5 |
+| 3 | Boundary vertices are rendered as handles on the selected room but are not draggable. The command (`boundary.setVertices`) exists and is tested; only the drag gesture is missing. | Done, Phase 4.5 |
+| 4 | Plan origin and rotation are settable through the document API and default honestly, but have no UI beyond the readout. An engineer cannot yet click to place the origin. | Origin done, Phase 4.5. Rotation still has no gesture. |
+| 5 | A draft record becoming verified, observed through the browser, still needs a second catalogue record with a real citation to test against. | Still open — now D7 in the [Playwright plan](../testing/PLAYWRIGHT_TEST_PLAN.md), and narrowed by per-field-group verification: it needs one *group* cited, not a whole second record. |
+
+Items 2–4 were all "the model and the commands are there, the gesture is not". None of them
+blocked a report; each took an hour or two, which is what Phase 4.5 was.

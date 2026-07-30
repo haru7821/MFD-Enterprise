@@ -62,12 +62,28 @@ export interface EvaluationReport {
   readonly hasDraftInputs: boolean;
 }
 
-/** The weaker of two provenances. Any draft input makes the whole result draft. */
+/**
+ * The weakest provenance among the inputs a finding actually used.
+ *
+ * ## Why "actually used" is load-bearing
+ *
+ * Equipment data is verified **per field group**, not per record. So a finding is
+ * provisional only when a group *it read* is provisional — never because some unrelated
+ * group of the same record is still unknown.
+ *
+ * Concretely: an overlap check reads footprints and no manufacturer figure at all, so an
+ * unknown service clearance cannot make "these two machines overlap by 500 mm" a
+ * provisional statement. It is a fact about two rectangles.
+ *
+ * Passing an empty list is therefore meaningful, not a degenerate case: it says the
+ * finding used no manufacturer data, and its provenance is the rule's alone.
+ */
 export function weakestStatus(
   ruleStatus: RuleStatus,
-  equipmentStatus: DataStatus,
+  ...equipmentStatuses: readonly DataStatus[]
 ): DataStatus {
-  return ruleStatus === 'draft' || equipmentStatus === 'draft' ? 'draft' : 'verified';
+  if (ruleStatus === 'draft') return 'draft';
+  return equipmentStatuses.some((status) => status === 'draft') ? 'draft' : 'verified';
 }
 
 export interface LevelInputs {
