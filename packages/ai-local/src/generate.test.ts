@@ -40,6 +40,7 @@ function pipeline(overrides: Partial<PipelineInput> = {}) {
     stationTarget: 6,
     pitchPadding: 1_200,
     existing: [],
+    referencePoints: [],
     ...overrides,
   });
 }

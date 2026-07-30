@@ -1,4 +1,4 @@
-import type { PlacementSummary } from '@mfd/ai-contract';
+import type { PlacementSummary, ReferencePointSummary } from '@mfd/ai-contract';
 import type { Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement } from '@mfd/document-model';
 import type { Catalog, EquipmentObject } from '@mfd/object-library';
@@ -49,6 +49,15 @@ export interface PipelineInput {
   readonly pitchPadding: number;
   /** Existing placements that stay put — an optimisation works around them. */
   readonly existing: readonly Placement[];
+  /**
+   * Points the scoring criteria measure from. Empty is legitimate; four weighted criteria then
+   * report `unavailable` rather than a distance from an assumed origin.
+   *
+   * Carried on the *pipeline* input rather than only on the scoring input because the two travel
+   * together everywhere, and splitting them would let a caller score a layout against a different
+   * set of points than the one it was generated for.
+   */
+  readonly referencePoints: readonly ReferencePointSummary[];
 }
 
 export interface FeasibleCandidate {

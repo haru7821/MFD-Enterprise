@@ -112,6 +112,38 @@ export function fixtureCollisionRule(
   };
 }
 
+/**
+ * A clearance rule with a **real threshold**.
+ *
+ * The shipped rule set has none — every threshold is null until the AK98 manual arrives (A-1) — so
+ * compliance margin is unmeasurable on any realistic fixture, and the code that computes it is
+ * never reached. This rule is what makes that arithmetic testable, and it is deliberately kept out
+ * of the default set so the *default* fixture keeps reflecting the product's actual state.
+ */
+export function fixtureClearanceRule(
+  options: { ruleId?: string; side?: 'front' | 'rear' | 'left' | 'right'; threshold?: number } = {},
+): Record<string, unknown> {
+  return {
+    ruleId: options.ruleId ?? 'fixture_front_clearance',
+    category: 'clearance',
+    name: { ko: '테스트 정비 공간', en: 'Fixture Service Clearance' },
+    description: { ko: '테스트용 정비 공간 규정', en: 'Fixture clearance rule' },
+    threshold: options.threshold ?? 1_200,
+    unit: 'mm',
+    status: 'draft',
+    severity: 'YELLOW',
+    appliesTo: { equipmentIds: null, categories: ['dialysis_machine'] },
+    parameters: { side: options.side ?? 'front' },
+    source: {
+      document: null,
+      revision: null,
+      section: null,
+      type: 'estimate',
+      lastUpdated: '2026-07-30',
+    },
+  };
+}
+
 export function fixtureRuleSet(
   records: readonly Record<string, unknown>[] = [
     fixtureCollisionRule(),

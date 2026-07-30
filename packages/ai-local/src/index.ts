@@ -7,8 +7,9 @@
  * problem with the rule engine as its oracle, not a language problem. A solver does it
  * reproducibly, offline, in milliseconds, and can say exactly why it chose what it chose.
  *
- * Step 3 delivers generation and the two hard gates. Scoring is step 4, and the seam between them
- * is the architecture: **a candidate that failed a gate never reaches the scoring engine.**
+ * Step 3 delivered generation and the two hard gates; step 4 adds the weighted scoring engine and
+ * the ranking. The seam between them is the architecture: **a candidate that failed a gate never
+ * reaches the scoring engine** — not reaches it and scores zero, never reaches it.
  *
  * Design: docs/architecture/AI_WORKFLOW.md § D · docs/architecture/AI_SYSTEM_ARCHITECTURE.md § C-4
  */
@@ -16,3 +17,7 @@
 export * from './candidates';
 export * from './gates';
 export * from './generate';
+export * from './routing';
+export * from './criteria';
+export * from './score';
+export * from './rank';

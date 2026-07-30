@@ -2,7 +2,7 @@
   "id": "dialysis_default",
   "version": "1.0.0",
   "title": {
-    "ko": "투석실 기본 엔지니어링 평가 모델",
+    "ko": "\ud22c\uc11d\uc2e4 \uae30\ubcf8 \uc5d4\uc9c0\ub2c8\uc5b4\ub9c1 \ud3c9\uac00 \ubaa8\ub378",
     "en": "Dialysis Unit Default Engineering Scoring Model"
   },
   "authority": {
@@ -14,57 +14,98 @@
     "compliance_margin": {
       "weight": 0.4,
       "direction": "maximise",
-      "reference": { "marginRatioTarget": 1.5 },
-      "title": { "ko": "규정 준수 여유", "en": "Rule Compliance Margin" },
-      "unit": "ratio"
+      "reference": {
+        "marginRatioTarget": 1.5
+      },
+      "title": {
+        "ko": "\uaddc\uc815 \uc900\uc218 \uc5ec\uc720",
+        "en": "Rule Compliance Margin"
+      },
+      "unit": "ratio",
+      "note": "Two roles, and they are not the same thing. A rule *violation* excludes a candidate at Gate 2, before scoring. This 40% weights the *quality* of the margin among candidates that already comply \u2014 it is never permission to trade a violation against an optimisation score."
     },
     "installation_feasibility": {
       "weight": 0.2,
       "direction": "maximise",
-      "reference": { "fractionTarget": 1.0 },
-      "title": { "ko": "설치 실현성", "en": "Installation Feasibility" },
+      "reference": {
+        "fractionTarget": 1.0
+      },
+      "title": {
+        "ko": "\uc124\uce58 \uc2e4\ud604\uc131",
+        "en": "Installation Feasibility"
+      },
       "unit": "fraction"
     },
     "maintenance_access": {
       "weight": 0.15,
       "direction": "maximise",
-      "reference": { "fractionTarget": 1.0 },
-      "title": { "ko": "유지보수 접근성", "en": "Maintenance Access" },
+      "reference": {
+        "fractionTarget": 1.0
+      },
+      "title": {
+        "ko": "\uc720\uc9c0\ubcf4\uc218 \uc811\uadfc\uc131",
+        "en": "Maintenance Access"
+      },
       "unit": "fraction"
     },
     "ro_piping_length": {
       "weight": 0.1,
       "direction": "minimise",
-      "reference": { "perStation": 8000 },
-      "title": { "ko": "RO 배관 효율", "en": "RO Piping Efficiency" },
+      "reference": {
+        "perStation": 8000
+      },
+      "title": {
+        "ko": "RO \ubc30\uad00 \ud6a8\uc728",
+        "en": "RO Piping Efficiency"
+      },
       "unit": "mm"
     },
     "electrical_routing": {
       "weight": 0.05,
       "direction": "minimise",
-      "reference": { "perStation": 10000 },
-      "title": { "ko": "전기 배선 경로", "en": "Electrical Routing" },
+      "reference": {
+        "perStation": 10000
+      },
+      "title": {
+        "ko": "\uc804\uae30 \ubc30\uc120 \uacbd\ub85c",
+        "en": "Electrical Routing"
+      },
       "unit": "mm"
     },
     "future_expansion": {
       "weight": 0.05,
       "direction": "maximise",
-      "reference": { "additionalStations": 4 },
-      "title": { "ko": "향후 확장성", "en": "Future Expansion" },
+      "reference": {
+        "additionalStations": 4
+      },
+      "title": {
+        "ko": "\ud5a5\ud6c4 \ud655\uc7a5\uc131",
+        "en": "Future Expansion"
+      },
       "unit": "count"
     },
     "walking_distance": {
       "weight": 0.05,
       "direction": "minimise",
-      "reference": { "perStation": 12000 },
-      "title": { "ko": "동선 거리", "en": "Walking Distance" },
+      "reference": {
+        "perStation": 12000
+      },
+      "title": {
+        "ko": "\ub3d9\uc120 \uac70\ub9ac / \uc5c5\ubb34 \ub3d9\uc120 \ud6a8\uc728",
+        "en": "Walking Distance / Staff Workflow Efficiency"
+      },
       "unit": "mm"
     },
     "drain_routing": {
       "weight": 0,
       "direction": "minimise",
-      "reference": { "perStation": 6000 },
-      "title": { "ko": "배수 경로", "en": "Drain Routing" },
+      "reference": {
+        "perStation": 6000
+      },
+      "title": {
+        "ko": "\ubc30\uc218 \uacbd\ub85c",
+        "en": "Drain Routing"
+      },
       "unit": "mm",
       "measuredOnly": true,
       "note": "Named in the owner's criterion list but absent from the approved B-5a weight table. Measured and shown in every breakdown at weight 0 so it is visible and can be weighted by editing this file. Not silently deleted, and not silently weighted."
@@ -73,7 +114,10 @@
   "constraints": {
     "station_count": {
       "note": "Deliberately NOT a weighted criterion. Station count is a target the engineer sets and the solver satisfies; scoring then ranks arrangements that meet it. A weight of 0 in a maximise-total model would rank the emptiest room first, because every other criterion improves as machines are removed. Measured and displayed like a criterion; never traded against one.",
-      "title": { "ko": "투석기 수량", "en": "Number of Dialysis Stations" },
+      "title": {
+        "ko": "\ud22c\uc11d\uae30 \uc218\ub7c9",
+        "en": "Number of Dialysis Stations"
+      },
       "unit": "count"
     }
   }

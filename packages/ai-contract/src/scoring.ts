@@ -33,12 +33,19 @@ import type { RefWithVersion } from './context';
  * a number the owner did not give.
  */
 export const SCORING_CRITERIA = [
+  /**
+   * **Two roles, and only one of them is this.** A rule *violation* excludes a candidate at
+   * Gate 2, before scoring. This criterion weights the *quality* of the margin among candidates
+   * that already comply — headroom above a requirement — and its 40 % is never permission to
+   * trade a violation against an optimisation score (owner clarification, Step 4).
+   */
   'compliance_margin',
   'installation_feasibility',
   'maintenance_access',
   'ro_piping_length',
   'electrical_routing',
   'future_expansion',
+  /** Walking Distance / Staff Workflow Efficiency. */
   'walking_distance',
   'drain_routing',
 ] as const;
