@@ -1,7 +1,12 @@
 import { z } from 'zod';
 
 import { DocumentValidationError, UnsupportedDocumentVersionError } from './errors';
-import { DOCUMENT_VERSION, type MfdDocument, documentSchema } from './schema';
+import {
+  DEFAULT_PROJECT_SETTINGS,
+  DOCUMENT_VERSION,
+  type MfdDocument,
+  documentSchema,
+} from './schema';
 
 /**
  * Save and load.
@@ -70,6 +75,28 @@ export const MIGRATIONS: readonly Migration[] = [
       });
 
       return { ...document, project: { ...project, levels } };
+    },
+  },
+  {
+    from: 2,
+    to: 3,
+    /**
+     * Version 3 adds `project.settings`.
+     *
+     * A version 2 file was written before the report had render modes, so the only honest
+     * value is the default — vector-only, which is what every report generated before this
+     * version actually produced. Filling it in rather than leaving it absent is the point:
+     * `settings` is required, and an absent setting and a chosen default must not look the
+     * same on disk.
+     */
+    migrate(document) {
+      const project = document['project'];
+      if (!isRecord(project)) return document;
+
+      return {
+        ...document,
+        project: { ...project, settings: { ...DEFAULT_PROJECT_SETTINGS } },
+      };
     },
   },
 ];

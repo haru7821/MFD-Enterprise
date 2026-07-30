@@ -67,6 +67,11 @@ export const LABELS = {
   ground_draft_groups: { ko: '제조사 근거가 없는 자료 항목', en: 'equipment field groups with no manual reference' },
   ground_no_equipment: { ko: '배치된 장비 없음', en: 'no equipment placed' },
 
+  field_missing_references: { ko: '근거 문서 미확보 항목', en: 'Missing References' },
+  field_missing_citations: { ko: '제조사 근거 미확보 항목', en: 'Missing Manufacturer Citations' },
+  field_draft_rules: { ko: '미검증 규정 수', en: 'Draft Rule Count' },
+  evidence_heading: { ko: '확보되지 않은 근거', en: 'Outstanding Evidence' },
+
   // ── Equipment ───────────────────────────────────────────────────────────────
   field_equipment_id: { ko: '장비 ID', en: 'Equipment ID' },
   field_manufacturer: { ko: '제조사', en: 'Manufacturer' },
@@ -129,6 +134,14 @@ export const LABELS = {
   table_placements: { ko: '장비 배치 목록', en: 'Placement Table' },
 
   no_drawing: { ko: '가져온 도면 없음', en: 'No drawing imported' },
+  mode_vector: { ko: '벡터 도면만', en: 'Vector only' },
+  mode_vector_raster: { ko: '벡터 + 원본 스캔', en: 'Vector over the scan' },
+  mode_raster: { ko: '원본 스캔만 (디버그)', en: 'Scan only (debug)' },
+  mode_raster_warning: {
+    ko: '디버그 모드 — 원본 스캔만 표시되며 검토된 배치는 그려지지 않았습니다. 고객 제출용이 아닙니다.',
+    en: 'Debug mode — the scan is shown without the assessed layout drawn over it. Not for issue to a customer.',
+  },
+  field_render_mode: { ko: '도면 표시 방식', en: 'Drawing mode' },
   not_calibrated: { ko: '축척 미설정 — 이 층의 치수는 검증되지 않았습니다', en: 'Not calibrated — no measurement from this level is verified' },
 
   // ── Validation ──────────────────────────────────────────────────────────────

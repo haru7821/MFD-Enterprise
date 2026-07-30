@@ -9,6 +9,7 @@ import type {
   Level,
   MfdDocument,
   Placement,
+  ReportRenderMode,
   Space,
 } from './schema';
 
@@ -68,7 +69,8 @@ export type CommandType =
   | 'level.rename'
   | 'level.delete'
   | 'plan.setOrigin'
-  | 'project.setDetails';
+  | 'project.setDetails'
+  | 'project.setReportRenderMode';
 
 export interface CommandResult {
   readonly document: MfdDocument;
@@ -983,6 +985,35 @@ export function setProjectDetailsCommand(details: ProjectDetails): Command {
       };
 
       return { document: next, inverse: setProjectDetailsCommand(previous) };
+    },
+  });
+}
+
+/**
+ * Change how the report draws a level — vector, vector over the scan, or the scan alone.
+ *
+ * A command rather than a setter, so it is undoable like everything else that changes the
+ * document. It is a small change with a large consequence: the mode decides what a hospital
+ * receives, and an engineer who switches it to debug to check a trace needs one keystroke to
+ * switch back.
+ */
+export function setReportRenderModeCommand(mode: ReportRenderMode): Command {
+  return command({
+    type: 'project.setReportRenderMode',
+    label: 'Change report drawing mode',
+    mergeKey: null,
+    apply(document) {
+      const previous = document.project.settings.reportRenderMode;
+
+      const next: MfdDocument = {
+        ...document,
+        project: {
+          ...document.project,
+          settings: { ...document.project.settings, reportRenderMode: mode },
+        },
+      };
+
+      return { document: next, inverse: setReportRenderModeCommand(previous) };
     },
   });
 }

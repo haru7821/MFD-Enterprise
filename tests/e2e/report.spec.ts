@@ -213,3 +213,44 @@ test('names a character the font cannot draw instead of printing a blank box', a
   await page.getByTestId('report-download-pdf').click();
   await expect(page.getByTestId('report-error')).toContainText('no glyph for');
 });
+
+test('the drawing mode is a stored project setting, and raster mode says it is debug', async ({
+  page,
+}) => {
+  // Owner decision: vector-first by default, the raster underlay opt-in, and the choice stored
+  // in the project rather than picked at download time.
+  await expect(page.getByTestId('report-render-mode')).toHaveValue('vector');
+
+  await openReport(page);
+  await expect(page.getByTestId('report-evidence')).toBeVisible();
+  await expect(page.getByTestId('report-panel')).toContainText('벡터 도면만');
+  await expect(page.getByTestId('report-debug-mode')).toHaveCount(0);
+  await page.getByTestId('report-close').click();
+
+  await page.getByTestId('report-render-mode').selectOption('raster');
+  await expect(page.getByTestId('render-mode-debug-warning')).toBeVisible();
+
+  await openReport(page);
+  // A page carrying a scan with no assessment drawn over it must say so, in the report itself.
+  await expect(page.getByTestId('report-debug-mode').first()).toBeVisible();
+  await expect(page.getByTestId('report-panel')).toContainText('고객 제출용이 아닙니다');
+  await page.getByTestId('report-close').click();
+
+  // And it survives undo, because it is a command like everything else.
+  await page.keyboard.press('Control+z');
+  await expect(page.getByTestId('report-render-mode')).toHaveValue('vector');
+});
+
+test('the summary states the three evidence counts, zeros included', async ({ page }) => {
+  await openReport(page);
+
+  const evidence = page.getByTestId('report-evidence');
+  // Named figures, in both languages. A zero is the answer too — omitting it would leave a
+  // reader unable to tell "nothing outstanding" from "we did not check".
+  await expect(evidence).toContainText('근거 문서 미확보 항목 / Missing References');
+  await expect(evidence).toContainText('제조사 근거 미확보 항목 / Missing Manufacturer Citations');
+  await expect(evidence).toContainText('미검증 규정 수 / Draft Rule Count');
+
+  // Six rules ship and every one of them is draft, so the count is the whole set.
+  await expect(evidence).toContainText('6');
+});

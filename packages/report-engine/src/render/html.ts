@@ -124,25 +124,46 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
    * rather than of the numbers.
    */
   const drawing = (plan: FloorPlanSection): string => {
+    const showRaster = model.renderMode !== 'vector' && plan.raster !== null;
+    const showVector = model.renderMode !== 'raster';
+
     const extent = plan.geometry.extent;
-    if (!extent) return `<p class="empty">${inline('no_drawing')}</p>`;
+    // Raster-only with a plan is still a page worth drawing; vector-only with no geometry is
+    // not, and neither is either mode with nothing at all.
+    if (!extent && !showRaster) return `<p class="empty">${inline('no_drawing')}</p>`;
 
     const pad = 500;
-    const width = extent.maxX - extent.minX + pad * 2;
-    const height = extent.maxY - extent.minY + pad * 2;
+    const box = extent ?? { minX: 0, minY: 0, maxX: 1, maxY: 1 };
+    const raster = plan.raster;
+    // With no traced geometry the raster defines the viewBox, in the millimetres its own
+    // calibration gives it — so a raster-only page is still measured rather than merely shown.
+    const frame =
+      extent ?? (raster ? { minX: raster.x, minY: raster.y, maxX: raster.x + raster.width, maxY: raster.y + raster.height } : box);
+
+    const width = frame.maxX - frame.minX + pad * 2;
+    const height = frame.maxY - frame.minY + pad * 2;
     const points = (line: { points: readonly { x: number; y: number }[] }) =>
       line.points.map((p) => `${p.x},${p.y}`).join(' ');
 
-    return `<svg class="plan" viewBox="${extent.minX - pad} ${extent.minY - pad} ${width} ${height}" role="img">
-      ${plan.geometry.rooms.map((r) => `<polygon class="room" points="${points(r)}" />`).join('')}
-      ${plan.geometry.obstructions.map((o) => `<polygon class="obstruction" points="${points(o)}" />`).join('')}
-      ${plan.geometry.equipment
-        .map((e) => {
-          const cx = e.points.reduce((sum, p) => sum + p.x, 0) / e.points.length;
-          const cy = e.points.reduce((sum, p) => sum + p.y, 0) / e.points.length;
-          return `<polygon class="equipment" points="${points(e)}" /><text x="${cx}" y="${cy}" class="pin-label">${escape(e.label)}</text>`;
-        })
-        .join('')}
+    return `<svg class="plan" data-mode="${model.renderMode}" viewBox="${frame.minX - pad} ${frame.minY - pad} ${width} ${height}" role="img">
+      ${
+        showRaster && raster
+          ? `<image data-testid="plan-raster" href="${escape(raster.dataUrl)}" x="${raster.x}" y="${raster.y}" width="${raster.width}" height="${raster.height}" opacity="${model.renderMode === 'raster' ? 1 : 0.45}" />`
+          : ''
+      }
+      ${showVector ? plan.geometry.rooms.map((r) => `<polygon class="room" points="${points(r)}" />`).join('') : ''}
+      ${showVector ? plan.geometry.obstructions.map((o) => `<polygon class="obstruction" points="${points(o)}" />`).join('') : ''}
+      ${
+        showVector
+          ? plan.geometry.equipment
+              .map((e) => {
+                const cx = e.points.reduce((sum, p) => sum + p.x, 0) / e.points.length;
+                const cy = e.points.reduce((sum, p) => sum + p.y, 0) / e.points.length;
+                return `<polygon class="equipment" points="${points(e)}" /><text x="${cx}" y="${cy}" class="pin-label">${escape(e.label)}</text>`;
+              })
+              .join('')
+          : ''
+      }
     </svg>`;
   };
 
@@ -165,6 +186,12 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
   </dl>
 </section>
 
+${
+  model.renderMode === 'raster'
+    ? `<p class="warning debug" data-testid="report-debug-mode">${inline('mode_raster_warning')}</p>`
+    : ''
+}
+
 <section data-testid="report-summary">
   ${heading('section_summary')}
   <div class="verdict verdict-${summary.verdict}" data-testid="report-verdict">
@@ -179,6 +206,13 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
   <ul class="grounds">
     ${summary.grounds.map((g) => `<li>${num(g.count)} — ${inline(g.label)}</li>`).join('')}
   </ul>
+  <h3>${inline('evidence_heading')}</h3>
+  <dl class="evidence" data-testid="report-evidence">
+    ${field('field_missing_references', num(summary.evidence.missingReferences))}
+    ${field('field_missing_citations', num(summary.evidence.missingManufacturerCitations))}
+    ${field('field_draft_rules', num(summary.evidence.draftRuleCount))}
+  </dl>
+  <dl>${field('field_render_mode', inline(`mode_${model.renderMode}` as LabelKey))}</dl>
 </section>
 
 <section data-testid="report-schedule">
@@ -472,4 +506,5 @@ const STYLE = `
 .mfd-report .liability { font-size: 11px; margin: 4px 0; }
 .mfd-report .notice { margin-top: 24px; border: 2px solid #111; padding: 10px; }
 .mfd-report .provenance { margin-top: 16px; font-size: 10px; color: #6b7280; }
+.mfd-report .debug { border: 2px solid #b45309; font-weight: 600; margin: 8px 0; }
 `;

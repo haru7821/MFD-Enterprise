@@ -104,6 +104,7 @@ export function buildReport({
   return {
     reportVersion: REPORT_VERSION,
     generatedAt,
+    renderMode: project.settings.reportRenderMode,
     cover: {
       hospital: project.customer.hospital,
       site: project.customer.site,
@@ -119,6 +120,7 @@ export function buildReport({
       totalEquipment: allPlacements.length,
       uncalibratedLevels: uncalibratedLevels.length,
       draftFieldGroups,
+      draftRuleCount: ruleSet.draftRules.length,
     }),
     equipmentSchedule: buildEquipmentSchedule(usage, unknownEquipmentIds),
     floorPlans,

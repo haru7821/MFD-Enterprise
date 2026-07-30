@@ -1,7 +1,12 @@
 import type { EvaluationReport, EvaluationResult } from '@mfd/rule-engine';
 import { reasonKind } from '@mfd/rule-engine';
 
-import type { ExecutiveSummarySection, SummaryGround, Verdict } from './model';
+import type {
+  EvidenceCounts,
+  ExecutiveSummarySection,
+  SummaryGround,
+  Verdict,
+} from './model';
 
 /**
  * Section 2 — the executive summary, and the verdict.
@@ -59,6 +64,8 @@ export interface ConclusionInputs {
   readonly totalEquipment: number;
   readonly uncalibratedLevels: number;
   readonly draftFieldGroups: number;
+  /** Rules in the set whose status is draft — the whole set, not only the ones that fired. */
+  readonly draftRuleCount: number;
 }
 
 export interface Conclusion {
@@ -111,6 +118,13 @@ export function buildSummary(inputs: ConclusionInputs): ExecutiveSummarySection 
     grounds.push({ label: 'ground_draft_groups', count: inputs.draftFieldGroups });
   if (inputs.totalEquipment === 0) grounds.push({ label: 'ground_no_equipment', count: 0 });
 
+  const evidence: EvidenceCounts = {
+    // A finding whose threshold cites no document is a statement a reader cannot check.
+    missingReferences: results.filter((result) => result.source.document === null).length,
+    missingManufacturerCitations: inputs.draftFieldGroups,
+    draftRuleCount: inputs.draftRuleCount,
+  };
+
   return {
     totalEquipment: inputs.totalEquipment,
     green: counts.GREEN,
@@ -119,5 +133,6 @@ export function buildSummary(inputs: ConclusionInputs): ExecutiveSummarySection 
     verdict: decideVerdict(inputs),
     grounds,
     hasDraftInputs: inputs.reports.some((report) => report.hasDraftInputs),
+    evidence,
   };
 }

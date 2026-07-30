@@ -1,4 +1,9 @@
-import { type ProjectDetails, projectDetailsOf } from '@mfd/document-model';
+import {
+  REPORT_RENDER_MODES,
+  type ProjectDetails,
+  type ReportRenderMode,
+  projectDetailsOf,
+} from '@mfd/document-model';
 
 import { now } from '@/editor/clock';
 import { useEditor } from '@/editor/useEditor';
@@ -28,9 +33,17 @@ const FIELDS: readonly {
   { key: 'reviewedBy', ko: 'TS 엔지니어', en: 'TS engineer', placeholder: 'A. Engineer' },
 ];
 
+/** Bilingual, matching the report's own wording for the same three modes. */
+const MODE_LABELS: Readonly<Record<ReportRenderMode, string>> = {
+  vector: '벡터 도면만 / Vector only',
+  vector_raster: '벡터 + 원본 스캔 / Vector over the scan',
+  raster: '원본 스캔만 (디버그) / Scan only (debug)',
+};
+
 export function ProjectDetailsPanel() {
   const { state, dispatch } = useEditor();
   const details = projectDetailsOf(state.doc.document);
+  const mode = state.doc.document.project.settings.reportRenderMode;
 
   function set(key: keyof ProjectDetails, value: string) {
     dispatch({
@@ -71,6 +84,45 @@ export function ProjectDetailsPanel() {
           </label>
         ))}
       </div>
+
+      {/*
+        The drawing mode. A stored project setting rather than an option on the download
+        dialogue, because it changes what the document *is* when it reaches a hospital: the same
+        project issued twice in different modes would differ with nothing recording which was
+        intended.
+      */}
+      <label className="mt-2 flex flex-col gap-0.5">
+        <span className="text-[10px] text-ink-faint">
+          도면 표시 방식 <span className="text-ink-faint/70">/ Drawing mode</span>
+        </span>
+        <select
+          data-testid="report-render-mode"
+          value={mode}
+          onChange={(event) =>
+            dispatch({
+              type: 'project/setRenderMode',
+              mode: event.target.value as ReportRenderMode,
+              at: now(),
+            })
+          }
+          className="w-full rounded border border-edge bg-canvas px-1.5 py-0.5 text-[11px] text-ink focus:border-accent focus:outline-none"
+        >
+          {REPORT_RENDER_MODES.map((option) => (
+            <option key={option} value={option}>
+              {MODE_LABELS[option]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {mode === 'raster' && (
+        <p
+          data-testid="render-mode-debug-warning"
+          className="mt-1 rounded-sm border border-amber-500/50 bg-amber-500/10 px-1.5 py-1 text-[10px] leading-snug text-amber-300"
+        >
+          디버그 모드 — 검토 결과가 도면에 그려지지 않습니다 · Debug mode — the assessed layout is
+          not drawn
+        </p>
+      )}
 
       {/*
         The date and the MFD version are not editable, and that is deliberate: the report's

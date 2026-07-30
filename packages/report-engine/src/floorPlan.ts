@@ -1,12 +1,13 @@
-import { polygonArea } from '@mfd/cad-engine';
+import { pixelToModel, polygonArea } from '@mfd/cad-engine';
 import type { Level } from '@mfd/document-model';
-import { findSpace, obstructionBoundaries, spaceArea } from '@mfd/document-model';
+import { findSpace, obstructionBoundaries, planTransformOf, spaceArea } from '@mfd/document-model';
 import type { Catalog } from '@mfd/object-library';
 import { footprintCorners } from '@mfd/object-library';
 
 import type {
   FloorPlanSection,
   LevelGeometry,
+  RasterPlacement,
   ObstructionRow,
   PlacementRow,
   Polyline,
@@ -85,6 +86,36 @@ function geometryOf(level: Level, catalog: Catalog, numbers: Map<string, number>
         };
 
   return { rooms, obstructions, equipment, extent };
+}
+
+/**
+ * Where the scan sits in model millimetres.
+ *
+ * The image's top-left pixel through the plan transform gives the origin; its pixel dimensions
+ * scaled by mm/px give the size. Rotation comes straight from the mapping, because the transform
+ * rotates *about the origin pixel* and so does an SVG or PDF image placed at that point — which
+ * is why this returns a rectangle and an angle rather than four corners.
+ *
+ * Null without a mapping: an uncalibrated scan has no millimetres in it, so there is no honest
+ * place to put it. The report says the level is uncalibrated instead.
+ */
+function rasterPlacement(level: Level): RasterPlacement | null {
+  const { planImage, coordinateMapping } = level;
+  if (!planImage || !coordinateMapping) return null;
+
+  const transform = planTransformOf(level);
+  if (!transform) return null;
+
+  const topLeft = pixelToModel(transform, { x: 0, y: 0 });
+
+  return {
+    x: topLeft.x,
+    y: topLeft.y,
+    width: planImage.pixelWidth * coordinateMapping.millimetresPerPixel,
+    height: planImage.pixelHeight * coordinateMapping.millimetresPerPixel,
+    rotationDegrees: coordinateMapping.rotation / 1_000,
+    dataUrl: planImage.dataUrl,
+  };
 }
 
 /**
@@ -181,6 +212,7 @@ export function buildFloorPlan(level: Level, catalog: Catalog): FloorPlanSection
     rooms,
     obstructions,
     geometry: geometryOf(level, catalog, numbers),
+    raster: rasterPlacement(level),
   };
 }
 

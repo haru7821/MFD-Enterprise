@@ -61,6 +61,7 @@ function verdictOf(findings: readonly FindingSpec[], options: { equipment?: numb
     totalEquipment: options.equipment ?? 1,
     uncalibratedLevels: options.uncalibrated ?? 0,
     draftFieldGroups: 0,
+    draftRuleCount: 0,
   });
 }
 
@@ -145,6 +146,7 @@ describe('the summary', () => {
       totalEquipment: 3,
       uncalibratedLevels: 1,
       draftFieldGroups: 6,
+      draftRuleCount: 5,
     });
 
     expect(summary.red).toBe(1);
@@ -160,12 +162,55 @@ describe('the summary', () => {
     expect(grounds.get('ground_draft_groups')).toBe(6);
   });
 
+  it('states the three evidence counts the owner requires', () => {
+    // Named figures, not only grounds. The grounds explain *this* verdict; these answer "how
+    // far is this project from being conclusive?", which is the question an engineer chasing a
+    // manual actually has.
+    const summary = buildSummary({
+      reports: [
+        report([
+          { level: 'YELLOW', reasonCode: 'RC-110' },
+          { level: 'YELLOW', reasonCode: 'RC-110' },
+          { level: 'YELLOW', reasonCode: 'RC-102' },
+        ]),
+      ],
+      totalEquipment: 2,
+      uncalibratedLevels: 0,
+      draftFieldGroups: 6,
+      draftRuleCount: 5,
+    });
+
+    // Every fixture finding carries a null source document, so all three are uncitable.
+    expect(summary.evidence.missingReferences).toBe(3);
+    expect(summary.evidence.missingManufacturerCitations).toBe(6);
+    expect(summary.evidence.draftRuleCount).toBe(5);
+  });
+
+  it('reports zero evidence gaps as zero rather than omitting them', () => {
+    // A zero is the answer too. Omitting the figure would leave a reader unable to tell
+    // "nothing outstanding" from "we did not check".
+    const summary = buildSummary({
+      reports: [report([])],
+      totalEquipment: 0,
+      uncalibratedLevels: 0,
+      draftFieldGroups: 0,
+      draftRuleCount: 0,
+    });
+
+    expect(summary.evidence).toEqual({
+      missingReferences: 0,
+      missingManufacturerCitations: 0,
+      draftRuleCount: 0,
+    });
+  });
+
   it('says so when nothing was placed', () => {
     const summary = buildSummary({
       reports: [report([])],
       totalEquipment: 0,
       uncalibratedLevels: 0,
       draftFieldGroups: 0,
+      draftRuleCount: 0,
     });
 
     expect(summary.grounds.some((ground) => ground.label === 'ground_no_equipment')).toBe(true);
@@ -186,6 +231,7 @@ describe('the summary', () => {
       totalEquipment: 3,
       uncalibratedLevels: 0,
       draftFieldGroups: 0,
+      draftRuleCount: 0,
     });
 
     expect(summary.totalEquipment).toBe(3);

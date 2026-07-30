@@ -1,3 +1,4 @@
+import type { ReportRenderMode } from '@mfd/document-model';
 import type { DataStatus } from '@mfd/object-library';
 import type { Bilingual, ReasonCode, ReasonParams } from '@mfd/rule-engine';
 
@@ -89,6 +90,35 @@ export interface ExecutiveSummarySection {
   readonly grounds: readonly SummaryGround[];
   /** True when any finding rests on a draft field group or a draft rule. */
   readonly hasDraftInputs: boolean;
+  /**
+   * The three evidence counts the owner requires on the summary.
+   *
+   * Named figures, not only grounds. The grounds list explains *this* verdict; these three
+   * answer "how far is this project from being conclusive?", which is a different question and
+   * the one an engineer chasing a manual actually has. They appear whether or not they are
+   * zero, because a zero is the answer too.
+   */
+  readonly evidence: EvidenceCounts;
+}
+
+export interface EvidenceCounts {
+  /**
+   * Findings that could not name a source document.
+   *
+   * Counted per finding rather than per rule, because that is the size of the hole: five
+   * findings resting on one uncited rule are five statements a reader cannot check.
+   */
+  readonly missingReferences: number;
+  /** Equipment field groups in use with no manufacturer citation. Per group, never per record. */
+  readonly missingManufacturerCitations: number;
+  /**
+   * Rules in the set whose own status is draft.
+   *
+   * The whole set, not only the rules that fired. A draft rule that matched nothing is still an
+   * uncited rule, and counting only the ones that produced findings would make the number drop
+   * as a drawing emptied — which is backwards.
+   */
+  readonly draftRuleCount: number;
 }
 
 export interface SummaryGround {
@@ -207,6 +237,28 @@ export interface PlacementRow {
  */
 export type PlanStatus = 'none' | 'calibrated' | 'uncalibrated';
 
+/**
+ * Where the scanned drawing sits in model space, so a renderer can place it under the
+ * geometry without knowing anything about pixels or calibration.
+ *
+ * A rectangle plus a rotation rather than four corners: an image *is* a rectangle, and every
+ * renderer worth having (SVG `<image>`, `pdf-lib` `drawImage`) takes exactly this. Four corners
+ * would make each renderer solve the same rotation problem again.
+ *
+ * Null when there is no plan, or when the plan has no coordinate mapping — an uncalibrated
+ * scan has no millimetres in it, so there is no honest place to put it.
+ */
+export interface RasterPlacement {
+  /** Model millimetres of the image's top-left corner. */
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  /** Degrees clockwise, about the top-left corner. */
+  readonly rotationDegrees: number;
+  readonly dataUrl: string;
+}
+
 export interface FloorPlanSection {
   readonly levelId: string;
   readonly levelName: string;
@@ -222,6 +274,14 @@ export interface FloorPlanSection {
   readonly obstructions: readonly ObstructionRow[];
   /** Geometry for the drawing page, in model millimetres. */
   readonly geometry: LevelGeometry;
+  /**
+   * The scan, placed in model space, or null.
+   *
+   * Present in the model whatever the render mode: the mode decides whether a renderer *draws*
+   * it, and a model that omitted the raster in vector mode would make switching mode a
+   * different report rather than a different drawing of the same one.
+   */
+  readonly raster: RasterPlacement | null;
 }
 
 export interface RoomRow {
@@ -427,6 +487,15 @@ export interface ReportModel {
   readonly reportVersion: number;
   /** Injected. `buildReport` never reads a clock — see AD-3. */
   readonly generatedAt: string;
+  /**
+   * How the drawing page is drawn — the project's stored setting, carried into the model.
+   *
+   * In the model rather than passed to each renderer, for the same reason everything else is:
+   * a renderer that had to be *told* the mode is a renderer that could be told a different one
+   * than the project recorded, and then two copies of the same report would differ with
+   * nothing saying why.
+   */
+  readonly renderMode: ReportRenderMode;
   readonly cover: CoverSection;
   readonly summary: ExecutiveSummarySection;
   readonly equipmentSchedule: EquipmentScheduleSection;

@@ -24,6 +24,7 @@ import {
   createDocumentState,
   createLevelCommand,
   type ProjectDetails,
+  type ReportRenderMode,
   createObstruction,
   createPlacement,
   createPlacementCommand,
@@ -49,6 +50,7 @@ import {
   setCoordinateMapping,
   setPlanImage,
   setProjectDetailsCommand,
+  setReportRenderModeCommand,
   setPlanOriginCommand,
   undo,
 } from '@mfd/document-model';
@@ -179,6 +181,11 @@ export type EditorAction =
   | {
       readonly type: 'project/setDetails';
       readonly details: ProjectDetails;
+      readonly at: number;
+    }
+  | {
+      readonly type: 'project/setRenderMode';
+      readonly mode: ReportRenderMode;
       readonly at: number;
     }
   | { readonly type: 'history/seal' }
@@ -721,6 +728,14 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return {
         ...state,
         doc: execute(state.doc, setProjectDetailsCommand(action.details), action.at),
+      };
+
+    case 'project/setRenderMode':
+      // Sealed: choosing a drawing mode is a decision, not a typing session, so it is its own
+      // undo step.
+      return {
+        ...state,
+        doc: seal(execute(state.doc, setReportRenderModeCommand(action.mode), action.at)),
       };
 
     case 'history/seal':

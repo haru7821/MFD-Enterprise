@@ -176,7 +176,7 @@ describe('the HTML renderer', () => {
 
     // A viewBox in model units, not a raster: the geometry lives outside the renderer, so it
     // can be re-emitted at any size (AD-2).
-    expect(html).toMatch(/<svg class="plan" viewBox="-500 -500 9000 7000"/);
+    expect(html).toMatch(/<svg class="plan" data-mode="vector" viewBox="-500 -500 9000 7000"/);
     expect(html).toContain('class="room"');
     expect(html).toContain('class="equipment"');
   });
@@ -348,5 +348,106 @@ describe('Korean in the PDF text layer', () => {
       expect(text).toContain('Final installation approval shall be based on');
       expect(text).toContain('최종 설치 승인');
     }
+  });
+});
+
+describe('the three render modes', () => {
+  /**
+   * Owner decision: the report is vector-first, and the raster underlay is opt-in.
+   *
+   * The modes are a stored project setting rather than a download option, so these tests build
+   * the model from a document that carries the mode — which is also the property under test: a
+   * renderer cannot be told a mode the project did not record.
+   */
+  function modelIn(mode: 'vector' | 'vector_raster' | 'raster') {
+    return buildReport({
+      document: populatedDocument(fixtureCatalog(), mode),
+      catalog: fixtureCatalog(),
+      ruleSet: fixtureRuleSet(),
+      checklistTemplate: fixtureChecklistTemplate(),
+      generatedAt: FIXTURE_GENERATED_AT,
+      mfdVersion: FIXTURE_MFD_VERSION,
+    });
+  }
+
+  it('carries the raster in the model whatever the mode', () => {
+    // The mode decides whether a renderer *draws* the scan. A model that omitted it in vector
+    // mode would make switching mode a different report rather than a different drawing of the
+    // same one — and the JSON output would lose data the PDF had.
+    for (const mode of ['vector', 'vector_raster', 'raster'] as const) {
+      const plan = modelIn(mode).floorPlans[0];
+      expect(plan?.raster, mode).not.toBeNull();
+      expect(plan?.raster?.dataUrl, mode).toMatch(/^data:image\/png;base64,/);
+    }
+  });
+
+  it('places the raster in model millimetres', () => {
+    // 2000 × 1400 px at 10 mm/px, origin at pixel (100, 100): the top-left corner is 1000 mm
+    // up and left of the model origin, and the image is 20 m × 14 m.
+    const raster = modelIn('vector_raster').floorPlans[0]?.raster;
+
+    expect(raster?.x).toBeCloseTo(-1_000, 6);
+    expect(raster?.y).toBeCloseTo(-1_000, 6);
+    expect(raster?.width).toBe(20_000);
+    expect(raster?.height).toBe(14_000);
+    expect(raster?.rotationDegrees).toBe(0);
+  });
+
+  it('leaves the raster null on an uncalibrated level', () => {
+    // An uncalibrated scan has no millimetres in it, so there is no honest place to put it.
+    expect(modelIn('vector_raster').floorPlans[1]?.raster).toBeNull();
+  });
+
+  it('draws no raster in vector mode', () => {
+    const html = renderHtml(modelIn('vector'));
+
+    expect(html).toContain('data-mode="vector"');
+    expect(html).not.toContain('data-testid="plan-raster"');
+    expect(html).toContain('class="room"');
+  });
+
+  it('draws the raster under the geometry in vector_raster mode', () => {
+    const html = renderHtml(modelIn('vector_raster'));
+
+    expect(html).toContain('data-testid="plan-raster"');
+    expect(html).toContain('class="room"');
+    // Dimmed, so the traced lines stay readable over it.
+    expect(html).toMatch(/data-testid="plan-raster"[^>]*opacity="0\.45"/);
+    // And the image comes first in document order, so the geometry paints over it.
+    expect(html.indexOf('plan-raster')).toBeLessThan(html.indexOf('class="room"'));
+  });
+
+  it('draws the raster alone in raster mode, and says it is a debug output', () => {
+    const html = renderHtml(modelIn('raster'));
+
+    expect(html).toContain('data-testid="plan-raster"');
+    expect(html).toMatch(/data-testid="plan-raster"[^>]*opacity="1"/);
+    // No traced geometry at all.
+    expect(html).not.toContain('class="room"');
+    expect(html).not.toContain('class="equipment"');
+    // A document with no assessment drawn anywhere must say so, at the top rather than beside
+    // a drawing page — a project whose levels have no scan would otherwise carry no notice.
+    expect(html).toContain('data-testid="report-debug-mode"');
+    expect(html).toContain('고객 제출용이 아닙니다');
+    expect(html.indexOf('report-debug-mode')).toBeLessThan(html.indexOf('report-summary'));
+  });
+
+  it('embeds the raster in the PDF only when the mode asks for it', async () => {
+    // The size difference is the assertion: a vector-only PDF carries no image object at all,
+    // which is what "vector-first by default" has to mean in the file rather than in a comment.
+    const vector = await renderPdf(modelIn('vector'), { fonts: fonts() });
+    const withRaster = await renderPdf(modelIn('vector_raster'), { fonts: fonts() });
+
+    const vectorRaw = Buffer.from(vector).toString('latin1');
+    const rasterRaw = Buffer.from(withRaster).toString('latin1');
+
+    expect(vectorRaw).not.toContain('/Subtype /Image');
+    expect(rasterRaw).toContain('/Subtype /Image');
+  });
+
+  it('produces a valid PDF in raster mode', async () => {
+    const bytes = await renderPdf(modelIn('raster'), { fonts: fonts() });
+    expect(new TextDecoder().decode(bytes.slice(0, 5))).toContain('%PDF');
+    expect(Buffer.from(bytes).toString('latin1')).toContain('/Subtype /Image');
   });
 });

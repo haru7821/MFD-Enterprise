@@ -90,7 +90,7 @@ describe('buildReport', () => {
     const { provenance } = report();
 
     expect(provenance.reportVersion).toBe(1);
-    expect(provenance.documentVersion).toBe(2);
+    expect(provenance.documentVersion).toBe(3);
     expect(provenance.evaluationResultVersion).toBe(2);
     expect(provenance.ruleSetId).toBe('fixture');
     expect(provenance.ruleSetVersion).toBe('0.0.1');

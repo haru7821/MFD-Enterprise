@@ -4,6 +4,7 @@ import type { EquipmentObject } from '@mfd/object-library';
 
 import { EntityNotFoundError } from './errors';
 import {
+  DEFAULT_PROJECT_SETTINGS,
   DOCUMENT_VERSION,
   type Boundary,
   type Level,
@@ -60,6 +61,7 @@ export function createDocument(options: CreateDocumentOptions): MfdDocument {
     createdAt: options.now,
     updatedAt: options.now,
     ruleSetRef: options.ruleSetRef ?? { id: '', version: '' },
+    settings: { ...DEFAULT_PROJECT_SETTINGS },
     levels: [createLevel(options.levelId ?? 'level-1', options.levelName ?? 'Level 1')],
   };
 

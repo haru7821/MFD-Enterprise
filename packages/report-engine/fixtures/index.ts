@@ -274,7 +274,10 @@ const COLUMN: Boundary = {
  * the column, so the report has a RED to carry. Level 2 has an imported plan and **no
  * calibration**, which is the state the report must never present as ordinary.
  */
-export function populatedDocument(catalog: Catalog = fixtureCatalog()): MfdDocument {
+export function populatedDocument(
+  catalog: Catalog = fixtureCatalog(),
+  renderMode: 'vector' | 'vector_raster' | 'raster' = 'vector',
+): MfdDocument {
   const base = createDocument({
     projectId: 'project-fixture',
     name: '4F Dialysis Unit Refurbishment',
@@ -340,6 +343,7 @@ export function populatedDocument(catalog: Catalog = fixtureCatalog()): MfdDocum
         site: '본관 4층',
         contact: '김민수 시설팀장',
       },
+      settings: { reportRenderMode: renderMode },
       levels: [level4f, level5f],
     },
   };

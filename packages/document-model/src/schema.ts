@@ -81,7 +81,7 @@ const identifierSchema = z.string().min(1);
  * it. Adding it later means either abandoning real project documents or writing the
  * migration you skipped, under pressure, against files you cannot inspect.
  */
-export const DOCUMENT_VERSION = 2;
+export const DOCUMENT_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // Placement
@@ -319,6 +319,32 @@ export const levelSchema = z.strictObject({
   placements: z.array(placementSchema),
 });
 
+/**
+ * How the report draws a level.
+ *
+ * Owner decision, after Sprint 5: the report stays **vector-first**, and the raster underlay
+ * is opt-in rather than embedded by default.
+ *
+ * | Mode | Draws |
+ * | --- | --- |
+ * | `vector` | Traced geometry only. **The default.** |
+ * | `vector_raster` | The scanned drawing beneath the traced geometry |
+ * | `raster` | The scan alone — a debug mode, for checking a trace against the original |
+ *
+ * Why this is a stored project setting rather than a checkbox on the download dialogue: the
+ * mode changes what the document *is* when it reaches a hospital. A report issued as
+ * `vector_raster` and re-issued a month later as `vector` would differ in a way nobody chose,
+ * and neither copy would record which was intended.
+ *
+ * `raster` is labelled debug in the report itself, because a page carrying a scan with no
+ * traced geometry over it shows what was imported rather than what was assessed.
+ */
+export const REPORT_RENDER_MODES = ['vector', 'vector_raster', 'raster'] as const;
+
+export const projectSettingsSchema = z.strictObject({
+  reportRenderMode: z.enum(REPORT_RENDER_MODES),
+});
+
 export const customerSchema = z.strictObject({
   hospital: z.string(),
   site: z.string(),
@@ -346,6 +372,14 @@ export const projectSchema = z.strictObject({
    * when the manual has been revised.
    */
   ruleSetRef: ruleSetRefSchema,
+  /**
+   * Choices that belong to the project rather than to the session.
+   *
+   * Required and complete, not optional: an absent setting and a chosen default look the same
+   * on disk, and a report is not a place for "whatever the application happened to do".
+   * Version 3's migration fills it in for older files.
+   */
+  settings: projectSettingsSchema,
   levels: z.array(levelSchema).min(1, 'a project has at least one level'),
 });
 
@@ -370,6 +404,11 @@ export type ScaleCalibration = z.infer<typeof scaleCalibrationSchema>;
 export type CoordinateMapping = z.infer<typeof coordinateMappingSchema>;
 export type Level = z.infer<typeof levelSchema>;
 export type Customer = z.infer<typeof customerSchema>;
+export type ProjectSettings = z.infer<typeof projectSettingsSchema>;
+export type ReportRenderMode = (typeof REPORT_RENDER_MODES)[number];
+
+/** The default settings a new project gets, and what version 2 files are migrated to. */
+export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = { reportRenderMode: 'vector' };
 export type RuleSetRef = z.infer<typeof ruleSetRefSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type MfdDocument = z.infer<typeof documentSchema>;

@@ -1,4 +1,4 @@
-import { PDFDocument, type PDFPage, rgb } from 'pdf-lib';
+import { PDFDocument, type PDFPage, degrees, rgb } from 'pdf-lib';
 
 import { renderReason } from '@mfd/rule-engine';
 import type { ReasonCode, ReasonParams } from '@mfd/rule-engine';
@@ -69,6 +69,7 @@ interface Context {
   readonly noticeHeight: number;
   readonly primary: 'ko' | 'en';
   readonly secondary: 'ko' | 'en';
+  readonly renderMode: ReportModel['renderMode'];
   cursor: Cursor;
   readonly pages: PDFPage[];
 }
@@ -347,8 +348,24 @@ const SEVERITY_COLOUR = { RED, YELLOW: AMBER, GREEN } as const;
  * flipped because model space grows downward and PDF space grows upward — getting that wrong
  * mirrors the plan, which is why the transform is one function rather than inline arithmetic.
  */
-function drawPlan(context: Context, plan: FloorPlanSection): void {
-  const extent = plan.geometry.extent;
+async function drawPlan(context: Context, plan: FloorPlanSection): Promise<void> {
+  const showRaster = context.renderMode !== 'vector' && plan.raster !== null;
+  const showVector = context.renderMode !== 'raster';
+
+  const geometryExtent = plan.geometry.extent;
+  const raster = plan.raster;
+  // With no traced geometry, the scan's own footprint frames the page — in the millimetres its
+  // calibration gives it, so a raster-only page is still measured rather than merely shown.
+  const extent =
+    geometryExtent ??
+    (showRaster && raster
+      ? {
+          minX: raster.x,
+          minY: raster.y,
+          maxX: raster.x + raster.width,
+          maxY: raster.y + raster.height,
+        }
+      : null);
   if (!extent) return;
 
   const width = contentWidth(context.spec);
@@ -356,7 +373,7 @@ function drawPlan(context: Context, plan: FloorPlanSection): void {
   const height = Math.min(available, width * 0.7);
   if (height < 80) {
     newPage(context);
-    drawPlan(context, plan);
+    await drawPlan(context, plan);
     return;
   }
 
@@ -386,6 +403,36 @@ function drawPlan(context: Context, plan: FloorPlanSection): void {
     }
   };
 
+  // The scan first, so the geometry sits over it. Owner decision: vector-first, and the raster
+  // is opt-in — `vector` mode never embeds it, which is what keeps the default output small and
+  // entirely vector.
+  if (showRaster && raster) {
+    const image = await embedRaster(context, raster.dataUrl);
+    if (image) {
+      const topLeft = project({ x: raster.x, y: raster.y });
+      context.cursor.page.drawImage(image, {
+        x: topLeft.x,
+        y: topLeft.y - raster.height * scale,
+        width: raster.width * scale,
+        height: raster.height * scale,
+        // Dimmed under the geometry so the traced lines stay readable; full strength when the
+        // scan is the only thing on the page.
+        opacity: context.renderMode === 'raster' ? 1 : 0.45,
+        ...(raster.rotationDegrees === 0
+          ? {}
+          : { rotate: degrees(-raster.rotationDegrees) }),
+      });
+    }
+  }
+
+  // No geometry in raster mode. The "this is a debug output" notice is not here: it is a fact
+  // about the whole document, printed at the top where a reader sees it first, and a level with
+  // no scan would otherwise never show it.
+  if (!showVector) {
+    advance(context, height + 6);
+    return;
+  }
+
   for (const room of plan.geometry.rooms) polygon(room.points, PLAN_ROOM, 1.2);
   for (const obstruction of plan.geometry.obstructions) {
     polygon(obstruction.points, PLAN_OBSTRUCTION, 1);
@@ -408,6 +455,33 @@ function drawPlan(context: Context, plan: FloorPlanSection): void {
   }
 
   advance(context, height + 6);
+}
+
+/**
+ * Embed a data-URL image, PNG or JPEG.
+ *
+ * Returns null rather than throwing on an unreadable image, and that is the one place this
+ * renderer is deliberately forgiving: a corrupt underlay must not stop a report whose findings
+ * are all still valid. The drawing page loses its background; nothing else changes. A missing
+ * *glyph* is the opposite case and throws, because it would silently alter what the document
+ * says.
+ */
+async function embedRaster(context: Context, dataUrl: string) {
+  const comma = dataUrl.indexOf(',');
+  if (comma < 0) return null;
+
+  const header = dataUrl.slice(0, comma);
+  const base64 = dataUrl.slice(comma + 1);
+
+  try {
+    if (header.includes('image/png')) return await context.doc.embedPng(base64);
+    if (header.includes('image/jpeg') || header.includes('image/jpg')) {
+      return await context.doc.embedJpg(base64);
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 function datasheetBlocks(context: Context, blocks: readonly DatasheetBlock[]): void {
@@ -497,14 +571,16 @@ export async function renderPdf(
     noticeHeight: noticeSpace(model, fonts, spec),
     primary,
     secondary,
+    renderMode: model.renderMode,
     cursor: { page: first, y: spec.height - MARGINS.top, pageNumber: 1 },
     pages: [first],
   };
 
   drawCover(context, model);
+  drawDebugBanner(context, model);
   drawSummary(context, model);
   drawSchedule(context, model);
-  for (const plan of model.floorPlans) drawFloorPlan(context, plan);
+  for (const plan of model.floorPlans) await drawFloorPlan(context, plan);
   drawValidation(context, model);
   drawChecklist(context, model);
   drawDatasheets(context, model);
@@ -555,6 +631,34 @@ function drawCover(context: Context, model: ReportModel): void {
   keyValue(context, 'field_mfd_version', cover.mfdVersion);
 }
 
+/**
+ * "This is a debug output" — at the top, on page one.
+ *
+ * A fact about the whole document rather than about a drawing page: raster mode omits the
+ * assessed layout everywhere, and a project whose levels have no scan would otherwise carry no
+ * notice at all. First thing after the cover, because a reader who is going to stop reading
+ * stops early.
+ */
+function drawDebugBanner(context: Context, model: ReportModel): void {
+  if (model.renderMode !== 'raster') return;
+
+  advance(context, SECTION_GAP);
+  for (const line of wrap(
+    context.fonts,
+    inlineLabel(context, 'mode_raster_warning'),
+    TYPE.subHeading,
+    contentWidth(context.spec),
+  )) {
+    reserve(context, leading(TYPE.subHeading));
+    draw(context, line, MARGINS.left, TYPE.subHeading, {
+      bold: true,
+      colour: AMBER,
+      context: 'debug banner',
+    });
+    advance(context, leading(TYPE.subHeading));
+  }
+}
+
 function drawSummary(context: Context, model: ReportModel): void {
   sectionHeading(context, 'section_summary');
   const { summary } = model;
@@ -584,6 +688,29 @@ function drawSummary(context: Context, model: ReportModel): void {
     draw(context, line, MARGINS.left + 8, TYPE.body, { colour: MUTED, context: 'grounds' });
     advance(context, leading(TYPE.body));
   }
+
+  // The three evidence counts, always, zero included. A zero is the answer too: omitting the
+  // figure would leave a reader unable to tell "nothing outstanding" from "we did not check".
+  advance(context, 6);
+  reserve(context, leading(TYPE.subHeading));
+  draw(context, inlineLabel(context, 'evidence_heading'), MARGINS.left, TYPE.subHeading, {
+    bold: true,
+    context: 'evidence heading',
+  });
+  advance(context, leading(TYPE.subHeading));
+
+  keyValue(
+    context,
+    'field_missing_references',
+    summary.evidence.missingReferences.toLocaleString('en-US'),
+  );
+  keyValue(
+    context,
+    'field_missing_citations',
+    summary.evidence.missingManufacturerCitations.toLocaleString('en-US'),
+  );
+  keyValue(context, 'field_draft_rules', summary.evidence.draftRuleCount.toLocaleString('en-US'));
+  keyValue(context, 'field_render_mode', inlineLabel(context, `mode_${context.renderMode}` as LabelKey));
 }
 
 function drawSchedule(context: Context, model: ReportModel): void {
@@ -633,7 +760,7 @@ function drawSchedule(context: Context, model: ReportModel): void {
   table(context, columns, rows);
 }
 
-function drawFloorPlan(context: Context, plan: FloorPlanSection): void {
+async function drawFloorPlan(context: Context, plan: FloorPlanSection): Promise<void> {
   sectionHeading(context, 'section_floor_plan');
 
   reserve(context, leading(TYPE.subHeading));
@@ -654,7 +781,7 @@ function drawFloorPlan(context: Context, plan: FloorPlanSection): void {
     }
   }
 
-  drawPlan(context, plan);
+  await drawPlan(context, plan);
 
   if (plan.drawing) {
     keyValue(context, 'field_drawing_file', plan.drawing.sourceFileName);
