@@ -63,9 +63,16 @@ export function sideNormals(object: EquipmentObject): Record<ClearanceSide, Vec2
   return { front, rear: negate(front), left, right: negate(left) };
 }
 
-/** The footprint rectangle in the object's own local millimetres. */
+/**
+ * The footprint rectangle in the object's own local millimetres.
+ *
+ * **The design footprint, not the manufacturer's dimensions.** Everything geometric in
+ * MFD-E measures against the planning area: the canvas draws it, collision tests it, and
+ * clearance measures from its faces. Manufacturer dimensions are reference data that the
+ * report quotes and no engine computes with.
+ */
 export function localFootprintRect(object: EquipmentObject): Rect {
-  const { width, depth } = object.dimensions;
+  const { width, depth } = object.designFootprint;
 
   return object.symbol.origin === 'centre'
     ? rect(-width / 2, -depth / 2, width, depth)

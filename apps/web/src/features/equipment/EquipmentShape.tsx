@@ -57,8 +57,10 @@ export function EquipmentShape({
   const corners = footprintCorners(object, placement.transform);
   const points = toScreenPoints(viewport, corners);
 
-  const widthPx = worldToScreenLength(viewport, object.dimensions.width);
-  const depthPx = worldToScreenLength(viewport, object.dimensions.depth);
+  // The design footprint, which is what is drawn. Manufacturer dimensions describe the
+  // product and are quoted in the report; nothing geometric measures them.
+  const widthPx = worldToScreenLength(viewport, object.designFootprint.width);
+  const depthPx = worldToScreenLength(viewport, object.designFootprint.depth);
   const smallestPx = Math.min(widthPx, depthPx);
 
   const showDetail = smallestPx >= MIN_PIXELS_FOR_DETAIL;
@@ -130,7 +132,7 @@ export function EquipmentShape({
           <Text
             x={anchor.x}
             y={anchor.y - 25}
-            text={`${object.dimensions.width} × ${object.dimensions.depth} mm`}
+            text={`${object.designFootprint.width} × ${object.designFootprint.depth} mm`}
             fontSize={10}
             fontFamily="ui-monospace, monospace"
             fill={EQUIPMENT_THEME.dimension}

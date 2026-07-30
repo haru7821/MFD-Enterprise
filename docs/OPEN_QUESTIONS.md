@@ -13,10 +13,15 @@
 This is the single blocker for the product's purpose. Everything else on this page can
 wait.
 
-**Four sprints in, this is now the only thing standing between the application and a
-usable answer.** The plan imports, the scale calibrates, the rooms trace, the rule engine
-evaluates, and every finding still reads "threshold unknown" — because there is no true
-figure to compare against. The machinery is finished and empty.
+**This is now the only thing standing between the application and a usable answer.** The
+plan imports, the scale calibrates, the rooms trace, the rule engine evaluates, and every
+clearance finding still reads "threshold unknown" — because there is no threshold to
+compare against. The machinery is finished and empty.
+
+Phase 4.5 narrowed it: the AK98's **dimensions** are now real (585 × 620 × 1305 mm, plus an
+800 × 800 mm design footprint). What is still missing is the **service clearances** and the
+**citation** — a document, a revision and a section. Dimensions decide what fits; clearances
+decide whether it may be installed, and only the manual can say.
 
 The rule engine can be *built* without it. It cannot be *seeded* with anything true, and a
 seeded-with-guesses rule engine is worse than none: it produces a confident feasibility
@@ -28,8 +33,10 @@ report a TS engineer might sign.
 | --- | --- |
 | Manual document number and **revision** | A clearance is true "for the AK98 at revision X". Without the revision we cannot say what a report was based on, or what a future revision invalidates. |
 | Section reference for each figure | Specification section 6 requires source information per rule. "Manufacturer Manual" alone does not meet that bar. |
-| Width · Depth · Height · Weight | The 900 × 750 mm currently in the object specification is marked "Example" — a placeholder, not a measurement. |
-| Front · Rear · Left · Right service clearance | The 1200 mm in the rule specification is likewise illustrative. |
+| ~~Width · Depth · Height~~ | **Supplied** — 585 × 620 × 1305 mm, Phase 4.5. Still uncited, so the record stays `draft`. |
+| Weight | Not supplied |
+| Front · Rear · Left · Right service clearance | **The remaining blocker.** The 1200 mm in the rule specification is illustrative. Every clearance finding reads "threshold unknown" until these arrive. |
+| One sentence for `designFootprint.basis` | Why 800 × 800 for a 585 × 620 machine. A report that prints the footprint with no account of it invites a question it cannot answer, and the schema refuses `verified` without it. |
 | Power specification | Voltage, phase, rating |
 | RO water specification | Supply pressure, flow, connection type |
 | Drain specification | Diameter, connection type, height |
@@ -144,3 +151,5 @@ Not blocking; recorded so they are visible and can be corrected.
 | Snapshot undo or command undo? | **Commands with explicit inverses.** A Level embeds its plan image, so snapshots would allocate megabytes per drag frame. | Sprint 4 |
 | Are plan import and calibration undoable? | **No.** Undoing a calibration would silently reinterpret every placement's geometry. Both are explicit acts, repeatable by hand. | Sprint 4 |
 | Polygon geometry — library or internal? | **Internal.** Rooms are concave, so the convex-only separating axis test cannot answer containment; and the tolerance and epsilon policy a clearance verdict rests on should be visible. | Sprint 4 |
+| Is the footprint the machine's size? | **No.** `manufacturerDimensions` is immutable reference data nothing computes with; `designFootprint` is the planning area every engine measures. The footprint must never be written back over the dimensions. | Phase 4.5 |
+| Can a generic planning object have no manufacturer? | **Yes.** `manufacturer` and every manufacturer dimension are nullable. A dialysis bed is a footprint, not a product. | Phase 4.5 |

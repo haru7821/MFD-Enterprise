@@ -110,12 +110,6 @@ async function footprintEdgesPx(
   });
 }
 
-/** Width of the drawn equipment footprint, in CSS pixels. */
-async function footprintWidthPx(page: Page): Promise<number | null> {
-  const edges = await footprintEdgesPx(page);
-  return edges === null ? null : Math.round(edges.right - edges.left);
-}
-
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('canvas');
@@ -369,16 +363,22 @@ test.describe('undo and redo', () => {
     // footprint's origin a few hundred millimetres away from the click.
     await clickAt(page, 0.4, 0.4);
 
-    // A 900 × 750 footprint turned 90° draws 750 wide. Measured from the canvas
-    // rather than from state, because the point is that the drawing turned.
-    const before = await footprintWidthPx(page);
+    // The AK98's design footprint is square (800 × 800), so a quarter turn about the
+    // front-left origin moves it without changing its bounding width. Measure the *left
+    // edge* instead: rotating about that corner sweeps the footprint to the other side
+    // of it, which is unambiguous whether the footprint is square or not.
+    const before = await footprintLeftPx(page);
+    expect(before).not.toBeNull();
+
     await page.keyboard.press(']');
     await expect
-      .poll(async () => footprintWidthPx(page))
-      .not.toBe(before);
+      .poll(async () => Math.abs(((await footprintLeftPx(page)) ?? 0) - (before ?? 0)))
+      .toBeGreaterThan(20);
 
     await page.keyboard.press('ControlOrMeta+z');
-    await expect.poll(async () => footprintWidthPx(page)).toBe(before);
+    await expect
+      .poll(async () => Math.abs(((await footprintLeftPx(page)) ?? 0) - (before ?? 0)))
+      .toBeLessThan(2);
   });
 
   test('undoes a traced room in one step, outline and all', async ({ page }) => {

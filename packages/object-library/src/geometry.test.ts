@@ -24,7 +24,8 @@ function machine(overrides: Record<string, unknown> = {}): EquipmentObject {
       category: 'dialysis_machine',
       version: '0.1.0',
       dataStatus: 'draft',
-      dimensions: { width: 900, depth: 750, height: null, weight: null },
+      manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null },
+      designFootprint: { width: 900, depth: 750, basis: null },
       connections: {
         power: { required: true, port: { x: 100, y: 0 }, specification: null },
         roWater: { required: true, port: null, specification: null },
@@ -52,7 +53,36 @@ const AT_ORIGIN: Transform = {
 };
 
 describe('local footprint', () => {
-  it('spans the catalogue dimensions from a front-left origin', () => {
+  it('uses the design footprint and ignores the manufacturer dimensions', () => {
+    // The fixture is deliberately inconsistent: a 585 × 620 mm machine planned at
+    // 900 × 750. Every geometric answer must come from the planning area, because that
+    // is what a drawing reserves — and because a footprint rounded up to make a layout
+    // work must never overwrite the measurement of the machine that arrives on site.
+    const object = machine();
+    expect(object.manufacturerDimensions.width).toBe(585);
+    expect(object.designFootprint.width).toBe(900);
+
+    expect(localFootprintRect(object).width).toBe(900);
+    expect(localFootprintRect(object).height).toBe(750);
+
+    const bounds = footprintBounds(object, AT_ORIGIN);
+    expect(bounds.width).toBeCloseTo(900, 6);
+    expect(bounds.height).toBeCloseTo(750, 6);
+  });
+
+  it('draws a record that has no manufacturer dimensions at all', () => {
+    // A generic planning object — a bed, a chair — has a footprint and nothing else.
+    // That is the case the split was made for, so it has to be the ordinary path and
+    // not an exception.
+    const bed = machine({
+      manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+      designFootprint: { width: 1_000, depth: 2_100, basis: null },
+    });
+
+    expect(localFootprintRect(bed)).toEqual({ x: 0, y: 0, width: 1_000, height: 2_100 });
+  });
+
+  it('spans the design footprint from a front-left origin', () => {
     expect(localFootprintRect(machine())).toEqual({
       x: 0,
       y: 0,

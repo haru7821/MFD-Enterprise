@@ -13,7 +13,7 @@
 | Where it lives | `packages/object-library/catalog/*.json` | Inside a Project (see [PROJECT_MODEL.md](PROJECT_MODEL.md)) |
 | How many | One per model | Twenty per room |
 | Who edits it | Whoever holds the manufacturer manual | The TS engineer |
-| Carries dimensions | **Yes** | No — it references them |
+| Carries dimensions and footprint | **Yes** | No — it references them |
 
 Twenty AK98 units on a drawing share one set of dimensions. When the installation manual
 is revised, one file changes and all twenty placements follow. If each placement carried
@@ -26,13 +26,14 @@ correct equipment data until someone measures a room that was already built.
 
 ```
 EquipmentObject
-├─ identity          id · category · manufacturer · model · version
-├─ dimension         width · depth · height · weight
-├─ connections       power · roWater · drain (each with a port position)
-├─ serviceClearance  front · rear · left · right
-├─ symbol            how it draws on the canvas
-├─ provenance        manual reference · revision · source · lastUpdated
-└─ dataStatus        draft | verified
+├─ identity                 id · category · manufacturer · model · version
+├─ manufacturerDimensions   width · depth · height · weight        ← reference data
+├─ designFootprint          width · depth · basis                  ← what the engines use
+├─ connections              power · roWater · drain (each with a port position)
+├─ serviceClearance         front · rear · left · right
+├─ symbol                   how it draws on the canvas
+├─ provenance               manual reference · revision · source · lastUpdated
+└─ dataStatus               draft | verified
 ```
 
 ### identity
@@ -41,7 +42,7 @@ EquipmentObject
 | --- | --- | --- |
 | `id` | string | `vantive_ak98` |
 | `category` | EquipmentCategory | `dialysis_machine` |
-| `manufacturer` | string | `Vantive` |
+| `manufacturer` | string \| null | `Vantive`; **null** for a generic planning object |
 | `model` | string | `AK98` |
 | `version` | string | Catalogue record version, bumped whenever a value changes |
 
@@ -51,17 +52,63 @@ produced its numbers.
 **EquipmentCategory** (controlled vocabulary): `dialysis_machine` · `treatment_chair` ·
 `treatment_bed` · `ro_unit` · `water_loop_component` · `sink` · `storage` · `other`
 
-### dimension
+### Manufacturer dimensions and design footprint
+
+These are **two different things**, and separating them is the single most important
+decision in this document.
+
+| | `manufacturerDimensions` | `designFootprint` |
+| --- | --- | --- |
+| What it is | What the product measures | The area a plan reserves for it |
+| Authority | The installation manual (AD-6) | The reviewing organisation's planning standard |
+| Who reads it | The report, and an engineer checking a delivery | **The canvas, placement, collision and auto-layout engines** |
+| May be unknown | Yes — every field nullable | **No.** Width and depth are required |
+| Mutable | **Never.** Reference data | A planning decision, revisable |
+
+#### manufacturerDimensions
 
 | Field | Unit | Notes |
 | --- | --- | --- |
-| `width` | mm | Along the object's local X |
-| `depth` | mm | Along local Y — the footprint depth |
-| `height` | mm | Not drawn in 2D; carried for future use and for the equipment schedule |
-| `weight` | kg | Feeds floor loading questions in a later version |
+| `width` | mm \| null | Along the object's local X |
+| `depth` | mm \| null | Along local Y |
+| `height` | mm \| null | Not drawn in 2D; needed for doorways, lifts and the equipment schedule |
+| `weight` | kg \| null | Feeds floor loading questions in a later version |
+
+**Nothing in the application computes with these.** They are quoted in the report, checked
+against what arrives on site, and used to confirm a design footprint is large enough. They
+are never adjusted to make a layout work.
+
+Width and depth are nullable because a generic planning object — a bed, a chair — has a
+footprint and no product behind it. Forcing a number would mean inventing one.
+
+#### designFootprint
+
+| Field | Unit | Notes |
+| --- | --- | --- |
+| `width` | mm | Required, positive |
+| `depth` | mm | Required, positive |
+| `basis` | string \| null | Why this area, in a sentence |
 
 The footprint is `width × depth`, drawn from the object's local origin at its front-left
 corner unless `symbol.origin` says otherwise.
+
+**Why it is larger than the machine.** A 585 × 620 mm machine is not planned at 585 × 620.
+An installed station needs room for hoses, a chassis wider at the base than the top, a
+footprint that stays valid when the machine is swapped for the next model, and the working
+space an engineer treats as belonging to the machine rather than to the corridor. So the
+planning area is a decision, made once, and it is bigger. The AK98's is 800 × 800.
+
+**Why conflating them was dangerous.** Until this split the catalogue had a single
+`dimensions`, and it was doing both jobs. The failure mode is specific: the moment a
+planner rounds the footprint up to make a layout work, the manufacturer's measurement is
+gone, and the record can no longer be checked against the machine that arrives.
+
+**Why `basis` exists.** A design footprint has no manual to cite. But an unsourced number
+is exactly what the rest of this product refuses, and a report printing "800 × 800" with no
+account of where it came from invites a question it cannot answer. So `basis` is that
+account — and a record **cannot claim `verified` while it is null**, which closes the hole
+the split would otherwise open: sourced manufacturer figures carrying an unaccounted-for
+planning area into GREEN (AD-6a).
 
 ### connections
 
@@ -124,25 +171,31 @@ How the object draws. Kept as data so a new machine needs no code.
 
 1. A record marked `verified` **must** carry `sourceDocument`, `revision` and `section`.
    Missing any of them fails the load with an error naming the file and field.
-2. A record marked `draft` loads normally and is marked in the UI.
-3. **Any validation result computed from `draft` data is capped at YELLOW.** It can never
+2. A record marked `verified` **must** also carry `designFootprint.basis`. The footprint is
+   what every geometric check measures, so a sourced manufacturer figure must not be able
+   to carry an unaccounted-for planning area into GREEN.
+3. A record marked `draft` loads normally and is marked in the UI.
+4. **Any validation result computed from `draft` data is capped at YELLOW.** It can never
    be GREEN.
 
-Rule 3 is the important one. The project currently holds example figures — 900 × 750 mm,
-1200 mm clearance — that came from a specification as illustrations, not measurements.
-The failure this product exists to prevent is a plausible number quietly becoming an
-authoritative one, and a TS engineer signing a feasibility report built on it. That has to
-be stopped by the engine rather than by whoever happens to remember.
+Rule 4 is the important one. The AK98's manufacturer dimensions are now real figures
+supplied by the product owner — 585 × 620 × 1305 mm — but **no document, revision or
+section has been supplied with them**, and its service clearances are still null. So the
+record stays `draft`: these are the right numbers with no citation yet, and that is exactly
+the distinction `dataStatus` exists to hold. The failure this product exists to prevent is
+a plausible number quietly becoming an authoritative one, and a TS engineer signing a
+feasibility report built on it.
 
-When the real manual arrives, `dataStatus` flips to `verified`, provenance is filled in,
-and GREEN becomes reachable. Nothing else changes.
+When the manual arrives, provenance and clearances are filled in, `basis` is written,
+`dataStatus` flips to `verified`, and GREEN becomes reachable. No code changes.
 
 ---
 
 ## Example record
 
-Illustrative only. **Values are placeholders from the object specification, not measured
-data** — hence `dataStatus: "draft"` and null provenance.
+The shipped AK98 record. Manufacturer dimensions and design footprint are the owner's
+figures; **provenance and clearances are still null**, which is why `dataStatus` is
+`draft`.
 
 ```json
 {
@@ -150,9 +203,10 @@ data** — hence `dataStatus: "draft"` and null provenance.
   "category": "dialysis_machine",
   "manufacturer": "Vantive",
   "model": "AK98",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "dataStatus": "draft",
-  "dimension": { "width": 900, "depth": 750, "height": null, "weight": null },
+  "manufacturerDimensions": { "width": 585, "depth": 620, "height": 1305, "weight": null },
+  "designFootprint": { "width": 800, "depth": 800, "basis": null },
   "connections": {
     "power":   { "required": true, "port": null, "specification": {} },
     "roWater": { "required": true, "port": null, "specification": {} },
@@ -183,6 +237,7 @@ their absence is a decision rather than an omission; not implemented before Vers
 | Element | Sprint |
 | --- | --- |
 | Schema, catalogue loader, validation, AK98 record | 2 |
-| Symbol rendering, dimensions, ports on canvas | 2 |
+| Symbol rendering, footprint, ports on canvas | 2 |
+| Manufacturer / design footprint split | 4.5 |
 | Clearance evaluation against these values | 3 |
 | Equipment schedule in the report | 5 |

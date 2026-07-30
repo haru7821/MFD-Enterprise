@@ -97,7 +97,7 @@ interface ReportModel {
 | 2 | Drawing information | `LevelSection.drawing` | `PlanImage` — file name, format, page, pixel size, imported at |
 | 3 | Calibration information | `LevelSection.calibration` | `ScaleCalibration` — method, picked points, typed distance or stated ratio, dpi, timestamp |
 | 4 | Coordinate mapping | `LevelSection.mapping` | mm/px, origin pixel, rotation, **and whether it exists at all** |
-| 5 | Equipment list (BOM) | `equipment` | Catalogue records, grouped by model, counted across levels |
+| 5 | Equipment list (BOM) | `equipment` | Catalogue records, grouped by model, counted across levels — **both** manufacturer dimensions and design footprint |
 | 6 | Placement table | `LevelSection.placements` | One row per machine: label, model, position, rotation, room |
 | 7 | Rule evaluation | `LevelSection.findings` | `EvaluationReport`, grouped and ordered |
 | 8 | Threshold source | inside every finding row | `appliedValue`, `thresholdOrigin`, `source.{document, revision, section}` |
@@ -120,6 +120,23 @@ that omits a floor without saying so.
 equipment wants one number per model for the whole job. An engineer installing on the third
 floor wants the third floor's machines. These are two different tables, and merging them
 serves neither.
+
+**The BOM carries both sizes, in separate columns, labelled.**
+
+| Column | For the reader who is |
+| --- | --- |
+| Manufacturer W × D × H | Checking a delivery, or a doorway, or a lift |
+| Design footprint W × D | Reading the drawing, and asking what area was reserved |
+| Footprint basis | Asking *why* that area — the one sentence behind it |
+
+They are different numbers and they answer different questions: an AK98 is a 585 × 620 ×
+1305 mm machine planned at 800 × 800 mm. A report that printed one figure without saying
+which would recreate the confusion the split was made to end — and a hospital measuring a
+doorway against a planning footprint would get the wrong answer.
+
+A record with **no** manufacturer dimensions — a generic dialysis bed, planned at
+1,000 × 2,100 mm — leaves that column empty rather than repeating the footprint into it.
+An empty cell says "this is not a product"; a duplicated figure says something false.
 
 ---
 
@@ -285,8 +302,8 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | `build.test.ts` | Every section populated from a fixture document; JSON round-trip; same bytes twice |
 | `conclusion.test.ts` | All four verdicts, including that an all-YELLOW-for-want-of-a-threshold report is `inconclusive` and **not** `review_required` |
 | `checklist.test.ts` | One item per RED, per unresolved YELLOW, per uncalibrated level, per draft record in use; every item traceable |
-| `bom.test.ts` | Grouping by model across levels; catalogue versions carried; a placement pointing at a missing record is surfaced, not dropped |
-| `drawing.test.ts` | A 900 mm machine is 900 mm at the page scale — the print-side twin of the browser dimension test |
+| `bom.test.ts` | Grouping by model across levels; catalogue versions carried; a placement pointing at a missing record is surfaced, not dropped; **manufacturer dimensions and design footprint appear as separate values, and a record with no manufacturer dimensions leaves them empty rather than echoing the footprint** |
+| `drawing.test.ts` | An 800 mm **design footprint** is 800 mm at the page scale — the print-side twin of the browser dimension test. Asserted against the footprint, never the manufacturer dimensions, because the drawing shows the area reserved. |
 | `layout.test.ts` | A 200-row table paginates; headers repeat; nothing is silently truncated |
 | `emit.test.ts` | Produces a parseable PDF with the expected page count. Deliberately shallow — asserting on PDF internals tests the library. |
 | `provenance.test.ts` | Rule set version, catalogue versions and both contract versions present |
@@ -301,6 +318,7 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | R4 | Generating downloads a PDF whose first bytes are `%PDF` |
 | R5 | A two-level project produces sections for both |
 | R6 | An uncalibrated level is named as such in the conclusion |
+| R7 | The BOM shows 585 × 620 × 1305 mm and 800 × 800 mm as distinct values for the AK98, and leaves the manufacturer column empty for the bed |
 
 ### The verification that matters most
 

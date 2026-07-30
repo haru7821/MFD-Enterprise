@@ -249,6 +249,36 @@ Nowhere that matters yet. All five frame targets are met for the first time sinc
 baseline was taken. The debouncing and row memoisation noted as available in Sprint 3.5
 were not done, and are still not needed.
 
+## Results — Phase 4.5
+
+No new geometry, and the numbers say so. The manufacturer/design footprint split changed
+which field `localFootprintRect` reads and nothing about what it computes.
+
+| Measure, 50 objects | Sprint 4 | Phase 4.5 |
+| --- | --- | --- |
+| Findings | 300 | 300 |
+| `evaluate()` | ~5.8 ms | **~3.4 ms** |
+| Boundary collision pass | 0.37 ms | 0.27 ms |
+
+**Do not read that as a speedup from Phase 4.5.** The Sprint 4 figures were measured in a
+container that was also running the browser suite and a preview server; these were measured
+on a quiet one. Same code path, different neighbours — which is the more useful finding: on
+this class of machine the engine bench carries roughly **±60 % of noise from background
+load**, so a single run is evidence of very little.
+
+Two consequences worth acting on:
+
+- Bench figures quoted anywhere should say what else was running. The Sprint 4 numbers were
+  honest and are not comparable to these.
+- A regression small enough to matter — say 20 % — is **not detectable** by this bench as
+  run today. Catching that would need several runs on an idle machine and a comparison
+  against a stored baseline, which is a tool this project does not have and does not yet
+  need. Said plainly so nobody trusts a single number to prove a change was free.
+
+The one figure that is robust either way: the boundary pass stays **under a millisecond**
+and grows linearly, because each machine is tested against the boundaries rather than
+against every other machine.
+
 ## Headroom to check next
 
 Fifty is the specification's floor, not a realistic ceiling — a large dialysis unit runs to

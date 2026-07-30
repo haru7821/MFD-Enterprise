@@ -1,8 +1,21 @@
+import type { EquipmentObject } from '@mfd/object-library';
 import { catalog } from '@mfd/object-library/catalog';
 
 import { useEditor } from '@/editor/useEditor';
 
 import { DraftDataBadge } from './DraftDataBadge';
+
+/**
+ * The manufacturer's own dimensions, or null when the record has none.
+ *
+ * Height is included when it is known, because an engineer checking a machine through a
+ * doorway needs it and the plan cannot show it.
+ */
+function manufacturerSize(object: EquipmentObject): string | null {
+  const { width, depth, height } = object.manufacturerDimensions;
+  if (width === null || depth === null) return null;
+  return height === null ? `${width} × ${depth} mm` : `${width} × ${depth} × ${height} mm`;
+}
 
 /**
  * The equipment catalogue, as a panel.
@@ -52,11 +65,35 @@ export function EquipmentPalette() {
                   {object.dataStatus === 'draft' && <DraftDataBadge />}
                 </div>
                 <div className="mt-0.5 text-[11px] text-ink-muted">
-                  {object.manufacturer}
+                  {/* Null for a generic planning object, which is not a product. */}
+                  {object.manufacturer ?? 'Generic planning object'}
                 </div>
-                <div className="mt-1 font-mono text-[11px] text-ink-faint tabular-nums">
-                  {object.dimensions.width} × {object.dimensions.depth} mm
+                {/*
+                  Both figures, labelled, because they answer different questions: the
+                  footprint is what the drawing reserves, the manufacturer dimensions are
+                  what arrives on site. Showing one without saying which is how they came
+                  to be confused in the first place.
+                */}
+                <div className="mt-1 font-mono text-[11px] tabular-nums">
+                  <span className="text-ink-faint">plan </span>
+                  <span
+                    className="text-ink-muted"
+                    data-testid={`footprint-${object.id}`}
+                  >
+                    {object.designFootprint.width} × {object.designFootprint.depth} mm
+                  </span>
                 </div>
+                {manufacturerSize(object) && (
+                  <div className="font-mono text-[11px] tabular-nums">
+                    <span className="text-ink-faint">unit </span>
+                    <span
+                      className="text-ink-faint"
+                      data-testid={`manufacturer-size-${object.id}`}
+                    >
+                      {manufacturerSize(object)}
+                    </span>
+                  </div>
+                )}
               </button>
             </li>
           );
@@ -70,7 +107,8 @@ export function EquipmentPalette() {
               ? '1 object uses placeholder figures.'
               : `${catalog.draftObjects.length} objects use placeholder figures.`}
           </span>{' '}
-          Real dimensions and clearances are pending the installation manual.
+          Service clearances, and the reason behind each planning footprint, are pending the
+          installation manual.
         </footer>
       )}
     </section>

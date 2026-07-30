@@ -10,8 +10,19 @@ import { type Page, expect, test } from '@playwright/test';
  * Method and its two traps are documented in docs/testing/PLAYWRIGHT_TEST_PLAN.md.
  */
 
-const CATALOGUE_WIDTH_MM = 900;
-const CATALOGUE_DEPTH_MM = 750;
+/**
+ * The AK98's **design footprint** — the planning area, and the only size anything
+ * geometric measures.
+ *
+ * Its manufacturer dimensions are 585 × 620 × 1305 mm, deliberately different. That
+ * separation is the point: a drawing reserves the planning area, and confusing the two is
+ * how a footprint rounded up to make a layout work erases the measurement of the machine
+ * that arrives on site.
+ */
+const FOOTPRINT_WIDTH_MM = 800;
+const FOOTPRINT_DEPTH_MM = 800;
+
+const MANUFACTURER_SIZE = '585 × 620 × 1305 mm';
 
 /**
  * Measure the drawn footprint from canvas pixels.
@@ -87,7 +98,55 @@ test('lists the catalogue with figures read from the JSON', async ({ page }) => 
 
   await expect(item).toContainText('AK98');
   await expect(item).toContainText('Vantive');
-  await expect(item).toContainText(`${CATALOGUE_WIDTH_MM} × ${CATALOGUE_DEPTH_MM} mm`);
+  // Both figures, labelled. The palette shows the plan footprint and the unit size,
+  // because they answer different questions and showing one unlabelled is how they came
+  // to be confused.
+  await expect(page.getByTestId('footprint-vantive_ak98')).toHaveText(
+    `${FOOTPRINT_WIDTH_MM} × ${FOOTPRINT_DEPTH_MM} mm`,
+  );
+  await expect(page.getByTestId('manufacturer-size-vantive_ak98')).toHaveText(
+    MANUFACTURER_SIZE,
+  );
+});
+
+test('lists a generic planning object with no manufacturer', async ({ page }) => {
+  // The dialysis bed has a design footprint and no manufacturer dimensions at all —
+  // the case the manufacturer/design split exists for.
+  const item = page.getByTestId('catalog-item-dialysis_bed');
+
+  await expect(item).toContainText('Dialysis Bed');
+  await expect(item).toContainText('Generic planning object');
+  await expect(page.getByTestId('footprint-dialysis_bed')).toHaveText('1000 × 2100 mm');
+  // No unit size row, because there is no unit size — not a blank one.
+  await expect(page.getByTestId('manufacturer-size-dialysis_bed')).toHaveCount(0);
+});
+
+test('draws the bed at its design footprint, not the machine\'s', async ({ page }) => {
+  await page.getByTestId('catalog-item-dialysis_bed').click();
+  const box = await page.locator('div[role="application"]').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+  await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.25);
+  await page.keyboard.press('Escape');
+
+  const zoom = await zoomPercent(page);
+  const measured = await measureFootprint(page);
+  expect(measured).not.toBeNull();
+
+  // 1000 × 2100 mm. A bed is not square, so this also proves width and depth are not
+  // being read from the same field.
+  //
+  // Same pixel budget as the machine's dimension test above: what the scan loses is the
+  // anti-aliased fill boundary, which is a constant per edge and not a fraction of the
+  // object.
+  const PIXEL_BUDGET = 6;
+  expect(Math.abs((measured?.widthPx ?? 0) - 1_000 * (zoom / 100))).toBeLessThanOrEqual(
+    PIXEL_BUDGET,
+  );
+  expect(Math.abs((measured?.heightPx ?? 0) - 2_100 * (zoom / 100))).toBeLessThanOrEqual(
+    PIXEL_BUDGET,
+  );
+  // And the two are different, which is the point: a bed is not square.
+  expect((measured?.heightPx ?? 0) / (measured?.widthPx ?? 1)).toBeCloseTo(2.1, 1);
 });
 
 test('marks placeholder data as draft', async ({ page }) => {
@@ -128,8 +187,8 @@ test('draws the machine at its catalogue size, at every zoom', async ({ page }) 
     if (!measured) return;
 
     // 100 % zoom is one screen pixel per millimetre.
-    const expectedWidthPx = CATALOGUE_WIDTH_MM * (zoom / 100);
-    const expectedDepthPx = CATALOGUE_DEPTH_MM * (zoom / 100);
+    const expectedWidthPx = FOOTPRINT_WIDTH_MM * (zoom / 100);
+    const expectedDepthPx = FOOTPRINT_DEPTH_MM * (zoom / 100);
 
     // Judged as a pixel budget rather than a percentage. What the measurement
     // loses is fixed and scale-independent: the anti-aliased fill boundary, plus
@@ -169,8 +228,8 @@ test('moves a placed machine without changing its size', async ({ page }) => {
   await page.keyboard.press('v');
   const zoom = await zoomPercent(page);
   const centre = {
-    x: placeAt.x + (CATALOGUE_WIDTH_MM / 2) * (zoom / 100),
-    y: placeAt.y + (CATALOGUE_DEPTH_MM / 2) * (zoom / 100),
+    x: placeAt.x + (FOOTPRINT_WIDTH_MM / 2) * (zoom / 100),
+    y: placeAt.y + (FOOTPRINT_DEPTH_MM / 2) * (zoom / 100),
   };
 
   await page.mouse.move(centre.x, centre.y);

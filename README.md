@@ -75,6 +75,11 @@ Underneath:
 - **No engineering value is written in code.** Search the rule engine for a millimetre
   figure and you will not find one — every number comes from a rule file or an equipment
   record, and every finding says which.
+- **Manufacturer dimensions and planning footprint are separate.** The AK98 is a
+  585 × 620 × 1305 mm machine planned at 800 × 800 mm. The engines measure the footprint;
+  the manufacturer's figures are immutable reference data that nothing computes with and
+  the report quotes. Rounding a footprint up to make a layout work can no longer erase the
+  measurement of the machine that arrives on site.
 - **Nothing provisional can be signed off.** A pass computed from placeholder data reports
   YELLOW, never GREEN. A *violation* is never softened for the same reason in reverse:
   poor data must not hide problems.

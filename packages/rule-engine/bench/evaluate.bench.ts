@@ -39,7 +39,8 @@ function equipmentRecord(): Record<string, unknown> {
     category: 'dialysis_machine',
     version: '0.1.0',
     dataStatus: 'draft',
-    dimensions: { width: 900, depth: 750, height: null, weight: null },
+    manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+    designFootprint: { width: 900, depth: 750, basis: 'Bench planning allowance' },
     connections: {
       power: { required: true, port: null, specification: null },
       roWater: { required: true, port: null, specification: null },

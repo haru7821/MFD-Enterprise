@@ -12,7 +12,8 @@ function record(overrides: Record<string, unknown> = {}): Record<string, unknown
     category: 'dialysis_machine',
     version: '0.1.0',
     dataStatus: 'draft',
-    dimensions: { width: 800, depth: 700, height: null, weight: null },
+    manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+    designFootprint: { width: 800, depth: 700, basis: null },
     connections: {
       power: { required: true, port: null, specification: null },
       roWater: { required: true, port: null, specification: null },
@@ -81,6 +82,7 @@ describe('createCatalog', () => {
       {
         fileName: 'b.json',
         raw: record({
+          designFootprint: { width: 800, depth: 700, basis: 'Fixture allowance' },
           id: 'verified_machine',
           dataStatus: 'verified',
           source: {
@@ -122,8 +124,10 @@ describe('the shipped catalogue', () => {
     const ak98 = catalog.require('vantive_ak98');
 
     // Everything not yet taken from a manual must be null, not a plausible number.
-    expect(ak98.dimensions.height).toBeNull();
-    expect(ak98.dimensions.weight).toBeNull();
+    expect(ak98.manufacturerDimensions.weight).toBeNull();
+    // The design footprint's basis is the one thing that stops a sourced manufacturer
+    // figure carrying an unaccounted-for planning area into GREEN.
+    expect(ak98.designFootprint.basis).toBeNull();
     expect(ak98.serviceClearance).toEqual({
       front: null,
       rear: null,

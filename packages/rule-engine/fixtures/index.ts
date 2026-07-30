@@ -60,11 +60,13 @@ export function fixtureEquipmentRecord(
     category: 'dialysis_machine',
     version: '0.1.0',
     dataStatus: options.dataStatus ?? 'draft',
-    dimensions: {
+    manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
+    // The design footprint is what every geometric check measures, so it is the one the
+    // fixtures set. Manufacturer dimensions are reference data no evaluator reads.
+    designFootprint: {
       width: options.width ?? 900,
       depth: options.depth ?? 750,
-      height: null,
-      weight: null,
+      basis: verified ? 'Fixture planning allowance' : null,
     },
     connections: {
       power: { required: true, port: null, specification: null },

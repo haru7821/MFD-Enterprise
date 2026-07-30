@@ -64,7 +64,7 @@ test('never reports GREEN while the data is provisional', async ({ page }) => {
 
 test('raises RED when two machines overlap', async ({ page }) => {
   await page.getByTestId('catalog-item-vantive_ak98').click();
-  // A second machine well inside the first: the footprint is 900 mm wide and the
+  // A second machine well inside the first: the footprint is 800 mm wide and the
   // default zoom is 7 %, so ~63 px apart is a deep overlap.
   await placeAt(page, 0.35, 0.3);
   await placeAt(page, 0.37, 0.32);

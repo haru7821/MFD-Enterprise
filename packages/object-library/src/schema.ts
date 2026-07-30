@@ -14,7 +14,7 @@ import { z } from 'zod';
  *    That is why nothing here is `.optional()` — only `.nullable()`.
  *
  * 2. **Unknown keys are rejected** (`strictObject`). A record with `dimension`
- *    instead of `dimensions` fails loudly rather than silently losing its footprint.
+ *    instead of `designFootprint` fails loudly rather than silently losing its footprint.
  */
 
 const finiteNumber = z.number().refine(Number.isFinite, 'must be a finite number');
@@ -52,18 +52,58 @@ export const CONNECTION_KINDS = ['power', 'roWater', 'drain'] as const;
 export const CLEARANCE_SIDES = ['front', 'rear', 'left', 'right'] as const;
 
 /**
- * Physical dimensions.
+ * What the manufacturer says the machine measures.
  *
- * `width` and `depth` are required and non-null: an object with no footprint cannot
- * be drawn or checked against anything. Height and weight may be unknown — nothing
- * in the 2D workflow depends on them yet.
+ * **Immutable reference data.** These are the physical dimensions of the product, and
+ * nothing in the application computes with them: they are quoted in the report, checked
+ * against a delivery, and used to verify that a design footprint is large enough. They
+ * are never adjusted to make a layout work.
+ *
+ * Every field is nullable, including width and depth. A generic planning object — a
+ * dialysis bed, a chair — has a design footprint and no manufacturer at all, and forcing
+ * a number here would mean inventing one.
  */
-export const dimensionsSchema = z.strictObject({
-  width: millimetres,
-  depth: millimetres,
+export const manufacturerDimensionsSchema = z.strictObject({
+  width: millimetres.nullable(),
+  depth: millimetres.nullable(),
   height: millimetres.nullable(),
   /** Kilograms. Feeds floor loading questions in a later version. */
   weight: millimetres.nullable(),
+});
+
+/**
+ * The area the object occupies in a plan.
+ *
+ * **This is what the CAD engine uses** — the canvas, placement, collision detection and,
+ * when it arrives, auto-layout. Required and non-null, because an object with no
+ * footprint cannot be drawn or checked against anything.
+ *
+ * ## Why this is not the manufacturer's width and depth
+ *
+ * A 585 × 620 mm machine is not planned at 585 × 620. An installed station needs room for
+ * hoses, a chassis that is wider at the base than the top, a footprint that stays valid
+ * when the machine is swapped for the next model, and the working space an engineer treats
+ * as belonging to the machine rather than to the corridor. So the planning area is a
+ * decision, made once, and it is larger.
+ *
+ * Conflating the two — which this catalogue did until now, with a single `dimensions` —
+ * has a specific failure mode: the moment a planner rounds the footprint up to make a
+ * layout work, the manufacturer's measurement is gone, and the record can no longer be
+ * checked against the machine that arrives on site.
+ *
+ * ## Why `basis` exists
+ *
+ * A design footprint has no manual to cite; it is the reviewing organisation's planning
+ * standard. But an unsourced number is exactly what the rest of this product refuses, and
+ * a report that prints "800 × 800" with no account of where it came from invites a
+ * question it cannot answer. `basis` is that account, in one sentence. Null until someone
+ * writes it — and a record cannot claim `verified` while it is null.
+ */
+export const designFootprintSchema = z.strictObject({
+  width: millimetres,
+  depth: millimetres,
+  /** Why this area, in a sentence an engineer can read. Null when not yet recorded. */
+  basis: z.string().min(1).nullable(),
 });
 
 export const connectionSchema = z.strictObject({
@@ -131,13 +171,19 @@ export const equipmentObjectSchema = z
     id: z
       .string()
       .regex(/^[a-z0-9]+(_[a-z0-9]+)*$/, 'must be lower_snake_case'),
-    manufacturer: z.string().min(1),
+    /**
+     * Null for a generic planning object. A dialysis bed traced as a 1,000 × 2,100 mm
+     * footprint is not a product and has no manufacturer; naming one would be a fiction
+     * a report would then repeat.
+     */
+    manufacturer: z.string().min(1).nullable(),
     model: z.string().min(1),
     category: z.enum(EQUIPMENT_CATEGORIES),
     /** Catalogue record version, bumped whenever a value changes. */
     version: z.string().regex(/^\d+\.\d+\.\d+$/, 'must be semver (e.g. 0.1.0)'),
     dataStatus: z.enum(DATA_STATUSES),
-    dimensions: dimensionsSchema,
+    manufacturerDimensions: manufacturerDimensionsSchema,
+    designFootprint: designFootprintSchema,
     connections: connectionsSchema,
     serviceClearance: serviceClearanceSchema,
     source: sourceSchema,
@@ -157,10 +203,24 @@ export const equipmentObjectSchema = z
         });
       }
     }
+
+    // The design footprint is what every geometric check actually uses, so a record
+    // whose manufacturer figures are sourced but whose footprint is not would let an
+    // unaccounted-for number produce GREEN. That is the hole the manufacturer/design
+    // split opens, and this is what closes it (AD-6a).
+    if (object.designFootprint.basis === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['designFootprint', 'basis'],
+        message:
+          'dataStatus "verified" requires designFootprint.basis; the footprint is what every clearance and collision check measures, so it needs an account of where it came from',
+      });
+    }
   });
 
 export type Vec2Data = z.infer<typeof vec2Schema>;
-export type Dimensions = z.infer<typeof dimensionsSchema>;
+export type ManufacturerDimensions = z.infer<typeof manufacturerDimensionsSchema>;
+export type DesignFootprint = z.infer<typeof designFootprintSchema>;
 export type Connection = z.infer<typeof connectionSchema>;
 export type Connections = z.infer<typeof connectionsSchema>;
 export type ServiceClearance = z.infer<typeof serviceClearanceSchema>;

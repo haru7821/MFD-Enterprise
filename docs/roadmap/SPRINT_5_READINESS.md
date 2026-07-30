@@ -94,7 +94,7 @@ Full figures in [../testing/PERFORMANCE_TEST_PLAN.md](../testing/PERFORMANCE_TES
 | Measure, 50 objects | Sprint 3.5 | Sprint 4 | |
 | --- | --- | --- | --- |
 | Findings | 250 | 300 | ✅ one per machine from the new boundary rule |
-| `evaluate()` | 4.54 ms | ~5.8 ms | ✅ the added work is the boundary pass |
+| `evaluate()` | 4.54 ms | ~5.8 ms | ✅ the added work is the boundary pass. Re-measured at ~3.4 ms on an idle container — see the note in the performance plan; these figures carry ±60 % of background-load noise |
 | Boundary collision pass alone | — | **0.37 ms** | ✅ |
 | Panning (p95) | 16.8 ms | 17.3 ms | ✅ |
 | Dragging one (p95) | 17.2 ms | 18.5 ms | ✅ |

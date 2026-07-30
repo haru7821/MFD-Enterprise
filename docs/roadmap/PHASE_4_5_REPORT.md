@@ -6,8 +6,9 @@
 
 ## Verdict
 
-**Complete.** All four items are delivered, tested and documented. 390 unit tests and 62
-browser specs pass; typecheck, lint and production build are clean.
+**Complete.** All four items are delivered, tested and documented, plus a fifth change the
+owner added afterwards: separating manufacturer dimensions from the design footprint.
+394 unit tests and 64 browser specs pass; typecheck, lint and production build are clean.
 
 Phase 4.5 was described as finishing the interface, and most of it was. But building the
 gestures turned up **five defects and one incomplete model decision** that the model-level
@@ -190,6 +191,77 @@ first needed.
 
 ---
 
+## 5. Manufacturer dimensions separated from design footprint
+
+Owner decision, taken after the four scope items were delivered.
+
+### The change
+
+| | `manufacturerDimensions` | `designFootprint` |
+| --- | --- | --- |
+| What | What the product measures | The area a plan reserves |
+| Authority | The installation manual (AD-6) | The reviewing organisation's planning standard |
+| Read by | The report only | **Canvas, placement, collision, and auto-layout when it exists** |
+| Nullable | Every field | No — width and depth required |
+| Mutable | **Never** | A revisable planning decision |
+
+| Object | Manufacturer | Design footprint |
+| --- | --- | --- |
+| Vantive AK98 | 585 × 620 × 1305 mm | 800 × 800 mm |
+| Dialysis Bed | — none | 1,000 × 2,100 mm |
+
+`localFootprintRect` — the single function every geometric path goes through — now reads
+`designFootprint`. Nothing else needed changing, which is the payoff of having had one
+place where a footprint became geometry.
+
+### What this fixed that was already broken
+
+The catalogue had a single `dimensions`, and it was doing both jobs. Its value was
+900 × 750 mm, taken from the object specification where it is marked **"Example"** — a
+placeholder standing in as both the product's size and the planning area.
+
+The failure mode is specific and quiet: the first time a planner rounds a footprint up to
+make a layout work, the manufacturer's measurement is gone, and the record can no longer be
+checked against the machine that arrives on site. Nothing would have flagged it.
+
+### Three things this forced
+
+**`manufacturer` became nullable.** A dialysis bed planned at 1,000 × 2,100 mm is a
+footprint, not a product. Forcing a string would have meant inventing a manufacturer that a
+report would then repeat as fact.
+
+**`designFootprint.basis` was added** — one nullable sentence saying why this area. Not in
+the owner's list, and I added it because a report printing "800 × 800" with no account of
+where it came from invites a question it cannot answer, and an unsourced number is exactly
+what the rest of this product refuses.
+
+**`verified` now requires `basis`.** This closes the hole the split would otherwise open: a
+record whose *manufacturer* figures are sourced but whose *planning* area is not could
+carry an unaccounted-for footprint into GREEN — and the footprint is what every clearance
+and collision check actually measures (AD-6a).
+
+### The AK98 record is still `draft`, deliberately
+
+The dimensions are now real. The **citation is not**: no document, no revision, no section
+— and the service clearances are still null. `verified` means citable, not correct, so the
+record stays `draft` and nothing computed from it can reach GREEN.
+
+`source.type` moved from `estimate` to `datasheet`, which describes owner-supplied
+manufacturer figures better than "estimate" did without claiming a manual has been read.
+Flagged as an open question in the AK98 spec addendum.
+
+### Verified by breaking it
+
+`localFootprintRect` was temporarily pointed at `manufacturerDimensions`: **10 of 18
+geometry tests failed**, including the two written specifically for the split. The browser
+dimension test independently pins it — the AK98 draws 800 × 800 on screen at every zoom,
+and 800 is not 585.
+
+The bed's dimension spec is the complementary case: 1,000 × 2,100 is not square, so it also
+proves width and depth are not being read from the same field.
+
+---
+
 ## Defects found and fixed
 
 Six, five of them only reachable through a gesture:
@@ -238,8 +310,8 @@ build actually changed.
 
 | Gate | Result |
 | --- | --- |
-| Unit tests | **390** (was 362) |
-| Browser specs | **62** (was 40) |
+| Unit tests | **394** (was 362) |
+| Browser specs | **64** (was 40) |
 | Typecheck | Clean, strict, six packages |
 | Lint | Clean |
 | Production build | Clean |
@@ -255,7 +327,8 @@ New tests by area:
 | Levels | 5 | 6 |
 | v1 → v2 migration | 6 | — |
 | Console-clean load | — | 1 |
-| **Total** | **28** | **22** |
+| Manufacturer / design footprint split | 4 | 2 |
+| **Total** | **32** | **24** |
 
 ## Deliberately not done
 

@@ -17,7 +17,8 @@ function validRecord(): Record<string, unknown> {
     category: 'dialysis_machine',
     version: '0.1.0',
     dataStatus: 'draft',
-    dimensions: { width: 900, depth: 750, height: null, weight: null },
+    manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null },
+      designFootprint: { width: 900, depth: 750, basis: null },
     connections: {
       power: { required: true, port: null, specification: null },
       roWater: { required: true, port: null, specification: null },
@@ -57,7 +58,8 @@ describe('a valid record', () => {
     const object = parse(validRecord());
 
     expect(object.id).toBe('vantive_ak98');
-    expect(object.dimensions.width).toBe(900);
+    expect(object.designFootprint.width).toBe(900);
+    expect(object.manufacturerDimensions.width).toBe(585);
     expect(object.dataStatus).toBe('draft');
   });
 });
@@ -70,7 +72,8 @@ describe('missing fields are rejected', () => {
     'category',
     'version',
     'dataStatus',
-    'dimensions',
+    'manufacturerDimensions',
+  'designFootprint',
     'connections',
     'serviceClearance',
     'source',
@@ -84,11 +87,11 @@ describe('missing fields are rejected', () => {
 
   it('rejects a nested field that is omitted rather than set to null', () => {
     const record = validRecord();
-    delete (record['dimensions'] as Record<string, unknown>)['height'];
+    delete (record['manufacturerDimensions'] as Record<string, unknown>)['height'];
 
     // The whole point of nullable-but-required: forgetting a field must not look
     // the same as recording that its value is unknown.
-    expect(issuePathsOf(record)).toContain('dimensions.height');
+    expect(issuePathsOf(record)).toContain('manufacturerDimensions.height');
   });
 
   it('rejects a missing clearance side', () => {
@@ -102,25 +105,25 @@ describe('missing fields are rejected', () => {
 describe('invalid types are rejected', () => {
   it('rejects a string where a length is expected', () => {
     const record = validRecord();
-    (record['dimensions'] as Record<string, unknown>)['width'] = '900';
+    (record['designFootprint'] as Record<string, unknown>)['width'] = '900';
 
-    expect(issuePathsOf(record)).toContain('dimensions.width');
+    expect(issuePathsOf(record)).toContain('designFootprint.width');
   });
 
   it('rejects a zero or negative footprint', () => {
     for (const bad of [0, -900]) {
       const record = validRecord();
-      (record['dimensions'] as Record<string, unknown>)['width'] = bad;
+      (record['designFootprint'] as Record<string, unknown>)['width'] = bad;
 
-      expect(issuePathsOf(record)).toContain('dimensions.width');
+      expect(issuePathsOf(record)).toContain('designFootprint.width');
     }
   });
 
   it('rejects a non-finite length', () => {
     const record = validRecord();
-    (record['dimensions'] as Record<string, unknown>)['depth'] = Number.POSITIVE_INFINITY;
+    (record['designFootprint'] as Record<string, unknown>)['depth'] = Number.POSITIVE_INFINITY;
 
-    expect(issuePathsOf(record)).toContain('dimensions.depth');
+    expect(issuePathsOf(record)).toContain('designFootprint.depth');
   });
 
   it('rejects an unknown category', () => {
@@ -189,7 +192,30 @@ describe('verified records must carry their source', () => {
     },
   );
 
-  it('accepts verified once the source is complete', () => {
+  it('accepts verified once the source and the footprint basis are complete', () => {
+    const record = validRecord();
+    record['dataStatus'] = 'verified';
+    record['source'] = {
+      document: 'AK 98 Installation Manual',
+      revision: 'Rev. 4',
+      section: '3.2 Installation clearances',
+      type: 'manufacturer_manual',
+      lastUpdated: '2026-07-29',
+    };
+    record['designFootprint'] = {
+      width: 800,
+      depth: 800,
+      basis: 'Manufacturer envelope plus service allowance',
+    };
+
+    expect(parse(record).dataStatus).toBe('verified');
+  });
+
+  it('refuses verified while the design footprint has no basis', () => {
+    // The hole the manufacturer/design split opens: a record whose *manufacturer*
+    // figures are sourced but whose *planning* area is not. The footprint is what every
+    // clearance and collision check measures, so an unaccounted-for one must not be able
+    // to reach GREEN (AD-6a).
     const record = validRecord();
     record['dataStatus'] = 'verified';
     record['source'] = {
@@ -200,7 +226,7 @@ describe('verified records must carry their source', () => {
       lastUpdated: '2026-07-29',
     };
 
-    expect(parse(record).dataStatus).toBe('verified');
+    expect(issuePathsOf(record)).toContain('designFootprint.basis');
   });
 
   it('allows draft to omit its source, because that is what draft means', () => {
@@ -225,7 +251,7 @@ describe('verified records must carry their source', () => {
 describe('error reporting', () => {
   it('names the file and every bad field', () => {
     const record = validRecord();
-    (record['dimensions'] as Record<string, unknown>)['width'] = -1;
+    (record['designFootprint'] as Record<string, unknown>)['width'] = -1;
     record['category'] = 'nope';
 
     try {
@@ -236,7 +262,7 @@ describe('error reporting', () => {
       const message = (error as CatalogValidationError).message;
 
       expect(message).toContain('test_record.json');
-      expect(message).toContain('dimensions.width');
+      expect(message).toContain('designFootprint.width');
       expect(message).toContain('category');
     }
   });
