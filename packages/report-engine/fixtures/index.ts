@@ -315,6 +315,23 @@ export function populatedDocument(
         spaceId: 'space-a',
       }),
     ],
+    /*
+     * Two of the seven kinds, deliberately not all of them.
+     *
+     * A fixture carrying every kind would let a report that silently dropped one still pass. Two
+     * also makes the *partial* case the default one under test: four scoring criteria need a
+     * point, and a level with some but not all of them is the state a real project spends most of
+     * its life in.
+     */
+    referencePoints: [
+      { id: 'ref-drain', kind: 'drain' as const, position: { x: 200, y: 2_800 }, label: null },
+      {
+        id: 'ref-panel',
+        kind: 'electrical_panel' as const,
+        position: { x: 4_400, y: 300 },
+        label: 'DB-4F-2',
+      },
+    ],
   };
 
   const level5f = {
@@ -329,6 +346,8 @@ export function populatedDocument(
     placements: [
       createPlacement('placement-4', machine, { x: 1_000, y: 1_000 }, { label: 'Station 4' }),
     ],
+    // None recorded — the other state the report has to state rather than omit.
+    referencePoints: [],
   };
 
   return {

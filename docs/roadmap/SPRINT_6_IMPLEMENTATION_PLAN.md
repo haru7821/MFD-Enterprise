@@ -114,7 +114,7 @@ basis: steps 1–7 are 21 days, useful, shippable, and unaffected by B-4.
 
 Ten steps. Each ends green, and each is useful on its own.
 
-### Step 1 — `packages/ai-contract` (≈3 days)
+### Step 1 — `packages/ai-contract` (≈3 days) ✅ **Done**
 
 | Files | |
 | --- | --- |
@@ -136,23 +136,34 @@ response with an uncited number; a response missing Korean; a citation naming an
 language response with an empty `retrieved` array**; **a `ScoreBreakdown` whose `total` does not equal
 the sum of its contributions**; **a plan with a dependency cycle**.
 
-### Step 2 — reference points, `DOCUMENT_VERSION` 4 (≈2 days)
+### Step 2 — reference points, `DOCUMENT_VERSION` 4 (≈2 days) ✅ **Done**
 
 | Files | |
 | --- | --- |
 | `packages/document-model/src/schema.ts` | `ReferencePoint`, `Level.referencePoints`, `DOCUMENT_VERSION = 4` |
 | `src/migrate.ts` | 3 → 4: existing levels gain an empty array |
-| `src/commands.ts` | `referencePoint.create` / `.move` / `.delete`, undoable like every other command |
-| `apps/web/.../ReferencePointTool.tsx` | Place an origin on the canvas; the properties panel names its kind |
-| `packages/report-engine` | Origins appear on the floor plan and in the equipment schedule's utility block |
-| Tests | Migration round trip, command undo, the report renders origins |
+| `src/commands.ts` | `referencePoint.create` / `.move` / `.relabel` / `.delete`, undoable like every other command |
+| `apps/web/.../ReferencePointPanel.tsx`, `ReferencePointLayer.tsx` | Arm a kind, click to place, name it, delete it; drawn as a screen-sized crosshair |
+| `packages/report-engine` | Points on the floor plan and in a table — **and the absence stated** when a level has none |
+| Tests | Migration round trip, command undo, the report renders points, 8 browser specs |
 
 **Why a separate step, and why before the scoring engine.** Four weighted criteria are unmeasurable without it,
 and a document-version change is the kind of work that must not be squeezed alongside a solver. The
 migration is real — a version bump with no data change would be dishonest about what version 4 means.
 
-**Done when** a version-3 document opens, migrates, gains origins, saves as version 4, and reopens with
-them; and when a level with no origins produces a report that says so rather than implying zero.
+**Done when** a version-3 document opens, migrates, gains points, saves as version 4, and reopens with
+them; and when a level with no points produces a report that says so rather than implying zero.
+
+**Done.** Both hold, and each was verified by making it fail: breaking the migration to do nothing
+fails four tests, and seeding it with a guessed drain point fails two — including the one that exists
+purely to stop that. On the report side, suppressing the empty-state sentence fails a unit test and a
+browser spec.
+
+One thing found on the way and fixed rather than left: the tool registry's `availableFrom` claimed
+`measure` was usable from Sprint 5. Sprint 5 delivered the report engine and nothing measures, so
+moving the sprint counter to 6 would have enabled a button that does nothing — the exact dishonesty
+the registry's own docstring warns about, arriving through a number nobody re-checked. The field is
+now `number | null`, and `measure` is `null`: wanted, not scheduled.
 
 ### Step 3 — the solver's geometry and candidates (≈3 days)
 

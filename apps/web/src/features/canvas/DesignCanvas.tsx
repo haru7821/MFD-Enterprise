@@ -16,6 +16,7 @@ import { ValidationOverlay } from '@/features/validation/ValidationOverlay';
 import { GridLayer } from './GridLayer';
 import { NavigationHint } from './NavigationHint';
 import { OriginMarker } from './OriginMarker';
+import { ReferencePointLayer } from './ReferencePointLayer';
 import { ScaleBar } from './ScaleBar';
 import { useCanvasInteraction } from './useCanvasInteraction';
 import { useElementSize } from './useElementSize';
@@ -87,6 +88,16 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
               viewport={state.viewport}
               screen={size}
               selectedPlacementId={state.selectedPlacementId}
+            />
+            {/*
+              Above the equipment and below the findings. A reference point is context for the
+              layout rather than part of it, and it must never sit over a finding — the findings
+              are what stop an installation.
+            */}
+            <ReferencePointLayer
+              points={level.referencePoints}
+              viewport={state.viewport}
+              selectedReferencePointId={state.selectedReferencePointId}
             />
             <ValidationOverlay
               report={report}

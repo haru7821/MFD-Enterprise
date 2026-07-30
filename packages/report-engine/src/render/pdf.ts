@@ -54,6 +54,7 @@ const GREEN = rgb(0.08, 0.5, 0.24);
 const PLAN_ROOM = rgb(0.22, 0.25, 0.3);
 const PLAN_OBSTRUCTION = rgb(0.6, 0.62, 0.65);
 const PLAN_EQUIPMENT = rgb(0.15, 0.39, 0.92);
+const PLAN_REFERENCE = rgb(0.71, 0.33, 0.04);
 
 interface Cursor {
   page: PDFPage;
@@ -437,6 +438,37 @@ async function drawPlan(context: Context, plan: FloorPlanSection): Promise<void>
   for (const obstruction of plan.geometry.obstructions) {
     polygon(obstruction.points, PLAN_OBSTRUCTION, 1);
   }
+  /*
+   * Reference points before the equipment, so a point that happens to sit under a footprint does
+   * not obscure the layout being assessed. Drawn as a cross with a ring — a mark that reads at any
+   * page scale and cannot be mistaken for a machine outline.
+   */
+  for (const mark of plan.geometry.referencePoints) {
+    const first = mark.points[0];
+    if (!first) continue;
+    const at = project(first);
+    const arm = 4;
+    context.cursor.page.drawLine({
+      start: { x: at.x - arm, y: at.y },
+      end: { x: at.x + arm, y: at.y },
+      thickness: 0.9,
+      color: PLAN_REFERENCE,
+    });
+    context.cursor.page.drawLine({
+      start: { x: at.x, y: at.y - arm },
+      end: { x: at.x, y: at.y + arm },
+      thickness: 0.9,
+      color: PLAN_REFERENCE,
+    });
+    context.cursor.page.drawCircle({
+      x: at.x,
+      y: at.y,
+      size: arm * 0.6,
+      borderColor: PLAN_REFERENCE,
+      borderWidth: 0.7,
+    });
+  }
+
   for (const item of plan.geometry.equipment) {
     polygon(item.points, PLAN_EQUIPMENT, 0.8);
     const centre = item.points.reduce(
@@ -858,6 +890,32 @@ async function drawFloorPlan(context: Context, plan: FloorPlanSection): Promise<
         { text: `${obstruction.areaSquareMetres} m²` },
       ]),
     );
+  }
+
+  /*
+   * Unlike the tables above, this prints in **both** states. An absent table would read as
+   * "nothing to report" when it means four scoring criteria — 40 % of the approved model — cannot
+   * be computed for this level. Same discipline as `not_calibrated`: an absence is stated.
+   */
+  if (plan.referencePoints.length > 0) {
+    table(
+      context,
+      [
+        { header: 'field_reference_point_kind', width: 0.35 },
+        { header: 'field_label', width: 0.3 },
+        { header: 'field_position', width: 0.35, align: 'right' },
+      ],
+      plan.referencePoints.map((point) => [
+        { text: inlineLabel(context, point.kindLabel) },
+        { text: point.label ?? '—' },
+        { text: `${point.position.x}, ${point.position.y} mm` },
+      ]),
+    );
+  } else {
+    const warning = inlineLabel(context, 'no_reference_points');
+    reserve(context, leading(TYPE.small));
+    draw(context, warning, MARGINS.left, TYPE.small, { context: 'no reference points' });
+    advance(context, leading(TYPE.small) + 4);
   }
 }
 

@@ -131,6 +131,7 @@ export const LABELS = {
 
   table_rooms: { ko: '실 목록', en: 'Rooms' },
   table_obstructions: { ko: '장애물 목록', en: 'Obstructions' },
+  table_reference_points: { ko: '기준점 목록', en: 'Reference Points' },
   table_placements: { ko: '장비 배치 목록', en: 'Placement Table' },
 
   no_drawing: { ko: '가져온 도면 없음', en: 'No drawing imported' },
@@ -143,6 +144,26 @@ export const LABELS = {
   },
   field_render_mode: { ko: '도면 표시 방식', en: 'Drawing mode' },
   not_calibrated: { ko: '축척 미설정 — 이 층의 치수는 검증되지 않았습니다', en: 'Not calibrated — no measurement from this level is verified' },
+
+  // ── Reference points ────────────────────────────────────────────────────────
+  field_reference_point_kind: { ko: '기준점 종류', en: 'Reference Point' },
+  ref_ro_supply: { ko: 'RO 공급', en: 'RO Supply' },
+  ref_ro_return: { ko: 'RO 환수', en: 'RO Return' },
+  ref_drain: { ko: '배수', en: 'Drain' },
+  ref_electrical_panel: { ko: '분전반', en: 'Electrical Panel' },
+  ref_data: { ko: '통신', en: 'Data' },
+  ref_access_entry: { ko: '장비 반입구', en: 'Equipment Access' },
+  ref_staff_base: { ko: '간호 스테이션', en: 'Staff Base' },
+  /*
+   * Read this next to `not_calibrated`: both say a measurement is *absent*, never that it is zero.
+   * Four of the approved scoring criteria are distances from one of these points, so a level with
+   * none recorded cannot be scored on 40 % of the model — and the sentence has to prompt for the
+   * points rather than read as a defect in the design.
+   */
+  no_reference_points: {
+    ko: '기준점 미입력 — 배관·배선·동선 거리를 산출할 수 없습니다. 해당 항목은 판정 불가로 표시됩니다.',
+    en: 'No reference points recorded — piping, wiring and circulation distances cannot be measured. Those criteria are reported as inconclusive.',
+  },
 
   // ── Validation ──────────────────────────────────────────────────────────────
   field_severity: { ko: '등급', en: 'Severity' },

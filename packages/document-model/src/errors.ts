@@ -49,7 +49,7 @@ export class EntityNotFoundError extends Error {
   override readonly name = 'EntityNotFoundError';
 
   constructor(
-    readonly entity: 'level' | 'space' | 'boundary' | 'placement',
+    readonly entity: 'level' | 'space' | 'boundary' | 'placement' | 'reference point',
     readonly id: string,
   ) {
     super(`No ${entity} with id "${id}" in this document`);

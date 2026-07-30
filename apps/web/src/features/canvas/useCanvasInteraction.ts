@@ -354,6 +354,18 @@ export function useCanvasInteraction(
         return;
       }
 
+      // Reference tool with a kind armed: place one.
+      if (current.activeTool === 'reference' && current.armedReferencePointKind) {
+        event.preventDefault();
+        dispatch({
+          type: 'referencePoint/add',
+          kind: current.armedReferencePointKind,
+          position: applySnap(current, world),
+          at: now(),
+        });
+        return;
+      }
+
       // Equipment tool with a catalogue object armed: place one.
       if (current.activeTool === 'equipment' && current.armedEquipmentObjectId) {
         const object = catalog.get(current.armedEquipmentObjectId);

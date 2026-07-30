@@ -81,7 +81,7 @@ const identifierSchema = z.string().min(1);
  * it. Adding it later means either abandoning real project documents or writing the
  * migration you skipped, under pressure, against files you cannot inspect.
  */
-export const DOCUMENT_VERSION = 3;
+export const DOCUMENT_VERSION = 4;
 
 // ---------------------------------------------------------------------------
 // Placement
@@ -223,6 +223,71 @@ export const spaceSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
+// Reference point
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a service enters the level, where equipment is delivered, and where staff work from.
+ *
+ * Five utilities and two circulation points. The list is a controlled vocabulary for the same
+ * reason `SPACE_FUNCTIONS` is: the scoring engine selects on it, and a criterion that silently
+ * matches nothing looks exactly like a criterion that everything satisfies.
+ */
+export const REFERENCE_POINT_KINDS = [
+  'ro_supply',
+  'ro_return',
+  'drain',
+  'electrical_panel',
+  'data',
+  /** Where equipment is delivered onto the level. Installation feasibility measures from it. */
+  'access_entry',
+  /** Nurse station or staff base. Walking distance measures from it. */
+  'staff_base',
+] as const;
+
+/**
+ * A named point on a level that an engineering criterion measures **from**.
+ *
+ * New in version 4, for Sprint 6's weighted scoring engine. Four of the criteria the owner
+ * approved in B-5a — installation feasibility, RO piping, electrical routing and walking distance —
+ * are distances *from* one of these points, and that is **40 % of the scoring model**.
+ *
+ * ## Why this is in the document rather than held by the solver
+ *
+ * A distance from a position nobody recorded is not a measurement. These belong beside the
+ * geometry they are measured against, in the file an engineer saves and a report cites, and they
+ * are placed with an undoable command like every other edit.
+ *
+ * ## An empty array is correct, not incomplete
+ *
+ * The v3 → v4 migration gives every existing level `[]`, and that is the honest value: no engineer
+ * has placed a point, so those criteria report **unavailable** rather than a distance from an
+ * assumed origin. Guessing a panel location — the nearest wall, the room centroid — would put a
+ * number in a report that came from an invention, and for a criterion that *minimises*, an assumed
+ * short run is the best possible score (AD-18).
+ *
+ * ## Why it is not called `UtilityOrigin`
+ *
+ * It was, in the Sprint 6 architecture through revision 2, when every kind was a service. B-5a
+ * added installation feasibility and walking distance, which measure from a goods entrance and a
+ * nurse base — neither of which is a utility. Renamed before anything was built, because a name
+ * describing five of its seven values is the kind of small inaccuracy that survives into a
+ * migration and then cannot be fixed cheaply.
+ */
+export const referencePointSchema = z.strictObject({
+  id: identifierSchema,
+  kind: z.enum(REFERENCE_POINT_KINDS),
+  /** Model millimetres, like all geometry. */
+  position: vec2Schema,
+  /**
+   * e.g. "Panel DB-3F-2". **Nullable rather than an empty string**, so an unnamed point and one
+   * an engineer deliberately named with nothing cannot look alike — the same rule every other
+   * unknown in this schema follows.
+   */
+  label: z.string().nullable(),
+});
+
+// ---------------------------------------------------------------------------
 // Plan image and calibration
 // ---------------------------------------------------------------------------
 
@@ -317,6 +382,12 @@ export const levelSchema = z.strictObject({
   boundaries: z.array(boundarySchema),
   spaces: z.array(spaceSchema),
   placements: z.array(placementSchema),
+  /**
+   * Named points that engineering criteria measure **from**. Sprint 6, version 4.
+   *
+   * **An empty array is a correct state, not an incomplete one** — see {@link referencePointSchema}.
+   */
+  referencePoints: z.array(referencePointSchema),
 });
 
 /**
@@ -399,6 +470,8 @@ export type PlacementTransform = z.infer<typeof transformSchema>;
 export type Placement = z.infer<typeof placementSchema>;
 export type Boundary = z.infer<typeof boundarySchema>;
 export type Space = z.infer<typeof spaceSchema>;
+export type ReferencePoint = z.infer<typeof referencePointSchema>;
+export type ReferencePointKind = (typeof REFERENCE_POINT_KINDS)[number];
 export type PlanImage = z.infer<typeof planImageSchema>;
 export type ScaleCalibration = z.infer<typeof scaleCalibrationSchema>;
 export type CoordinateMapping = z.infer<typeof coordinateMappingSchema>;

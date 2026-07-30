@@ -90,7 +90,11 @@ describe('buildReport', () => {
     const { provenance } = report();
 
     expect(provenance.reportVersion).toBe(1);
-    expect(provenance.documentVersion).toBe(3);
+    // 4 since Sprint 6: `Level.referencePoints`. Written as a literal rather than imported from
+    // the schema on purpose — a shape lock that read `DOCUMENT_VERSION` would follow any bump
+    // silently, and the point of this line is that changing what a report says about its own
+    // provenance has to be a deliberate edit somebody made.
+    expect(provenance.documentVersion).toBe(4);
     expect(provenance.evaluationResultVersion).toBe(2);
     expect(provenance.ruleSetId).toBe('fixture');
     expect(provenance.ruleSetVersion).toBe('0.0.1');
@@ -227,6 +231,60 @@ describe('the floor plan section', () => {
     expect(plan?.geometry.equipment).toHaveLength(3);
     // The extent bounds the room, so a renderer can fit a page without measuring again.
     expect(plan?.geometry.extent).toEqual({ minX: 0, minY: 0, maxX: 8_000, maxY: 6_000 });
+  });
+
+  it('lists the reference points a level records, with their kind and position', () => {
+    const plan = report().floorPlans[0];
+
+    expect(plan?.referencePoints).toEqual([
+      { kind: 'drain', kindLabel: 'ref_drain', label: null, position: { x: 200, y: 2_800 } },
+      {
+        kind: 'electrical_panel',
+        kindLabel: 'ref_electrical_panel',
+        label: 'DB-4F-2',
+        position: { x: 4_400, y: 300 },
+      },
+    ]);
+    expect(plan?.geometry.referencePoints).toHaveLength(2);
+  });
+
+  it('leaves the list empty for a level with none, rather than inventing one', () => {
+    // 5F records no points. The report has to be able to say so — four of the approved scoring
+    // criteria measure from one of these, so an empty list is 40 % of the model that cannot be
+    // computed, not an absence of anything worth mentioning.
+    const plan = report().floorPlans[1];
+
+    expect(plan?.referencePoints).toEqual([]);
+    expect(plan?.geometry.referencePoints).toEqual([]);
+  });
+
+  it('keeps reference points out of the drawing extent', () => {
+    // The panel sits at x = 4,400 which is inside the room, so this needs a point deliberately
+    // outside it to mean anything. A point in a corridor beyond the traced rooms would otherwise
+    // stretch the bounding box and shrink the layout the reader came to look at.
+    const document = populatedDocument();
+    const level = document.project.levels[0];
+    if (!level) throw new Error('fixture has no level');
+
+    const stretched = report({
+      ...document,
+      project: {
+        ...document.project,
+        levels: [
+          {
+            ...level,
+            referencePoints: [
+              ...level.referencePoints,
+              { id: 'far', kind: 'access_entry' as const, position: { x: 40_000, y: 0 }, label: null },
+            ],
+          },
+          ...document.project.levels.slice(1),
+        ],
+      },
+    });
+
+    expect(stretched.floorPlans[0]?.geometry.extent?.maxX).toBe(8_000);
+    expect(stretched.floorPlans[0]?.geometry.referencePoints).toHaveLength(3);
   });
 });
 

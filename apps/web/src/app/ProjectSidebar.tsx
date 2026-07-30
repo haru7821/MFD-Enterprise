@@ -2,6 +2,7 @@ import { EquipmentPalette } from '@/features/equipment/EquipmentPalette';
 import { LevelPanel } from '@/features/level/LevelPanel';
 import { PlanPanel } from '@/features/plan/PlanPanel';
 import { ProjectDetailsPanel } from '@/features/project/ProjectDetailsPanel';
+import { ReferencePointPanel } from '@/features/reference/ReferencePointPanel';
 import { ObstructionInspector } from '@/features/space/ObstructionInspector';
 import { SpaceInspector } from '@/features/space/SpaceInspector';
 
@@ -12,7 +13,8 @@ import { SpaceInspector } from '@/features/space/SpaceInspector';
  *   2. pick the floor
  *   3. import and calibrate the hospital's drawing
  *   4. trace the rooms and the things in the way
- *   5. place the machines
+ *   5. mark where the services enter and the staff work from
+ *   6. place the machines
  *
  * The equipment list takes the remaining height and scrolls, because it is the part an
  * engineer returns to repeatedly; everything above it is set up once and then mostly
@@ -29,6 +31,7 @@ export function ProjectSidebar() {
       <PlanPanel />
       <SpaceInspector />
       <ObstructionInspector />
+      <ReferencePointPanel />
       <EquipmentPalette />
     </aside>
   );

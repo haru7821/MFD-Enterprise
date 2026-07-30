@@ -9,6 +9,7 @@ import type {
   Level,
   MfdDocument,
   Placement,
+  ReferencePoint,
   ReportRenderMode,
   Space,
 } from './schema';
@@ -65,6 +66,10 @@ export type CommandType =
   | 'space.create'
   | 'space.rename'
   | 'space.delete'
+  | 'referencePoint.create'
+  | 'referencePoint.move'
+  | 'referencePoint.relabel'
+  | 'referencePoint.delete'
   | 'level.create'
   | 'level.rename'
   | 'level.delete'
@@ -1014,6 +1019,153 @@ export function setReportRenderModeCommand(mode: ReportRenderMode): Command {
       };
 
       return { document: next, inverse: setReportRenderModeCommand(previous) };
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Reference point commands
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a service enters the level, where equipment is delivered, where staff work from.
+ *
+ * Undoable like every other edit, and for a reason worth stating: these points are *measured
+ * from*, so moving one changes four of the scoring criteria for every machine on the floor. An
+ * engineer who nudges a panel by a metre and wants it back has to be able to press undo, not
+ * re-place it by eye.
+ */
+export function createReferencePointCommand(levelId: string, point: ReferencePoint): Command {
+  return command({
+    type: 'referencePoint.create',
+    label: 'Place reference point',
+    mergeKey: null,
+    apply(document) {
+      const next = withLevel(document, levelId, (level) => ({
+        ...level,
+        referencePoints: [...level.referencePoints, point],
+      }));
+      return { document: next, inverse: deleteReferencePointCommand(levelId, point.id) };
+    },
+  });
+}
+
+function requireReferencePoint(level: Level, pointId: string): ReferencePoint {
+  const point = level.referencePoints.find((entry) => entry.id === pointId);
+  if (!point) throw new EntityNotFoundError('reference point', pointId);
+  return point;
+}
+
+function mapReferencePoint(
+  level: Level,
+  pointId: string,
+  change: (point: ReferencePoint) => ReferencePoint,
+): Level {
+  return {
+    ...level,
+    referencePoints: level.referencePoints.map((point) =>
+      point.id === pointId ? change(point) : point,
+    ),
+  };
+}
+
+export function moveReferencePointCommand(
+  levelId: string,
+  pointId: string,
+  position: Vec2,
+): Command {
+  return command({
+    type: 'referencePoint.move',
+    label: 'Move reference point',
+    // Keyed on the point, so dragging one coalesces into a single undo step while dragging a
+    // second afterwards starts a new one — the same rule a placement drag follows.
+    mergeKey: `referencePoint.move:${pointId}`,
+    apply(document) {
+      const level = requireLevel(document, levelId);
+      const previous = requireReferencePoint(level, pointId).position;
+
+      const next = withLevel(document, levelId, (current) =>
+        mapReferencePoint(current, pointId, (point) => ({ ...point, position })),
+      );
+
+      return {
+        document: next,
+        inverse: moveReferencePointCommand(levelId, pointId, previous),
+      };
+    },
+  });
+}
+
+export function relabelReferencePointCommand(
+  levelId: string,
+  pointId: string,
+  label: string | null,
+): Command {
+  return command({
+    type: 'referencePoint.relabel',
+    label: 'Rename reference point',
+    mergeKey: `referencePoint.relabel:${pointId}`,
+    apply(document) {
+      const level = requireLevel(document, levelId);
+      const previous = requireReferencePoint(level, pointId).label;
+
+      const next = withLevel(document, levelId, (current) =>
+        mapReferencePoint(current, pointId, (point) => ({ ...point, label })),
+      );
+
+      return {
+        document: next,
+        inverse: relabelReferencePointCommand(levelId, pointId, previous),
+      };
+    },
+  });
+}
+
+export function deleteReferencePointCommand(levelId: string, pointId: string): Command {
+  return command({
+    type: 'referencePoint.delete',
+    label: 'Delete reference point',
+    mergeKey: null,
+    apply(document) {
+      const level = requireLevel(document, levelId);
+      const removed = requireReferencePoint(level, pointId);
+      const index = level.referencePoints.indexOf(removed);
+
+      const next = withLevel(document, levelId, (current) => ({
+        ...current,
+        referencePoints: current.referencePoints.filter((point) => point.id !== pointId),
+      }));
+
+      return {
+        document: next,
+        inverse: restoreReferencePointCommand(levelId, removed, index),
+      };
+    },
+  });
+}
+
+/**
+ * Undo of a delete, restoring the point **at its original index**.
+ *
+ * Appending would be simpler and would reorder the list, which the properties panel renders in
+ * order. Undo that silently rearranges what an engineer is looking at is undo they stop trusting.
+ */
+function restoreReferencePointCommand(
+  levelId: string,
+  point: ReferencePoint,
+  index: number,
+): Command {
+  return command({
+    type: 'referencePoint.create',
+    label: 'Restore reference point',
+    mergeKey: null,
+    apply(document) {
+      const next = withLevel(document, levelId, (level) => {
+        const referencePoints = [...level.referencePoints];
+        referencePoints.splice(Math.min(index, referencePoints.length), 0, point);
+        return { ...level, referencePoints };
+      });
+      return { document: next, inverse: deleteReferencePointCommand(levelId, point.id) };
     },
   });
 }

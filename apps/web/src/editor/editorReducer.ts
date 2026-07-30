@@ -15,6 +15,7 @@ import {
   type CoordinateMapping,
   type MfdDocument,
   type ObstructionType,
+  type ReferencePointKind,
   type PlanImage,
   type Space,
   type SpaceFunction,
@@ -28,11 +29,15 @@ import {
   createObstruction,
   createPlacement,
   createPlacementCommand,
+  createReferencePointCommand,
   createSpace,
   createSpaceCommand,
   deleteBoundaryCommand,
   deleteLevelCommand,
   deletePlacementCommand,
+  deleteReferencePointCommand,
+  moveReferencePointCommand,
+  relabelReferencePointCommand,
   deleteSpaceCommand,
   describeBoundaryCommand,
   execute,
@@ -91,6 +96,31 @@ export type EditorAction =
   | { readonly type: 'plan/toggle' }
   /** Arm a catalogue object for placement, or pass null to disarm. */
   | { readonly type: 'equipment/arm'; readonly equipmentObjectId: string | null }
+  /** Arm a reference-point kind, or pass null to disarm. */
+  | {
+      readonly type: 'referencePoint/arm';
+      readonly kind: ReferencePointKind | null;
+    }
+  | {
+      readonly type: 'referencePoint/add';
+      readonly kind: ReferencePointKind;
+      readonly position: Vec2;
+      readonly at: number;
+    }
+  | {
+      readonly type: 'referencePoint/move';
+      readonly pointId: string;
+      readonly position: Vec2;
+      readonly at: number;
+    }
+  | {
+      readonly type: 'referencePoint/relabel';
+      readonly pointId: string;
+      readonly label: string | null;
+      readonly at: number;
+    }
+  | { readonly type: 'referencePoint/delete'; readonly pointId: string; readonly at: number }
+  | { readonly type: 'referencePoint/select'; readonly pointId: string | null }
   | {
       readonly type: 'placement/add';
       readonly object: EquipmentObject;
@@ -270,6 +300,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         // survives a tool change places a machine on the next unrelated click.
         armedEquipmentObjectId:
           action.tool === 'equipment' ? state.armedEquipmentObjectId : null,
+        armedReferencePointKind:
+          action.tool === 'reference' ? state.armedReferencePointKind : null,
         // A half-traced ring does not belong to any other tool. Abandoning it on the
         // tool change is less surprising than having it reappear later. Switching
         // between the room and obstruction tools abandons it too: the two produce
@@ -313,6 +345,67 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         armedEquipmentObjectId: action.equipmentObjectId,
         activeTool: action.equipmentObjectId ? 'equipment' : state.activeTool,
       };
+
+    case 'referencePoint/arm':
+      return {
+        ...state,
+        armedReferencePointKind: action.kind,
+        activeTool: action.kind ? 'reference' : state.activeTool,
+      };
+
+    case 'referencePoint/add': {
+      const number = state.nextEntityNumber;
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          createReferencePointCommand(levelId, {
+            id: `reference-${number}`,
+            kind: action.kind,
+            position: action.position,
+            // Unnamed until the engineer names it. Null, not "" — the schema's rule, and the
+            // report prints an em dash rather than an empty cell.
+            label: null,
+          }),
+          action.at,
+        ),
+        nextEntityNumber: number + 1,
+        selectedReferencePointId: `reference-${number}`,
+        selectedPlacementId: null,
+        selectedSpaceId: null,
+      };
+    }
+
+    case 'referencePoint/move':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          moveReferencePointCommand(levelId, action.pointId, action.position),
+          action.at,
+        ),
+      };
+
+    case 'referencePoint/relabel':
+      return {
+        ...state,
+        doc: execute(
+          state.doc,
+          relabelReferencePointCommand(levelId, action.pointId, action.label),
+          action.at,
+        ),
+      };
+
+    case 'referencePoint/delete':
+      return {
+        ...state,
+        doc: execute(state.doc, deleteReferencePointCommand(levelId, action.pointId), action.at),
+        selectedReferencePointId:
+          state.selectedReferencePointId === action.pointId ? null : state.selectedReferencePointId,
+      };
+
+    case 'referencePoint/select':
+      return { ...state, selectedReferencePointId: action.pointId };
 
     case 'placement/add': {
       const number = state.nextEntityNumber;
@@ -779,6 +872,8 @@ function INITIAL_EDITOR_STATE_VIEW(state: EditorState): EditorState {
     ...state,
     activeLevelId: 'level-1',
     armedEquipmentObjectId: null,
+    armedReferencePointKind: null,
+    selectedReferencePointId: null,
     selectedPlacementId: null,
     selectedSpaceId: null,
     selectedBoundaryId: null,

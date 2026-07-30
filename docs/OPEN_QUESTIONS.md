@@ -272,7 +272,8 @@ Not blocking; recorded so they are visible and can be corrected.
 | What does the layout solver optimise? | **A weighted engineering score**, configurable as data. Not station count. See B-5. | Sprint 6 architecture review |
 | What are the weights? | Compliance 40 · feasibility 20 · maintenance 15 · RO 10 · electrical 5 · expansion 5 · walking 5. Owner decision B-5a. | B-5a |
 | May the UI show only a total score? | **No.** A per-criterion breakdown is always displayed; a `ScoreBreakdown` with a total and no criteria is schema-invalid. | B-5a |
-| Is station count weighted? | **No — it is a constraint.** At weight 0 in a maximise-total model it would rank the emptiest room first, because every other criterion improves as machines are removed. | B-5a |
+| Is station count weighted? | **No — it is a constraint.** Satisfied before optimisation begins; candidates missing the requested count never reach the scoring stage, and the solver may never improve a score by removing a station. | B-5a, confirmed |
+| Where do routing distances measure from? | **`Level.referencePoints`**, `DOCUMENT_VERSION` 4. Seven kinds, placed by the engineer. A level with none reports those criteria inconclusive, never zero. | Sprint 6 step 2 |
 | Desktop application or web? | **Web-native**, no exceptions. Desktop browsers primary, tablet secondary, installable as a PWA. No Electron. | Sprint 5 close |
 | Offline? | The **application** caches itself. Remembering recent **projects** offline is a future sprint — it means storing hospital floor plans in browser storage, which touches B-4. | Sprint 5 close |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |

@@ -14,6 +14,9 @@ export const CANVAS_THEME = {
   axisX: '#8c4652',
   /** Model Y axis (the x = 0 line). Muted green, the CAD convention. */
   axisY: '#3f7d52',
+  /** Amber, matching the report's reference-point mark. Distinct from every finding colour. */
+  referencePoint: '#b45309',
+  referencePointSelected: '#f59e0b',
   originDot: '#4a9eff',
   originLabel: '#5d6b80',
 } as const;

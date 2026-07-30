@@ -15,18 +15,22 @@ import {
   canDeleteLevel,
   canRemoveBoundaryVertex,
   createBoundaryCommand,
+  createReferencePointCommand,
   createLevelCommand,
   createPlacementCommand,
   createSpaceCommand,
   deleteLevelCommand,
   deletePlacementCommand,
+  deleteReferencePointCommand,
   deleteSpaceCommand,
   describeBoundaryCommand,
   insertBoundaryVertexCommand,
   moveBoundaryVertexCommand,
+  moveReferencePointCommand,
   movePlacementCommand,
   removeBoundaryVertexCommand,
   renameLevelCommand,
+  relabelReferencePointCommand,
   renameSpaceCommand,
   rotatePlacementCommand,
   setBoundaryVerticesCommand,
@@ -239,6 +243,64 @@ describe('space commands', () => {
   });
 });
 
+describe('reference point commands', () => {
+  const DRAIN = {
+    id: 'rp1',
+    kind: 'drain' as const,
+    position: { x: 1_200, y: 3_400 },
+    label: null,
+  };
+  const PANEL = {
+    id: 'rp2',
+    kind: 'electrical_panel' as const,
+    position: { x: 8_000, y: 200 },
+    label: 'DB-3F-2',
+  };
+
+  function withPoints(): MfdDocument {
+    let document = fixtureDocument();
+    for (const point of [DRAIN, PANEL]) {
+      document = createReferencePointCommand(LEVEL, point).apply(document).document;
+    }
+    return document;
+  }
+
+  it('places a point and undoes it exactly', () => {
+    const after = expectRoundTrip(fixtureDocument(), createReferencePointCommand(LEVEL, DRAIN));
+    expect(requireLevel(after, LEVEL).referencePoints).toEqual([DRAIN]);
+  });
+
+  it('moves a point and undoes it exactly', () => {
+    // Worth an undo test of its own rather than trusting the shared invariant: moving one of these
+    // changes four scoring criteria for every machine on the floor, so an engineer who nudges a
+    // panel by a metre has to be able to get the original position back rather than re-place it by
+    // eye.
+    const after = expectRoundTrip(withPoints(), moveReferencePointCommand(LEVEL, 'rp1', { x: 0, y: 0 }));
+    expect(requireLevel(after, LEVEL).referencePoints[0]?.position).toEqual({ x: 0, y: 0 });
+  });
+
+  it('relabels a point and undoes it exactly, including back to null', () => {
+    const named = expectRoundTrip(withPoints(), relabelReferencePointCommand(LEVEL, 'rp1', 'Stack A'));
+    expect(requireLevel(named, LEVEL).referencePoints[0]?.label).toBe('Stack A');
+
+    // And the other direction: an engineer clearing a label gets null back, not an empty string.
+    const cleared = expectRoundTrip(withPoints(), relabelReferencePointCommand(LEVEL, 'rp2', null));
+    expect(requireLevel(cleared, LEVEL).referencePoints[1]?.label).toBeNull();
+  });
+
+  it('deletes a point and restores it at its original index', () => {
+    // The properties panel lists these in order, so undo that appended would silently rearrange
+    // what the engineer is looking at.
+    const after = expectRoundTrip(withPoints(), deleteReferencePointCommand(LEVEL, 'rp1'));
+    expect(requireLevel(after, LEVEL).referencePoints).toEqual([PANEL]);
+  });
+
+  it('refuses to move a point that is not there', () => {
+    expect(() => moveReferencePointCommand(LEVEL, 'missing', { x: 0, y: 0 }).apply(withPoints()))
+      .toThrow(/reference point/);
+  });
+});
+
 describe('command data', () => {
   it('carries a label an engineer can read', () => {
     expect(createPlacementCommand(LEVEL, fixturePlacement('p1', { x: 0, y: 0 })).label).toBe(
@@ -256,8 +318,20 @@ describe('command data', () => {
     );
   });
 
+  it('keys a reference-point drag on the point, like a machine drag', () => {
+    expect(moveReferencePointCommand(LEVEL, 'rp1', { x: 0, y: 0 }).mergeKey).toBe(
+      'referencePoint.move:rp1',
+    );
+    expect(moveReferencePointCommand(LEVEL, 'rp2', { x: 0, y: 0 }).mergeKey).not.toBe(
+      moveReferencePointCommand(LEVEL, 'rp1', { x: 0, y: 0 }).mergeKey,
+    );
+  });
+
   it('leaves discrete edits unmergeable', () => {
     expect(deletePlacementCommand(LEVEL, 'p1').mergeKey).toBeNull();
+    expect(createReferencePointCommand(LEVEL, {
+      id: 'rp1', kind: 'drain', position: { x: 0, y: 0 }, label: null,
+    }).mergeKey).toBeNull();
     expect(createSpaceCommand(LEVEL, fixtureRoomBoundary(), fixtureSpace()).mergeKey).toBeNull();
   });
 });

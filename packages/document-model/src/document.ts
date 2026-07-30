@@ -48,6 +48,7 @@ export function createLevel(id: string, name: string, elevation = 0): Level {
     boundaries: [],
     spaces: [],
     placements: [],
+    referencePoints: [],
   };
 }
 

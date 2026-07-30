@@ -24,7 +24,7 @@ import {
  *
  * ## Migration
  *
- * The chain runs one step at a time: v1 → v2 → v3. Each migration only has to know
+ * The chain runs one step at a time: v1 → v2 → v3 → v4. Each migration only has to know
  * about the version immediately before it, which is what keeps the chain from becoming
  * a pile of special cases as versions accumulate.
  *
@@ -97,6 +97,38 @@ export const MIGRATIONS: readonly Migration[] = [
         ...document,
         project: { ...project, settings: { ...DEFAULT_PROJECT_SETTINGS } },
       };
+    },
+  },
+  {
+    from: 3,
+    to: 4,
+    /**
+     * Version 4 adds `Level.referencePoints`.
+     *
+     * **Every existing level gets an empty array, and that is the whole migration.**
+     *
+     * It is worth being explicit about why so little happens here, because the temptation is to do
+     * more. Four of the scoring criteria the owner approved measure distance *from* one of these
+     * points — 40 % of the model — so a migrated project scores over the remaining 60 % until an
+     * engineer places them. It would be easy to seed a `drain` at the room centroid, or an
+     * `access_entry` at the widest gap in a wall, and have every migrated project score in full
+     * immediately.
+     *
+     * That would be the worst thing this migration could do. A guessed origin produces a pipe run
+     * measured from a place nobody chose, printed in a report as a number; and for a criterion that
+     * *minimises*, a conveniently-placed guess is the **best possible** score. An empty array is
+     * the honest record that no engineer has placed a point, and `unavailable` is what the scoring
+     * engine reports for it (AD-18).
+     */
+    migrate(document) {
+      const project = document['project'];
+      if (!isRecord(project) || !Array.isArray(project['levels'])) return document;
+
+      const levels = project['levels'].map((level) =>
+        isRecord(level) ? { ...level, referencePoints: [] } : level,
+      );
+
+      return { ...document, project: { ...project, levels } };
     },
   },
 ];

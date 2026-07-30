@@ -154,6 +154,23 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
       ${showVector ? plan.geometry.rooms.map((r) => `<polygon class="room" points="${points(r)}" />`).join('') : ''}
       ${showVector ? plan.geometry.obstructions.map((o) => `<polygon class="obstruction" points="${points(o)}" />`).join('') : ''}
       ${
+        /*
+         * A cross rather than a filled dot: a mark that reads at any scale and cannot be mistaken
+         * for a machine. Drawn before the equipment so a point under a footprint does not obscure
+         * the layout being assessed.
+         */
+        showVector
+          ? plan.geometry.referencePoints
+              .map((mark) => {
+                const p0 = mark.points[0];
+                if (!p0) return '';
+                const r = 120;
+                return `<g class="reference-point" data-testid="plan-reference-point"><line x1="${p0.x - r}" y1="${p0.y}" x2="${p0.x + r}" y2="${p0.y}" /><line x1="${p0.x}" y1="${p0.y - r}" x2="${p0.x}" y2="${p0.y + r}" /><circle cx="${p0.x}" cy="${p0.y}" r="${r * 0.55}" /></g>`;
+              })
+              .join('')
+          : ''
+      }
+      ${
         showVector
           ? plan.geometry.equipment
               .map((e) => {
@@ -315,6 +332,21 @@ ${floorPlans
           )
           .join('')}</tbody></table>`
       : ''
+  }
+  ${
+    /*
+     * Unlike the room and obstruction tables, this one prints when the list is **empty** too —
+     * with the sentence saying why. Four scoring criteria measure from these points, so an absent
+     * table would read as "nothing to report" when it means "40 % of the score cannot be computed".
+     */
+    plan.referencePoints.length > 0
+      ? `<h4>${inline('table_reference_points')}</h4><table data-testid="report-reference-points"><thead><tr><th>${inline('field_reference_point_kind')}</th><th>${inline('field_label')}</th><th>${inline('field_position')}</th></tr></thead><tbody>${plan.referencePoints
+          .map(
+            (point) =>
+              `<tr><td>${inline(point.kindLabel)}</td><td>${escape(point.label ?? '—')}</td><td class="numeric">${point.position.x}, ${point.position.y} mm</td></tr>`,
+          )
+          .join('')}</tbody></table>`
+      : `<p class="caution" data-testid="report-no-reference-points">${inline('no_reference_points')}</p>`
   }
   ${
     plan.obstructions.length > 0
@@ -503,6 +535,9 @@ const STYLE = `
 .mfd-report .plan .obstruction { fill: #d1d5db; stroke: #6b7280; stroke-width: 20; }
 .mfd-report .plan .equipment { fill: rgba(59,130,246,0.18); stroke: #2563eb; stroke-width: 20; }
 .mfd-report .plan .pin-label { font-size: 260px; text-anchor: middle; dominant-baseline: middle; fill: #1e3a8a; font-weight: 700; }
+.mfd-report .plan .reference-point line { stroke: #b45309; stroke-width: 30; }
+.mfd-report .plan .reference-point circle { fill: none; stroke: #b45309; stroke-width: 24; }
+.mfd-report .caution { border-left: 3px solid #b45309; padding: 6px 10px; margin: 8px 0; font-size: 11px; color: #7c2d12; background: #fffbeb; }
 .mfd-report .liability { font-size: 11px; margin: 4px 0; }
 .mfd-report .notice { margin-top: 24px; border: 2px solid #111; padding: 10px; }
 .mfd-report .provenance { margin-top: 16px; font-size: 10px; color: #6b7280; }

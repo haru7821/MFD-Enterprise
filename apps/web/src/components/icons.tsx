@@ -147,6 +147,16 @@ export function PlanIcon(props: IconProps) {
   );
 }
 
+/** A crosshair — the same mark the report draws, so the toolbar and the page agree. */
+export function ReferencePointIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 2v3.5M8 10.5V14M2 8h3.5M10.5 8H14" />
+      <circle cx="8" cy="8" r="2.5" />
+    </Icon>
+  );
+}
+
 export function ObstructionIcon(props: IconProps) {
   return (
     <Icon {...props}>

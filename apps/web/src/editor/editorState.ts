@@ -12,6 +12,7 @@ import {
   type MfdDocument,
   type ObstructionType,
   type Placement,
+  type ReferencePointKind,
   type SpaceFunction,
   createDocument,
   createDocumentState,
@@ -98,6 +99,15 @@ export interface EditorState {
 
   /** Catalogue id armed for placement by the equipment tool. */
   readonly armedEquipmentObjectId: string | null;
+  /**
+   * Which kind of reference point the next canvas click places.
+   *
+   * Armed rather than defaulted: a tool that placed a `drain` because that happened to be first
+   * in the list would put a point of the wrong kind on a drawing, and the kind is what four
+   * scoring criteria select on.
+   */
+  readonly armedReferencePointKind: ReferencePointKind | null;
+  readonly selectedReferencePointId: string | null;
   readonly selectedPlacementId: string | null;
   readonly selectedSpaceId: string | null;
   /**
@@ -156,6 +166,8 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   doc: createDocumentState(emptyDocument()),
   activeLevelId: INITIAL_LEVEL_ID,
   armedEquipmentObjectId: null,
+  armedReferencePointKind: null,
+  selectedReferencePointId: null,
   selectedPlacementId: null,
   selectedSpaceId: null,
   selectedBoundaryId: null,

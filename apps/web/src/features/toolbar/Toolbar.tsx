@@ -11,6 +11,7 @@ import {
   PanIcon,
   PlanIcon,
   RedoIcon,
+  ReferencePointIcon,
   ResetViewIcon,
   RoomIcon,
   SelectIcon,
@@ -32,6 +33,7 @@ const TOOL_ICONS: Record<ToolId, ReactNode> = {
   obstruction: <ObstructionIcon />,
   measure: <MeasureIcon />,
   equipment: <EquipmentIcon />,
+  reference: <ReferencePointIcon />,
 };
 
 function Divider() {

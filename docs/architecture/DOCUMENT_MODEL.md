@@ -228,21 +228,22 @@ file, long after the state that caused it was gone.
 
 ### Migration
 
-`DOCUMENT_VERSION` is **3**. Two real steps:
+`DOCUMENT_VERSION` is **4**. Three real steps:
 
 | Step | Added in | Does |
 | --- | --- | --- |
 | v1 → v2 | Phase 4.5 | Adds `obstructionType` to every boundary: `null` for room outlines and walls, `"other"` for anything already marked `kind: "obstruction"` |
 | v2 → v3 | Sprint 5 | Adds `project.settings` with `reportRenderMode: "vector"` — the default, and the only mode that does not depend on a raster being present |
+| v3 → v4 | Sprint 6 | Adds `referencePoints: []` to every level. **An empty array, and nothing else** — see below |
 
 A v1 obstruction says something is in the way and nothing about what. `"other"` records
 that honestly; guessing `"column"` would be an invention the engineer would then have to
 notice was wrong.
 
-### Version 4, planned but not written
+### Version 4
 
-Sprint 6 adds **`Level.referencePoints`** — where the RO supply and return, the drain, the electrical
-panel and the data service enter a level, as model millimetres:
+Sprint 6 adds **`Level.referencePoints`** — where the services enter a level, where equipment is
+delivered onto it, and where staff work from, as model millimetres:
 
 ```ts
 interface ReferencePoint {

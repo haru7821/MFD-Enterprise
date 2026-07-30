@@ -217,6 +217,100 @@ describe('v2 → v3 migration', () => {
   });
 });
 
+describe('v3 → v4 migration', () => {
+  /** A document as version 3 wrote it: levels with no `referencePoints`. */
+  function v3Document(): Record<string, unknown> {
+    const current = JSON.parse(JSON.stringify(populated())) as Record<string, unknown>;
+    const project = current['project'] as { levels: Record<string, unknown>[] };
+    for (const level of project.levels) delete level['referencePoints'];
+    return { ...current, documentVersion: 3 };
+  }
+
+  it('gives every level an empty array', () => {
+    const migrated = parseDocument(v3Document());
+
+    expect(migrated.documentVersion).toBe(DOCUMENT_VERSION);
+    for (const level of migrated.project.levels) {
+      expect(level.referencePoints).toEqual([]);
+    }
+  });
+
+  it('invents no point, however convenient one would be', () => {
+    // The temptation this guards against. It would be easy to seed a drain at the room centroid
+    // and have every migrated project score in full immediately — and that would be the worst
+    // thing this migration could do. Four scoring criteria measure *from* one of these points, and
+    // three of them minimise, so a conveniently-placed guess is the best possible score for a
+    // measurement nobody took. An empty array is the honest record that no engineer has placed one.
+    const migrated = parseDocument(v3Document());
+    const total = migrated.project.levels.reduce(
+      (sum, level) => sum + level.referencePoints.length,
+      0,
+    );
+    expect(total).toBe(0);
+  });
+
+  it('refuses a version 4 document whose level has no referencePoints', () => {
+    // Required, not optional — the same rule `settings` follows. A level that omitted the field
+    // and a level with none placed must not look the same on disk.
+    expect(() => parseDocument({ ...v3Document(), documentVersion: 4 })).toThrow(
+      DocumentValidationError,
+    );
+  });
+
+  it('carries placed points through a save and reopen', () => {
+    const migrated = parseDocument(v3Document());
+    const level = migrated.project.levels[0];
+    if (!level) throw new Error('fixture has no level');
+
+    const withPoints = {
+      ...migrated,
+      project: {
+        ...migrated.project,
+        levels: [
+          {
+            ...level,
+            referencePoints: [
+              { id: 'rp1', kind: 'drain' as const, position: { x: 1_200, y: 3_400 }, label: null },
+              {
+                id: 'rp2',
+                kind: 'staff_base' as const,
+                position: { x: 0, y: 0 },
+                label: 'Nurse station',
+              },
+            ],
+          },
+          ...migrated.project.levels.slice(1),
+        ],
+      },
+    };
+
+    const reopened = loadDocument(saveDocument(withPoints, { now: SAVED_AT }));
+    expect(reopened.project.levels[0]?.referencePoints).toEqual(withPoints.project.levels[0]?.referencePoints);
+  });
+
+  it('rejects an unknown reference-point kind', () => {
+    // A controlled vocabulary, for the reason SPACE_FUNCTIONS is one: the scoring engine selects
+    // on `kind`, and a criterion that silently matches nothing looks exactly like a criterion
+    // everything satisfies.
+    const migrated = parseDocument(v3Document());
+    const level = migrated.project.levels[0];
+    if (!level) throw new Error('fixture has no level');
+
+    const broken = {
+      ...migrated,
+      project: {
+        ...migrated.project,
+        levels: [
+          { ...level, referencePoints: [{ id: 'rp1', kind: 'gas', position: { x: 0, y: 0 }, label: null }] },
+          ...migrated.project.levels.slice(1),
+        ],
+      },
+    };
+
+    expect(() => parseDocument(broken)).toThrow(DocumentValidationError);
+  });
+});
+
 describe('v1 → v2 migration', () => {
   /** A document as version 1 wrote it: boundaries with no `obstructionType`. */
   function v1Document(): Record<string, unknown> {

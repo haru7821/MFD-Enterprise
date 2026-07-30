@@ -46,6 +46,24 @@ function fonts() {
   };
 }
 
+/**
+ * Every page's text layer, concatenated.
+ *
+ * pdfjs is imported here rather than depended on by the package: these are tests of the *output*,
+ * and the renderer must not gain a PDF reader to satisfy them.
+ */
+async function pdfText(bytes: Uint8Array): Promise<string> {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+
+  let text = '';
+  for (let page = 1; page <= document.numPages; page += 1) {
+    const content = await (await document.getPage(page)).getTextContent();
+    text += content.items.map((item) => ('str' in item ? item.str : '')).join('');
+  }
+  return text;
+}
+
 function model(document = populatedDocument()): ReportModel {
   return buildReport({
     document,
@@ -179,6 +197,64 @@ describe('the HTML renderer', () => {
     expect(html).toMatch(/<svg class="plan" data-mode="vector" viewBox="-500 -500 9000 7000"/);
     expect(html).toContain('class="room"');
     expect(html).toContain('class="equipment"');
+  });
+});
+
+describe('reference points reach the reader', () => {
+  /*
+   * A model that carries reference points and renderers that never print them would pass every
+   * builder test above and still leave four scoring criteria unexplained on the page. These
+   * assert the data actually arrives, in both states, in both renderers.
+   */
+
+  it('prints the recorded points, their kind and their position, in HTML', () => {
+    const html = renderHtml(model());
+
+    expect(html).toContain('data-testid="report-reference-points"');
+    // Bilingual like every other label, and the engineer's own name printed verbatim.
+    expect(html).toContain('배수');
+    expect(html).toContain('Drain');
+    expect(html).toContain('DB-4F-2');
+    // Drawn, not merely tabulated.
+    expect(html).toContain('data-testid="plan-reference-point"');
+  });
+
+  it('states the absence for a level with none, rather than omitting the table', () => {
+    // The assertion that matters. An absent table reads as "nothing to report"; this level
+    // cannot be scored on 40 % of the model, and the report has to say so.
+    const html = renderHtml(model());
+
+    expect(html).toContain('data-testid="report-no-reference-points"');
+    expect(html).toContain('기준점 미입력');
+    expect(html).toContain('No reference points recorded');
+  });
+
+  it('puts both the points and the absence into the PDF text layer', async () => {
+    const bytes = await renderPdf(model(), { fonts: fonts() });
+    const text = await pdfText(bytes);
+
+    expect(text).toContain('DB-4F-2');
+    expect(text).toMatch(/배수|Drain/);
+    // 5F has none, and the PDF says so in the same words the HTML does.
+    expect(text).toContain('No reference points recorded');
+  });
+
+  it('renders a report for a document with no points at all', async () => {
+    // The default project, which is what an engineer sees before placing anything. It must
+    // produce a report rather than throwing on an empty list.
+    const bytes = await renderPdf(
+      buildReport({
+        document: emptyDocument(),
+        catalog: fixtureCatalog(),
+        ruleSet: fixtureRuleSet(),
+        checklistTemplate: fixtureChecklistTemplate(),
+        generatedAt: FIXTURE_GENERATED_AT,
+        mfdVersion: FIXTURE_MFD_VERSION,
+      }),
+      { fonts: fonts() },
+    );
+    expect(bytes.byteLength).toBeGreaterThan(0);
+    expect(await pdfText(bytes)).toContain('No reference points recorded');
   });
 });
 

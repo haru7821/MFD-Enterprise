@@ -1,4 +1,4 @@
-import type { ReportRenderMode } from '@mfd/document-model';
+import type { ReferencePointKind, ReportRenderMode } from '@mfd/document-model';
 import type { DataStatus } from '@mfd/object-library';
 import type { Bilingual, ReasonCode, ReasonParams } from '@mfd/rule-engine';
 
@@ -272,6 +272,15 @@ export interface FloorPlanSection {
   readonly placements: readonly PlacementRow[];
   readonly rooms: readonly RoomRow[];
   readonly obstructions: readonly ObstructionRow[];
+  /**
+   * Where the services enter, equipment is delivered, and staff work from.
+   *
+   * **Empty is a state the report states rather than omits.** Four of the approved scoring
+   * criteria measure distance from one of these, so a level with none recorded cannot be scored
+   * on 40 % of the model — and a reader has to be able to see that from the report rather than
+   * infer it from a missing table.
+   */
+  readonly referencePoints: readonly ReferencePointRow[];
   /** Geometry for the drawing page, in model millimetres. */
   readonly geometry: LevelGeometry;
   /**
@@ -282,6 +291,15 @@ export interface FloorPlanSection {
    * different report rather than a different drawing of the same one.
    */
   readonly raster: RasterPlacement | null;
+}
+
+export interface ReferencePointRow {
+  readonly kind: ReferencePointKind;
+  /** The kind's bilingual name, resolved from the label catalogue. */
+  readonly kindLabel: LabelKey;
+  /** What the engineer called it, or null. Printed verbatim — it is not ours to translate. */
+  readonly label: string | null;
+  readonly position: { readonly x: number; readonly y: number };
 }
 
 export interface RoomRow {
@@ -307,6 +325,15 @@ export interface LevelGeometry {
   readonly obstructions: readonly Polyline[];
   /** Footprint outlines, numbered to match `placements`. */
   readonly equipment: readonly Polyline[];
+  /**
+   * Reference points as single-point marks, for a renderer to draw a symbol at.
+   *
+   * Deliberately **not** folded into the extent below: a panel in a corridor outside the traced
+   * rooms would otherwise stretch the drawing's bounding box and shrink the layout an engineer
+   * came to look at. A mark outside the extent is clipped, which is the right trade — the table
+   * still lists it with its coordinates.
+   */
+  readonly referencePoints: readonly Polyline[];
   /** Bounding box of everything above, so a renderer can fit a page. */
   readonly extent: {
     readonly minX: number;

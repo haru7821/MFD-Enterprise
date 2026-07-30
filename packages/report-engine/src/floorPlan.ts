@@ -4,6 +4,7 @@ import { findSpace, obstructionBoundaries, planTransformOf, spaceArea } from '@m
 import type { Catalog } from '@mfd/object-library';
 import { footprintCorners } from '@mfd/object-library';
 
+import type { LabelKey } from './labels';
 import type {
   FloorPlanSection,
   LevelGeometry,
@@ -11,6 +12,7 @@ import type {
   ObstructionRow,
   PlacementRow,
   Polyline,
+  ReferencePointRow,
   RoomRow,
 } from './model';
 
@@ -74,6 +76,22 @@ function geometryOf(level: Level, catalog: Catalog, numbers: Map<string, number>
     });
   }
 
+  /*
+   * A reference point is a single-point polyline — a mark, not an outline. Modelling it as a
+   * degenerate Polyline rather than adding a Point type keeps every renderer's geometry handling
+   * uniform: they already know how to transform a list of points into page space.
+   */
+  const referencePoints: Polyline[] = level.referencePoints.map((point) => ({
+    points: [{ x: point.position.x, y: point.position.y }],
+    label: point.label ?? '',
+  }));
+
+  /*
+   * The extent covers rooms, obstructions and equipment — **not** reference points. A panel in a
+   * corridor outside the traced rooms would otherwise stretch the bounding box and shrink the
+   * layout the reader came to see. A clipped mark is the better trade, and the table below lists
+   * every point with its coordinates regardless.
+   */
   const points = [...rooms, ...obstructions, ...equipment].flatMap((line) => line.points);
   const extent =
     points.length === 0
@@ -85,7 +103,27 @@ function geometryOf(level: Level, catalog: Catalog, numbers: Map<string, number>
           maxY: Math.max(...points.map((p) => p.y)),
         };
 
-  return { rooms, obstructions, equipment, extent };
+  return { rooms, obstructions, equipment, referencePoints, extent };
+}
+
+/** Kind → label key. A `Record` rather than a template literal, so a new kind fails to compile. */
+const REFERENCE_POINT_LABELS = {
+  ro_supply: 'ref_ro_supply',
+  ro_return: 'ref_ro_return',
+  drain: 'ref_drain',
+  electrical_panel: 'ref_electrical_panel',
+  data: 'ref_data',
+  access_entry: 'ref_access_entry',
+  staff_base: 'ref_staff_base',
+} as const satisfies Record<ReferencePointRow['kind'], LabelKey>;
+
+function referencePointRows(level: Level): ReferencePointRow[] {
+  return level.referencePoints.map((point) => ({
+    kind: point.kind,
+    kindLabel: REFERENCE_POINT_LABELS[point.kind],
+    label: point.label,
+    position: { x: point.position.x, y: point.position.y },
+  }));
 }
 
 /**
@@ -211,6 +249,7 @@ export function buildFloorPlan(level: Level, catalog: Catalog): FloorPlanSection
     placements,
     rooms,
     obstructions,
+    referencePoints: referencePointRows(level),
     geometry: geometryOf(level, catalog, numbers),
     raster: rasterPlacement(level),
   };

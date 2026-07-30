@@ -79,27 +79,35 @@ that floor rather than of the view.
 | `boundaries` | Boundary[] | Traced geometry |
 | `spaces` | Space[] | Named rooms |
 | `placements` | Placement[] | Machines on this floor |
-| `referencePoints` | ReferencePoint[] | **Planned, Sprint 6** — `DOCUMENT_VERSION` 4. Where the services enter this floor. |
+| `referencePoints` | ReferencePoint[] | Sprint 6, `DOCUMENT_VERSION` 4. Named points that engineering criteria measure **from**. |
 
-### ReferencePoint — planned, not implemented
+### ReferencePoint
 
 | Field | Type | Notes |
 | --- | --- | --- |
 | `id` | string | |
-| `kind` | `ro_supply` \| `ro_return` \| `drain` \| `electrical_panel` \| `data` | |
+| `kind` | `ro_supply` \| `ro_return` \| `drain` \| `electrical_panel` \| `data` \| `access_entry` \| `staff_base` | Controlled vocabulary — the scoring engine selects on it |
 | `position` | Vec2 | Model millimetres, like all geometry |
 | `label` | string \| null | e.g. "Panel DB-3F-2". Null when the engineer has not named it. |
 
 A property of the **floor**, for the same reason the plan image is: an electrical panel is at a
-place on a floor, not in a view. Sprint 6's layout scoring engine ranks RO piping length, drain
-routing and electrical routing, and each of those is a distance *from* one of these points — a
-distance from a position nobody recorded is not a measurement, so the positions have to be part of
-the document an engineer saves and a report cites.
+place on a floor, not in a view. Four of the scoring criteria the owner approved — installation
+feasibility, RO piping, electrical routing and walking distance, **40 % of the model** — are
+distances *from* one of these points. A distance from a position nobody recorded is not a
+measurement, so the positions are part of the document an engineer saves and a report cites, and
+they are placed with an undoable command like every other edit.
+
+Two of the seven kinds are not utilities. `access_entry` is where equipment is delivered onto the
+floor and `staff_base` is a nurse station; both arrived with B-5a's installation-feasibility and
+walking-distance criteria, and they are why the entity is called `ReferencePoint` rather than
+`UtilityOrigin` — the earlier name would have described five of its seven values.
 
 **An empty array is the correct state, not an incomplete one.** Existing projects migrate to `[]`,
-and until an engineer places an origin those criteria report `unavailable`. Inferring a panel
+and until an engineer places a point those criteria report `unavailable`, never zero — for a
+criterion that *minimises*, an assumed short run is the best possible score. Inferring a panel
 position from the drawing, or defaulting to the nearest wall, would put a number in a report that
-nobody measured. See [../architecture/AI_WORKFLOW.md § D](../architecture/AI_WORKFLOW.md).
+came from an invention (AD-18). The editor's panel says as much where an engineer will read it, and
+so does the report. See [../architecture/AI_WORKFLOW.md § D](../architecture/AI_WORKFLOW.md).
 
 ### PlanImage
 
