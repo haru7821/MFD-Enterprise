@@ -5,5 +5,10 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["tests/e2e", "tests/perf", "playwright.config.ts"]
+  "include": [
+    "tests/e2e",
+    "tests/perf",
+    "tests/summaryReporter.ts",
+    "playwright.config.ts"
+  ]
 }

@@ -43,6 +43,9 @@ jobs:
         run: pnpm build
 
       - name: Run browser tests
+        # Reports PASS/FAIL and the execution time, and nothing else — owner decision,
+        # implemented in tests/summaryReporter.ts. The failing spec, its error, its
+        # screenshot and its retry trace are in the artifact below, not in this log.
         run: pnpm test:e2e
 
       - name: Upload report on failure
@@ -50,5 +53,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
+          # Written by the `html` reporter, which CI now enables. Before the terse log
+          # this path was uploaded with no reporter configured to write it, so the step
+          # found nothing and warned.
           path: playwright-report/
+          # Fail loudly rather than upload an empty artifact: a red gate whose diagnosis
+          # is missing is a gate that cannot be acted on, which is exactly what the terse
+          # log depends on this artifact to prevent.
+          if-no-files-found: error
           retention-days: 7

@@ -85,22 +85,37 @@ Less urgent than it was: the MVP feature list (specification 5.1–5.5) needs no
 Version 1 can ship without `apps/api` at all. The question returns when project sharing or
 a central equipment catalogue becomes a requirement.
 
-### B-2. UI language — cheap now, expensive later
+### B-2. ~~Report language~~ — **decided**
 
-Korean only, English only, or both from the start? The expensive part is not the interface
-but the **generated report** and the rule citation text. Retrofitting a second language
-into a document generator is painful; designing for it costs almost nothing today.
+**Bilingual Korean + English throughout the report.** Every section title and field label
+carries both languages. Owner decision, before Sprint 5.
 
-Currently assumed: English documentation, interface language undecided.
+Consequences, designed in
+[REPORT_ENGINE_DESIGN.md § D](architecture/REPORT_ENGINE_DESIGN.md): font embedding becomes
+mandatory (the standard 14 PDF fonts have no Hangul), one family covers both scripts, and
+labels live as keys in a single reviewable catalogue rather than as prose in the generator.
 
-### B-3. Liability posture — before the first report leaves the building
+**Still open, and narrower:** the *interface* language. The editor is English today, and that
+was not part of this decision. Also open — item 8 in that document's decision table — whether
+finding prose ("Station 4 overlaps Station 5 by 500 mm") stays English for Sprint 5.
+Translating it properly means findings carrying a reason code plus parameters instead of a
+sentence, which reopens `EVALUATION_RESULT_VERSION`.
 
-If MFD-E reports an installation as feasible and the site disagrees, what is the product's
-stated position?
+### B-3. ~~Liability posture~~ — **decided**
 
-**Recommendation:** the report states that it is an engineering aid requiring a qualified
-engineer's review, and every finding is traceable to a manual section. That traceability is
-already designed in; the wording needs an owner decision.
+The notice below appears at the end of every report, verbatim, in both languages. Owner
+decision. Frozen as a constant and asserted character for character, because the failure mode
+is a well-meant edit.
+
+> This report is generated to support engineering planning and installation review. Final
+> installation approval shall be based on applicable regulations, manufacturer documentation,
+> and site verification.
+
+> 본 보고서는 설치 계획 및 기술 검토를 지원하기 위한 자료입니다. 최종 설치 승인 및 시공은
+> 관련 법규, 제조사 공식 문서 및 현장 실측 결과를 기준으로 수행되어야 합니다.
+
+Traceability was already designed in; this settles the wording. Placement details in
+[REPORT_ENGINE_DESIGN.md § G-2](architecture/REPORT_ENGINE_DESIGN.md).
 
 ### B-4. AI assistant scope and data residency — before Sprint 6
 
@@ -132,7 +147,7 @@ Not blocking; recorded so they are visible and can be corrected.
 | C-1 | Metric units, millimetres, throughout. |
 | C-2 | Single user per project; no real-time collaboration in Version 1. |
 | C-3 | Web application. Electron is not in the TS Edition specification. |
-| C-4 | Repository documentation is written in English (see B-2). |
+| C-4 | Repository documentation is written in English. The **report** is bilingual (B-2); internal engineering documents are not, and nobody has asked for them to be. |
 | C-5 | Equipment catalogues and rule sets are versioned in git and loaded at runtime. |
 | C-6 | Imported floor plans are used as a raster underlay the engineer works on top of, not parsed for geometry. |
 | C-7 | Estimates assume 1–2 full-time developers. |
@@ -160,3 +175,7 @@ Not blocking; recorded so they are visible and can be corrected.
 | Polygon geometry — library or internal? | **Internal.** Rooms are concave, so the convex-only separating axis test cannot answer containment; and the tolerance and epsilon policy a clearance verdict rests on should be visible. | Sprint 4 |
 | Is the footprint the machine's size? | **No.** `manufacturerDimensions` is immutable reference data nothing computes with; `designFootprint` is the planning area every engine measures. The footprint must never be written back over the dimensions. | Phase 4.5 |
 | Can a generic planning object have no manufacturer? | **Yes.** `manufacturer` and every manufacturer dimension are nullable. A dialysis bed is a footprint, not a product. | Phase 4.5 |
+| Is verification a property of the record or the field? | **The field group.** Six groups each carry their own status and source, so verified and draft data coexist and a verified figure is never downgraded because another is unknown. A finding is provisional only if a group *it read* is. | Phase 4.5 |
+| Does the design footprint need a citation? | **No.** It is an owner-defined planning property with no manufacturer document behind it. `basis` records the reasoning in prose and nothing gates on it. | Phase 4.5 |
+| Report language? | **Bilingual Korean + English**, every section title and field label in both. | Sprint 4 close |
+| Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |

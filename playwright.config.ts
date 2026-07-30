@@ -25,7 +25,16 @@ export default defineConfig({
   // Spread rather than pass undefined — exactOptionalPropertyTypes treats an
   // explicit undefined as a value, not as "absent".
   ...(process.env['CI'] ? { workers: 1 } : {}),
-  reporter: process.env['CI'] ? [['github'], ['list']] : [['list']],
+  // Owner decision: Browser CI reports **PASS/FAIL and execution time, and nothing else**.
+  // `./tests/summaryReporter.ts` prints those two lines; `html` writes the report that
+  // browser.yml uploads on failure, which is where the detail lives now that the log does
+  // not carry it. The `github` reporter was dropped with `list` — its inline annotations
+  // are the same detail in a different place.
+  //
+  // Locally `list` stays: a developer running the suite wants to see it progress.
+  reporter: process.env['CI']
+    ? [['html', { open: 'never' }], ['./tests/summaryReporter.ts']]
+    : [['list']],
 
   use: {
     baseURL: `http://localhost:${PORT}`,

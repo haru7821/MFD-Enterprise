@@ -6,7 +6,19 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/*.d.ts'],
+    // Flat config does not read .gitignore, so generated output has to be named here as
+    // well. Enabling the Playwright html reporter made this necessary: its bundled trace
+    // viewer is minified JavaScript, and linting it produced four thousand errors in
+    // somebody else's code.
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/*.d.ts',
+      'playwright-report/**',
+      'test-results/**',
+      'blob-report/**',
+      'coverage/**',
+    ],
   },
 
   js.configs.recommended,

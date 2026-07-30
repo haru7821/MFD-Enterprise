@@ -86,6 +86,7 @@ interface ReportModel {
   readonly checklist: ChecklistSection;
   readonly signature: SignatureSection;
   readonly provenance: ProvenanceSection;
+  readonly notice: NoticeSection;            // the liability statement — last, always
 }
 ```
 
@@ -102,13 +103,14 @@ interface ReportModel {
 | 7 | Rule evaluation | `LevelSection.findings` | `EvaluationReport`, grouped and ordered |
 | 8 | Threshold source | inside every finding row | `appliedValue`, `thresholdOrigin`, `source.{document, revision, section}` |
 | 9 | Draft data warning | `conclusion.dataStatus` + per-row marks + `equipment[].verification` | `hasDraftInputs`, `dataStatus` per finding, per-group `fieldVerification` |
-| 10 | Installation checklist | `checklist` | Derived from findings — see E |
+| 10 | Installation checklist | `checklist` | Derived from findings — see F |
 | 11 | Engineer signature block | `signature` | `project.reviewedBy` + blank fields to sign |
+| 12 | Liability notice | `notice` | A frozen constant, both languages, verbatim — see D |
 | — | *Provenance* | `provenance` | Rule set id/version, catalogue versions, app version, contract versions |
 
 **Item 12 is mine, and I think it is required rather than nice:** the *conclusion*, on page
 one. A twelve-page report whose verdict is on page nine is a report whose verdict gets
-missed. See D.
+missed. See E.
 
 ### Two shapes worth arguing about now rather than later
 
@@ -198,7 +200,120 @@ that one not?" needs to be able to answer.
 
 ---
 
-## D. The conclusion, and what it says when nothing is verified
+## D. Language: bilingual Korean and English
+
+> **Owner decision.** Bilingual Korean + English throughout. Every section title and field
+> label carries both languages.
+
+This is the decision that reaches furthest into the implementation, so it is settled before
+any of it is written rather than retrofitted. Three consequences: what is translated, how
+the model carries it, and font embedding.
+
+### What is bilingual, and what is not
+
+The decision names **section titles and field labels**. Those are ours to write, they are
+finite, and a Korean reviewer can check them once. Everything else divides as follows:
+
+| Kind of text | Bilingual? | Why |
+| --- | --- | --- |
+| Section titles, field labels, table headers | **Yes** | The owner's decision. Ours to author, reviewable as a set. |
+| Verdict names, statuses, checklist verbs | **Yes** | Same category — our words, and the ones a hospital reads first. |
+| The liability notice | **Yes** | Supplied in both languages verbatim — see below. |
+| Project name, room names, machine labels | **No** — printed as typed | An engineer who names a room 투석실 A gets 투석실 A. Translating a name someone chose is inventing data. |
+| Manual document titles, revisions, sections | **No** — printed as cited | A citation must match the document a reader will pick up. "AK 98 Operator Manual" is the document's name, not a phrase. |
+| Numbers, units, dates | **No** — one form | 800 mm is 800 mm. Printing it twice would be noise, and localising the decimal separator would make two figures out of one. |
+| **Finding reasons** | **Not yet** — English only | See the honest note below. |
+
+**The finding reasons are the gap, and I am flagging it rather than papering over it.**
+Strings like "Station 4 overlaps Station 5 by 500 mm" are composed inside the rule
+evaluators, in English, today. Making them bilingual is not a report-engine change: it means
+findings carrying a **reason code plus parameters** instead of a sentence, so either language
+can be composed at render time. That is a change to a frozen contract
+(`EVALUATION_RESULT_VERSION` 1 → 2) and it belongs in its own sprint.
+
+For Sprint 5 the findings table has bilingual column headers and English reason text, and the
+report says so in the notice area rather than leaving a reader to notice. Translating the
+sentences with string substitution in the report engine is the one thing I will not do: it
+would put grammar in a renderer and break the moment a rule's wording changed.
+
+> **Owner decision needed (new):** is English-only finding prose acceptable for Sprint 5,
+> with reason codes scheduled for Sprint 6? My recommendation is yes — the alternative
+> delays the report to reopen the evaluation contract.
+
+### How the model carries two languages
+
+Labels are **keys in the model and prose in one catalogue**, not two strings duplicated into
+every row:
+
+```ts
+/** Every label the report can print, in both languages. */
+interface Bilingual {
+  readonly ko: string;
+  readonly en: string;
+}
+
+// src/labels.ts — the single place any wording lives.
+export const LABELS = {
+  section_project:        { ko: '프로젝트 정보',   en: 'Project Information' },
+  field_manufacturer_dim: { ko: '제조사 치수',     en: 'Manufacturer Dimensions' },
+  field_design_footprint: { ko: '설계 점유 면적',  en: 'Design Footprint' },
+  status_verified:        { ko: '검증됨',         en: 'Verified' },
+  status_draft:           { ko: '미검증',         en: 'Draft' },
+  // …
+} as const satisfies Record<string, Bilingual>;
+
+type LabelKey = keyof typeof LABELS;
+```
+
+Three reasons for keys rather than inlined prose:
+
+1. **A model fixture asserts data, not wording.** If every row carried both strings, editing
+   a Korean label would fail thirty tests that are about numbers.
+2. **One file to review.** A Korean-speaking reviewer reads `labels.ts` once, not the
+   generator.
+3. **A missing translation cannot ship.** `satisfies Record<string, Bilingual>` makes a
+   half-translated entry a compile error, and a shape-lock test pins the key set the same way
+   `result.shape.test.ts` pins the evaluation contract.
+
+`LABELS` lives in the package, **not** in `standards/`. AD-4 makes `standards/` the source of
+record for *engineering rules*; a column heading is not one, and putting wording there would
+blur what that directory means.
+
+### How a bilingual label is set
+
+| Element | Form | Why |
+| --- | --- | --- |
+| Section title | Two lines: Korean above, English beneath in a smaller size | A title has vertical room, and stacking keeps both readable |
+| Field label, table header | One line: `한국어 / English` | A two-line header doubles the height of every table on the page |
+| Values | Once | See above |
+
+**Korean first.** The report is handed to a Korean hospital, so the primary reader's language
+leads. Easily revisable — it is one ordering constant in `labels.ts`, not a layout rewrite.
+
+Bilingual headers cost roughly 1.7× the width of English alone, which is a layout fact rather
+than a nuisance: the placement and BOM tables are specified at A4 **landscape** for this
+reason, and `layout.test.ts` asserts that no header is clipped rather than trusting it.
+
+### Fonts: embedding is now mandatory
+
+The standard 14 PDF fonts have no Hangul glyphs. A CJK report **must** embed a font, which is
+the retrofit-painful choice the earlier draft flagged, and it is now settled.
+
+| Decision | Value | Notes |
+| --- | --- | --- |
+| Family | **Noto Sans KR**, Regular + Bold | SIL Open Font License 1.1 — embedding and redistribution permitted, licence file shipped alongside |
+| Coverage | One family for **both** scripts | Noto Sans KR carries Latin, so a bilingual line is one font. Mixing Helvetica with a Korean face would mismatch on the same line and complicate width measurement. |
+| Subsetting | **On**, via `@pdf-lib/fontkit` | A report uses a few hundred distinct glyphs. Subsetting puts tens of kilobytes in the PDF instead of megabytes. |
+| Loading | **Dynamic import**, like the existing pdf.js worker chunk | The two faces are ~10 MB of assets. They must not sit in the initial bundle for a user who never generates a report. |
+| Fallback | **None. Fail loudly** | A missing glyph renders as a blank box, and a report with blank boxes where a room name should be is worse than an error. `emit.ts` throws naming the character it could not draw. |
+
+The last row is the one worth arguing about, so: a silent tofu box in a signed document is
+exactly the class of quiet failure this product is built to refuse. An error the engineer sees
+before sending it is cheaper than a hospital reading 투□실.
+
+---
+
+## E. The conclusion, and what it says when nothing is verified
 
 ```ts
 type Verdict = 'not_acceptable' | 'review_required' | 'acceptable' | 'inconclusive';
@@ -232,7 +347,7 @@ here is exactly what is missing" — and only one of those is true today.
 
 ---
 
-## E. The installation checklist
+## F. The installation checklist
 
 The specification asks for one. It is not clear it should be a fixed list, and a fixed list
 is the wrong answer here: a checklist of generic items ("verify power supply") that ignores
@@ -258,7 +373,7 @@ through everything the tool could not conclude.
 
 ---
 
-## F. The layout drawing
+## G. The layout drawing
 
 Re-emitted as vector paths from model millimetres, at a print scale chosen to fit the page.
 
@@ -286,7 +401,54 @@ Two honest constraints:
 
 ---
 
-## G. Package and file changes
+## G-2. The signature block and the liability notice
+
+### Signature block
+
+| Field | Filled by |
+| --- | --- |
+| Reviewed by · 검토자 | `project.reviewedBy` if set, otherwise blank to sign |
+| Date · 일자 | Blank — the date signed is not the date generated |
+| Organisation · 소속 | Blank |
+| Signature · 서명 | Blank, ruled |
+
+`generatedAt` appears in the provenance section, not here. They are different facts, and
+printing the generation timestamp on the signature line would let an unsigned report look
+signed.
+
+### Liability notice — verbatim, both languages, last
+
+> **Owner decision.** The following notice appears at the end of every report.
+
+**English**
+
+> This report is generated to support engineering planning and installation review. Final
+> installation approval shall be based on applicable regulations, manufacturer documentation,
+> and site verification.
+
+**Korean**
+
+> 본 보고서는 설치 계획 및 기술 검토를 지원하기 위한 자료입니다. 최종 설치 승인 및 시공은
+> 관련 법규, 제조사 공식 문서 및 현장 실측 결과를 기준으로 수행되어야 합니다.
+
+Implementation, and the reasons each part is not a matter of taste:
+
+| Rule | Why |
+| --- | --- |
+| A **frozen constant** in `src/notice.ts`, not a template and not configurable | This is legal wording. A generator that can interpolate into it is a generator that can alter it. |
+| `notice.test.ts` asserts both strings **character for character** | The failure mode is a well-meant edit — a comma, a softened "shall". The test makes the wording immutable in practice, not just in intent. |
+| Emitted **last**, and `layout.ts` reserves its space before paginating | Reserved rather than appended, so it can never be the thing that falls off the end of a full page. |
+| `layout.test.ts` asserts it is present on the final page of **every** fixture, including the empty project | A notice that appears on most reports is not a notice. |
+| Both languages always, regardless of any future language setting | It was supplied as a pair. Printing one half would be an edit. |
+
+The notice also carries the one honest caveat this report needs while the finding prose is
+English-only (see D): a line stating that the findings' explanatory text is in English. That
+sentence is **ours**, marked as such, and kept clearly separate from the owner-supplied
+wording above — which is not edited, extended, or wrapped.
+
+---
+
+## H. Package and file changes
 
 ### New — `packages/report-engine` (currently a scaffold: README, package.json, tsconfig, empty src)
 
@@ -301,9 +463,13 @@ Two honest constraints:
 | `src/drawing.ts` | Level geometry → vector paths at a page scale |
 | `src/paper.ts` | Page sizes, margins, the typographic scale. Data, so A4/A3 and portrait/landscape are a parameter. |
 | `src/emit.ts` | `PageBox[]` → PDF bytes. The **only** file that imports a PDF library. |
+| `src/labels.ts` | Every printable label in Korean and English. The one file wording lives in. |
+| `src/notice.ts` | The liability notice, frozen, both languages |
+| `src/fonts.ts` | Font loading and subsetting. Takes the font bytes as an argument — the package never reads a file, so it stays runnable in a browser and on a server. |
+| `assets/fonts/` | Noto Sans KR Regular + Bold, with `OFL.txt` alongside |
 | `src/index.ts` | Public surface |
 | `fixtures/index.ts` | A fully-populated document *and* a deliberately inconclusive one |
-| `src/*.test.ts` | ~9 suites; see H |
+| `src/*.test.ts` | ~9 suites; see I |
 
 Dependencies: `@mfd/document-model`, `@mfd/object-library`, `@mfd/rule-engine`, `zod`, and
 one PDF library.
@@ -312,7 +478,7 @@ one PDF library.
 
 | Option | Verdict |
 | --- | --- |
-| **`pdf-lib`** | **Recommended.** Pure TypeScript, no native binary, works in browser and Node identically, embeds raster images, draws vector paths, MIT. Font embedding needs `@pdf-lib/fontkit` for anything beyond the standard 14. |
+| **`pdf-lib`** | **Recommended.** Pure TypeScript, no native binary, works in browser and Node identically, embeds raster images, draws vector paths, MIT. Bilingual output makes `@pdf-lib/fontkit` a requirement rather than an option — it is what subsets an embedded Korean face. |
 | `pdfkit` | Node-oriented, stream-based; browser use needs a shim. Better typography out of the box, worse fit for AD-3's "same code both sides". |
 | `jsPDF` | Browser-first, weaker vector and font story. |
 | Headless browser + HTML | Rejected — see B. |
@@ -320,9 +486,9 @@ one PDF library.
 The boundary is drawn so this is replaceable: only `emit.ts` imports it, and stages 1–2 are
 tested without it.
 
-> **Owner decision needed:** does the report need Korean text? If so, font embedding stops
-> being optional — the standard 14 PDF fonts have no CJK glyphs, and this is the choice
-> that is painful to retrofit (B-2 in OPEN_QUESTIONS).
+**Settled:** the report is bilingual, so font embedding is mandatory and `fontkit` is in.
+Details in D. This was the retrofit-painful choice, and it is now made before any of the
+emit stage exists — which is the whole reason for asking early.
 
 ### Modified
 
@@ -332,7 +498,8 @@ tested without it.
 | `apps/web/src/features/report/ReportPreview.tsx` | **new** — the model rendered as HTML, so an engineer sees what they are about to produce |
 | `apps/web/src/app/TopBar.tsx` | A "Report" action beside Save |
 | `apps/web/src/features/validation/useEvaluation.ts` | Evaluate **every** level, not just the active one — the report needs all of them |
-| `apps/web/package.json` | Add `@mfd/report-engine` |
+| `apps/web/package.json` | Add `@mfd/report-engine`; the font assets load through a dynamic import so they stay out of the initial chunk |
+| `apps/web/vite.config.ts` | Font assets as separate chunks, the same treatment the pdf.js worker already gets |
 | `docs/architecture/REPORT_ENGINE_DESIGN.md` | This document, kept current |
 | `docs/roadmap/MVP_PLAN.md` | Sprint 5 acceptance criteria |
 | `docs/testing/PLAYWRIGHT_TEST_PLAN.md` | Report specs |
@@ -350,7 +517,7 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 
 ---
 
-## H. Test strategy
+## I. Test strategy
 
 ### Unit — the report model, with no PDF anywhere
 
@@ -362,8 +529,11 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | `checklist.test.ts` | One item per RED, per unresolved YELLOW, per uncalibrated level, per **draft field group** on a record in use; every item traceable |
 | `bom.test.ts` | Grouping by model across levels; catalogue versions carried; a placement pointing at a missing record is surfaced, not dropped; **manufacturer dimensions and design footprint appear as separate values, and a record with no manufacturer dimensions leaves them empty rather than echoing the footprint** |
 | `verification.test.ts` | A record with **some** groups verified splits into a verified block and a draft block, each listing only its own groups, each verified group carrying its own citation; the design footprint appears in neither and is printed as a planning decision; a fully verified record emits no draft block at all rather than an empty heading |
+| `labels.shape.test.ts` | Every key carries a non-empty `ko` **and** `en`; the key set is locked; no label key referenced by the layout is missing. A half-translated label must not reach a PDF. |
+| `notice.test.ts` | Both liability strings asserted character for character against the owner's wording, and that `notice` is the last section of the model |
 | `drawing.test.ts` | An 800 mm **design footprint** is 800 mm at the page scale — the print-side twin of the browser dimension test. Asserted against the footprint, never the manufacturer dimensions, because the drawing shows the area reserved. |
-| `layout.test.ts` | A 200-row table paginates; headers repeat; nothing is silently truncated |
+| `layout.test.ts` | A 200-row table paginates; headers repeat; nothing is silently truncated; **a bilingual header is not clipped at the specified page width**; the notice is on the last page of every fixture |
+| `fonts.test.ts` | Hangul, Latin and the mm sign all resolve in the embedded face; a character with no glyph **throws** naming the character rather than emitting a blank box |
 | `emit.test.ts` | Produces a parseable PDF with the expected page count. Deliberately shallow — asserting on PDF internals tests the library. |
 | `provenance.test.ts` | Rule set version, catalogue versions and both contract versions present |
 
@@ -379,6 +549,9 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | R6 | An uncalibrated level is named as such in the conclusion |
 | R7 | The BOM shows 585 × 620 × 1305 mm and 800 × 800 mm as distinct values for the AK98, and leaves the manufacturer column empty for the bed |
 | R8 | With one group cited and the rest not, the AK98's data sheet shows a verified block and a draft block, and the collision findings are **not** marked provisional while the clearance findings are |
+| R9 | Every section title in the preview shows both Korean and English |
+| R10 | The liability notice appears, in both languages, at the end — including on a report with no equipment placed |
+| R11 | A room named in Hangul survives into the generated PDF's text layer, which is what proves the embedded font is actually being used rather than silently dropping glyphs |
 
 ### The verification that matters most
 
@@ -389,7 +562,7 @@ one that keeps the report honest. It will be verified by making it fail.
 
 ---
 
-## I. What Sprint 5 does not do
+## J. What Sprint 5 does not do
 
 | | Why |
 | --- | --- |
@@ -401,17 +574,31 @@ one that keeps the report honest. It will be verified by making it fail.
 
 ---
 
-## J. Decisions needed before implementation
+## K. Decisions
+
+### Settled by the owner
+
+| # | Question | Decision |
+| --- | --- | --- |
+| 1 | **Language** | **Bilingual Korean + English throughout**, every section title and field label in both. Font embedding is therefore mandatory — see D. |
+| 2 | **Liability statement** | Supplied verbatim in both languages. Carried at the **end** of every report, frozen, character-asserted — see G-2. |
+
+Note one adjustment to my own earlier proposal: I had assumed the liability sentence would sit
+on page one. The decision places it at the end, which is what is implemented — and it is the
+better placement, since page one is the conclusion and a notice above the verdict competes
+with it.
+
+### Still open, with my defaults
 
 | # | Question | Recommendation |
 | --- | --- | --- |
-| 1 | **Language** — English, Korean, or both? | Decide now. CJK means embedded fonts, and it is the one choice here that is painful to retrofit. |
-| 2 | **Liability sentence** (B-3) | Yours to write. The report will carry it verbatim, on page one. |
-| 3 | **Verdict when nothing is verified** | `inconclusive`, worded as "this review could not be completed", with the missing manual named. |
+| 3 | **Verdict when nothing is verified** | `inconclusive`, worded as "this review could not be completed" / "본 검토는 완료할 수 없습니다", with the missing manual named. |
 | 4 | **Is a standard checklist expected** beyond the derived one? | If yes, it goes in `standards/` as data — not compiled into the generator. |
-| 5 | **Page size** — A4 or A3? | A4 portrait for the document, one A3 landscape sheet for the drawing if the layout warrants it. |
+| 5 | **Page size** | A4 portrait for the document, A4 **landscape** for the placement and BOM tables (bilingual headers need the width), one A3 landscape sheet for the drawing if the layout warrants it. |
 | 6 | **Does the drawing page need the plan underlay**, or the traced geometry alone? | Underlay on, dimmed. It is what makes the drawing recognisable to the hospital. |
 | 7 | **`ReportModel` frozen like the evaluation contract?** | Yes — `reportVersion = 1` and a shape lock. A report is a published artefact. |
+| 8 | **English-only finding prose for Sprint 5?** (new — raised by the bilingual decision) | Yes for Sprint 5, with bilingual reason codes scheduled for Sprint 6. Making the reasons bilingual means findings carrying a code plus parameters instead of a sentence, which reopens `EVALUATION_RESULT_VERSION`. Doing it inside the report engine would put grammar in a renderer. |
+| 9 | **Korean above English, or the reverse?** (new) | Korean first — the report is handed to a Korean hospital. One constant in `labels.ts`; say the word and it flips. |
 
-Items 1 and 2 are the only two that block starting. The rest can be defaults I state and
-you correct.
+None of 3–9 blocks starting. Item 8 is the one I would most like an answer to, because it is
+the only one that changes what Sprint 5 promises rather than how it looks.
