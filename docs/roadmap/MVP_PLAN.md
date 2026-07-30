@@ -12,8 +12,8 @@
 | 3 | Rule Engine | 5.4 | ✅ **Complete** — v0.3 Alpha |
 | 4 | PDF Workflow + Spatial Model | 5.1 | ✅ **Complete and closed** — v0.4 |
 | 4.5 | UX Completion | — | ✅ Complete |
-| 5 | Report Generation | 5.5 | ◀ **Next** — architecture awaiting review |
-| 6 | AI Assistant | §7 Version 3 | ☐ |
+| 5 | Report Generation | 5.5 | ✅ **Complete** — v0.5, awaiting owner review |
+| 6 | AI Assistant | §7 Version 3 | ☐ **Blocked** — not to start before Sprint 5 is approved |
 
 ## Definition of done for the MVP (Sprints 1–5)
 
@@ -218,16 +218,21 @@ Sprint 4 leaves it well placed: the document already records which drawing was a
 how its scale was established, and which rule set produced every verdict — the three things
 a report has to be able to state and cannot reconstruct later.
 
-**Architecture written and awaiting review:**
-[../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md).
-**Implementation plan:** [SPRINT_5_PLAN.md](SPRINT_5_PLAN.md) — six steps, ~15 working days.
+**Delivered.** Architecture: [../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md).
+Plan: [SPRINT_5_PLAN.md](SPRINT_5_PLAN.md). Outcome: [SPRINT_5_REPORT.md](SPRINT_5_REPORT.md).
 
-Both blocking decisions are settled: the report is **bilingual Korean + English** throughout,
-and the liability notice is fixed verbatim in both languages at the end of every report. Font
-embedding is therefore mandatory rather than optional, which is exactly why the language
-question was asked before the emit stage existed.
+Nine sections in the owner's order, **fully bilingual** — every section title, field label,
+finding, warning and recommendation in Korean and English. Three renderers behind one
+interface: PDF, HTML and JSON, with DOCX addable without touching the business logic.
 
-Implementation waits on approval of the architecture, not on a decision.
+The owner's "no English-only findings" decision reopened the frozen evaluation contract:
+findings now carry language-independent reason codes (`RC-101`), so each language is composed
+from the code rather than translated from prose. `EVALUATION_RESULT_VERSION` is 2.
+
+**Done when:** the report is something a TS engineer would send to a hospital. It is, with two
+qualifications stated in the report document: the plan underlay is not yet drawn on the
+drawing page, and no field group in the shipped catalogue is cited, so the verdict is
+`inconclusive` by construction.
 
 Vector output, not a canvas screenshot — the geometry already lives outside the renderer
 to make this possible (AD-2).

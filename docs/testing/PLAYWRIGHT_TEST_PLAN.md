@@ -5,8 +5,9 @@
 
 ## Status — committed and running in CI as of Sprint 3
 
-17 specs in `tests/e2e/`, run by `.github/workflows/browser.yml`, **separate from the fast
-`ci.yml`**. Installing a browser costs minutes; the typecheck / lint / unit gate answers in
+77 specs in `tests/e2e/`, run by `.github/workflows/browser.yml`, **separate from the fast
+`ci.yml`**. Since Sprint 5 that workflow reports only PASS/FAIL and the execution time; the
+failing spec, its error, its screenshot and its retry trace are in the uploaded artifact. Installing a browser costs minutes; the typecheck / lint / unit gate answers in
 under one, and should keep doing so. The two workflows run alongside each other, so a
 failing lint reports in seconds rather than queueing behind a browser download.
 
@@ -123,7 +124,7 @@ has not supplied. Worth making standing when a second, verified equipment record
 | --- | --- | --- |
 | V1 | Rule set identity | The panel names the rule set and version stamped into results |
 | V2 | Evaluation on placement | Placing one machine produces its four clearance findings |
-| V3 | Unknown threshold | Reported YELLOW with "threshold unknown" — no fourth status |
+| V3 | Unknown threshold | Reported YELLOW as `RC-110`, in both languages — no fourth status |
 | V4 | No GREEN while provisional | With the shipped draft rule set, `result-badge-GREEN` never appears |
 | V5 | Collision | Two overlapping machines raise RED, reporting the overlap in millimetres |
 | V6 | Collision clears | Dragging them apart removes the RED |
@@ -255,7 +256,37 @@ meet.
 | L5 | Isolation | Each level's rooms and plan stay its own |
 | L6 | Round trip | Two levels survive a save and reopen |
 
-## 8. Screenshot validation
+## 8. The report (Sprint 5)
+
+`tests/e2e/report.spec.ts`. Twelve specs — R1–R11 from
+[../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md), plus the
+refusal path.
+
+| # | Scenario | Assertion |
+| --- | --- | --- |
+| R1 | Preview | Every one of the nine sections plus provenance is present |
+| R2 | Empty project | Verdict is 판정 불가 / Inconclusive, and the summary says why |
+| R3 | A finding | Reaches the validation table with its `RC-nnn` code, and becomes a checklist item |
+| R4 | Download | A file whose first five bytes are `%PDF-`, over 10 kB |
+| R5 | Two levels | Two floor-plan sections and two validation sections |
+| R6 | No drawing | The uncalibrated warning is **absent** — a level with no plan has exact geometry |
+| R7 | Schedule | 585 × 620 × 1305 mm and 800 × 800 mm as distinct values |
+| R8 | Datasheet | Three blocks apart; the footprint labelled a planning decision, not draft data |
+| R9 | Bilingual | Every section title in Korean and English |
+| R10 | Notice | The liability statement, both languages, on an empty report |
+| R11 | **Hangul in the PDF text layer** | The downloaded PDF is parsed with pdf.js and 종합 요약, 최종 설치 승인 and Executive Summary are read back out |
+| — | Refusal | A character the font cannot draw produces a visible error, not a blank box |
+
+**R11 is the load-bearing one.** Everything before it could pass with a font that renders blank
+boxes: `FontFile2` and `ToUnicode` being present prove a font was embedded, and only extraction
+proves the glyphs are *mapped*. The PDF is parsed in Node rather than in the page, because
+pushing a PDF reader into the application to satisfy a test would be the wrong way round.
+
+**R6 was written expecting the warning and found a defect instead.** The report was marking the
+default project — no drawing at all — as uncalibrated. A level with no plan is not uncalibrated;
+its geometry is exact. The model now carries three plan states, and the spec asserts the absence.
+
+## 9. Screenshot validation
 
 Screenshots are captured as evidence rather than compared pixel-by-pixel. Pixel-diff
 baselines are not adopted here: font rendering and anti-aliasing differ between machines,

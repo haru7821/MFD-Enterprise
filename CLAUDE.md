@@ -22,9 +22,10 @@ Read in this order:
 5. docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md
 6. docs/architecture/DOCUMENT_MODEL.md
 7. docs/architecture/RULE_ENGINE_API.md
-8. docs/roadmap/MVP_PLAN.md
-9. docs/architecture/SYSTEM_ARCHITECTURE.md
-10. CLAUDE.md (this document — direction, not current scope)
+8. docs/architecture/REPORT_ENGINE_DESIGN.md
+9. docs/roadmap/MVP_PLAN.md
+10. docs/architecture/SYSTEM_ARCHITECTURE.md
+11. CLAUDE.md (this document — direction, not current scope)
 
 # MFD-E Project Instruction
 

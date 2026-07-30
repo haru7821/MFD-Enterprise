@@ -91,4 +91,18 @@ Finding sentences are different: they are composed from **reason codes** in
 than authored per rule. `RC-101` is the same finding whatever language it is read in. See
 [docs/architecture/RULE_ENGINE_API.md](../docs/architecture/RULE_ENGINE_API.md).
 
+## Checklists
+
+`checklists/dialysis.json` holds the installation checklist's categories and their standing
+items, bilingual, loaded and validated at module load the same way the rule set is.
+
+It is here rather than compiled into the report engine for the same reason the thresholds are: a
+commissioning step is engineering process data. As data, adding one is a pull request against a
+JSON file that a TS engineer can read; compiled in, it would be a code change and a release.
+
+The report combines these standing items with items **derived** from the findings and from
+unsourced field groups, in the same categories. A checklist of only standing items ignores the
+assessment; a checklist of only derived items is empty on a drawing with no equipment placed, and
+a water loop still needs commissioning.
+
 Full reference: [docs/rules/RULE_ENGINE_IMPLEMENTATION.md](../docs/rules/RULE_ENGINE_IMPLEMENTATION.md).

@@ -7,9 +7,10 @@ It is not a replacement for CAD. Its job is to help a TS engineer evaluate dialy
 installation feasibility quickly and accurately, and every engineering value it applies is
 data it can cite back to a manual, not a number someone wrote from memory.
 
-**Current release: v0.4 Alpha — Sprint 4 closed, Phase 4.5 delivered.** Import a hospital
+**Current release: v0.5 Alpha — Sprint 5 delivered: the engineering report.** Import a hospital
 floor plan, calibrate it, set its origin, trace the rooms and the things in the way, place
-equipment across several floors, and see every installation requirement checked live.
+equipment across several floors, see every installation requirement checked live, and generate
+a bilingual Korean/English installation review report as PDF, HTML or JSON.
 
 Current scope is defined by
 [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md).
@@ -34,16 +35,16 @@ Other commands, all run from the repository root:
 | `pnpm dev` | Run the web client with hot reload |
 | `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
 | `pnpm preview` | Serve the production build locally |
-| `pnpm test` | Run the engine unit tests (402) |
-| `pnpm test:e2e` | Run the browser specs against a production build (65) |
+| `pnpm test` | Run the engine unit tests (493) |
+| `pnpm test:e2e` | Run the browser specs against a production build (77) |
 | `pnpm bench` | Rule engine performance baseline |
 | `pnpm test:perf` | Frame-time measurement — an instrument, not a gate |
 | `pnpm typecheck` | Type-check every workspace |
 | `pnpm lint` | Lint every workspace |
 
-## What v0.4 Alpha does
+## What v0.5 Alpha does
 
-A complete feasibility-review workflow, minus the report:
+The complete feasibility-review workflow, end to end:
 
 1. **Pick the floor.** A project holds as many levels as the building has; each one keeps
    its own drawing, rooms and equipment.
@@ -63,7 +64,12 @@ A complete feasibility-review workflow, minus the report:
 7. **Read the findings.** Clearance, equipment collision and boundary checks, each naming
    the machine, the threshold applied, where that threshold came from, and whether the data
    behind it is verified or provisional.
-8. **Save and reopen** as a `.mfd.json` file, validated in both directions.
+8. **Generate the report.** A bilingual Korean/English installation review document —
+   cover, executive summary, equipment schedule, floor plan with numbered equipment,
+   validation results with the threshold and its source, an installation checklist, equipment
+   datasheets, every applied standard, and a fixed liability statement. Preview it on screen,
+   then download PDF, HTML or JSON.
+9. **Save and reopen** as a `.mfd.json` file, validated in both directions.
 
 Undo and redo cover all of it. One drag is one undo step; one renaming session is one undo
 step; deleting a whole floor comes back whole.
@@ -84,13 +90,14 @@ Underneath:
   YELLOW, never GREEN. A *violation* is never softened for the same reason in reverse:
   poor data must not hide problems.
 
-It does **not** yet generate the PDF report (Sprint 5), read vector geometry from a PDF,
-or parse DWG or IFC. See [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md).
+It does **not** read vector geometry from a PDF, parse DWG or IFC, or produce DOCX — the
+renderer interface is in place for that last one, but no DOCX renderer is written. See
+[docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md).
 
-The report will be **bilingual Korean and English** — every section title and field label in
-both — and will carry a fixed liability notice in both languages. Both were owner decisions
-taken before implementation started, because embedding a Korean font is the one choice in that
-sprint that is painful to retrofit.
+**Findings carry reason codes.** `RC-101` means "insufficient service clearance" whatever
+language it is read in, and each language is composed from the code rather than translated
+from the other. That is what makes the report bilingual rather than translated, and it is why
+`EVALUATION_RESULT_VERSION` is 2.
 
 ## Repository layout
 
@@ -114,7 +121,7 @@ MFD-Enterprise
 │   ├── object-library/     equipment catalogue                                  ← built
 │   ├── document-model/     the project document, commands, save/load            ← built
 │   ├── rule-engine/        installation requirement evaluation                  ← built
-│   └── report-engine/      installation review PDF                        Sprint 5
+│   └── report-engine/      the bilingual engineering report                  ← built
 ├── database/               schema, migrations, seed data
 ├── standards/              rule sets as versioned data
 ├── assets/                 symbols, icons, models
@@ -141,6 +148,7 @@ Read in this order:
 | [docs/roadmap/SPRINT_4_CLOSURE.md](docs/roadmap/SPRINT_4_CLOSURE.md) | What Sprint 4 shipped, the one criterion it did not meet, and what carried forward |
 | [docs/architecture/REPORT_ENGINE_DESIGN.md](docs/architecture/REPORT_ENGINE_DESIGN.md) | Sprint 5 architecture — **awaiting review, not implemented** |
 | [docs/roadmap/SPRINT_5_PLAN.md](docs/roadmap/SPRINT_5_PLAN.md) | Sprint 5 implementation plan — order, estimate, risks |
+| [docs/roadmap/SPRINT_5_REPORT.md](docs/roadmap/SPRINT_5_REPORT.md) | What Sprint 5 shipped, what it did not, and the defects it turned up |
 | [docs/architecture/RULE_ENGINE_API.md](docs/architecture/RULE_ENGINE_API.md) | The frozen finding contract every consumer reads |
 | [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
 | [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |
@@ -151,7 +159,7 @@ Read in this order:
 
 `docs/OPEN_QUESTIONS.md` is the important one.
 
-Four sprints in, **the application is finished and empty**. The plan imports, the scale
+Five sprints in, **the application is finished and empty**. The plan imports, the scale
 calibrates, the rooms trace, the rule engine evaluates — and every finding still reads
 "threshold unknown", because there is no true figure to compare against. The AK98
 installation manual, with its document number and revision, is the one thing standing

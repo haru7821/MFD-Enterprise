@@ -1,9 +1,18 @@
 # Sprint 5 — Report Engine Architecture
 
-> **For review. Not implemented.**
-> Scope: TS Edition specification §5.5 — PDF Installation Review Report.
-> Prerequisite state: Sprint 4 + Phase 4.5, `DOCUMENT_VERSION = 2`,
-> `EVALUATION_RESULT_VERSION = 1`.
+> **Approved and implemented.** Kept as the architecture of record; the sections that
+> changed during implementation say so inline.
+> Scope: TS Edition specification §5.5, and the owner's nine-section structure.
+> State: `DOCUMENT_VERSION = 2`, `EVALUATION_RESULT_VERSION = 2`, `reportVersion = 1`.
+>
+> **What the owner changed after review**, and what it cost:
+>
+> | Decision | Consequence |
+> | --- | --- |
+> | Fully bilingual findings, not English-only | `EVALUATION_RESULT_VERSION` 2 — findings carry reason codes |
+> | Nine sections in a fixed order | `SECTION_ORDER` is data; cover, datasheets and standards were new |
+> | PDF, DOCX, HTML, JSON without changing business logic | The renderer boundary; JSON is three lines |
+> | Not a PDF export sprint — an engineering report engine | The model, not the PDF, is the deliverable |
 
 ---
 
@@ -70,47 +79,57 @@ headers a CSS fight rather than a loop.
 
 ## C. The report model
 
-Ordered exactly as the specification lists it, plus what traceability requires.
+> **Revised at implementation.** The owner specified nine sections in a fixed order; the
+> pre-review draft grouped drawing, calibration, mapping and findings under a single
+> `LevelSection`. The owner's order governs, and it is better: an engineer reads the schedule
+> before the floor plans, and the datasheets after the findings that reference them.
 
 ```ts
 interface ReportModel {
-  readonly reportVersion: 1;
-  readonly generatedAt: string;              // ISO, injected — never a clock
-  readonly documentVersion: number;
-  readonly evaluationResultVersion: number;  // stamped, so an old report is readable
+  readonly reportVersion: number;              // 1, frozen like the evaluation contract
+  readonly generatedAt: string;                // ISO, injected — never a clock
 
-  readonly project: ProjectSection;
-  readonly conclusion: ConclusionSection;    // first page, before the detail
-  readonly levels: readonly LevelSection[];
-  readonly equipment: BomSection;
-  readonly checklist: ChecklistSection;
-  readonly signature: SignatureSection;
-  readonly provenance: ProvenanceSection;
-  readonly notice: NoticeSection;            // the liability statement — last, always
+  readonly cover: CoverSection;                // 1
+  readonly summary: ExecutiveSummarySection;   // 2 — the verdict, on page one
+  readonly equipmentSchedule: EquipmentScheduleSection; // 3
+  readonly floorPlans: readonly FloorPlanSection[];     // 4 — one per level
+  readonly validation: readonly ValidationSection[];    // 5 — one per level
+  readonly checklist: ChecklistSection;        // 6
+  readonly datasheets: readonly DatasheetSection[];     // 7
+  readonly standards: StandardsSection;        // 8
+  readonly notice: NoticeSection;              // 9 — the liability statement, last
+  readonly provenance: ProvenanceSection;      // contract versions, after the notice
 }
 ```
 
-### Section by section, against the owner's list
+`SECTION_ORDER` is exported **as data** and asserted by a test, so a renderer cannot reorder
+the document and an added section has to be placed deliberately.
+
+### Section by section, against the owner's structure
 
 | # | Owner asked for | Section | Source |
 | --- | --- | --- | --- |
-| 1 | Project information | `project` | `Project` — name, customer, reviewed by, created/updated |
-| 2 | Drawing information | `LevelSection.drawing` | `PlanImage` — file name, format, page, pixel size, imported at |
-| 3 | Calibration information | `LevelSection.calibration` | `ScaleCalibration` — method, picked points, typed distance or stated ratio, dpi, timestamp |
-| 4 | Coordinate mapping | `LevelSection.mapping` | mm/px, origin pixel, rotation, **and whether it exists at all** |
-| 5 | Equipment list (BOM) | `equipment` | Catalogue records, grouped by model, counted across levels — **both** manufacturer dimensions and design footprint |
-| 6 | Placement table | `LevelSection.placements` | One row per machine: label, model, position, rotation, room |
-| 7 | Rule evaluation | `LevelSection.findings` | `EvaluationReport`, grouped and ordered |
-| 8 | Threshold source | inside every finding row | `appliedValue`, `thresholdOrigin`, `source.{document, revision, section}` |
-| 9 | Draft data warning | `conclusion.dataStatus` + per-row marks + `equipment[].verification` | `hasDraftInputs`, `dataStatus` per finding, per-group `fieldVerification` |
-| 10 | Installation checklist | `checklist` | Derived from findings — see F |
-| 11 | Engineer signature block | `signature` | `project.reviewedBy` + blank fields to sign |
-| 12 | Liability notice | `notice` | A frozen constant, both languages, verbatim — see D |
-| — | *Provenance* | `provenance` | Rule set id/version, catalogue versions, app version, contract versions |
+| 1 | Cover page: hospital, project, customer, TS engineer, date, MFD version | `cover` | `Project` + `Customer`. **Nothing could set these before Sprint 5** — see the note below. |
+| 2 | Executive summary: total equipment, GREEN/YELLOW/RED | `summary` | Every level's `EvaluationReport`, plus the verdict and its grounds |
+| 3 | Equipment schedule: id, manufacturer, model, manufacturer dimensions, design footprint, verification | `equipmentSchedule` | Catalogue records, grouped by model, counted across every level |
+| 4 | Floor plan: drawing, equipment numbering, scale, coordinate reference | `floorPlans[]` | `PlanImage`, `ScaleCalibration`, `CoordinateMapping`, vector geometry in millimetres |
+| 5 | Validation: severity, rule id, rule name, Korean, English, applied threshold, threshold source, verification | `validation[]` | `EvaluationReport` + the rule file's bilingual `name` |
+| 6 | Installation checklist: electrical, RO water, drain, network, accessibility, final engineer check | `checklist` | `standards/checklists/dialysis.json` **plus** items derived from the findings |
+| 7 | Datasheets: manufacturer data, design footprint, draft data as three separated sections | `datasheets[]` | Per-group `fieldVerification` — see the three-block rule below |
+| 8 | Standards: every applied standard | `standards` | **Every** rule in the set, including those that produced nothing |
+| 9 | Liability statement | `notice` | A frozen constant, both languages, verbatim |
+| — | *Provenance* | `provenance` | Rule set, catalogue and all three contract versions |
 
-**Item 12 is mine, and I think it is required rather than nice:** the *conclusion*, on page
-one. A twelve-page report whose verdict is on page nine is a report whose verdict gets
-missed. See E.
+**Where the verdict went.** The pre-review draft argued for a conclusion on page one and the
+liability notice there too. The owner's structure puts the summary at 2 and the notice at 9,
+which resolves it better than the draft did: page one carries the verdict, and the notice
+does not compete with it.
+
+**The cover page needed a feature, not a section.** `customer` and `reviewedBy` have been in
+the schema since Sprint 4, so a hospital name was always storable — but nothing in the editor
+could type one, which would have meant a blank cover on every real report. Sprint 5 added
+`setProjectDetailsCommand` and a sidebar panel. Worth recording because it is the kind of gap
+a section list does not reveal: the field existed, the path to it did not.
 
 ### Two shapes worth arguing about now rather than later
 
@@ -231,14 +250,18 @@ findings carrying a **reason code plus parameters** instead of a sentence, so ei
 can be composed at render time. That is a change to a frozen contract
 (`EVALUATION_RESULT_VERSION` 1 → 2) and it belongs in its own sprint.
 
-For Sprint 5 the findings table has bilingual column headers and English reason text, and the
-report says so in the notice area rather than leaving a reader to notice. Translating the
-sentences with string substitution in the report engine is the one thing I will not do: it
-would put grammar in a renderer and break the moment a rule's wording changed.
-
-> **Owner decision needed (new):** is English-only finding prose acceptable for Sprint 5,
-> with reason codes scheduled for Sprint 6? My recommendation is yes — the alternative
-> delays the report to reopen the evaluation contract.
+> **Owner decision: no.** English-only findings are not acceptable. Every finding, warning and
+> recommendation carries both languages, with language-independent reason codes.
+>
+> So the contract was reopened in this sprint rather than deferred, and the table above changed
+> with it: **finding sentences are bilingual**, composed per language from `reasonCode` +
+> `reasonParams`. `EVALUATION_RESULT_VERSION` is 2. The full design is in
+> [RULE_ENGINE_API.md](RULE_ENGINE_API.md#reason-codes--why-a-finding-is-not-a-sentence).
+>
+> The one thing that did **not** change is the refusal to translate by substituting words into
+> an English sentence. That would put grammar in a renderer and break the moment a rule's
+> wording changed; the first attempt at it produced "{label}의 front 정비 공간". Korean and
+> English are separate templates keyed by the same code.
 
 ### How the model carries two languages
 
@@ -301,7 +324,7 @@ the retrofit-painful choice the earlier draft flagged, and it is now settled.
 
 | Decision | Value | Notes |
 | --- | --- | --- |
-| Family | **Noto Sans KR**, Regular + Bold | SIL Open Font License 1.1 — embedding and redistribution permitted, licence file shipped alongside |
+| Family | **Pretendard**, Regular + Bold | SIL Open Font License 1.1. Substituted for Noto Sans KR at implementation: reachable through the package registry this environment can use, and 5.4 MB for both faces against Noto's ~11 MB for the same coverage. Verified to carry all 11,172 Hangul syllables plus ×, ·, ≥, °, ㎡. `assets/fonts/OFL.txt` ships alongside. |
 | Coverage | One family for **both** scripts | Noto Sans KR carries Latin, so a bilingual line is one font. Mixing Helvetica with a Korean face would mismatch on the same line and complicate width measurement. |
 | Subsetting | **On**, via `@pdf-lib/fontkit` | A report uses a few hundred distinct glyphs. Subsetting puts tens of kilobytes in the PDF instead of megabytes. |
 | Loading | **Dynamic import**, like the existing pdf.js worker chunk | The two faces are ~10 MB of assets. They must not sit in the initial bundle for a user who never generates a report. |
@@ -548,28 +571,45 @@ everything" would quietly make dragging a machine cost sixty milliseconds.
 | R5 | A two-level project produces sections for both |
 | R6 | An uncalibrated level is named as such in the conclusion |
 | R7 | The BOM shows 585 × 620 × 1305 mm and 800 × 800 mm as distinct values for the AK98, and leaves the manufacturer column empty for the bed |
-| R8 | With one group cited and the rest not, the AK98's data sheet shows a verified block and a draft block, and the collision findings are **not** marked provisional while the clearance findings are |
+| R8 | The datasheet keeps its three blocks apart, and the design footprint is labelled a planning decision rather than draft data |
 | R9 | Every section title in the preview shows both Korean and English |
 | R10 | The liability notice appears, in both languages, at the end — including on a report with no equipment placed |
-| R11 | A room named in Hangul survives into the generated PDF's text layer, which is what proves the embedded font is actually being used rather than silently dropping glyphs |
+| R11 | Hangul survives into the generated PDF's text layer, which is what proves the embedded font is being **used** rather than silently dropping glyphs. Implemented by downloading the PDF and parsing it with pdf.js in Node. |
+| — | A character the font cannot draw produces a **visible error in the interface**, not a blank box in the file |
 
-### The verification that matters most
+All twelve pass. R8 as originally written wanted a record with one group cited, which would
+have meant shipping a citation the owner has not supplied; it is asserted at the unit level
+instead (`equipment.test.ts`), and the browser spec checks the block structure.
 
-**R2 and `conclusion.test.ts`.** The whole risk of this sprint is a report that looks
-finished and says nothing true. A test that a page of "threshold unknown" produces
-`inconclusive` — and that no arrangement of draft data can produce `acceptable` — is the
-one that keeps the report honest. It will be verified by making it fail.
+### The verification that mattered most
+
+**R2 and `conclusion.test.ts`.** The whole risk of this sprint is a report that looks finished
+and says nothing true. `conclusion.test.ts` asserts, over **every code in the catalogue**
+rather than a chosen few, that a YELLOW can never produce `acceptable` and a RED always
+produces `not_acceptable`. R2 asserts the same thing through the browser on an empty project.
+
+**R11 and `render.test.ts`.** `FontFile2` and `ToUnicode` being present only prove that a font
+was embedded. Extraction proves the glyphs are **mapped** — a report can carry a perfect font
+and still draw the wrong characters, and it would look right to everything except a reader.
+
+**The missing-glyph refusal, verified by accident on the first render.** The checklist checkbox
+was U+2610 BALLOT BOX and Pretendard has no glyph for it, so the guard threw and named the
+character. That is exactly the failure it exists to catch, arriving unprompted. The checkbox is
+now a drawn vector square.
 
 ---
 
-## J. What Sprint 5 does not do
+## J. What Sprint 5 did not do
 
 | | Why |
 | --- | --- |
-| Server-side generation and signing | No backend in Version 1 (D, OPEN_QUESTIONS). The pure `buildReport` is what makes it a later addition rather than a rewrite. |
+| **DOCX** | The interface is in place and the JSON renderer proves the boundary holds — a DOCX file would satisfy `TextRenderer`/`BinaryRenderer` without touching `build.ts`. Not stubbed: a `renderDocx` that threw would be a promise the package appears to keep. |
+| **The raster plan underlay on the drawing page** | The model carries `drawing.dataUrl`; the renderers draw vector geometry only. Embedding a 3000 × 2000 scan is the one place the output stops being vector, and it wants a decision about file size (C-6) rather than a quiet addition. Recorded rather than left to be discovered. |
+| **A signature block with ruled fields** | The engineer's name is on the cover; blank ruled lines to sign are not yet drawn. |
+| Server-side generation and signing | No backend in Version 1. The pure `buildReport` is what makes it a later addition rather than a rewrite. |
 | DXF / DWG export | Specification "Future" list |
 | Editable report templates | A configurable template needs someone to have wanted a second layout first |
-| Report comparison between revisions | Wants stored reports, which wants a server |
+| Report comparison between revisions | Wants stored reports, which wants a server. The JSON renderer is what such a comparison would diff. |
 | Photographs / site evidence | Not in §5.5 |
 
 ---
@@ -588,17 +628,14 @@ on page one. The decision places it at the end, which is what is implemented —
 better placement, since page one is the conclusion and a notice above the verdict competes
 with it.
 
-### Still open, with my defaults
+### Settled during implementation
 
-| # | Question | Recommendation |
+| # | Question | What was built |
 | --- | --- | --- |
-| 3 | **Verdict when nothing is verified** | `inconclusive`, worded as "this review could not be completed" / "본 검토는 완료할 수 없습니다", with the missing manual named. |
-| 4 | **Is a standard checklist expected** beyond the derived one? | If yes, it goes in `standards/` as data — not compiled into the generator. |
-| 5 | **Page size** | A4 portrait for the document, A4 **landscape** for the placement and BOM tables (bilingual headers need the width), one A3 landscape sheet for the drawing if the layout warrants it. |
-| 6 | **Does the drawing page need the plan underlay**, or the traced geometry alone? | Underlay on, dimmed. It is what makes the drawing recognisable to the hospital. |
-| 7 | **`ReportModel` frozen like the evaluation contract?** | Yes — `reportVersion = 1` and a shape lock. A report is a published artefact. |
-| 8 | **English-only finding prose for Sprint 5?** (new — raised by the bilingual decision) | Yes for Sprint 5, with bilingual reason codes scheduled for Sprint 6. Making the reasons bilingual means findings carrying a code plus parameters instead of a sentence, which reopens `EVALUATION_RESULT_VERSION`. Doing it inside the report engine would put grammar in a renderer. |
-| 9 | **Korean above English, or the reverse?** (new) | Korean first — the report is handed to a Korean hospital. One constant in `labels.ts`; say the word and it flips. |
-
-None of 3–9 blocks starting. Item 8 is the one I would most like an answer to, because it is
-the only one that changes what Sprint 5 promises rather than how it looks.
+| 3 | **Verdict when nothing is verified** | `inconclusive` / 판정 불가, with its grounds counted. Sharpened once: a YELLOW that is a *pass downgraded for provenance* also counts as inconclusive, because the drawing is not the problem — the data is. `ReasonKind` in the rule engine carries that distinction so it is not a hand-kept list. |
+| 4 | **Is a standard checklist expected** beyond the derived one? | **Yes, both.** `standards/checklists/dialysis.json` holds the owner's six categories as data; derived items from findings and per-group data gaps go in the same categories, derived first. A checklist of only derived items is empty on a drawing with no equipment, and a water loop still needs commissioning. |
+| 5 | **Page size** | A4 **landscape** throughout. Bilingual headers are ~1.7× the width of English and the wide tables carry eight columns; portrait clipped them. A3 is a parameter in `paper.ts`. |
+| 6 | **Does the drawing page need the plan underlay?** | Vector geometry only, so far. The raster underlay is carried in the model (`drawing.dataUrl`) and not yet drawn — see "what Sprint 5 did not do". |
+| 7 | **`ReportModel` frozen like the evaluation contract?** | Yes — `reportVersion = 1`, `SECTION_ORDER` as data, and a build test over both. |
+| 8 | **English-only finding prose?** | **No** — owner decision. Reopened `EVALUATION_RESULT_VERSION` in this sprint. See D. |
+| 9 | **Korean above English, or the reverse?** | Korean first, as recommended. One constant (`DEFAULT_RENDER_OPTIONS`), and every renderer takes the pair as a parameter rather than hard-coding an order. |

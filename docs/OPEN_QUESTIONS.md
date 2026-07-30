@@ -13,10 +13,13 @@
 This is the single blocker for the product's purpose. Everything else on this page can
 wait.
 
-**This is now the only thing standing between the application and a usable answer.** The
-plan imports, the scale calibrates, the rooms trace, the rule engine evaluates, and every
-clearance finding still reads "threshold unknown" — because there is no threshold to
-compare against. The machinery is finished and empty.
+**This is now the only thing standing between the application and a usable answer.** The plan
+imports, the scale calibrates, the rooms trace, the rule engine evaluates, the report generates
+in two languages — and every clearance finding still reads `RC-110`, "no requirement to compare
+against", because there is no threshold. The machinery is finished and empty.
+
+Sprint 5 made the consequence impossible to overlook rather than hiding it: the report's verdict
+is **판정 불가 / Inconclusive**, and it counts the missing citations on page one.
 
 Phase 4.5 narrowed it: the AK98's **dimensions** are now real (585 × 620 × 1305 mm, plus an
 800 × 800 mm design footprint). What is still missing is the **service clearances** and the
@@ -35,7 +38,7 @@ report a TS engineer might sign.
 | Section reference for each figure | Specification section 6 requires source information per rule. "Manufacturer Manual" alone does not meet that bar. |
 | ~~Width · Depth · Height~~ | **Supplied** — 585 × 620 × 1305 mm, Phase 4.5. Still uncited, so that group stays `draft`. |
 | Weight | Not supplied |
-| Front · Rear · Left · Right service clearance | **The remaining blocker.** The 1200 mm in the rule specification is illustrative. Every clearance finding reads "threshold unknown" until these arrive. |
+| Front · Rear · Left · Right service clearance | **The remaining blocker.** The 1200 mm in the rule specification is illustrative. Every clearance finding reads `RC-110` until these arrive. |
 | Power specification | Voltage, phase, rating |
 | RO water specification | Supply pressure, flow, connection type |
 | Drain specification | Diameter, connection type, height |
@@ -95,11 +98,14 @@ Consequences, designed in
 mandatory (the standard 14 PDF fonts have no Hangul), one family covers both scripts, and
 labels live as keys in a single reviewable catalogue rather than as prose in the generator.
 
-**Still open, and narrower:** the *interface* language. The editor is English today, and that
-was not part of this decision. Also open — item 8 in that document's decision table — whether
-finding prose ("Station 4 overlaps Station 5 by 500 mm") stays English for Sprint 5.
-Translating it properly means findings carrying a reason code plus parameters instead of a
-sentence, which reopens `EVALUATION_RESULT_VERSION`.
+Finding prose is **also bilingual** — the owner ruled out English-only findings, so
+`EVALUATION_RESULT_VERSION` was reopened in Sprint 5 and findings now carry reason codes
+(`RC-101`) with each language composed from the code. The findings panel in the editor is
+bilingual for the same reason: the screen and the PDF must not describe a finding differently.
+
+**Still open, and narrower:** the rest of the *interface*. Toolbars, panel headings and error
+messages are English. Nobody has asked for them to change, and the report — the thing a hospital
+receives — is what the decision covered.
 
 ### B-3. ~~Liability posture~~ — **decided**
 
@@ -177,5 +183,7 @@ Not blocking; recorded so they are visible and can be corrected.
 | Can a generic planning object have no manufacturer? | **Yes.** `manufacturer` and every manufacturer dimension are nullable. A dialysis bed is a footprint, not a product. | Phase 4.5 |
 | Is verification a property of the record or the field? | **The field group.** Six groups each carry their own status and source, so verified and draft data coexist and a verified figure is never downgraded because another is unknown. A finding is provisional only if a group *it read* is. | Phase 4.5 |
 | Does the design footprint need a citation? | **No.** It is an owner-defined planning property with no manufacturer document behind it. `basis` records the reasoning in prose and nothing gates on it. | Phase 4.5 |
-| Report language? | **Bilingual Korean + English**, every section title and field label in both. | Sprint 4 close |
+| Report language? | **Bilingual Korean + English** — every section title, field label, finding, warning and recommendation. Findings carry language-independent reason codes. | Sprint 4 close, extended at Sprint 5 |
+| Is Sprint 5 a PDF exporter? | **No.** An engineering report engine: the model is the deliverable, and PDF/HTML/JSON are renderers behind one interface. | Sprint 5 |
+| Which output formats? | PDF, HTML and JSON implemented; DOCX addable without touching business logic. | Sprint 5 |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |
