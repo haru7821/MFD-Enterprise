@@ -21,3 +21,4 @@ export * from './routing';
 export * from './criteria';
 export * from './score';
 export * from './rank';
+export * from './optimise';

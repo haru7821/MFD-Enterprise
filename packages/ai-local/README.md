@@ -3,8 +3,8 @@
 The deterministic layout solver. Pure TypeScript, with the rule engine as its oracle, and **no
 model in it**.
 
-Sprint 6, steps 3 and 4: candidate generation, the two hard gates, the weighted scoring engine and
-the ranking.
+Sprint 6, steps 3–5: candidate generation, the two hard gates, the weighted scoring engine, the
+ranking, and optimisation of an existing layout.
 
 ---
 
@@ -192,3 +192,64 @@ came out as a perfect layout at 0.05 coverage. That is the emptiest-room failure
 weighted sum by making station count a constraint, creeping back through a criterion that improves
 as the room empties. It now reports `unavailable` with no placements: *"how many more fit"* needs a
 layout to be more than.
+
+
+---
+
+## Optimisation (step 5)
+
+`rankLayouts` answers *"what would a good layout look like?"*. `optimiseLayout` answers *"is the
+arrangement I already have improvable?"*, and the difference is not cosmetic:
+
+| | Propose | Optimise |
+| --- | --- | --- |
+| Starting point | An empty room | **An engineer's decision** |
+| Station count | The target, or as many as fit | **Immutable — the count already placed** |
+| Commands | `placement.create` | `placement.move` / `.rotate` only |
+| Answer when nothing is better | Three layouts | **`already_best`** |
+
+### `placement.delete` is impossible, not merely forbidden
+
+Removing a machine improves nearly every criterion — clearance margin, maintenance access, every
+routing distance, expansion room. It is the cheapest way for an optimiser to look effective, and
+what it produces is a layout with fewer stations than the hospital asked for.
+
+So the count is fixed by construction: candidates are generated at exactly the count already placed,
+and commands come from **assigning existing placements to new positions** — a permutation, which has
+nowhere for a deletion to appear. `assertNoDeletions` then checks the output anyway, because a
+structural guarantee that nothing asserts holds only until the next refactor.
+
+Assignment is nearest-first, so each machine keeps its id, its label and its catalogue reference and
+only its transform changes. An accepted proposal reads as *"station 4 moved 300 mm"* in the history
+rather than as a machine vanishing and a different one appearing.
+
+### Four outcomes, and three of them are not proposals
+
+| Outcome | Means |
+| --- | --- |
+| `improved` | Some arrangement beats the current one |
+| `already_best` | **Nothing does.** The engineer's layout is the best this solver can construct |
+| `no_feasible_candidate` | Nothing passes the gates at all — different from "nothing is better" |
+| `not_optimisable` | Nothing is placed. An empty layout is not a candidate |
+
+`already_best` is the answer an optimiser is most tempted to avoid. Returning the best of a worse
+bunch would make every run produce a suggestion, and an engineer who accepted one would have been
+talked into a worse layout by a tool that had nothing to offer.
+
+### Guards verified by breaking them
+
+| Guard | Broken by | Result |
+| --- | --- | --- |
+| Never emits `placement.delete` | Delete + create instead of move | 4 fail |
+| An empty layout is not a candidate | Removing the guard | 1 fails |
+| Only proposes what beats the current | Returning all ranked layouts | 1 fails |
+| Count comes from what is placed | Using `target + 1` | 1 fails |
+| Nearest-target assignment | Index-order pairing | 2 fail |
+| Current scored on the same inputs | Dropping its reference points | 4 fail |
+| Current reports its own target | Passing `null` | 1 fails |
+
+One of those tests could not fail at first: *"scores the current layout on the same model"* compared
+a `scoringModel` object passed to **both** sides, so it was trivially equal. What can actually differ
+is the *inputs* — score the current layout without the reference points the candidates were scored
+with and its coverage drops, making the two totals incomparable while both still read 0…1. The
+assertion is now on coverage and on the reported constraint.
