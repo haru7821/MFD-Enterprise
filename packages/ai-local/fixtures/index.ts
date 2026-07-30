@@ -1,0 +1,154 @@
+import type { Vec2 } from '@mfd/cad-engine';
+import { type Boundary, createBoundary, createObstruction } from '@mfd/document-model';
+import { type Catalog, type EquipmentObject, createCatalog } from '@mfd/object-library';
+import { type RuleSet, createRuleSet } from '@mfd/rule-engine';
+
+/**
+ * Solver fixtures.
+ *
+ * Written here rather than imported from the report engine's, deliberately: the solver must not
+ * depend on the report engine, and a shared fixture would create exactly that edge for the sake of
+ * saving forty lines.
+ *
+ * Every figure here is **invented**, and the same discipline applies as everywhere else in this
+ * codebase: a 1,200 mm in a fixture must never be mistakable for a manual value, so the source
+ * type is `estimate` and every group is draft.
+ */
+
+const DRAFT_GROUP = {
+  status: 'draft',
+  source: {
+    document: null,
+    revision: null,
+    section: null,
+    type: 'estimate',
+    lastUpdated: '2026-07-30',
+  },
+} as const;
+
+export interface FixtureMachineOptions {
+  readonly id?: string;
+  readonly width?: number;
+  readonly depth?: number;
+}
+
+export function fixtureMachineRecord(
+  options: FixtureMachineOptions = {},
+): Record<string, unknown> {
+  return {
+    id: options.id ?? 'fixture_station',
+    manufacturer: 'Fixture Co',
+    model: 'FX-1',
+    category: 'dialysis_machine',
+    version: '1.0.0',
+    manufacturerDimensions: {
+      width: 585,
+      depth: 620,
+      height: 1_305,
+      weight: null,
+      verification: DRAFT_GROUP,
+    },
+    designFootprint: {
+      width: options.width ?? 800,
+      depth: options.depth ?? 800,
+      basis: 'Fixture planning allowance',
+    },
+    connections: {
+      power: { required: true, port: null, specification: null, verification: DRAFT_GROUP },
+      roWater: { required: true, port: null, specification: null, verification: DRAFT_GROUP },
+      drain: { required: true, port: null, specification: null, verification: DRAFT_GROUP },
+    },
+    serviceClearance: {
+      front: 1_200,
+      rear: 800,
+      left: 400,
+      right: 400,
+      verification: DRAFT_GROUP,
+    },
+    environmental: { specification: null, verification: DRAFT_GROUP },
+    symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
+  };
+}
+
+export function fixtureCatalog(options: FixtureMachineOptions = {}): Catalog {
+  return createCatalog([{ fileName: 'fixture_station.json', raw: fixtureMachineRecord(options) }]);
+}
+
+export function fixtureMachine(options: FixtureMachineOptions = {}): EquipmentObject {
+  const object = fixtureCatalog(options).get(options.id ?? 'fixture_station');
+  if (!object) throw new Error('fixture catalogue did not contain its own machine');
+  return object;
+}
+
+/**
+ * A collision rule that produces **RED**.
+ *
+ * Gate 2 is about violations, and on this project almost nothing produces one: every clearance
+ * finding is YELLOW because no threshold has been supplied (A-1). So a fixture that only carried
+ * clearance rules would let a broken Gate 2 pass every test — there would be no RED for it to fail
+ * to catch. This is the rule that makes the gate testable.
+ */
+export function fixtureCollisionRule(
+  options: { ruleId?: string; scope?: 'equipment' | 'boundary' } = {},
+): Record<string, unknown> {
+  return {
+    ruleId: options.ruleId ?? 'fixture_overlap',
+    category: 'collision',
+    name: { ko: '테스트 간섭', en: 'Fixture Overlap' },
+    description: { ko: '테스트용 간섭 규정', en: 'Fixture collision rule' },
+    threshold: null,
+    unit: 'mm',
+    status: 'draft',
+    severity: 'RED',
+    appliesTo: { equipmentIds: null, categories: ['dialysis_machine'] },
+    parameters: { scope: options.scope ?? 'equipment' },
+    source: {
+      document: null,
+      revision: null,
+      section: null,
+      type: 'estimate',
+      lastUpdated: '2026-07-30',
+    },
+  };
+}
+
+export function fixtureRuleSet(
+  records: readonly Record<string, unknown>[] = [
+    fixtureCollisionRule(),
+    fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+  ],
+): RuleSet {
+  return createRuleSet(
+    records.map((raw, index) => ({ fileName: `fixture_rule_${index}.json`, raw })),
+    { id: 'fixture', version: '0.0.1' },
+  );
+}
+
+/** A rectangular room, origin at (0, 0). 8 m × 6 m by default — room for a dozen 800 mm stations. */
+export function fixtureRoom(width = 8_000, depth = 6_000): Vec2[] {
+  return [
+    { x: 0, y: 0 },
+    { x: width, y: 0 },
+    { x: width, y: depth },
+    { x: 0, y: depth },
+  ];
+}
+
+export function fixtureRoomBoundary(width = 8_000, depth = 6_000): Boundary {
+  return createBoundary('boundary-room', 'space_outline', fixtureRoom(width, depth), 'Ward');
+}
+
+/** A column, for the obstruction path. */
+export function fixtureColumn(at: Vec2 = { x: 3_000, y: 2_500 }, size = 600): Boundary {
+  return createObstruction(
+    'boundary-column',
+    'column',
+    [
+      { x: at.x, y: at.y },
+      { x: at.x + size, y: at.y },
+      { x: at.x + size, y: at.y + size },
+      { x: at.x, y: at.y + size },
+    ],
+    'Column C4',
+  );
+}

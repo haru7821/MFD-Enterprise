@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM": the solver runs in the browser today and must stay runnable on a server (AD-3). */
+    "lib": ["ES2022"],
+    "resolveJsonModule": true
+  },
+  "include": ["src", "fixtures"]
+}
