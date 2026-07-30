@@ -1,5 +1,6 @@
 import type { Placement } from '@mfd/document-model';
 import type { EvaluationReport, EvaluationResult } from '@mfd/rule-engine';
+import { renderReason } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 
 import { ResultBadge } from './ResultBadge';
@@ -48,10 +49,32 @@ function ResultRow({
           {/* Which machine, before what is wrong with it. Twenty identical
               findings with no subject are twenty findings nobody can act on. */}
           <p className="text-[12px] font-medium text-ink">{subjects}</p>
+          {/*
+            Bilingual, in the same order the report uses: Korean first, English beneath.
+            The panel and the report must read alike — an engineer who checks the screen
+            and then sends the PDF should not find the two describing a finding
+            differently, and both now compose from `reasonCode` rather than from prose.
+          */}
           <p className="mt-0.5 text-[12px] leading-snug text-ink-muted">
-            {rule?.description ?? result.ruleId}
+            {rule ? rule.description.ko : result.ruleId}
           </p>
-          <p className="mt-0.5 text-[11px] leading-snug text-ink-faint">{result.reason}</p>
+          {rule && (
+            <p className="text-[11px] leading-snug text-ink-muted">{rule.description.en}</p>
+          )}
+          <p className="mt-1 text-[11px] leading-snug text-ink-faint">
+            {renderReason('ko', result.reasonCode, result.reasonParams)}
+          </p>
+          <p className="text-[11px] leading-snug text-ink-faint">{result.reason}</p>
+          {result.caveatCode && (
+            <p
+              data-testid="result-caveat"
+              className="mt-1 text-[11px] leading-snug text-amber-300/90"
+            >
+              {renderReason('ko', result.caveatCode, {})}
+              <br />
+              {renderReason('en', result.caveatCode, {})}
+            </p>
+          )}
 
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-ink-faint">
             {threshold && <span>{threshold}</span>}

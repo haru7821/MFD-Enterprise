@@ -9,7 +9,13 @@ import {
   fixtureRuleSet,
 } from '../fixtures/index';
 import { evaluate } from './evaluate';
-import { EVALUATION_RESULT_VERSION, RESULT_LEVELS } from './index';
+import {
+  EVALUATION_RESULT_VERSION,
+  LANGUAGES,
+  REASON_CODE_LIST,
+  RESULT_LEVELS,
+  renderReason,
+} from './index';
 
 /**
  * Shape lock for the frozen evaluation contract.
@@ -29,11 +35,14 @@ import { EVALUATION_RESULT_VERSION, RESULT_LEVELS } from './index';
 const RESULT_KEYS = [
   'appliedValue',
   'category',
+  'caveatCode',
   'dataStatus',
   'level',
   'measured',
   'placementIds',
   'reason',
+  'reasonCode',
+  'reasonParams',
   'ruleId',
   'source',
   'thresholdOrigin',
@@ -68,8 +77,8 @@ function report() {
 }
 
 describe('the frozen evaluation contract', () => {
-  it('is at version 1', () => {
-    expect(EVALUATION_RESULT_VERSION).toBe(1);
+  it('is at version 2', () => {
+    expect(EVALUATION_RESULT_VERSION).toBe(2);
   });
 
   it('reports exactly the agreed keys', () => {
@@ -101,6 +110,45 @@ describe('the frozen evaluation contract', () => {
       expect(['draft', 'verified']).toContain(result.dataStatus);
       expect(typeof result.reason).toBe('string');
       expect(result.reason.length).toBeGreaterThan(0);
+      expect(REASON_CODE_LIST).toContain(result.reasonCode);
+      expect(result.caveatCode === null || REASON_CODE_LIST.includes(result.caveatCode)).toBe(
+        true,
+      );
+      // Parameter values are the three things a template can interpolate, and nothing
+      // else: a number, a name printed verbatim, or a word that differs by language.
+      for (const [key, value] of Object.entries(result.reasonParams)) {
+        const shape =
+          typeof value === 'number' ||
+          typeof value === 'string' ||
+          (typeof value === 'object' &&
+            typeof (value as { ko?: unknown }).ko === 'string' &&
+            typeof (value as { en?: unknown }).en === 'string');
+        expect(shape, `${result.reasonCode}.${key}`).toBe(true);
+      }
+    }
+  });
+
+  it('renders every finding in both languages, from the code rather than the prose', () => {
+    // The bilingual guarantee, asserted where it can actually be broken. A finding whose
+    // Korean is missing, or whose Korean still contains an unfilled {placeholder}, fails
+    // here rather than reaching a customer's PDF.
+    for (const result of report().results) {
+      for (const language of LANGUAGES) {
+        const rendered = renderReason(language, result.reasonCode, result.reasonParams);
+        expect(rendered.length).toBeGreaterThan(0);
+        expect(rendered, `${result.reasonCode} in ${language}`).not.toMatch(/\{\w+\}/);
+      }
+    }
+  });
+
+  it('derives the English sentence from the code, so the two cannot disagree', () => {
+    // `reason` is a convenience for the live panel, not a second source of truth. If it
+    // were authored separately it would drift from the Korean the first time a wording
+    // changed, and nothing would notice.
+    for (const result of report().results) {
+      expect(result.reason).toBe(
+        renderReason('en', result.reasonCode, result.reasonParams),
+      );
     }
   });
 

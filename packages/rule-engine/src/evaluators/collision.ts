@@ -2,7 +2,7 @@ import type { Placement } from '@mfd/document-model';
 import { footprintCorners } from '@mfd/object-library';
 import type { EquipmentObject } from '@mfd/object-library';
 
-import { type EvaluationResult, decideLevel, weakestStatus } from '../result';
+import { type EvaluationResult, decideLevel, reasonOf, weakestStatus } from '../result';
 import { polygonsOverlap } from '../sat';
 import type { CollisionRule } from '../schema';
 import type { EvaluationContext, ResolvedPlacement } from './types';
@@ -81,7 +81,7 @@ export function evaluateCollision(
         thresholdOrigin: 'none',
         unit: rule.unit,
         dataStatus: 'draft',
-        reason: `collision scope "${rule.parameters.scope}" has no evaluator`,
+        ...reasonOf('RC-902', { scope: rule.parameters.scope }),
         source: rule.source,
       },
     ];
@@ -159,7 +159,7 @@ export function evaluateCollision(
         placementIds: [placement.id],
         measured: null,
         dataStatus,
-        reason: `${placement.label} does not overlap any other equipment`,
+        ...reasonOf('RC-202', { label: placement.label }),
       });
       continue;
     }
@@ -174,7 +174,11 @@ export function evaluateCollision(
         placementIds: [placement.id, overlap.other.id],
         measured: penetration,
         dataStatus,
-        reason: `${placement.label} overlaps ${overlap.other.label} by ${penetration} mm`,
+        ...reasonOf('RC-201', {
+          label: placement.label,
+          other: overlap.other.label,
+          measured: penetration,
+        }),
       });
     }
   }

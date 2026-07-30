@@ -18,6 +18,7 @@ export * from './schema';
 export * from './errors';
 export * from './ruleSet';
 export * from './threshold';
+export * from './messages';
 export * from './result';
 export * from './sat';
 export * from './evaluate';

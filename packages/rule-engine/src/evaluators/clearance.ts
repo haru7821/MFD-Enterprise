@@ -8,7 +8,8 @@ import {
   sideNormals,
 } from '@mfd/object-library';
 
-import { type EvaluationResult, decideLevel, weakestStatus } from '../result';
+import { SIDE_WORDS } from '../messages';
+import { type EvaluationResult, decideLevel, reasonOf, weakestStatus } from '../result';
 import { gapAlongNormal } from '../sat';
 import type { ClearanceRule } from '../schema';
 import { resolveClearanceThreshold } from '../threshold';
@@ -93,6 +94,12 @@ export function evaluateClearance(
 
     // Provenance follows the threshold that was actually applied.
     //
+    // Until Sprint 5 the sentence also carried a clause naming the unsourced figure
+    // ("— the AK98 service clearance is not yet sourced"). It is gone, for two reasons:
+    // it restated `dataStatus`, which every consumer already reads and renders, and a
+    // clause bolted onto a template would have needed a second template per language per
+    // code. The report marks a provisional finding with its own bilingual label.
+    //
     // When the figure came from the equipment record, the finding rests on that
     // record's service-clearance group and is only as good as it. When the figure came
     // from the rule, the record's clearances were not read at all — so an unknown
@@ -115,6 +122,11 @@ export function evaluateClearance(
       source: rule.source,
     } as const;
 
+    // The side is a word we chose, so it travels as both languages. The machine's label
+    // is a name the engineer chose and travels verbatim — see ../messages.ts.
+    const side = SIDE_WORDS[rule.parameters.side];
+    const label = placement.label;
+
     if (resolved.appliedValue === null) {
       // Neither the rule nor the manual gives a figure. No fourth status is
       // invented — "Review Required" is precisely what this is.
@@ -122,17 +134,10 @@ export function evaluateClearance(
         ...base,
         level: 'YELLOW',
         measured: null,
-        reason: `threshold unknown — neither the rule nor the ${object.model} record gives a ${rule.parameters.side} clearance`,
+        ...reasonOf('RC-110', { label, side }),
       });
       continue;
     }
-
-    // Named in the reason, so an engineer reading a YELLOW knows which figure to chase
-    // rather than being told the record as a whole is provisional.
-    const provenanceNote =
-      dataStatus === 'draft' && resolved.thresholdOrigin === 'equipment'
-        ? ` — the ${object.model} service clearance is not yet sourced`
-        : '';
 
     const normals = sideNormals(object);
     const face = faceOf(object, placement.transform, normals[rule.parameters.side]);
@@ -158,17 +163,23 @@ export function evaluateClearance(
         ...base,
         level: decideLevel({ violated: false, severity: rule.severity, dataStatus }),
         measured: null,
-        reason: `nothing within the ${rule.parameters.side} clearance zone of ${resolved.appliedValue} mm${provenanceNote}`,
+        ...reasonOf('RC-103', { label, side, required: resolved.appliedValue }),
       });
       continue;
     }
 
+    const measured = Math.round(nearest);
     const violated = nearest < resolved.appliedValue;
     results.push({
       ...base,
       level: decideLevel({ violated, severity: rule.severity, dataStatus }),
-      measured: Math.round(nearest),
-      reason: `${Math.round(nearest)} mm available, ${resolved.appliedValue} mm required at the ${rule.parameters.side}${provenanceNote}`,
+      measured,
+      ...reasonOf(violated ? 'RC-101' : 'RC-102', {
+        label,
+        side,
+        measured,
+        required: resolved.appliedValue,
+      }),
     });
   }
 

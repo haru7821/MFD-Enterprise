@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { Bilingual } from './messages';
+
 /**
  * Rule record schema.
  *
@@ -79,9 +81,28 @@ export const appliesToSchema = z
     'appliesTo needs equipmentIds or categories; a rule that selects nothing looks like a rule that passes',
   );
 
+/**
+ * A phrase in both languages.
+ *
+ * Rule wording lives **in the rule file**, not in the report generator. A rule's name is
+ * part of the rule — it is what the report prints beside the verdict and what an engineer
+ * quotes to a customer — so it belongs with the threshold and the citation, under AD-4's
+ * "`standards/` is the source of record". A generator holding its own list of rule names
+ * would let the two drift, and the drift would show up in a signed document.
+ *
+ * Both languages required: a rule with one is a rule the bilingual report cannot print.
+ */
+export const bilingualSchema: z.ZodType<Bilingual> = z.strictObject({
+  ko: z.string().min(1),
+  en: z.string().min(1),
+});
+
 const baseRuleFields = {
   ruleId: z.string().regex(/^[a-z0-9]+(_[a-z0-9]+)*$/, 'must be lower_snake_case'),
-  description: z.string().min(1),
+  /** Short title for a table row — "전면 정비 공간 / Front Service Clearance". */
+  name: bilingualSchema,
+  /** The full statement of the requirement. */
+  description: bilingualSchema,
   /**
    * The rule's own threshold, or null to defer to the equipment record.
    * Null is not "no requirement" — it is "this rule does not set the number".

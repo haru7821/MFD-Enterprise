@@ -2,13 +2,27 @@
   {
     "ruleId": "ak98_front_clearance",
     "category": "clearance",
-    "description": "Front service and patient access clearance for the Vantive AK98",
+    "name": {
+      "ko": "전면 정비 공간",
+      "en": "Front Service Clearance"
+    },
+    "description": {
+      "ko": "Vantive AK98 전면 정비 및 환자 접근 공간",
+      "en": "Front service and patient access clearance for the Vantive AK98"
+    },
     "threshold": null,
     "unit": "mm",
     "status": "draft",
     "severity": "RED",
-    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
-    "parameters": { "side": "front" },
+    "appliesTo": {
+      "equipmentIds": [
+        "vantive_ak98"
+      ],
+      "categories": null
+    },
+    "parameters": {
+      "side": "front"
+    },
     "source": {
       "document": null,
       "revision": null,
@@ -20,13 +34,27 @@
   {
     "ruleId": "ak98_rear_clearance",
     "category": "clearance",
-    "description": "Rear maintenance clearance for the Vantive AK98",
+    "name": {
+      "ko": "후면 정비 공간",
+      "en": "Rear Service Clearance"
+    },
+    "description": {
+      "ko": "Vantive AK98 후면 유지보수 공간",
+      "en": "Rear maintenance clearance for the Vantive AK98"
+    },
     "threshold": null,
     "unit": "mm",
     "status": "draft",
     "severity": "RED",
-    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
-    "parameters": { "side": "rear" },
+    "appliesTo": {
+      "equipmentIds": [
+        "vantive_ak98"
+      ],
+      "categories": null
+    },
+    "parameters": {
+      "side": "rear"
+    },
     "source": {
       "document": null,
       "revision": null,
@@ -38,13 +66,27 @@
   {
     "ruleId": "ak98_left_clearance",
     "category": "clearance",
-    "description": "Left side access clearance for the Vantive AK98",
+    "name": {
+      "ko": "좌측 접근 공간",
+      "en": "Left Side Access Clearance"
+    },
+    "description": {
+      "ko": "Vantive AK98 좌측 접근 공간",
+      "en": "Left side access clearance for the Vantive AK98"
+    },
     "threshold": null,
     "unit": "mm",
     "status": "draft",
     "severity": "YELLOW",
-    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
-    "parameters": { "side": "left" },
+    "appliesTo": {
+      "equipmentIds": [
+        "vantive_ak98"
+      ],
+      "categories": null
+    },
+    "parameters": {
+      "side": "left"
+    },
     "source": {
       "document": null,
       "revision": null,
@@ -56,13 +98,27 @@
   {
     "ruleId": "ak98_right_clearance",
     "category": "clearance",
-    "description": "Right side access clearance for the Vantive AK98",
+    "name": {
+      "ko": "우측 접근 공간",
+      "en": "Right Side Access Clearance"
+    },
+    "description": {
+      "ko": "Vantive AK98 우측 접근 공간",
+      "en": "Right side access clearance for the Vantive AK98"
+    },
     "threshold": null,
     "unit": "mm",
     "status": "draft",
     "severity": "YELLOW",
-    "appliesTo": { "equipmentIds": ["vantive_ak98"], "categories": null },
-    "parameters": { "side": "right" },
+    "appliesTo": {
+      "equipmentIds": [
+        "vantive_ak98"
+      ],
+      "categories": null
+    },
+    "parameters": {
+      "side": "right"
+    },
     "source": {
       "document": null,
       "revision": null,

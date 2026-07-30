@@ -2,13 +2,27 @@
   {
     "ruleId": "dialysis_machine_overlap",
     "category": "collision",
-    "description": "Two pieces of equipment may not occupy the same floor area",
+    "name": {
+      "ko": "장비 간 간섭",
+      "en": "Equipment Overlap"
+    },
+    "description": {
+      "ko": "투석 장비는 다른 장비와 겹칠 수 없습니다",
+      "en": "Dialysis equipment must not overlap other equipment"
+    },
     "threshold": null,
     "unit": "mm",
     "status": "draft",
     "severity": "RED",
-    "appliesTo": { "equipmentIds": null, "categories": ["dialysis_machine"] },
-    "parameters": { "scope": "equipment" },
+    "appliesTo": {
+      "equipmentIds": null,
+      "categories": [
+        "dialysis_machine"
+      ]
+    },
+    "parameters": {
+      "scope": "equipment"
+    },
     "source": {
       "document": null,
       "revision": null,

@@ -12,6 +12,7 @@ import {
   fixtureRuleSet,
 } from '../../fixtures/index';
 import { evaluate, type SpatialContext } from '../evaluate';
+import { renderReason } from '../messages';
 
 /**
  * Boundary collision — equipment against the building.
@@ -280,7 +281,19 @@ describe('the calibration gate', () => {
     });
 
     expect(report.results[0]?.level).toBe('YELLOW');
-    expect(report.results[0]?.reason).toContain('not calibrated');
+    // The caveat is a code, not a clause appended to the sentence — the finding itself is
+    // unchanged and still true. Both facts, separately, so both survive translation.
+    expect(report.results[0]?.reasonCode).toBe('RC-321');
+    expect(report.results[0]?.caveatCode).toBe('RC-911');
+    expect(renderReason('ko', 'RC-911', {})).toContain('축척');
+  });
+
+  it('leaves a finding uncaveated when the plan is calibrated', () => {
+    const report = check([fixturePlacement(1, { x: 2_000, y: 2_000 })], [ROOM], {
+      calibrated: true,
+    });
+
+    expect(report.results[0]?.caveatCode).toBeNull();
   });
 
   it('leaves a violation RED on an uncalibrated plan', () => {

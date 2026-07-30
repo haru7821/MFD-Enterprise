@@ -1,5 +1,6 @@
 import type { DataStatus } from '@mfd/object-library';
 
+import { type ReasonCode, type ReasonParams, renderReason } from './messages';
 import type { RuleCategory, RuleSource, RuleStatus, ResultLevel } from './schema';
 import type { ThresholdOrigin } from './threshold';
 
@@ -31,8 +32,13 @@ import type { ThresholdOrigin } from './threshold';
  * nobody is holding — a locked shape is one the build holds for you.
  *
  * Version 1 — Sprint 3.5.
+ * Version 2 — Sprint 5. `reasonCode` and `reasonParams` added, so a finding can be
+ * composed in Korean or English rather than being an English sentence. The owner's
+ * bilingual report decision cannot be satisfied any other way: a translated sentence
+ * drifts behind its original, and substituting words into English word order does not
+ * produce Korean. See ./messages.ts.
  */
-export const EVALUATION_RESULT_VERSION = 1;
+export const EVALUATION_RESULT_VERSION = 2;
 
 export interface EvaluationResult {
   readonly ruleId: string;
@@ -48,9 +54,57 @@ export interface EvaluationResult {
   readonly unit: 'mm';
   /** The weakest provenance among the inputs actually used. */
   readonly dataStatus: DataStatus;
-  /** Plain sentence a TS engineer can read without opening the rule file. */
+  /**
+   * What was found, independent of language. `RC-101` means the same thing to a Korean
+   * report, an English report and a support conversation six months from now.
+   */
+  readonly reasonCode: ReasonCode;
+  /** Values the sentence interpolates — flat and JSON-safe, because this is persisted. */
+  readonly reasonParams: ReasonParams;
+  /**
+   * The English sentence, rendered from `reasonCode` **at construction** so the live
+   * editor panel needs no message lookup.
+   *
+   * Derived, not authored: it is `renderReason('en', reasonCode, reasonParams)`, which is
+   * why it cannot drift from the Korean. Anything that needs another language calls
+   * `renderReason` rather than trying to translate this string.
+   */
   readonly reason: string;
+  /**
+   * A qualification that applies **on top of** the finding, or null.
+   *
+   * The calibration gate is the case that forced this: an uncalibrated plan turns a pass
+   * from GREEN to YELLOW, and the reader needs to know it was the plan and not the
+   * geometry. Before reason codes that clause was concatenated onto the English sentence,
+   * which cannot work bilingually — the qualification has to be a code of its own so each
+   * language composes it.
+   *
+   * A caveat never replaces the finding. `RC-102` with `RC-911` reads "the clearance is
+   * satisfied, and the drawing it was measured on has no scale" — two facts, both true.
+   */
+  readonly caveatCode: ReasonCode | null;
   readonly source: RuleSource;
+}
+
+/**
+ * Build the language-carrying part of a finding from its code.
+ *
+ * Every evaluator goes through this, so no evaluator writes a sentence and the English
+ * text is always the same function of the code. Spreading the result into a finding is
+ * what keeps `reason`, `reasonCode` and `reasonParams` in agreement by construction
+ * rather than by review.
+ */
+export function reasonOf(
+  reasonCode: ReasonCode,
+  reasonParams: ReasonParams = {},
+): Pick<EvaluationResult, 'reasonCode' | 'reasonParams' | 'reason' | 'caveatCode'> {
+  return {
+    reasonCode,
+    reasonParams,
+    reason: renderReason('en', reasonCode, reasonParams),
+    // No caveat by default. The calibration gate in ./evaluate.ts adds one.
+    caveatCode: null,
+  };
 }
 
 export interface EvaluationReport {

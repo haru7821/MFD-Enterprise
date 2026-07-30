@@ -133,7 +133,11 @@ export function fixtureClearanceRule(
   return {
     ruleId: options.ruleId ?? 'fixture_front_clearance',
     category: 'clearance',
-    description: 'Fixture clearance rule',
+    // Both languages, because the schema requires both — a rule with one is a rule the
+    // bilingual report cannot print, and a fixture that could skip it would let that
+    // through.
+    name: { ko: '테스트 정비 공간', en: 'Fixture Service Clearance' },
+    description: { ko: '테스트용 정비 공간 규정', en: 'Fixture clearance rule' },
     threshold: options.threshold === undefined ? 1_200 : options.threshold,
     unit: 'mm',
     status,
@@ -156,7 +160,8 @@ export function fixtureCollisionRule(
   return {
     ruleId: options.ruleId ?? 'fixture_overlap',
     category: 'collision',
-    description: 'Fixture collision rule',
+    name: { ko: '테스트 간섭', en: 'Fixture Overlap' },
+    description: { ko: '테스트용 간섭 규정', en: 'Fixture collision rule' },
     threshold: null,
     unit: 'mm',
     status,

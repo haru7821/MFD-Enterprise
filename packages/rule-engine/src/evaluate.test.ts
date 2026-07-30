@@ -9,6 +9,7 @@ import {
   fixtureRuleSet,
 } from '../fixtures/index';
 import { evaluate } from './evaluate';
+import { renderReason } from './messages';
 import { decideLevel, weakestStatus } from './result';
 
 const NO_CLEARANCE = { front: null, rear: null, left: null, right: null };
@@ -44,8 +45,14 @@ describe('clearance evaluation', () => {
     const first = report.results.find((r) => r.placementIds[0] === 'placement-1');
     expect(first?.measured).toBe(750);
     expect(first?.level).toBe('RED');
-    expect(first?.reason).toContain('750 mm available');
-    expect(first?.reason).toContain('1200 mm required');
+    // The code is the assertion, because the code is the contract: RC-101 means
+    // "insufficient service clearance" whatever either language's wording becomes.
+    expect(first?.reasonCode).toBe('RC-101');
+    expect(first?.reasonParams).toMatchObject({ measured: 750, required: 1_200 });
+    // And both languages compose from it. Asserting only the English would let a broken
+    // Korean template ship.
+    expect(renderReason('en', 'RC-101', first?.reasonParams ?? {})).toContain('750 mm');
+    expect(renderReason('ko', 'RC-101', first?.reasonParams ?? {})).toContain('전면');
   });
 
   it('reports YELLOW with "threshold unknown" when no figure exists', () => {
@@ -58,7 +65,7 @@ describe('clearance evaluation', () => {
     });
 
     expect(report.results[0]?.level).toBe('YELLOW');
-    expect(report.results[0]?.reason).toContain('threshold unknown');
+    expect(report.results[0]?.reasonCode).toBe('RC-110');
     expect(report.results[0]?.thresholdOrigin).toBe('none');
   });
 
@@ -203,8 +210,15 @@ describe('draft policy', () => {
     expect(report.results[0]?.thresholdOrigin).toBe('equipment');
     expect(report.results[0]?.dataStatus).toBe('draft');
     expect(report.results[0]?.level).toBe('YELLOW');
-    // And it says which figure to chase, rather than "this record is provisional".
-    expect(report.results[0]?.reason).toContain('service clearance is not yet sourced');
+    // `thresholdOrigin: 'equipment'` plus `dataStatus: 'draft'` is what says which figure
+    // to chase, and it says it in a form a report can render in either language.
+    //
+    // Until Sprint 5 the English sentence carried a clause naming the unsourced figure.
+    // It was removed with reason codes: it restated these two fields, and a clause bolted
+    // onto a template needs a second template per language per code. The pair above is
+    // the machine-readable version of the same statement, which is what the bilingual
+    // report needs anyway.
+    expect(report.results[0]?.reasonCode).toBe('RC-103');
   });
 
   it('does reach GREEN when the draft group was never read', () => {

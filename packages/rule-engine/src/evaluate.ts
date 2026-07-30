@@ -78,13 +78,12 @@ function applyCalibrationGate(
 ): EvaluationResult[] {
   if (planStatus !== 'uncalibrated') return [...results];
 
+  // A caveat code rather than a sentence appended to `reason`. The report is bilingual, so
+  // "— but the plan is not calibrated" cannot be concatenated onto English prose and still
+  // exist in Korean; it has to be a code each language composes. See ./messages.ts.
   return results.map((result) =>
     result.level === 'GREEN'
-      ? {
-          ...result,
-          level: 'YELLOW' as const,
-          reason: `${result.reason} — but the plan is not calibrated, so this has not been checked against the building`,
-        }
+      ? { ...result, level: 'YELLOW' as const, caveatCode: 'RC-911' as const }
       : result,
   );
 }

@@ -2,13 +2,27 @@
   {
     "ruleId": "dialysis_machine_within_room",
     "category": "collision",
-    "description": "Equipment must stand inside a room outline and clear of structural obstructions",
+    "name": {
+      "ko": "실 경계 및 장애물",
+      "en": "Room Boundary and Obstructions"
+    },
+    "description": {
+      "ko": "투석 장비는 실 내부에 있어야 하며 기둥·샤프트 등 장애물과 겹칠 수 없습니다",
+      "en": "Dialysis equipment must sit inside a room and must not overlap a column, shaft or other fixed obstacle"
+    },
     "threshold": null,
     "unit": "mm",
     "status": "draft",
     "severity": "RED",
-    "appliesTo": { "equipmentIds": null, "categories": ["dialysis_machine"] },
-    "parameters": { "scope": "boundary" },
+    "appliesTo": {
+      "equipmentIds": null,
+      "categories": [
+        "dialysis_machine"
+      ]
+    },
+    "parameters": {
+      "scope": "boundary"
+    },
     "source": {
       "document": null,
       "revision": null,

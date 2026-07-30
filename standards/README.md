@@ -66,7 +66,8 @@ for the same side, the stricter one is applied and the result records which — 
 | --- | --- |
 | `ruleId` | Unique, lower_snake_case. Results are keyed by it, so duplicates are rejected. |
 | `category` | `clearance` or `collision` |
-| `description` | Read by the engineer in the results panel |
+| `name` | `{ ko, en }` — short title for a report row |
+| `description` | `{ ko, en }` — the full requirement, read in the results panel |
 | `threshold` | The figure, or null to defer to the equipment record |
 | `unit` | `mm` |
 | `status` | `draft` or `verified` |
@@ -74,5 +75,20 @@ for the same side, the stricter one is applied and the result records which — 
 | `appliesTo` | `equipmentIds` and/or `categories`; at least one is required |
 | `parameters` | `{ side }` for clearance, `{ scope }` for collision |
 | `source` | Document, revision, section, type, date |
+
+### Both languages are required
+
+`name` and `description` each carry `ko` and `en`, and the loader rejects a rule missing
+either. The report is bilingual, so a rule with only English is a rule it cannot print.
+
+The wording lives **here**, with the threshold and the citation, rather than in the report
+generator. A rule's name is part of the rule — it is what the report prints beside the
+verdict and what an engineer quotes to a customer — and a generator holding its own list of
+names would let the two drift, in a signed document.
+
+Finding sentences are different: they are composed from **reason codes** in
+`packages/rule-engine/src/messages.ts`, because a finding is produced by an evaluator rather
+than authored per rule. `RC-101` is the same finding whatever language it is read in. See
+[docs/architecture/RULE_ENGINE_API.md](../docs/architecture/RULE_ENGINE_API.md).
 
 Full reference: [docs/rules/RULE_ENGINE_IMPLEMENTATION.md](../docs/rules/RULE_ENGINE_IMPLEMENTATION.md).

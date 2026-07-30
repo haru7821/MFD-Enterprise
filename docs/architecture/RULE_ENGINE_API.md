@@ -1,7 +1,8 @@
 # Rule Engine API
 
 > The published interface of `@mfd/rule-engine`.
-> **Evaluation result contract frozen at version 1 in Sprint 3.5.**
+> **Evaluation result contract frozen in Sprint 3.5. Now at version 2** — reason codes,
+> Sprint 5, for the bilingual report.
 >
 > Implementation notes: [RULE_ENGINE_IMPLEMENTATION.md](../rules/RULE_ENGINE_IMPLEMENTATION.md).
 > Rule authoring: [standards/README.md](../../standards/README.md).
@@ -37,8 +38,8 @@ evaluate({ placements, catalog, ruleSet, spatial? }): EvaluationReport
 
 `spatial` was added in Sprint 4. It is optional so a caller with no building — a bare
 layout check, or the Sprint 3 call sites — needs no change; omitting it means no
-boundaries and `planStatus: 'none'`. **The result contract did not change, so
-`EVALUATION_RESULT_VERSION` stays at 1.**
+boundaries and `planStatus: 'none'`. That addition did not change the result contract, so it
+stayed at version 1; **version 2 is Sprint 5's reason codes**, which do.
 
 ### SpatialContext
 
@@ -77,7 +78,7 @@ been checked, so no result may be GREEN.
 
 | Level | On an uncalibrated plan |
 | --- | --- |
-| GREEN | Becomes **YELLOW**, with the reason extended to say why |
+| GREEN | Becomes **YELLOW**, with `caveatCode: 'RC-911'` saying why |
 | YELLOW | Unchanged |
 | RED | **Unchanged.** A violation is never softened for weak provenance |
 
@@ -93,7 +94,8 @@ Defined in [schema.ts](../../packages/rule-engine/src/schema.ts).
 | --- | --- | --- |
 | `ruleId` | `string` | lower_snake_case, unique across the set |
 | `category` | `'clearance' \| 'collision'` | Discriminates `parameters` |
-| `description` | `string` | Shown in the findings panel |
+| `name` | `{ ko, en }` | Short title for a report row — both languages required |
+| `description` | `{ ko, en }` | The full requirement, shown in the findings panel |
 | `threshold` | `number \| null` | Null defers to the equipment record |
 | `unit` | `'mm'` | |
 | `status` | `'draft' \| 'verified'` | |
@@ -129,8 +131,58 @@ Defined in [schema.ts](../../packages/rule-engine/src/schema.ts).
 | `thresholdOrigin` | `'rule' \| 'equipment' \| 'none'` | Which source supplied it |
 | `unit` | `'mm'` | |
 | `dataStatus` | `'draft' \| 'verified'` | The weakest input actually used |
-| `reason` | `string` | A sentence an engineer can read without opening the rule file |
+| `reasonCode` | `` `RC-${number}` `` | **What was found, independent of language.** See below |
+| `reasonParams` | `Record<string, string \| number \| { ko, en }>` | Values the sentence interpolates |
+| `reason` | `string` | The English sentence, **derived** from `reasonCode` at construction |
+| `caveatCode` | `ReasonCode \| null` | A qualification on top of the finding — today only `RC-911`, the uncalibrated plan |
 | `source` | `{ document, revision, section, type, lastUpdated }` | Carried from the rule |
+
+### Reason codes — why a finding is not a sentence
+
+Added in **version 2** (Sprint 5), because the owner's report is fully bilingual and an
+English sentence cannot be made Korean afterwards.
+
+```
+RC-101
+전면 정비 공간 부족
+Insufficient Front Service Clearance
+```
+
+| Range | Category |
+| --- | --- |
+| RC-1xx | Clearance |
+| RC-2xx | Equipment collision |
+| RC-3xx | Boundary — rooms and obstructions |
+| RC-9xx | The rule set could not answer, and caveats |
+
+Three properties follow from a code and from nothing else:
+
+1. **Both languages compose from one entry.** There is no English original with a
+   translation drifting behind it. `renderReason('ko', …)` and `renderReason('en', …)` read
+   the same catalogue row.
+2. **A stored report stays quotable.** `RC-101` is what a report, a support conversation and
+   a customer email all name. Rephrasing the sentence renumbers nothing.
+3. **Grammar stays out of renderers.** The report engine looks up a code and interpolates
+   numbers. It never inspects a string to work out what it says.
+
+Codes are **append-only**: a retired code is never reused, because a report generated last
+year names it.
+
+`reason` is *derived* — `renderReason('en', reasonCode, reasonParams)` — so it cannot
+disagree with the Korean. A shape-lock test asserts exactly that, and asserts that every
+finding renders in both languages with no placeholder left unfilled.
+
+**Parameters carry their kind.** A number is formatted for the locale; a name the user or a
+manual chose is printed verbatim in both languages; a word *we* chose travels as `{ko, en}`.
+That third case is not decoration — interpolating the English word "front" into a Korean
+template was the first version of this, and it produced half-translated output. A machine's
+label is the opposite case: an engineer who names a station 투석기 4 gets 투석기 4 in the
+English report too, because it is a name and not a phrase.
+
+**A caveat never replaces a finding.** `RC-102` with `caveatCode: 'RC-911'` reads "the
+clearance is satisfied, and the drawing it was measured on has no scale" — two facts, both
+true. Before reason codes that qualification was concatenated onto the English sentence,
+which is exactly what could not survive translation.
 
 **Everything is JSON-safe.** No `Date`, no `Map`, no `undefined`, no functions —
 the contract crosses a network boundary in Sprint 5, and anything that does not
@@ -152,8 +204,8 @@ engineer inspecting either machine has to see the problem.
 | Issue type | `category` |
 | Penetration depth in millimetres | `measured`, null when clear |
 
-No field was added for this: the contract already carried all four, so
-`EVALUATION_RESULT_VERSION` stays at 1.
+No field was added for this: the contract already carried all four, so equipment-centred
+reporting needed no version bump of its own.
 
 ### Boundary findings
 

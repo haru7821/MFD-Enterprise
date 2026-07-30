@@ -9,7 +9,7 @@ import type { Vec2 } from '@mfd/cad-engine';
 import type { Boundary } from '@mfd/document-model';
 import { footprintCorners } from '@mfd/object-library';
 
-import { type EvaluationResult, decideLevel, weakestStatus } from '../result';
+import { type EvaluationResult, decideLevel, reasonOf, weakestStatus } from '../result';
 import type { CollisionRule } from '../schema';
 import type { BoundaryEvaluationContext, ResolvedPlacement } from './types';
 
@@ -153,7 +153,7 @@ export function evaluateBoundaryCollision(
         placementIds: [],
         measured: null,
         dataStatus: 'draft',
-        reason: 'no room outline or obstruction has been drawn, so nothing was checked',
+        ...reasonOf('RC-901'),
         source: rule.source,
       },
     ];
@@ -179,10 +179,13 @@ export function evaluateBoundaryCollision(
         level: decideLevel({ violated: true, severity: rule.severity, dataStatus }),
         placementIds: [placement.id],
         measured: depth === null ? null : Math.round(depth),
-        reason:
-          depth === null
-            ? `${placement.label} overlaps ${label(obstruction)}`
-            : `${placement.label} overlaps ${label(obstruction)} by ${Math.round(depth)} mm`,
+        ...(depth === null
+          ? reasonOf('RC-312', { label: placement.label, obstruction: label(obstruction) })
+          : reasonOf('RC-311', {
+              label: placement.label,
+              obstruction: label(obstruction),
+              measured: Math.round(depth),
+            })),
       });
     }
 
@@ -194,7 +197,7 @@ export function evaluateBoundaryCollision(
           level: decideLevel({ violated: false, severity: rule.severity, dataStatus }),
           placementIds: [placement.id],
           measured: null,
-          reason: `${placement.label} clears every obstruction`,
+          ...reasonOf('RC-322', { label: placement.label }),
         });
       }
       continue;
@@ -208,7 +211,7 @@ export function evaluateBoundaryCollision(
         level: decideLevel({ violated: true, severity: rule.severity, dataStatus }),
         placementIds: [placement.id],
         measured: null,
-        reason: `${placement.label} is outside every room outline`,
+        ...reasonOf('RC-303', { label: placement.label }),
       });
       continue;
     }
@@ -220,10 +223,13 @@ export function evaluateBoundaryCollision(
         level: decideLevel({ violated: true, severity: rule.severity, dataStatus }),
         placementIds: [placement.id],
         measured: past === null ? null : Math.round(past),
-        reason:
-          past === null
-            ? `${placement.label} extends beyond ${label(room)}`
-            : `${placement.label} extends ${Math.round(past)} mm beyond ${label(room)}`,
+        ...(past === null
+          ? reasonOf('RC-302', { label: placement.label, room: label(room) })
+          : reasonOf('RC-301', {
+              label: placement.label,
+              room: label(room),
+              measured: Math.round(past),
+            })),
       });
       continue;
     }
@@ -234,7 +240,7 @@ export function evaluateBoundaryCollision(
         level: decideLevel({ violated: false, severity: rule.severity, dataStatus }),
         placementIds: [placement.id],
         measured: null,
-        reason: `${placement.label} is inside ${label(room)} and clears every obstruction`,
+        ...reasonOf('RC-321', { label: placement.label, room: label(room) }),
       });
     }
   }
