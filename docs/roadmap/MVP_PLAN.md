@@ -213,6 +213,10 @@ Sprint 4 leaves it well placed: the document already records which drawing was a
 how its scale was established, and which rule set produced every verdict — the three things
 a report has to be able to state and cannot reconstruct later.
 
+**Architecture written and awaiting review:**
+[../architecture/REPORT_ENGINE_DESIGN.md](../architecture/REPORT_ENGINE_DESIGN.md). Two
+decisions block starting — the report's language, and the liability sentence.
+
 Vector output, not a canvas screenshot — the geometry already lives outside the renderer
 to make this possible (AD-2).
 
