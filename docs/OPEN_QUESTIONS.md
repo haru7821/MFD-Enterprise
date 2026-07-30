@@ -131,9 +131,9 @@ Still open, and the Sprint 6 architecture is arranged so that it does not block 
 
 | If the answer is | Then |
 | --- | --- |
-| Data may not leave | The deterministic solver ships. **Five of the eight features work with no service at all.** |
+| Data may not leave | The deterministic half ships. **Six of the nine features work with no service at all** — including the weighted scoring engine and the installation planner, which both run in the browser. |
 | Data may leave | Both halves ship. No request ever carries the plan image — that is a constraint in the contract, not a habit. |
-| Self-hosted model | Only `apps/ai-service` configuration differs. |
+| Self-hosted model and index | Only `apps/ai-service` configuration differs. |
 
 The second part of this question is **settled**: the assistant interprets and explains; it does not
 decide. Layout generation is a deterministic solver with the rule engine as its oracle, not a
@@ -141,19 +141,61 @@ language model (AD-14). See
 [AI_SYSTEM_ARCHITECTURE.md](architecture/AI_SYSTEM_ARCHITECTURE.md) § E for the exact list of what
 the model may and may not assert.
 
-**Needed before steps 5–7 of [SPRINT_6_IMPLEMENTATION_PLAN.md](roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md).**
+The three decisions taken at the Sprint 6 architecture review moved this question's weight **down**:
+scoring and planning both landed on the deterministic side, and retrieval-first narrowed what the
+model contributes. A "no" answer now costs three features rather than four.
 
-### B-5. Optimisation objective — blocks the ranking, not the optimiser
+**Needed before steps 8–10 of [SPRINT_6_IMPLEMENTATION_PLAN.md](roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md).**
+It also now covers the **knowledge index**: a manufacturer manual is licensed material and a
+hospital's own reports are project data, so where the corpus is indexed is the same question.
 
-When several layouts satisfy every rule, what makes one better? Station count, staff walking
-distance, service run length, construction cost?
+### B-5. ~~Optimisation objective~~ — **decided**
 
-Scheduled now: automatic layout is in Sprint 6. Until this is answered the solver optimises
-**station count** and *measures* the other objectives without ranking on them — an optimiser that
-silently ranked on walking distance would impose a preference nobody chose, inside a document an
-engineer signs.
+**A weighted scoring engine over seven criteria, configurable, and the solver maximises total
+engineering score.** Owner decision, at the Sprint 6 architecture review.
 
-When it is answered it is one comparator and one contract field (`LayoutObjective.primary`).
+| Criterion | Direction |
+| --- | --- |
+| Rule compliance | see below |
+| Number of dialysis stations | maximise |
+| RO piping length | minimise |
+| Drain routing | minimise |
+| Electrical routing | minimise |
+| Maintenance access | maximise |
+| Future expansion | maximise |
+
+Two consequences worth recording, because both are places this could have gone wrong:
+
+**Rule compliance is a filter, not a weight.** *Does it comply* is applied before scoring, so no
+weight configuration can rank a violating layout at all. What is weighted is `compliance_margin` —
+*by how much* — which is real engineering information the old station-count objective discarded
+(AD-17).
+
+**Three criteria measure distance from a utility origin, and the document has none.** Sprint 6 adds
+`Level.utilityOrigins` at `DOCUMENT_VERSION` 4. Until an engineer places them those criteria report
+`unavailable`, never zero — zero is a *perfect* score for a criterion that minimises, so a default
+would rank the layout that ignores every service run highest (AD-18).
+
+`LayoutObjective` is deleted; `ScoringModel` and `ScoreBreakdown` replace it. Designed in
+[AI_WORKFLOW.md § D](architecture/AI_WORKFLOW.md).
+
+### B-5a. The default weights — opened by the decision above
+
+The criteria are the owner's. **The weights are not.** The defaults that will ship in
+`standards/scoring/dialysis.json` are a plausible-looking guess by a developer, and they decide which
+layout an engineer is shown first.
+
+Not blocking, and deliberately so: the model is data, referenced by id and version in every
+`ScoreBreakdown`, so changing it changes no code. But two things follow while it is open:
+
+- **Every proposal shows its per-criterion breakdown**, never a bare total. A single number computed
+  from unreviewed weights is a number with no standing, and the breakdown is the only form in which a
+  weighting can be disagreed with.
+- The shipped defaults are marked in the file as provisional, so nobody inherits them as a decision.
+
+The question, concretely: for a typical dialysis ward, how should station count, RO run length,
+maintenance access and future expansion trade against each other? An engineer's answer replaces the
+file.
 
 ### B-6. Digital twin scope — Version 4
 
@@ -209,6 +251,11 @@ Not blocking; recorded so they are visible and can be corrected.
 | Which font? | Pretendard, OFL 1.1 — smaller, complete Hangul coverage, verified rendering. Not to be replaced unless a requirement cannot be met. | Sprint 5 close |
 | What happens to a glyph the font cannot draw? | An explicit rendering error. **Never a silent substitution.** | Sprint 5 close |
 | Does the AI decide anything? | **No.** It proposes, explains, retrieves and summarises; the rule engine judges and a person decides. | Sprint 5 close |
+| May an LLM answer from its own knowledge? | **No.** Knowledge retrieval is a *stage* that precedes reasoning: no passages, no prompt, no answer. A question the corpus does not cover gets "not in the indexed corpus". | Sprint 6 architecture review |
+| Who produces the installation sequence? | **A deterministic planner** (`packages/ai-planner`), from declared stage dependencies in `standards/sequences/`. Not a model — an installation order must be the same on a second run. | Sprint 6 architecture review |
+| Does the plan carry durations or dates? | **No.** Order and dependency only. Duration depends on crew, access, lead times and a contract, none of which this platform holds. | Sprint 6 architecture review |
+| Where does the planner's commissioning checklist come from? | **The report's existing checklist**, by item id. A second list could disagree with the signed document. | Sprint 6 architecture review |
+| What does the layout solver optimise? | **A weighted engineering score** over seven criteria, configurable as data. Not station count. See B-5. | Sprint 6 architecture review |
 | Desktop application or web? | **Web-native**, no exceptions. Desktop browsers primary, tablet secondary, installable as a PWA. No Electron. | Sprint 5 close |
 | Offline? | The **application** caches itself. Remembering recent **projects** offline is a future sprint — it means storing hospital floor plans in browser storage, which touches B-4. | Sprint 5 close |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |

@@ -228,16 +228,41 @@ file, long after the state that caused it was gone.
 
 ### Migration
 
-`DOCUMENT_VERSION` is **2**. The chain has one real step, added in Phase 4.5 when
-`obstructionType` arrived on `Boundary`:
+`DOCUMENT_VERSION` is **3**. Two real steps:
 
-| Step | Does |
-| --- | --- |
-| v1 → v2 | Adds `obstructionType` to every boundary: `null` for room outlines and walls, `"other"` for anything already marked `kind: "obstruction"` |
+| Step | Added in | Does |
+| --- | --- | --- |
+| v1 → v2 | Phase 4.5 | Adds `obstructionType` to every boundary: `null` for room outlines and walls, `"other"` for anything already marked `kind: "obstruction"` |
+| v2 → v3 | Sprint 5 | Adds `project.settings` with `reportRenderMode: "vector"` — the default, and the only mode that does not depend on a raster being present |
 
 A v1 obstruction says something is in the way and nothing about what. `"other"` records
 that honestly; guessing `"column"` would be an invention the engineer would then have to
 notice was wrong.
+
+### Version 4, planned but not written
+
+Sprint 6 adds **`Level.utilityOrigins`** — where the RO supply and return, the drain, the electrical
+panel and the data service enter a level, as model millimetres:
+
+```ts
+interface UtilityOrigin {
+  id: string;
+  kind: 'ro_supply' | 'ro_return' | 'drain' | 'electrical_panel' | 'data';
+  position: Vec2;
+  label: string | null;
+}
+```
+
+**Why the document needs it rather than the solver holding it.** Three of the seven criteria the
+layout scoring engine ranks on are distances *from* one of these points
+([AI_WORKFLOW.md § D](AI_WORKFLOW.md)). A distance from a position nobody recorded is not a
+measurement, so the positions belong in the document an engineer saves, alongside the geometry they
+are measured against — and they are placed with an undoable command like everything else.
+
+The v3 → v4 migration gives every existing level an **empty** array. That is the honest value: no
+engineer has placed an origin, so the scoring engine reports those criteria `unavailable` rather than
+computing a distance from an assumed point. A migration that guessed a panel location on the nearest
+wall would produce a number in a report from an invention (AD-18).
 
 Two things the first real migration taught, both fixed:
 

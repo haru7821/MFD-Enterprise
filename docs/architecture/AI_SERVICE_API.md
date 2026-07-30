@@ -1,12 +1,16 @@
 # AI Service API
 
-> **For review. Not implemented.**
+> **Revised for review. Not implemented.**
 > The contract between the editor and the AI, in both directions.
 > Companion to [AI_SYSTEM_ARCHITECTURE.md](AI_SYSTEM_ARCHITECTURE.md).
+>
+> **Revision 2** adds the knowledge engine as a *stage* rather than a peer capability, the
+> installation planner, and the weighted scoring model. `LayoutObjective` is gone — replaced by
+> `ScoringModel` and `ScoreBreakdown`.
 
 ---
 
-## A. One interface, two implementations
+## A. One interface, three implementations
 
 ```ts
 // packages/ai-contract/src/client.ts — pure TypeScript, no AI in it.
@@ -15,30 +19,57 @@ export interface AiClient {
   /** Which capabilities this implementation actually has. */
   readonly capabilities: readonly AiCapability[];
 
+  // Deterministic. `ai-local` and `ai-planner`; no model, no network.
   propose(request: ProposalRequest): Promise<AiProposal[]>;
+  score(request: ScoreRequest): Promise<ScoreBreakdown>;
+  plan(request: PlanRequest): Promise<InstallationPlan>;
+
+  /**
+   * The knowledge engine. **A stage, not a convenience.**
+   *
+   * Every language method below is defined as retrieval followed by reasoning, and the service
+   * enforces that internally: `explain`, `ask` and `summarise` call the engine first and pass the
+   * passages to the model as a required argument. `retrieve` is exposed separately because it is
+   * useful on its own — an engineer searching the indexed manuals needs no model at all.
+   */
+  retrieve(request: RetrievalRequest): Promise<RetrievalResult>;
+
+  // Language. Each of these retrieves first; none can be answered from memory (AD-16).
   explain(request: ExplainRequest): Promise<AiExplanation>;
   ask(request: QueryRequest): Promise<AiAnswer>;
-  retrieve(request: RetrievalRequest): Promise<RetrievalResult>;
   summarise(request: SummaryRequest): Promise<AiSummary>;
 }
 
 export const AI_CAPABILITIES = [
+  // ai-local
   'propose_placement',
   'propose_layout',
   'optimise_layout',
+  'score_layout',
   'recommend_installation',
+  // ai-planner
+  'plan_installation',
+  // the knowledge engine — no LLM required
+  'retrieve_knowledge',
+  // the LLM, each retrieval-first
   'explain_rule',
   'explain_finding',
+  'explain_plan',
   'answer_query',
-  'retrieve_knowledge',
   'summarise_report',
 ] as const;
 ```
 
-**`capabilities` is not decoration.** `ai-local` reports the four it can do offline and the editor
-hides the rest; `ai-service` reports the language ones. A composite client that delegates per
-capability is how the two are used together, and it is why the editor asks *what can you do*
-rather than *are you the local one*.
+**`retrieve_knowledge` sits in the middle group deliberately.** It is available whenever a corpus is
+indexed, whether or not a language model is configured — because retrieval is a search index and
+returning a cited passage needs no reasoning.
+
+**`capabilities` is not decoration.** `ai-local` reports the five it can do offline, `ai-planner`
+reports `plan_installation`, `ai-service` reports `retrieve_knowledge` and the language ones — and
+only those it is configured for: a service with an index but no model key reports retrieval alone,
+which is a supported deployment rather than a broken one. A composite client that delegates per
+capability is how the three are used together, and it is why the editor asks *what can you do*
+rather than *which one are you*.
 
 Every method returning a rejected promise or a schema-invalid payload is treated the same way: the
 capability is unavailable for this request, the panel says so, and **nothing about the document,
@@ -89,27 +120,132 @@ export interface ProposalRequest {
   readonly quantity: number | null;
   /** For `resolve_finding`: which finding to try to clear. */
   readonly findingRuleId: string | null;
-  readonly objective: LayoutObjective;
+  /**
+   * Where the services enter this level, in model millimetres.
+   *
+   * Required by three of the seven scoring criteria, and **empty is a legitimate value**: the
+   * routing criteria then report `unavailable` rather than zero. A zero would score an unmeasured
+   * pipe run as the best possible one (AD-18).
+   */
+  readonly utilityOrigins: readonly UtilityOriginSummary[];
+  readonly scoring: ScoringModel;
 }
 
-export interface LayoutObjective {
+/**
+ * The weighted scoring model — owner decision, replacing station-count-only optimisation.
+ *
+ * Passed in rather than held by the solver, so the weights are a project-and-organisation choice
+ * loaded from `standards/scoring/` and a proposal can name which model produced its score.
+ */
+export interface ScoringModel {
+  readonly id: string;
+  readonly version: string;
+  readonly criteria: Readonly<Record<ScoringCriterion, CriterionConfig>>;
+}
+
+export const SCORING_CRITERIA = [
+  'compliance_margin',
+  'station_count',
+  'ro_piping_length',
+  'drain_routing',
+  'electrical_routing',
+  'maintenance_access',
+  'future_expansion',
+] as const;
+
+export interface CriterionConfig {
+  /** 0…1. The set need not sum to 1 — contributions are normalised by the total. */
+  readonly weight: number;
+  readonly direction: 'maximise' | 'minimise';
   /**
-   * What makes one satisfying layout better than another.
+   * What counts as a full score, in the criterion's own unit.
    *
-   * **This is [OPEN_QUESTIONS](../OPEN_QUESTIONS.md) B-5, and it is still open.** Until it is
-   * answered the solver optimises `station_count` and reports the others as measured figures
-   * rather than ranking on them — a ranking on an objective nobody chose is a preference
-   * disguised as an optimisation.
+   * Without this the weights are meaningless: a weighted sum over a count and a length in
+   * millimetres is not a quantity. Every criterion normalises to 0…1 against an explicit
+   * reference, and the reference is configuration rather than a constant in the solver.
    */
-  readonly primary: 'station_count' | 'staff_walking_distance' | 'service_run_length';
-  readonly minimumClearanceMargin: number;
+  readonly reference: Readonly<Record<string, number>>;
 }
 ```
+
+**There is no `LayoutObjective` any more, and no `primary` criterion.** The first revision had one
+because B-5 was open; the owner's decision closes it, and a single primary would now be a way to
+reintroduce the thing it replaced.
+
+**Hard compliance is not in `SCORING_CRITERIA`.** `compliance_margin` is headroom above a
+requirement and is scored; a *violation* is a filter applied before scoring, so no weighting can
+purchase one (AD-17). The two readings of "rule compliance" look alike and only one is safe.
 
 `existing` carries a *summary* — id, transform, catalogue id — not equipment records. The solver
 resolves dimensions from the catalogue itself, so a proposal cannot rest on a stale copy of a
 footprint. That is the same rule that makes a `Placement` reference a catalogue entry rather than
 embed one.
+
+### `UtilityOriginSummary` — the geometry three criteria need
+
+```ts
+/**
+ * Where a service enters the level. New in Sprint 6; requires `DOCUMENT_VERSION` 4.
+ *
+ * RO piping length, drain routing and electrical routing are distances **from somewhere**, and the
+ * document has no somewhere today. So the sprint adds `Level.utilityOrigins`, and this is its
+ * request-side projection.
+ */
+export interface UtilityOriginSummary {
+  readonly id: string;
+  readonly kind: 'ro_supply' | 'ro_return' | 'drain' | 'electrical_panel' | 'data';
+  readonly position: Vec2;
+}
+```
+
+**A missing origin is `unavailable`, never a distance of zero** (AD-18). Zero is the *best* possible
+score for a criterion whose direction is `minimise`, so defaulting to it would reward an unplaced
+service by ranking the layout that ignores it highest. `ScoreBreakdown` carries the distinction, and
+a proposal produced without origins says so on its face.
+
+### `ScoreRequest` — score a layout that already exists
+
+```ts
+/**
+ * Scoring, separated from proposing.
+ *
+ * `propose` scores internally to rank candidates. This exists because an engineer's *own* layout
+ * deserves the same number: without it the score is only ever attached to the machine's suggestion,
+ * which makes it a sales figure rather than a measurement.
+ */
+export interface ScoreRequest {
+  readonly context: AiRequestContext;
+  readonly room: { readonly vertices: readonly Vec2[]; readonly name: string };
+  readonly obstructions: readonly { readonly vertices: readonly Vec2[]; readonly kind: string }[];
+  readonly placements: readonly PlacementSummary[];
+  readonly utilityOrigins: readonly UtilityOriginSummary[];
+  readonly scoring: ScoringModel;
+}
+```
+
+### `PlanRequest` — installation sequence and commissioning
+
+```ts
+export interface PlanRequest {
+  readonly context: AiRequestContext;
+  /** What is being installed. Catalogue ids and transforms, as everywhere else. */
+  readonly placements: readonly PlacementSummary[];
+  readonly utilityOrigins: readonly UtilityOriginSummary[];
+  /** The stage set to sequence against — `standards/sequences/dialysis.json`. */
+  readonly sequenceSetRef: { readonly id: string; readonly version: string };
+  /**
+   * Open findings, so a plan can refuse to sequence past an unresolved one.
+   *
+   * A commissioning plan for a layout with a RED finding in it is a plan to commission something
+   * that should not be built, and silence there would be the report engine's `Inconclusive`
+   * problem in a new place.
+   */
+  readonly findings: readonly FindingFacts[];
+}
+```
+
+**`PlanRequest` carries no dates and asks for none.** Durations and calendars are a project-management
+concern the platform has no data for; a plan states order and dependency (AD-19).
 
 ### `ExplainRequest` — a rule or a finding
 
@@ -173,6 +309,36 @@ export interface GroundingBundle {
   readonly planImage?: never;
 }
 
+/**
+ * The knowledge engine's own request.
+ *
+ * Issued by the editor when an engineer searches the manuals, and issued *internally* by the
+ * service as stage ① of every language method. One request type for both, so the passages a model
+ * reasoned over are the same passages a person could have read.
+ */
+export interface RetrievalRequest {
+  readonly context: AiRequestContext;
+  readonly query: string;
+  /** Which indexed corpora to search. Empty means all of them. */
+  readonly corpora: readonly KnowledgeCorpus[];
+  /** How many passages to return. The service caps it; a prompt cannot ask for the whole manual. */
+  readonly limit: number;
+  /**
+   * Restrict to documents the project actually cites.
+   *
+   * A manual for a machine that is not in this project is not evidence about this project, and an
+   * explanation drawing on one would cite a document the reader cannot find in the report.
+   */
+  readonly restrictToReferenced: boolean;
+}
+
+export const KNOWLEDGE_CORPORA = [
+  'manufacturer_manual',
+  'rule_set',
+  'standard',
+  'internal_guideline',
+] as const;
+
 export interface SummaryRequest {
   readonly context: AiRequestContext;
   /** The report model, minus every raster. Enforced by the type, not by remembering. */
@@ -184,6 +350,12 @@ export interface SummaryRequest {
 
 `planImage?: never` is a deliberate use of the type system as documentation: the field cannot be
 set, and a reviewer reading the interface sees *why* rather than noticing it is missing.
+
+**`RetrievalRequest` has no `grounding`, and `QueryRequest` keeps its.** They answer different
+questions: retrieval searches an indexed corpus of *published* documents, grounding exposes facts
+about *this project*. An answer needs both — the passage that states a requirement, and the measured
+value it is being compared against — and conflating them would either put project data in a search
+index or make a citation unresolvable.
 
 ---
 
@@ -228,6 +400,8 @@ export interface ProposalEvaluation {
   /** Findings the proposal clears, and findings it introduces. Both, always. */
   readonly resolves: readonly string[];
   readonly introduces: readonly string[];
+  /** Why this candidate won. Never a bare total — see `ScoreBreakdown`. */
+  readonly score: ScoreBreakdown;
 }
 ```
 
@@ -239,6 +413,90 @@ absent field and an empty one must not look the same.
 commands to a copy of the document, runs `evaluate()`, and fills this in before showing anything.
 A service-supplied evaluation would be a claim about the rule engine made by something that is not
 the rule engine.
+
+### `ScoreBreakdown` — the total is the least interesting field
+
+```ts
+export interface ScoreBreakdown {
+  readonly scoringModel: { readonly id: string; readonly version: string };
+  /** 0…1, the weighted sum over criteria that could be measured. */
+  readonly total: number;
+  readonly criteria: readonly CriterionScore[];
+  /**
+   * Criteria that could not be measured, and why.
+   *
+   * Non-empty is normal, not an error. A total computed over five of seven criteria is a total the
+   * reader must be able to see the shape of, so it is reported alongside rather than folded in.
+   */
+  readonly unavailable: readonly UnavailableCriterion[];
+}
+
+export interface CriterionScore {
+  readonly criterion: ScoringCriterion;
+  /** The measurement, in the criterion's own unit — 12 stations, 8,400 mm of pipe. */
+  readonly measured: number;
+  readonly unit: string;
+  /** 0…1 after normalising `measured` against `CriterionConfig.reference`. */
+  readonly normalised: number;
+  readonly weight: number;
+  /** `normalised × weight ÷ Σweights`. Stated so the arithmetic is checkable. */
+  readonly contribution: number;
+}
+
+export interface UnavailableCriterion {
+  readonly criterion: ScoringCriterion;
+  /** `RC`-style and language-independent, so the panel and the report say the same thing. */
+  readonly reasonCode: string;
+}
+```
+
+**A `ScoreBreakdown` with a `total` and no `criteria` is schema-invalid.** This is the same
+enforcement as the report's Inconclusive rule, applied to optimisation: a single number ranking two
+layouts is unarguable-with, and the criteria are where an engineer disagrees usefully — *"you scored
+maintenance access above expansion, and for this ward that is backwards."* The breakdown is also the
+only way the default weights can be reviewed at all, and they are currently a guess awaiting an owner
+decision.
+
+**Renormalising by the weights that were measurable** — `÷ Σweights` over available criteria — is a
+choice with a cost worth naming: two layouts scored with different criteria available are not
+comparable, even though both totals read 0…1. The client compares only within one `ScoreRequest`, and
+the report prints `unavailable` beside the total rather than a bare figure.
+
+### `InstallationPlan` — order and dependency, no calendar
+
+```ts
+export interface InstallationPlan {
+  readonly sequenceSet: { readonly id: string; readonly version: string };
+  readonly stages: readonly InstallationStage[];
+  /**
+   * Why the plan is not complete, if it is not: an open RED finding, a missing utility origin, a
+   * stage whose prerequisite is not in this project.
+   */
+  readonly blockers: readonly PlanBlocker[];
+}
+
+export interface InstallationStage {
+  readonly id: string;
+  readonly order: number;
+  readonly title: { readonly ko: string; readonly en: string };
+  /** Stage ids that must complete first. Derived from the standards data, never invented. */
+  readonly dependsOn: readonly string[];
+  /** Placement ids this stage acts on, so the plan and the drawing agree. */
+  readonly placementIds: readonly string[];
+  /** Commissioning items, in the report engine's own checklist vocabulary. */
+  readonly checklistItemIds: readonly string[];
+  /** Declared and always absent. Duration is not ours to state — see AD-19. */
+  readonly durationDays?: never;
+}
+```
+
+**The plan reuses the report engine's checklist items rather than producing prose.** Sprint 5 already
+built a bilingual checklist from `standards/checklists/dialysis.json` plus derived data-gap items; a
+planner writing its own commissioning text would be a second checklist that can disagree with the
+one in the signed report.
+
+`durationDays?: never` is the same technique as `planImage?: never`: the omission is a contract a
+reviewer can see, not something to be re-argued when somebody wants a Gantt chart.
 
 ### `AiExplanation`, `AiAnswer`, `RetrievalResult`, `AiSummary`
 
@@ -270,8 +528,63 @@ export interface AiAnswer {
    * enough to answer that" a first-class response rather than a failure.
    */
   readonly insufficientGrounding: boolean;
+  /**
+   * The passages stage ① returned. **Required, and empty means the model was never called.**
+   *
+   * Carried on the answer rather than kept server-side so the editor can show *what was read* next
+   * to what was written, and so the retrieval-first rule is checkable by the client instead of
+   * being a property the service asserts about itself (AD-16).
+   */
+  readonly retrieved: readonly RetrievedPassage[];
+}
+
+export interface RetrievalResult {
+  readonly query: string;
+  readonly passages: readonly RetrievedPassage[];
+  /**
+   * True when the corpus holds nothing relevant.
+   *
+   * The honest outcome, and the one that ends the request: no passages means no model call and no
+   * answer, only *"not in the indexed corpus"*. A model asked to fill that gap from memory is the
+   * exact failure decision 1 forbids.
+   */
+  readonly empty: boolean;
+  /** Corpora actually searched, so an answer cannot imply coverage the index does not have. */
+  readonly searched: readonly KnowledgeCorpus[];
+}
+
+export interface RetrievedPassage {
+  readonly id: string;
+  readonly corpus: KnowledgeCorpus;
+  /** The text as indexed. Quoted, never paraphrased into the index. */
+  readonly text: string;
+  /** Enough to find it on paper: document, revision, section, page. */
+  readonly source: {
+    readonly document: string;
+    readonly revision: string | null;
+    readonly section: string | null;
+    readonly page: number | null;
+  };
+  /** Retrieval score, for ranking and for a threshold below which nothing is returned. */
+  readonly relevance: number;
+}
+
+export interface AiSummary {
+  readonly text: { readonly ko: string; readonly en: string };
+  readonly citations: readonly Citation[];
+  /**
+   * Report sections the summary drew on.
+   *
+   * A summary that silently skipped the validation section is the one failure mode that matters
+   * here, so coverage is stated rather than assumed.
+   */
+  readonly coveredSections: readonly string[];
 }
 ```
+
+**Every passage quotes rather than paraphrases.** An index storing a summarised requirement is an
+index whose citation does not say what the cited page says — the report's manufacturer-citation rule,
+applied one layer earlier.
 
 ---
 
@@ -279,7 +592,8 @@ export interface AiAnswer {
 
 | | |
 | --- | --- |
-| Protocol | HTTP, JSON, `POST /v1/{propose,explain,ask,retrieve,summarise}` |
+| Protocol | HTTP, JSON, `POST /v1/{retrieve,explain,ask,summarise}` |
+| Not over HTTP | `propose`, `score`, `plan` — `ai-local` and `ai-planner` run in the browser, so these are function calls. Listed here because their absence from the endpoint list is the architecture, not an omission. |
 | Versioning | `/v1` in the path; `aiContractVersion` in every request and response |
 | Timeout | 20 s, client-side. A slower answer is a failed answer — an engineer will have moved on. |
 | Streaming | Not in Sprint 6. It complicates schema validation, and validation is what keeps unsourced claims off the screen. Revisit for long explanations. |
@@ -303,25 +617,50 @@ unavailable capability and says so.
 ## E. Validation, and the rule that makes this safe
 
 Every response is validated against a Zod schema in `ai-contract` **before the editor looks at
-it**. Three checks are not stylistic:
+it**. Four checks are not stylistic:
 
-1. **Bilingual completeness.** `text.ko` and `text.en` both non-empty, or the response is
+1. **Retrieval preceded reasoning.** A language response whose `retrieved` array is empty is
+   rejected, however well-formed its prose. This is decision 1 made checkable *by the client*: the
+   service enforces the ordering internally, and the editor does not have to take its word for it.
+   An answer with no passage behind it is an answer from memory, and AD-16 says there is no such
+   response.
+2. **Bilingual completeness.** `text.ko` and `text.en` both non-empty, or the response is
    rejected. The same rule the report labels follow.
-2. **Every number is cited.** A response whose text contains a digit sequence with no `Citation`
+3. **Every number is cited.** A response whose text contains a digit sequence with no `Citation`
    covering it is rejected. This is the mechanism behind AD-13 — a model cannot get a hallucinated
    figure onto the screen by writing it in a sentence.
-3. **Every citation resolves.** A `ref` naming a rule, finding or catalogue field that does not
-   exist in what the request supplied is rejected. A plausible-looking citation to a section that
-   does not exist is worse than no citation.
+4. **Every citation resolves.** A `ref` must name a rule, finding or catalogue field the request
+   supplied, **or a passage in this response's own `retrieved` array**. A citation to a document
+   that was not retrieved is rejected even when the document exists: a model recalling a real
+   section number it did not read is precisely the plausible-wrong case retrieval was introduced to
+   remove.
 
-Check 2 has a false-positive cost — a model writing "one of the four sides" gets rejected for the
+Check 3 has a false-positive cost — a model writing "one of the four sides" gets rejected for the
 digit — and I would rather pay it. The failure it prevents is a number in a document a hospital
 acts on; the failure it causes is an assistant that occasionally says it could not answer.
 
+Check 1 has a cost too, and it is the more interesting one: a *general* question with no relevant
+passage in the corpus now gets "not in the indexed corpus" rather than a helpful-sounding paragraph.
+That is the trade the owner chose, and it is right for this product — an engineering assistant whose
+answers are all traceable is more useful than one that is occasionally more fluent.
+
 **Sourced values are rendered from the source, not from the text.** The model returns a template
 with slots (`{finding.measured}`); the client substitutes from the engine output. That is what
-makes point 2 an enforcement rather than a hope: even a response that passes validation cannot
+makes point 3 an enforcement rather than a hope: even a response that passes validation cannot
 display a figure the model chose.
+
+### Deterministic responses are validated too, differently
+
+`ScoreBreakdown` and `InstallationPlan` come from pure TypeScript, so hallucination is not the
+risk — arithmetic drift and silent gaps are:
+
+| Check | Rejects |
+| --- | --- |
+| `total` equals the sum of `contribution` | A breakdown whose parts do not make its whole |
+| `criteria` ∪ `unavailable` covers every `SCORING_CRITERIA` member | A criterion quietly dropped instead of reported unmeasurable |
+| No `CriterionScore` for a criterion listed `unavailable` | A measurement and an admission of no measurement, at once |
+| Every `dependsOn` names a stage in `stages` | A sequence with a dangling prerequisite |
+| `stages` is acyclic and `order` is a topological order of it | A plan that cannot be executed in the order it prints |
 
 ---
 
@@ -333,6 +672,14 @@ display a figure the model chose.
 | The whole `MfdDocument` | A request carries what answers it. `GroundingBundle` is assembled per call. |
 | Customer contact details | Not needed to answer an engineering question |
 | Credentials or file paths | Nothing in the document holds them, and nothing should |
+| Room geometry, placements, utility origins | `propose`, `score` and `plan` are not HTTP endpoints. The solver, the scoring engine and the planner run in the browser, so the layout itself never crosses a network |
 
 `GroundingBundle` being assembled at each call site is the load-bearing part: exposure is decided
 per question by code a reviewer can read, not by a connection being open.
+
+That last row is worth stating plainly, because revision 2 strengthened it rather than straining it.
+Scoring and planning both landed **in the browser**, so the two features most likely to have wanted a
+server do not have one; and retrieval-first narrowed what the model contributes to prose over
+passages the service already holds. The proportion of this sprint that works with no network went up,
+not down — which is the honest test of whether an architecture survives data residency (B-4) being
+answered either way.

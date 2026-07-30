@@ -247,7 +247,12 @@ equipment catalogue versions used.
 Named and scoped by the product owner after Sprint 5. Eight features: AI-assisted placement,
 layout optimisation, automatic room layout, natural-language queries, an installation
 recommendation engine, rule explanation, report summarisation, and engineering knowledge
-retrieval.
+retrieval — plus a ninth added at the architecture review, an **installation sequence and
+commissioning plan**.
+
+Three further owner decisions at that review shape the sprint: a **Knowledge Engine** whose retrieval
+precedes any LLM reasoning, an **Installation Planner Agent**, and a **weighted scoring engine** over
+seven criteria replacing station-count optimisation.
 
 **Architecture for review, no code yet:**
 [AI_SYSTEM_ARCHITECTURE.md](../architecture/AI_SYSTEM_ARCHITECTURE.md) ·
@@ -260,13 +265,15 @@ Owner constraint: **no LLM-specific code inside business logic**, and an AI serv
 communicates only through stable interfaces. Made structural — no package under `packages/` may
 import an AI client, a model name or a prompt, enforced by the linter like every other boundary.
 
-**Five of the eight features need no language model.** Placement, layout, optimisation and
-recommendation are a packing problem with the rule engine as its oracle; a solver does them
-reproducibly, offline, and can say exactly why it chose what it chose. So the sprint's first
-eleven days are unaffected by B-4 (data residency), which is the only real gate.
+**Six of the nine features need no language model.** Placement, layout, optimisation, scoring,
+recommendation and planning are a packing problem and a dependency graph with the rule engine as the
+oracle; deterministic code does them reproducibly, offline, and can say exactly why it chose what it
+chose. Retrieval needs an index but no model either. So the sprint's first twenty-one days are
+unaffected by B-4 (data residency), which is the only real gate.
 
-**Blocked by:** B-4 for the language half. B-5 blocks the optimiser's *ranking*, not the
-optimiser.
+**Blocked by:** B-4 for the language half — three features of nine, and the knowledge index's
+location. **B-5 is now decided** (weighted scoring over seven criteria); what remains open is
+**B-5a**, the default weights, which blocks nothing because the model is data.
 
 ---
 
