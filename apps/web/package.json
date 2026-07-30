@@ -14,6 +14,7 @@
     "@mfd/cad-engine": "workspace:*",
     "@mfd/document-model": "workspace:*",
     "@mfd/object-library": "workspace:*",
+    "@mfd/report-engine": "workspace:*",
     "@mfd/rule-engine": "workspace:*",
     "konva": "^10.3.0",
     "pdfjs-dist": "^6.2.108",

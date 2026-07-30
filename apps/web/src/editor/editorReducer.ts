@@ -23,6 +23,7 @@ import {
   createBoundaryCommand,
   createDocumentState,
   createLevelCommand,
+  type ProjectDetails,
   createObstruction,
   createPlacement,
   createPlacementCommand,
@@ -47,6 +48,7 @@ import {
   setBoundaryVerticesCommand,
   setCoordinateMapping,
   setPlanImage,
+  setProjectDetailsCommand,
   setPlanOriginCommand,
   undo,
 } from '@mfd/document-model';
@@ -174,6 +176,11 @@ export type EditorAction =
   | { readonly type: 'pick/cancel' }
   | { readonly type: 'history/undo' }
   | { readonly type: 'history/redo' }
+  | {
+      readonly type: 'project/setDetails';
+      readonly details: ProjectDetails;
+      readonly at: number;
+    }
   | { readonly type: 'history/seal' }
   | { readonly type: 'document/load'; readonly document: MfdDocument }
   | { readonly type: 'document/new'; readonly now: string };
@@ -707,6 +714,14 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'history/redo':
       return withOriginCompensation(state, redo(state.doc));
+
+    case 'project/setDetails':
+      // Not sealed here. The five cover-page fields share one merge key, so a typing session
+      // is one undo step; the seal happens on blur, the same arrangement room renaming uses.
+      return {
+        ...state,
+        doc: execute(state.doc, setProjectDetailsCommand(action.details), action.at),
+      };
 
     case 'history/seal':
       return { ...state, doc: seal(state.doc) };

@@ -9,16 +9,22 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./pdf": {
+      "types": "./pdf.ts",
+      "default": "./pdf.ts"
+    },
     "./checklists": {
       "types": "./checklists/index.ts",
       "default": "./checklists/index.ts"
-    }
+    },
+    "./assets/fonts/*": "./assets/fonts/*"
   },
   "types": "./src/index.ts",
   "files": [
     "src",
     "checklists",
-    "assets"
+    "assets",
+    "pdf.ts"
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

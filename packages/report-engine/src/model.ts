@@ -190,10 +190,28 @@ export interface PlacementRow {
   readonly room: string | null;
 }
 
+/**
+ * Whether this level's geometry can be measured against a building.
+ *
+ * Three states, not two, and the distinction is load-bearing:
+ *
+ * | State | Means |
+ * | --- | --- |
+ * | `none` | No drawing at all. The layout's geometry is **exact** — it was laid out in millimetres. |
+ * | `calibrated` | A drawing with a coordinate mapping. Measurements are against the building. |
+ * | `uncalibrated` | A drawing with no mapping. **Nothing here has been checked against the building.** |
+ *
+ * Collapsing `none` into `uncalibrated` was a defect caught by a browser spec: the default
+ * project has no plan, and the report warned that it was uncalibrated — which is false, and
+ * exactly the kind of false alarm that teaches a reader to ignore the warning that matters.
+ */
+export type PlanStatus = 'none' | 'calibrated' | 'uncalibrated';
+
 export interface FloorPlanSection {
   readonly levelId: string;
   readonly levelName: string;
   readonly elevation: number;
+  readonly planStatus: PlanStatus;
   /** Null when this level has no imported drawing. */
   readonly drawing: DrawingInfo | null;
   /** Null when the drawing was never calibrated — which the report must say. */

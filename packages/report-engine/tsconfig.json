@@ -14,6 +14,7 @@
   "include": [
     "src",
     "fixtures",
-    "checklists"
+    "checklists",
+    "pdf.ts"
   ]
 }

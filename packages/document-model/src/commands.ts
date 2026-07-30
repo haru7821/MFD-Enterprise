@@ -67,7 +67,8 @@ export type CommandType =
   | 'level.create'
   | 'level.rename'
   | 'level.delete'
-  | 'plan.setOrigin';
+  | 'plan.setOrigin'
+  | 'project.setDetails';
 
 export interface CommandResult {
   readonly document: MfdDocument;
@@ -918,4 +919,70 @@ function restoreLevelCommand(level: Level, index: number): Command {
 /** Can this level be deleted? A project needs at least one floor. */
 export function canDeleteLevel(document: MfdDocument): boolean {
   return document.project.levels.length > 1;
+}
+
+// ---------------------------------------------------------------------------
+// Project details
+// ---------------------------------------------------------------------------
+
+/** The fields the report's cover page is built from. */
+export interface ProjectDetails {
+  readonly name: string;
+  readonly hospital: string;
+  readonly site: string;
+  readonly contact: string;
+  readonly reviewedBy: string;
+}
+
+export function projectDetailsOf(document: MfdDocument): ProjectDetails {
+  const { project } = document;
+  return {
+    name: project.name,
+    hospital: project.customer.hospital,
+    site: project.customer.site,
+    contact: project.customer.contact,
+    reviewedBy: project.reviewedBy,
+  };
+}
+
+/**
+ * Set the project's identity — the report's cover page.
+ *
+ * Added in Sprint 5 because the report needs it and nothing could set it. The schema has
+ * carried `customer` and `reviewedBy` since Sprint 4, so a hospital name has always been
+ * *storable*; there was simply no way for an engineer to type one, which meant every real
+ * report would have had a blank cover page.
+ *
+ * One command for all five fields rather than one per field. They are edited together in one
+ * panel, and five separate undo entries for filling in a form is not what an engineer means
+ * by undo.
+ *
+ * `mergeKey` is constant, so a typing session coalesces into one undo step the same way
+ * renaming a room does — sealed on blur.
+ */
+export function setProjectDetailsCommand(details: ProjectDetails): Command {
+  return command({
+    type: 'project.setDetails',
+    label: 'Edit project details',
+    mergeKey: 'project.setDetails',
+    apply(document) {
+      const previous = projectDetailsOf(document);
+
+      const next: MfdDocument = {
+        ...document,
+        project: {
+          ...document.project,
+          name: details.name,
+          customer: {
+            hospital: details.hospital,
+            site: details.site,
+            contact: details.contact,
+          },
+          reviewedBy: details.reviewedBy,
+        },
+      };
+
+      return { document: next, inverse: setProjectDetailsCommand(previous) };
+    },
+  });
 }

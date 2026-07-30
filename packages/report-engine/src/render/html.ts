@@ -40,6 +40,17 @@ function num(value: number | null, suffix = ''): string {
   return value === null ? '—' : `${value.toLocaleString('en-US')}${suffix}`;
 }
 
+/**
+ * A millimetre dimension, **without** thousands separators.
+ *
+ * 1305, not 1,305. Engineering drawings and the equipment palette both write it that way, and
+ * the datasheet section already did — the schedule using `num()` meant one document printing
+ * the same figure two ways, which a browser spec caught.
+ */
+function mm(value: number | null): string {
+  return value === null ? '—' : String(value);
+}
+
 function text(value: string | null): string {
   return value === null || value === '' ? '—' : escape(value);
 }
@@ -193,13 +204,13 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
         <td class="numeric">${
           row.manufacturerDimensions === null
             ? '—'
-            : `${num(row.manufacturerDimensions.width)} × ${num(row.manufacturerDimensions.depth)}${
+            : `${mm(row.manufacturerDimensions.width)} × ${mm(row.manufacturerDimensions.depth)}${
                 row.manufacturerDimensions.height === null
                   ? ''
-                  : ` × ${num(row.manufacturerDimensions.height)}`
+                  : ` × ${mm(row.manufacturerDimensions.height)}`
               } mm`
         }</td>
-        <td class="numeric">${num(row.designFootprint.width)} × ${num(row.designFootprint.depth)} mm</td>
+        <td class="numeric">${mm(row.designFootprint.width)} × ${mm(row.designFootprint.depth)} mm</td>
         <td>${row.verification
           .map(
             (v) =>
@@ -223,7 +234,13 @@ ${floorPlans
     (plan) => `<section data-testid="report-floor-plan" data-level="${escape(plan.levelId)}">
   ${heading('section_floor_plan')}
   <h3>${escape(plan.levelName)}</h3>
-  ${plan.calibration === null ? `<p class="warning" data-testid="report-uncalibrated">${inline('not_calibrated')}</p>` : ''}
+  ${
+    plan.planStatus === 'uncalibrated'
+      ? `<p class="warning" data-testid="report-uncalibrated">${inline('not_calibrated')}</p>`
+      : plan.planStatus === 'none'
+        ? `<p class="empty" data-testid="report-no-drawing">${inline('no_drawing')}</p>`
+        : ''
+  }
   ${drawing(plan)}
   <dl>
     ${plan.drawing ? field('field_drawing_file', escape(plan.drawing.sourceFileName)) : field('field_drawing_file', inline('no_drawing'))}

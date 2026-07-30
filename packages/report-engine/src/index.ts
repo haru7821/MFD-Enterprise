@@ -51,7 +51,9 @@ export * from './build';
 
 export * from './render/types';
 export * from './render/paper';
-export * from './render/fonts';
 export * from './render/json';
 export * from './render/html';
-export * from './render/pdf';
+
+// The PDF renderer is **not** re-exported here. It is `@mfd/report-engine/pdf`, because
+// pdf-lib and fontkit are ~1.2 MB and re-exporting them from the index put them in every
+// consumer's initial bundle. See ../pdf.ts.

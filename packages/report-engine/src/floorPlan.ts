@@ -144,6 +144,11 @@ export function buildFloorPlan(level: Level, catalog: Catalog): FloorPlanSection
     levelId: level.id,
     levelName: level.name,
     elevation: level.elevation,
+    // Three states, not two. A level with no drawing is not "uncalibrated" — its geometry is
+    // exact, it simply has no plan behind it. Collapsing the two made the report warn about
+    // the default project, which is how a reader learns to ignore warnings.
+    planStatus:
+      planImage === null ? 'none' : coordinateMapping === null ? 'uncalibrated' : 'calibrated',
     drawing: planImage
       ? {
           sourceFileName: planImage.sourceFileName,

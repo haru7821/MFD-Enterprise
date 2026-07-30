@@ -48,7 +48,11 @@ test('reports an unknown threshold as YELLOW rather than inventing a status', as
   await placeAt(page, 0.35, 0.3);
 
   const panel = page.getByTestId('validation-panel');
-  await expect(panel).toContainText('threshold unknown');
+  // RC-110 is "no requirement to compare against". Asserted through the sentence the panel
+  // actually shows, in both languages, because Sprint 5 replaced the prose with reason codes:
+  // "threshold unknown" was the old English wording and no longer exists.
+  await expect(panel).toContainText('요구치가 규정과 장비 자료 어디에도 없어');
+  await expect(panel).toContainText('No front clearance requirement');
   await expect(page.getByTestId('result-badge-YELLOW').first()).toBeVisible();
   await expect(page.getByTestId('result-badge-GREEN')).toHaveCount(0);
 });

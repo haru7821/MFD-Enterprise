@@ -643,8 +643,9 @@ function drawFloorPlan(context: Context, plan: FloorPlanSection): void {
   });
   advance(context, leading(TYPE.subHeading));
 
-  if (plan.calibration === null) {
-    // Never elided. A plan with no mapping looks like a measured drawing and is not.
+  if (plan.planStatus === 'uncalibrated') {
+    // Never elided. A plan with no mapping looks like a measured drawing and is not. A level
+    // with *no* drawing is a different case and gets no warning: its geometry is exact.
     const warning = inlineLabel(context, 'not_calibrated');
     for (const line of wrap(context.fonts, warning, TYPE.body, contentWidth(context.spec))) {
       reserve(context, leading(TYPE.body));

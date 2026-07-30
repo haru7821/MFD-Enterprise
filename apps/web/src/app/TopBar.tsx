@@ -8,6 +8,7 @@ import {
   suggestedFileName,
 } from '@mfd/document-model';
 
+import { APP_STAGE, APP_VERSION } from '@/app/version';
 import { timestamp } from '@/editor/clock';
 import { useEditor } from '@/editor/useEditor';
 
@@ -29,7 +30,7 @@ function downloadText(fileName: string, text: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function TopBar() {
+export function TopBar({ onOpenReport }: { readonly onOpenReport: () => void }) {
   const { state, dispatch } = useEditor();
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +119,14 @@ export function TopBar() {
         </button>
         <button
           type="button"
+          data-testid="open-report"
+          className="rounded border border-accent bg-accent-soft px-1.5 py-0.5 text-[11px] text-ink hover:border-accent"
+          onClick={onOpenReport}
+        >
+          Report
+        </button>
+        <button
+          type="button"
           data-testid="new-project"
           className="rounded border border-edge px-1.5 py-0.5 text-[11px] text-ink-faint hover:border-accent hover:text-ink"
           onClick={() => dispatch({ type: 'document/new', now: timestamp() })}
@@ -136,7 +145,7 @@ export function TopBar() {
       )}
 
       <span className="ml-auto font-mono text-[11px] text-ink-faint">
-        v0.4.5 Alpha · Phase 4.5 — UX completion
+        v{APP_VERSION} {APP_STAGE}
       </span>
     </header>
   );
