@@ -357,6 +357,75 @@ export const KNOWLEDGE_VERSION = 1;
  * dataset has moved on; "the Ilsan drawing at commit abc1234" is. Nullable only so a dataset can be
  * declared before it is first pinned.
  */
+/**
+ * How usable a drawing is, from `docs/verification/DRAWING_IMPORT_VERIFICATION.md`.
+ *
+ * Assigned by the ingester from what the file itself says, never by hand. Two of them are
+ * deliberately provisional: `photograph_suspected` is a flag for a human to confirm, because
+ * perspective distortion cannot be detected from a raster, and `unknown` is what an unreadable
+ * file gets rather than a guess.
+ */
+export const DRAWING_CLASSES = [
+  /** Born-digital PDF from CAD. Selectable text, crisp lines. */
+  'vector_cad_export',
+  /** A raster image wrapped in a PDF — a scan. */
+  'scanned_pdf',
+  /** A raster file. May be a scan or a photograph; `photograph_suspected` narrows it. */
+  'raster_image',
+  /** A JPG large enough to be a camera photograph. Perspective cannot be corrected — refuse. */
+  'photograph_suspected',
+  /** Native CAD. Not read by this application, by decision. */
+  'native_cad',
+  /** Encrypted, corrupt, or otherwise unopenable. */
+  'unreadable',
+  'unknown',
+] as const;
+
+export type DrawingClass = (typeof DRAWING_CLASSES)[number];
+
+/** What the ingester could read off a sheet without a human opening it. */
+export const drawingMetadataSchema = z.strictObject({
+  /** Page width and height in PDF points (1/72 inch), first page. Null for a raster. */
+  pageWidthPt: positive.nullable(),
+  pageHeightPt: positive.nullable(),
+  /** Nearest ISO sheet size, e.g. "A1". Null when it matches none within tolerance. */
+  sheetSize: z.string().min(1).nullable(),
+  /**
+   * Effective resolution the importer will actually rasterise this page at.
+   *
+   * Below 150 means the 4,096 px cap bites and detail is lost — gap G-4 in the verification
+   * document, computed per sheet rather than assumed.
+   */
+  effectiveDpi: positive.nullable(),
+  /** Characters of extractable text on the first page. Near zero means a scan. */
+  textCharacters: z.number().int().nonnegative().nullable(),
+  /** From the PDF's info dictionary, where present. */
+  title: z.string().min(1).nullable(),
+  producer: z.string().min(1).nullable(),
+  /** Bytes on disk. */
+  fileBytes: z.number().int().nonnegative(),
+});
+
+export type DrawingMetadata = z.infer<typeof drawingMetadataSchema>;
+
+export const drawingRecordSchema = z.strictObject({
+  drawingId: z.string().min(1),
+  /** Which `Hospital_NNN` folder it came from. */
+  hospitalId: z.string().min(1),
+  path: z.string().min(1),
+  format: z.enum(['pdf', 'dwg', 'dxf', 'jpg', 'png', 'other']),
+  pageCount: z.number().int().positive().nullable(),
+  sheet: z.string().min(1).nullable(),
+  revision: z.string().min(1).nullable(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/).nullable(),
+  classification: z.enum(DRAWING_CLASSES),
+  metadata: drawingMetadataSchema,
+  /** Whether this drawing has been read yet. */
+  status: z.enum(['catalogued', 'observed', 'unreadable']),
+});
+
+export type DrawingRecord = z.infer<typeof drawingRecordSchema>;
+
 export const datasetSchema = z.strictObject({
   id: z.string().min(1),
   /** e.g. "haru7821/dialysis-drawings". */
@@ -366,18 +435,7 @@ export const datasetSchema = z.strictObject({
   description: z.string().min(1),
   /** What may be published from it. Real hospital drawings are not ours to redistribute. */
   redistribution: z.enum(['none', 'derived_knowledge_only', 'open']),
-  drawings: z.array(
-    z.strictObject({
-      drawingId: z.string().min(1),
-      path: z.string().min(1),
-      format: z.enum(['pdf', 'dwg', 'jpg', 'png']),
-      sheet: z.string().min(1).nullable(),
-      revision: z.string().min(1).nullable(),
-      sha256: z.string().regex(/^[a-f0-9]{64}$/).nullable(),
-      /** Whether this drawing has been read yet. */
-      status: z.enum(['catalogued', 'observed', 'unreadable']),
-    }),
-  ),
+  drawings: z.array(drawingRecordSchema),
 });
 
 export type Dataset = z.infer<typeof datasetSchema>;

@@ -43,5 +43,6 @@
 export * from './provenance';
 export * from './schema';
 export * from './aggregate';
+export * from './classify';
 export * from './query';
 export * from './load';

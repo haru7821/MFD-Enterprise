@@ -1,6 +1,6 @@
 {
   "id": "dialysis-drawings",
-  "repository": null,
+  "repository": "haru7821/MFD-Hospital-Dataset",
   "commit": null,
   "description": "Dialysis unit drawings used by Vantive TS engineers. Referenced, never vendored: a large collection of hospital drawings is not application source, and copying sheets into this repository would fork them from the set an engineer maintains. Awaiting the repository from the product owner.",
   "redistribution": "derived_knowledge_only",

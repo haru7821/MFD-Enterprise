@@ -21,7 +21,8 @@
     "bench": "pnpm --filter @mfd/rule-engine bench",
     "lint": "eslint .",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist **/*.tsbuildinfo",
-    "knowledge:build": "vite-node scripts/build-knowledge.ts"
+    "knowledge:build": "vite-node scripts/build-knowledge.ts",
+    "dataset:ingest": "vite-node scripts/ingest-dataset.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

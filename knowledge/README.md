@@ -24,6 +24,30 @@ knowledge/
   derived/*.json          nine files, one per kind — generated, never hand-edited
 ```
 
+## The dataset repository
+
+`haru7821/MFD-Hospital-Dataset`, external and referenced by commit. **Not vendored** — a large
+collection of real hospital drawings does not belong in an application's history, where it could
+not be removed later, and copying sheets here would fork them from the set an engineer maintains.
+
+```
+MFD-Hospital-Dataset/
+  dataset/
+    Hospital_001/     PDF · DWG/DXF · images · optional README
+    Hospital_002/
+    ...
+```
+
+Catalogue it with `pnpm dataset:ingest -- --dataset <checkout> --commit <sha>`. That reads every
+file, hashes it, reads page count, page size and PDF metadata, computes the resolution the importer
+will actually rasterise it at, and classifies it against the taxonomy in
+`docs/verification/DRAWING_IMPORT_VERIFICATION.md`. Nothing is copied.
+
+Two classifications are deliberately provisional. `photograph_suspected` is a flag for a human,
+because perspective distortion cannot be detected from a raster and a photograph calibrates
+plausibly while measuring wrongly everywhere away from the calibration line. `unreadable` is what an
+unopenable file gets, never a guess at what it might have been.
+
 ## Adding drawings
 
 This is a **data change**. No code moves — that is requirement 5 of the owner's decision, and
