@@ -30,6 +30,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@mfd/ai-contract": "workspace:*",
+    "@mfd/ai-planner": "workspace:*",
     "@mfd/cad-engine": "workspace:*",
     "@mfd/document-model": "workspace:*",
     "@mfd/object-library": "workspace:*",

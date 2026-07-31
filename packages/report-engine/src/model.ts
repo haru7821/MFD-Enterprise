@@ -1,3 +1,9 @@
+import type {
+  EvidenceStatus,
+  PlanBlockerKind,
+  PlanRiskOrigin,
+  PlanService,
+} from '@mfd/ai-contract';
 import type { ReferencePointKind, ReportRenderMode } from '@mfd/document-model';
 import type { DataStatus } from '@mfd/object-library';
 import type { Bilingual, ReasonCode, ReasonParams } from '@mfd/rule-engine';
@@ -492,6 +498,114 @@ export interface NoticeSection {
 }
 
 // ---------------------------------------------------------------------------
+// 9. Installation plan, connections and bill of materials
+// ---------------------------------------------------------------------------
+
+/**
+ * A figure from the planner, ready to print.
+ *
+ * `value: null` means **unknown**, and the renderers print the `not_supplied` label for it in both
+ * languages. Not `0`, not `'—'`: the owner's *"unknown values remain Unknown"* is only kept if an
+ * unknown reads as a statement rather than as a formatting artefact.
+ *
+ * `status` and `sourceRef` ride along so a reader can see *why* it is what it is, and `inputs`
+ * carries the arithmetic behind a `calculated` figure — a signed document should let somebody check
+ * the sum rather than take it.
+ */
+export interface SourcedFigure {
+  readonly value: number | null;
+  readonly unit: string;
+  readonly status: EvidenceStatus;
+  readonly sourceRef: string;
+  readonly inputs: readonly string[];
+}
+
+export interface StageCheckRow {
+  readonly id: string;
+  /** The checklist item's text, or null when the report's checklist does not have the id. */
+  readonly text: Bilingual | null;
+}
+
+export interface BomRow {
+  readonly id: string;
+  readonly title: Bilingual;
+  readonly quantity: SourcedFigure;
+}
+
+export interface InstallationStageRow {
+  readonly id: string;
+  readonly order: number;
+  readonly title: Bilingual;
+  readonly dependsOn: readonly string[];
+  /** The numbers the floor plan prints, so the plan and the drawing name the same machines. */
+  readonly placementNumbers: readonly number[];
+  readonly checks: readonly StageCheckRow[];
+  readonly tools: readonly BomRow[];
+  readonly materials: readonly BomRow[];
+  readonly manpower: SourcedFigure;
+  readonly duration: SourcedFigure;
+}
+
+export interface ConnectionRunRow {
+  readonly placementId: string;
+  readonly length: SourcedFigure;
+  readonly requirement: {
+    readonly value: Bilingual | null;
+    readonly status: EvidenceStatus;
+    readonly sourceRef: string;
+  };
+}
+
+export interface ConnectionSectionRow {
+  readonly service: PlanService;
+  readonly originPointId: string | null;
+  readonly runs: readonly ConnectionRunRow[];
+  readonly total: SourcedFigure;
+}
+
+export interface RiskRow {
+  readonly id: string;
+  readonly origin: PlanRiskOrigin;
+  /** A reason code, a stage id, or a catalogue field group. Look it up; do not restate it. */
+  readonly ref: string;
+  readonly title: Bilingual;
+  /** Null when the detail belongs to another section — a finding's prose is the validation's. */
+  readonly detail: Bilingual | null;
+  readonly stageId: string | null;
+}
+
+export interface InstallationBlockerRow {
+  readonly kind: PlanBlockerKind;
+  readonly ref: string;
+  readonly stageId: string | null;
+}
+
+/**
+ * The installation plan section.
+ *
+ * Null on `ReportModel` when no plan was built — which is the normal state of a project whose
+ * layout has not been approved yet. A section that materialised an empty plan would say a job needs
+ * no work.
+ */
+export interface InstallationSection {
+  readonly sequenceSet: { readonly id: string; readonly version: string };
+  readonly stages: readonly InstallationStageRow[];
+  readonly connections: readonly ConnectionSectionRow[];
+  /** The bill of materials, aggregated across stages by the planner. */
+  readonly bom: readonly BomRow[];
+  readonly risks: readonly RiskRow[];
+  readonly blockers: readonly InstallationBlockerRow[];
+  readonly manpower: SourcedFigure;
+  readonly duration: SourcedFigure;
+  readonly provenance: {
+    readonly levelId: string;
+    readonly placementCount: number;
+    readonly ruleSet: { readonly id: string; readonly version: string };
+    readonly optimisationCandidateId: string | null;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Provenance
 // ---------------------------------------------------------------------------
 
@@ -530,6 +644,14 @@ export interface ReportModel {
   readonly floorPlans: readonly FloorPlanSection[];
   readonly validation: readonly ValidationSection[];
   readonly checklist: ChecklistSection;
+  /**
+   * The installation plan, or null when the layout has not been planned.
+   *
+   * Null rather than an empty section: a section holding no stages would tell a hospital the job
+   * needs no work, and the difference between "not planned yet" and "nothing to do" is the whole
+   * point of carrying it as an option.
+   */
+  readonly installation: InstallationSection | null;
   readonly datasheets: readonly DatasheetSection[];
   readonly standards: StandardsSection;
   readonly notice: NoticeSection;
@@ -544,6 +666,12 @@ export const SECTION_ORDER = [
   'floorPlans',
   'validation',
   'checklist',
+  /*
+   * After the checklist and before the datasheets. The checklist says *what* must be checked; the
+   * plan says *when*, and referencing items the reader has just read is easier than referring them
+   * forward. See docs/architecture/AI_SYSTEM_ARCHITECTURE.md § C-3.
+   */
+  'installation',
   'datasheets',
   'standards',
   'notice',

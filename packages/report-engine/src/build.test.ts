@@ -40,6 +40,7 @@ describe('buildReport', () => {
       'floorPlans',
       'validation',
       'checklist',
+      'installation',
       'datasheets',
       'standards',
       'notice',

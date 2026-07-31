@@ -1,12 +1,16 @@
 import { renderReason } from '@mfd/rule-engine';
 
 import { type LabelKey, labelPair } from '../labels';
+import type { PlanService } from '@mfd/ai-contract';
+
 import type {
+  BomRow,
   ChecklistItem,
   DatasheetBlock,
   FindingRow,
   FloorPlanSection,
   ReportModel,
+  SourcedFigure,
 } from '../model';
 import { DEFAULT_RENDER_OPTIONS, type RenderOptions } from './types';
 
@@ -116,6 +120,44 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
   };
 
   /**
+   * A planner figure.
+   *
+   * An unknown prints the word, in both languages, rather than a dash or a zero — the owner's
+   * *"unknown values remain Unknown"* only survives if it reads as a statement. A known figure
+   * prints its status beside it so a calculated hour and a manufacturer's figure never look alike,
+   * and a calculated one carries the inputs it was computed from so the sum can be checked.
+   */
+  const figure = (value: SourcedFigure): string => {
+    if (value.value === null) {
+      return `<span class="unknown" data-status="unknown">${inline('status_unknown')}<span class="src">${escape(value.sourceRef)}</span></span>`;
+    }
+    const status =
+      value.status === 'calculated'
+        ? inline('status_calculated')
+        : value.status === 'verified'
+          ? inline('status_verified')
+          : value.status === 'draft'
+            ? inline('status_draft')
+            : inline('status_planning');
+    const inputs =
+      value.inputs.length > 0
+        ? `<span class="src">${value.inputs.map((entry) => escape(entry)).join(' + ')}</span>`
+        : '';
+    return `<span data-status="${value.status}">${escape(String(value.value))} ${escape(value.unit)} <span class="alt">${status}</span>${inputs}</span>`;
+  };
+
+  const bomRow = (row: BomRow): string =>
+    `<tr><td><span class="lead">${escape(row.title[primary])}</span><span class="alt">${escape(row.title[secondary])}</span></td>
+      <td><code>${escape(row.id)}</code></td>
+      <td class="numeric">${figure(row.quantity)}</td></tr>`;
+
+  const SERVICE_LABEL = {
+    power: 'service_power',
+    ro_water: 'service_ro_water',
+    drain: 'service_drain',
+  } as const satisfies Record<PlanService, LabelKey>;
+
+  /**
    * The drawing, as inline SVG in model millimetres.
    *
    * Vector, not a screenshot of the canvas (AD-2) — the geometry lives outside the renderer,
@@ -184,7 +226,7 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
     </svg>`;
   };
 
-  const { cover, summary, equipmentSchedule, floorPlans, validation, checklist, datasheets, standards, notice, provenance } = model;
+  const { cover, summary, equipmentSchedule, floorPlans, validation, checklist, installation, datasheets, standards, notice, provenance } = model;
 
   return `<!-- MFD-E report ${escape(model.reportVersion.toString())} -->
 <article class="mfd-report" lang="${primary}" data-verdict="${summary.verdict}">
@@ -399,6 +441,114 @@ ${validation
   </div>`,
     )
     .join('')}
+</section>
+
+<section data-testid="report-installation">
+  ${heading('section_installation')}
+  ${
+    installation === null
+      ? `<p class="empty">${inline('installation_none')}</p>`
+      : `
+  <dl class="meta">
+    ${field('field_sequence_set', `${escape(installation.sequenceSet.id)} v${escape(installation.sequenceSet.version)}`)}
+    ${field('field_manpower', figure(installation.manpower))}
+    ${field('field_duration', figure(installation.duration))}
+  </dl>
+
+  ${
+    installation.blockers.length > 0
+      ? `<div data-testid="installation-blockers">${heading('block_blockers', 3)}<ul class="blockers">${installation.blockers
+          .map(
+            (blocker) =>
+              `<li data-kind="${escape(blocker.kind)}"><code>${escape(blocker.kind)}</code> <code>${escape(blocker.ref)}</code>${blocker.stageId ? ` → <code>${escape(blocker.stageId)}</code>` : ''}</li>`,
+          )
+          .join('')}</ul></div>`
+      : ''
+  }
+
+  <div data-testid="installation-sequence">
+    ${heading('block_sequence', 3)}
+    ${installation.stages
+      .map(
+        (stage) => `<div class="stage" data-stage="${escape(stage.id)}">
+      <h4><span class="pin">${stage.order}</span> <span class="lead">${escape(stage.title[primary])}</span><span class="alt">${escape(stage.title[secondary])}</span></h4>
+      <dl class="meta">
+        ${stage.dependsOn.length > 0 ? field('field_depends_on', stage.dependsOn.map((id) => `<code>${escape(id)}</code>`).join(' ')) : ''}
+        ${stage.placementNumbers.length > 0 ? field('field_equipment', stage.placementNumbers.map((n) => `<span class="pin">${n}</span>`).join(' ')) : ''}
+        ${field('field_manpower', figure(stage.manpower))}
+        ${field('field_duration', figure(stage.duration))}
+      </dl>
+      ${
+        stage.checks.length > 0
+          ? `<h5>${inline('field_checks')}</h5><ul class="checklist">${stage.checks
+              .map(
+                (check) =>
+                  `<li><code>${escape(check.id)}</code>${check.text ? bilingualText(check.text.ko, check.text.en) : ''}</li>`,
+              )
+              .join('')}</ul>`
+          : ''
+      }
+      ${
+        stage.tools.length > 0
+          ? `<h5>${inline('field_tools')}</h5><table class="bom"><tbody>${stage.tools.map(bomRow).join('')}</tbody></table>`
+          : ''
+      }
+      ${
+        stage.materials.length > 0
+          ? `<h5>${inline('field_materials')}</h5><table class="bom"><tbody>${stage.materials.map(bomRow).join('')}</tbody></table>`
+          : ''
+      }
+    </div>`,
+      )
+      .join('')}
+  </div>
+
+  <div data-testid="installation-connections">
+    ${heading('block_connections', 3)}
+    ${installation.connections
+      .map(
+        (connection) => `<div class="connection" data-service="${escape(connection.service)}">
+      <h4>${inline(SERVICE_LABEL[connection.service])}</h4>
+      <dl class="meta">
+        ${field('field_origin_point', connection.originPointId ? `<code>${escape(connection.originPointId)}</code>` : inline('status_unknown'))}
+        ${field('field_total_length', figure(connection.total))}
+      </dl>
+      ${
+        connection.runs.length > 0
+          ? `<table class="bom"><thead><tr><th>${inline('field_equipment')}</th><th>${inline('field_run_length')}</th></tr></thead><tbody>${connection.runs
+              .map(
+                (run) =>
+                  `<tr><td><code>${escape(run.placementId)}</code></td><td class="numeric">${figure(run.length)}</td></tr>`,
+              )
+              .join('')}</tbody></table>`
+          : ''
+      }
+    </div>`,
+      )
+      .join('')}
+  </div>
+
+  <div data-testid="installation-bom">
+    ${heading('block_bom', 3)}
+    ${
+      installation.bom.length === 0
+        ? `<p class="empty">${inline('checklist_empty')}</p>`
+        : `<table class="bom"><thead><tr><th>${inline('field_materials')}</th><th>${inline('field_category')}</th><th>${inline('field_quantity')}</th></tr></thead><tbody>${installation.bom.map(bomRow).join('')}</tbody></table>`
+    }
+  </div>
+
+  ${
+    installation.risks.length > 0
+      ? `<div data-testid="installation-risks">${heading('block_risks', 3)}<ul class="risks">${installation.risks
+          .map(
+            (risk) =>
+              `<li data-origin="${escape(risk.origin)}"><span class="lead">${escape(risk.title[primary])}</span><span class="alt">${escape(risk.title[secondary])}</span> <code>${escape(risk.ref)}</code>${risk.detail ? bilingualText(risk.detail.ko, risk.detail.en) : ''}</li>`,
+          )
+          .join('')}</ul></div>`
+      : ''
+  }
+  `
+  }
 </section>
 
 <section data-testid="report-datasheets">

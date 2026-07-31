@@ -205,6 +205,48 @@ export const LABELS = {
   category_clearance: { ko: '정비 공간', en: 'Clearance' },
   category_collision: { ko: '간섭', en: 'Collision' },
 
+  // ── Installation plan ───────────────────────────────────────────────────────
+  section_installation: { ko: '설치 계획', en: 'Installation Plan' },
+  block_sequence: { ko: '설치 순서', en: 'Installation Sequence' },
+  block_connections: { ko: '접속 계획', en: 'Connection Plan' },
+  block_bom: { ko: '자재 목록', en: 'Bill Of Materials' },
+  block_risks: { ko: '위험 요소', en: 'Risk Items' },
+  block_blockers: { ko: '선결 사항', en: 'Blocking Items' },
+
+  field_stage: { ko: '단계', en: 'Stage' },
+  field_equipment: { ko: '장비', en: 'Equipment' },
+  field_depends_on: { ko: '선행 단계', en: 'Depends On' },
+  field_checks: { ko: '점검 항목', en: 'Checks' },
+  field_tools: { ko: '필요 공구', en: 'Required Tools' },
+  field_materials: { ko: '필요 자재', en: 'Required Materials' },
+  field_manpower: { ko: '필요 인원', en: 'Required Manpower' },
+  field_duration: { ko: '예상 소요 시간', en: 'Estimated Duration' },
+  field_service: { ko: '설비', en: 'Service' },
+  field_origin_point: { ko: '기준점', en: 'Origin Point' },
+  field_run_length: { ko: '배관·배선 길이', en: 'Run Length' },
+  field_total_length: { ko: '합계 길이', en: 'Total Length' },
+  field_sequence_set: { ko: '순서 정의', en: 'Sequence Set' },
+
+  service_power: { ko: '전원', en: 'Power' },
+  service_ro_water: { ko: 'RO 급수', en: 'RO Water' },
+  service_drain: { ko: '배수', en: 'Drain' },
+
+  /*
+   * The four the owner named, plus `unknown`.
+   *
+   * `status_unknown` is not the same word as `not_supplied` above, which describes a *field* nobody
+   * filled in. This describes a figure the planner could not establish, and an engineer chasing it
+   * needs to know which of the two they are looking at.
+   */
+  status_planning: { ko: '계획값', en: 'Planning' },
+  status_calculated: { ko: '산출값', en: 'Calculated' },
+  status_unknown: { ko: '미상', en: 'Unknown' },
+
+  installation_none: {
+    ko: '승인된 배치가 없어 설치 계획이 생성되지 않았습니다.',
+    en: 'No installation plan was generated: no approved layout.',
+  },
+
   // ── Provenance ──────────────────────────────────────────────────────────────
   field_report_version: { ko: '보고서 형식 버전', en: 'Report Format Version' },
   field_document_version: { ko: '프로젝트 파일 버전', en: 'Project File Version' },

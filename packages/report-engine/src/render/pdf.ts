@@ -1,10 +1,16 @@
+import type { PlanService } from '@mfd/ai-contract';
 import { PDFDocument, type PDFPage, degrees, rgb } from 'pdf-lib';
 
 import { renderReason } from '@mfd/rule-engine';
 import type { ReasonCode, ReasonParams } from '@mfd/rule-engine';
 
 import { type LabelKey, labelPair } from '../labels';
-import type { DatasheetBlock, FloorPlanSection, ReportModel } from '../model';
+import type {
+  DatasheetBlock,
+  FloorPlanSection,
+  ReportModel,
+  SourcedFigure,
+} from '../model';
 import { type EmbeddedFonts, embedFonts } from './fonts';
 import {
   MARGINS,
@@ -615,6 +621,7 @@ export async function renderPdf(
   for (const plan of model.floorPlans) await drawFloorPlan(context, plan);
   drawValidation(context, model);
   drawChecklist(context, model);
+  drawInstallation(context, model);
   drawDatasheets(context, model);
   drawStandards(context, model);
   drawNotice(context, model);
@@ -1037,6 +1044,189 @@ function drawChecklist(context: Context, model: ReportModel): void {
     }
     advance(context, 4);
   }
+}
+
+/**
+ * The installation plan.
+ *
+ * > Owner decision, Sprint 6 § 9: *"Planner output must automatically feed PDF, BOM, Installation
+ * > Plan, Commissioning Checklist without duplicate implementations."*
+ *
+ * It reaches the PDF because it is on the model, and this function decides only typography. The one
+ * judgement it makes is how an unknown prints — as the word, in the reader's language, never as a
+ * dash and never as a zero.
+ */
+function drawInstallation(context: Context, model: ReportModel): void {
+  sectionHeading(context, 'section_installation');
+
+  const plan = model.installation;
+  if (plan === null) {
+    /*
+     * Said rather than omitted. A report that simply had no installation section would leave a
+     * reader unable to tell a project nobody has planned from a build of the software that cannot
+     * plan — and the first is a thing they can go and fix.
+     */
+    draw(context, inlineLabel(context, 'installation_none'), MARGINS.left, TYPE.body, {
+      colour: MUTED,
+      context: 'installation absent',
+    });
+    advance(context, leading(TYPE.body));
+    return;
+  }
+
+  fieldLine(context, 'field_sequence_set', `${plan.sequenceSet.id} v${plan.sequenceSet.version}`);
+  fieldLine(context, 'field_manpower', figureText(context, plan.manpower));
+  fieldLine(context, 'field_duration', figureText(context, plan.duration));
+  advance(context, 4);
+
+  if (plan.blockers.length > 0) {
+    subHeading(context, 'block_blockers');
+    for (const blocker of plan.blockers) {
+      reserve(context, leading(TYPE.small));
+      draw(
+        context,
+        `${blocker.kind} · ${blocker.ref}${blocker.stageId ? ` → ${blocker.stageId}` : ''}`,
+        MARGINS.left + 8,
+        TYPE.small,
+        { colour: AMBER, context: 'installation blocker' },
+      );
+      advance(context, leading(TYPE.small));
+    }
+    advance(context, 4);
+  }
+
+  subHeading(context, 'block_sequence');
+  for (const stage of plan.stages) {
+    reserve(context, leading(TYPE.subHeading));
+    draw(
+      context,
+      `${stage.order}. ${stage.title[context.primary]} / ${stage.title[context.secondary]}`,
+      MARGINS.left,
+      TYPE.subHeading,
+      { bold: true, context: `stage ${stage.id}` },
+    );
+    advance(context, leading(TYPE.subHeading));
+
+    if (stage.dependsOn.length > 0) {
+      fieldLine(context, 'field_depends_on', stage.dependsOn.join(', '), 8);
+    }
+    if (stage.placementNumbers.length > 0) {
+      fieldLine(context, 'field_equipment', stage.placementNumbers.join(', '), 8);
+    }
+    fieldLine(context, 'field_manpower', figureText(context, stage.manpower), 8);
+    fieldLine(context, 'field_duration', figureText(context, stage.duration), 8);
+
+    for (const check of stage.checks) {
+      reserve(context, leading(TYPE.small));
+      const text = check.text
+        ? `${check.text[context.primary]} / ${check.text[context.secondary]}`
+        : check.id;
+      draw(context, `· ${text}`, MARGINS.left + 16, TYPE.small, {
+        colour: MUTED,
+        context: `stage check ${check.id}`,
+      });
+      advance(context, leading(TYPE.small));
+    }
+
+    for (const tool of [...stage.tools, ...stage.materials]) {
+      reserve(context, leading(TYPE.small));
+      draw(
+        context,
+        `· ${tool.title[context.primary]} — ${figureText(context, tool.quantity)}`,
+        MARGINS.left + 16,
+        TYPE.small,
+        { colour: MUTED, context: `stage resource ${tool.id}` },
+      );
+      advance(context, leading(TYPE.small));
+    }
+    advance(context, 4);
+  }
+
+  subHeading(context, 'block_connections');
+  for (const connection of plan.connections) {
+    fieldLine(
+      context,
+      SERVICE_LABELS[connection.service],
+      `${connection.originPointId ?? inlineLabel(context, 'status_unknown')} · ${figureText(context, connection.total)}`,
+    );
+  }
+  advance(context, 4);
+
+  subHeading(context, 'block_bom');
+  if (plan.bom.length === 0) {
+    draw(context, inlineLabel(context, 'checklist_empty'), MARGINS.left + 8, TYPE.body, {
+      colour: MUTED,
+      context: 'bom empty',
+    });
+    advance(context, leading(TYPE.body));
+  } else {
+    table(
+      context,
+      [
+        { header: 'field_materials', width: 0.55 },
+        { header: 'field_category', width: 0.2 },
+        { header: 'field_quantity', width: 0.25 },
+      ],
+      plan.bom.map((row) => [
+        { text: `${row.title[context.primary]} / ${row.title[context.secondary]}` },
+        { text: row.id },
+        { text: figureText(context, row.quantity) },
+      ]),
+    );
+  }
+
+  if (plan.risks.length > 0) {
+    subHeading(context, 'block_risks');
+    for (const risk of plan.risks) {
+      reserve(context, leading(TYPE.small));
+      draw(
+        context,
+        `· ${risk.title[context.primary]} / ${risk.title[context.secondary]} (${risk.ref})`,
+        MARGINS.left + 8,
+        TYPE.small,
+        { colour: MUTED, context: `risk ${risk.id}` },
+      );
+      advance(context, leading(TYPE.small));
+      if (risk.detail) bilingualParagraph(context, risk.detail.ko, risk.detail.en, 16);
+    }
+  }
+}
+
+const SERVICE_LABELS = {
+  power: 'service_power',
+  ro_water: 'service_ro_water',
+  drain: 'service_drain',
+} as const satisfies Record<PlanService, LabelKey>;
+
+/**
+ * A planner figure as text.
+ *
+ * **`null` prints the word "Unknown"**, in the reader's leading language. Not `'—'`, which reads as
+ * a formatting choice, and not `'0'`, which is a claim. The owner's *"unknown values remain
+ * Unknown"* is only kept if a reader of the signed PDF can tell an unmeasured quantity from a
+ * measured one, and a dash cannot carry that.
+ */
+function figureText(context: Context, figure: SourcedFigure): string {
+  if (figure.value === null) return inlineLabel(context, 'status_unknown');
+  return `${figure.value} ${figure.unit}`;
+}
+
+function subHeading(context: Context, key: LabelKey): void {
+  reserve(context, leading(TYPE.subHeading));
+  draw(context, inlineLabel(context, key), MARGINS.left, TYPE.subHeading, {
+    bold: true,
+    context: `subheading ${key}`,
+  });
+  advance(context, leading(TYPE.subHeading));
+}
+
+function fieldLine(context: Context, key: LabelKey, value: string, indent = 0): void {
+  reserve(context, leading(TYPE.small));
+  draw(context, `${inlineLabel(context, key)}: ${value}`, MARGINS.left + indent, TYPE.small, {
+    colour: MUTED,
+    context: `field ${key}`,
+  });
+  advance(context, leading(TYPE.small));
 }
 
 function drawDatasheets(context: Context, model: ReportModel): void {

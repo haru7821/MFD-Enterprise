@@ -179,6 +179,12 @@ importers:
 
   packages/report-engine:
     dependencies:
+      '@mfd/ai-contract':
+        specifier: workspace:*
+        version: link:../ai-contract
+      '@mfd/ai-planner':
+        specifier: workspace:*
+        version: link:../ai-planner
       '@mfd/cad-engine':
         specifier: workspace:*
         version: link:../cad-engine

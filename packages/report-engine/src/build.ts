@@ -1,8 +1,10 @@
+import type { InstallationPlan } from '@mfd/ai-contract';
 import { DOCUMENT_VERSION, type MfdDocument, isCalibrated } from '@mfd/document-model';
 import type { Catalog } from '@mfd/object-library';
 import { EVALUATION_RESULT_VERSION, type RuleSet, evaluate } from '@mfd/rule-engine';
 
 import { buildChecklist } from './checklist';
+import { buildInstallation } from './installation';
 import type { ChecklistTemplate } from './checklistTemplate';
 import { buildSummary } from './conclusion';
 import { buildDatasheet, buildEquipmentSchedule, equipmentUsage } from './equipment';
@@ -47,6 +49,20 @@ export interface BuildReportInput {
   /** ISO timestamp. Injected — see above. */
   readonly generatedAt: string;
   readonly mfdVersion: string;
+  /**
+   * The installation plan, when the layout has been planned.
+   *
+   * **Built by the caller**, with `@mfd/ai-planner`, and passed in — this package does not run the
+   * planner. Two reasons, and the second is the one that matters:
+   *
+   * 1. The planner needs routed lengths, which come from `@mfd/ai-local`'s geometry. A report
+   *    engine that reached for them would acquire a dependency on the solver.
+   * 2. A plan is made from a layout an engineer **approved**. Building one here would produce a
+   *    plan for whatever happened to be on the drawing when somebody pressed Export, which is
+   *    exactly the "never plan directly from raw user drawings" the planner's input type exists to
+   *    prevent.
+   */
+  readonly installationPlan?: InstallationPlan | null;
 }
 
 export function buildReport({
@@ -56,6 +72,7 @@ export function buildReport({
   checklistTemplate,
   generatedAt,
   mfdVersion,
+  installationPlan = null,
 }: BuildReportInput): ReportModel {
   const { project } = document;
 
@@ -131,6 +148,18 @@ export function buildReport({
       equipmentInUse,
       uncalibratedLevelNames: uncalibratedLevels.map((level) => level.name),
     }),
+    installation: installationPlan
+      ? buildInstallation({
+          plan: installationPlan,
+          checklistTemplate,
+          /*
+           * The numbers the floor plan prints, for the level the plan was made for — so the plan
+           * and the drawing name the same machines. A plan saying "station 4" beside a drawing
+           * labelling it 7 is worse than a plan with no numbers at all.
+           */
+          placementNumbers: numbersForPlannedLevel(project.levels, installationPlan),
+        })
+      : null,
     datasheets: equipmentInUse.map(buildDatasheet),
     standards: buildStandards(ruleSet, reports),
     notice: buildNotice({
@@ -166,3 +195,19 @@ function emptyReport(ruleSet: RuleSet) {
 
 /** The document contract this build was written against, for the provenance section. */
 export { DOCUMENT_VERSION };
+
+/**
+ * The floor plan's numbering for the level the plan was made for.
+ *
+ * Empty when the document no longer holds that level — **not** the numbering of some other floor.
+ * A plan whose level has been deleted is a stale plan, and numbering its stages against a different
+ * floor would produce a document that looks consistent and names the wrong machines. No numbers is
+ * a visible gap; wrong numbers are not.
+ */
+function numbersForPlannedLevel(
+  levels: MfdDocument['project']['levels'],
+  plan: InstallationPlan,
+): ReadonlyMap<string, number> {
+  const level = levels.find((entry) => entry.id === plan.provenance.levelId);
+  return level ? placementNumbers(level) : new Map();
+}
