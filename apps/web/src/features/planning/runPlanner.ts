@@ -3,10 +3,12 @@ import { EVALUATION_RESULT_VERSION, type EvaluationReport } from '@mfd/rule-engi
 import { deterministicPlanner } from '@mfd/ai-planner';
 import { dialysisSequenceSet } from '@mfd/ai-planner/sequences';
 import { boundsOf, routedDistance } from '@mfd/ai-local';
-import type { Level, ReferencePoint } from '@mfd/document-model';
+import type { Level, MfdDocument, ReferencePoint } from '@mfd/document-model';
 import { obstructionBoundaries } from '@mfd/document-model';
 import { type Catalog, footprintCorners } from '@mfd/object-library';
 import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
+import { projectFingerprint } from '@mfd/report-engine';
+import type { RuleSet } from '@mfd/rule-engine';
 
 /**
  * The editor's one call into the planner.
@@ -34,12 +36,16 @@ import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
 
 export interface PlannerRequest {
   readonly projectId: string;
+  readonly document: MfdDocument;
   readonly level: Level;
   readonly spaceId: string | null;
   readonly catalog: Catalog;
+  readonly ruleSet: RuleSet;
   readonly evaluation: EvaluationReport;
   /** The optimisation the layout came from, when it came from one. */
   readonly optimisation: PlanInput['optimisation'];
+  /** When the plan is being made. Supplied by the call site — the reducer reads no clock. */
+  readonly generatedAt: string;
 }
 
 export function runPlanner(request: PlannerRequest): InstallationPlan {
@@ -121,6 +127,19 @@ export function planInput(request: PlannerRequest): PlanInput {
       category.items.map((item) => item.id),
     ),
     planStatus: level.planImage === null ? 'none' : level.coordinateMapping === null ? 'uncalibrated' : 'calibrated',
+    /*
+     * Hardening decision 1. The document revision comes from `projectFingerprint`, the *same*
+     * function the report uses to decide whether a plan has gone stale — so a plan made here and a
+     * report built later cannot disagree about what "unchanged" means.
+     */
+    ...(() => {
+      const current = projectFingerprint(request.document, level.id, catalog, request.ruleSet);
+      return {
+        documentRevision: current.documentRevision,
+        equipmentLibraryRevision: current.equipmentLibraryRevision,
+      };
+    })(),
+    generatedAt: request.generatedAt,
   };
 }
 

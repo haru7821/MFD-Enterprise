@@ -1,6 +1,11 @@
 import type { PlanService, SourcedNumber, SourcedRange } from '@mfd/ai-contract';
 import { catalog } from '@mfd/object-library/catalog';
 import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
+import { projectFingerprint } from '@mfd/report-engine';
+import { dialysisRuleSet } from '@mfd/rule-engine/rules';
+import { type PlanDependency, planStaleness } from '@mfd/ai-contract';
+
+import { timestamp } from '@/editor/clock';
 
 import { activeLevel } from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
@@ -41,6 +46,20 @@ const REFUSALS = {
     'Apply or discard the layout proposals first. A plan is made from the layout you approved, not from one you are still deciding about.',
 } as const;
 
+/**
+ * What moved, in words — Hardening decision 1.
+ *
+ * Named rather than lumped under "outdated", because *"the layout changed"* and *"the rule set was
+ * updated"* call for different things from an engineer, and a warning that will not say which is
+ * one they learn to dismiss.
+ */
+const DEPENDENCY_TEXT: Record<PlanDependency, string> = {
+  document: 'the rooms, reference points or calibration changed',
+  layout: 'the equipment layout changed',
+  equipment_library: 'the equipment library changed',
+  rule_set: 'the rule set changed',
+};
+
 const BLOCKER_TEXT: Record<string, string> = {
   open_violation: 'A rule violation is open',
   missing_reference_point: 'No reference point placed',
@@ -53,6 +72,23 @@ export function InstallationPanel() {
   const level = activeLevel(state);
   const evaluation = useEvaluation();
   const plan = state.installationPlan;
+
+  /*
+   * Hardening decision 1: *"An installation plan must never appear valid after the layout changes."*
+   *
+   * Recomputed on every render rather than stored, for the same reason the evaluation is: a stored
+   * verdict is stale the instant a placement moves, which is precisely the failure being guarded
+   * against. It is cheap — a hash over the level's placements, boundaries and reference points —
+   * and it uses `projectFingerprint`, the same function the report uses, so the panel and the PDF
+   * cannot disagree about whether a plan is current.
+   */
+  const staleness = plan
+    ? planStaleness(
+        plan.provenance.fingerprint,
+        projectFingerprint(state.doc.document, plan.provenance.levelId, catalog, dialysisRuleSet),
+      )
+    : [];
+  const isStale = staleness.length > 0;
 
   /** Checklist text by id — the report's own, so the panel and the document agree. */
   const checklistText = new Map(
@@ -91,11 +127,14 @@ export function InstallationPanel() {
       type: 'installation/generate',
       plan: runPlanner({
         projectId: state.doc.document.project.id,
+        document: state.doc.document,
         level,
         spaceId: state.selectedSpaceId,
         catalog,
+        ruleSet: dialysisRuleSet,
         evaluation,
         optimisation: null,
+        generatedAt: timestamp(),
       }),
     });
   }
@@ -112,7 +151,7 @@ export function InstallationPanel() {
         className="w-full rounded bg-accent/20 px-2 py-1 text-[11px] text-ink ring-1 ring-accent/50 hover:bg-accent/30"
         onClick={generate}
       >
-        Generate installation plan
+        {isStale ? 'Regenerate installation plan' : 'Generate installation plan'}
       </button>
 
       {state.planningRefusal && (
@@ -123,6 +162,39 @@ export function InstallationPanel() {
 
       {plan && (
         <div className="mt-2" data-testid="plan-results">
+          {/*
+            Hardening decision 1, first in the panel and before any figure.
+
+            > *"UI must clearly show: 'Installation plan is outdated. Regenerate required.' Do not
+            > silently update. Do not automatically regenerate. The engineer must approve
+            > regeneration."*
+
+            So this is a **message, not an effect**. Nothing here regenerates; the button above
+            says Regenerate and an engineer presses it. A panel that quietly rebuilt the plan would
+            be the same failure in the opposite direction — a document that changed under somebody
+            who was reading it.
+          */}
+          {isStale && (
+            <div
+              className="mb-2 rounded border border-amber-500/60 bg-amber-500/10 p-1.5"
+              data-testid="plan-stale"
+            >
+              <p className="text-[11px] font-semibold text-amber-200">
+                Installation plan is outdated. Regenerate required.
+              </p>
+              <ul className="mt-0.5 space-y-px">
+                {staleness.map((dependency) => (
+                  <li key={dependency} className="text-[10px] leading-snug text-amber-200/80">
+                    · {DEPENDENCY_TEXT[dependency]}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-[10px] leading-snug text-ink-faint">
+                What follows describes the layout as it was, not as it is. Exporting now puts this
+                warning in the report.
+              </p>
+            </div>
+          )}
           {/*
             Which drawing this plan is of.
             

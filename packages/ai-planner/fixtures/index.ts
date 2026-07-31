@@ -86,6 +86,9 @@ export function fixtureInput(overrides: Partial<PlanInput> = {}): PlanInput {
     routedLengths,
     checklistItemIds: FIXTURE_CHECKLIST_IDS,
     planStatus: 'none',
+    documentRevision: 'doc:1',
+    equipmentLibraryRevision: 'lib:1',
+    generatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
 }

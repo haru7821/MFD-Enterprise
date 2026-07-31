@@ -41,9 +41,24 @@ const UNCALIBRATED_CAVEAT: Bilingual = {
   en: 'On a level with no calibrated drawing, no dimension has been checked against the building. Findings for that level require site measurement.',
 };
 
+/**
+ * Hardening decision 1: *"A stale plan must never produce a signed PDF without warning."*
+ *
+ * The installation section already leads with the warning. This is the second place, and the one
+ * that matters for a signed document: the liability page is where a reader looks to find out what
+ * this report does *not* stand behind, and a plan describing a superseded layout belongs on that
+ * list beside an uncited figure and an uncalibrated drawing.
+ */
+const STALE_PLAN_CAVEAT: Bilingual = {
+  ko: '이 보고서에 포함된 설치 계획은 작성 이후 변경된 도면을 반영하지 않습니다. 계획을 재생성하기 전까지 시공 근거로 사용해서는 안 됩니다.',
+  en: 'The installation plan in this report does not reflect changes made to the drawing after it was generated. It must not be used as a basis for installation until it is regenerated.',
+};
+
 export interface NoticeInputs {
   readonly hasDraftInputs: boolean;
   readonly uncalibratedLevels: number;
+  /** True when the report carries an installation plan whose dependencies have moved. */
+  readonly hasStalePlan: boolean;
 }
 
 /**
@@ -56,10 +71,12 @@ export interface NoticeInputs {
 export function buildNotice({
   hasDraftInputs,
   uncalibratedLevels,
+  hasStalePlan,
 }: NoticeInputs): NoticeSection {
   const caveats: Bilingual[] = [];
   if (hasDraftInputs) caveats.push(DRAFT_DATA_CAVEAT);
   if (uncalibratedLevels > 0) caveats.push(UNCALIBRATED_CAVEAT);
+  if (hasStalePlan) caveats.push(STALE_PLAN_CAVEAT);
 
   return { liability: LIABILITY_NOTICE, caveats };
 }

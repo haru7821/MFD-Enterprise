@@ -475,6 +475,14 @@ const planProvenanceSchema = z.object({
       coverage: z.number(),
     })
     .nullable(),
+  /** Hardening decision 1: what the plan was made from, as comparable strings. */
+  fingerprint: z.object({
+    documentRevision: z.string().min(1),
+    layoutRevision: z.string().min(1),
+    equipmentLibraryRevision: z.string().min(1),
+    ruleSetRevision: z.string().min(1),
+  }),
+  generatedAt: z.string().min(1),
 });
 
 export const installationPlanSchema: z.ZodType<InstallationPlan> = z

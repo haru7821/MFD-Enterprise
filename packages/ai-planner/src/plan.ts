@@ -5,6 +5,7 @@ import type {
   PlanInput,
   PlanRisk,
 } from '@mfd/ai-contract';
+import { layoutRevisionOf, ruleSetRevisionOf } from '@mfd/ai-contract';
 
 import { collectBlockers, collectRisks } from './blockers';
 import { buildConnections } from './connections';
@@ -131,6 +132,19 @@ export function planInstallation(set: SequenceSet, input: PlanInput): Installati
             coverage: input.optimisation.score.coverage,
           }
         : null,
+      /*
+       * Hardening decision 1. Computed **once, here**, from exactly the inputs this call was given
+       * — never recomputed later against a project that may have moved on. Comparing this against a
+       * project's *current* fingerprint is `planStaleness`'s job, in `@mfd/ai-contract`, called by
+       * whoever is holding both the plan and the live project.
+       */
+      fingerprint: {
+        documentRevision: input.documentRevision,
+        layoutRevision: layoutRevisionOf(input.placements),
+        equipmentLibraryRevision: input.equipmentLibraryRevision,
+        ruleSetRevision: ruleSetRevisionOf(input.evaluation.ruleSet),
+      },
+      generatedAt: input.generatedAt,
     },
   };
 }

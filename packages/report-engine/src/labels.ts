@@ -254,6 +254,30 @@ export const LABELS = {
     en: 'Planning rate data not available.',
   },
 
+  /**
+   * Hardening decision 1, verbatim in English.
+   *
+   * > *"UI must clearly show: 'Installation plan is outdated. Regenerate required.'"*
+   *
+   * The same sentence in the panel and in the report, because an engineer who sees one and exports
+   * the other must not be told two different things about the same plan.
+   */
+  plan_outdated: {
+    ko: '설치 계획이 최신 상태가 아닙니다. 재생성이 필요합니다.',
+    en: 'Installation plan is outdated. Regenerate required.',
+  },
+  plan_outdated_detail: {
+    ko: '이 계획이 작성된 이후 아래 항목이 변경되었습니다. 계획을 재생성하기 전까지 아래 내용은 현재 도면을 설명하지 않습니다.',
+    en: 'The following changed after this plan was made. Until it is regenerated, what follows does not describe the current drawing.',
+  },
+
+  dependency_document: { ko: '도면 구성', en: 'Drawing context' },
+  dependency_layout: { ko: '장비 배치', en: 'Equipment layout' },
+  dependency_equipment_library: { ko: '장비 라이브러리', en: 'Equipment library' },
+  dependency_rule_set: { ko: '규정 세트', en: 'Rule set' },
+
+  field_generated_plan_at: { ko: '계획 작성 시각', en: 'Plan generated' },
+
   installation_none: {
     ko: '승인된 배치가 없어 설치 계획이 생성되지 않았습니다.',
     en: 'No installation plan was generated: no approved layout.',

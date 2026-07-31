@@ -2,6 +2,7 @@ import type {
   ConnectionPlan,
   EvidenceStatus,
   InstallationPlan,
+  PlanDependency,
   PlanRisk,
   SourcedNumber,
   SourcedRange,
@@ -52,12 +53,19 @@ export interface BuildInstallationInput {
   readonly checklistTemplate: ChecklistTemplate;
   /** Placement id → the number the floor plan prints, so the plan and the drawing agree. */
   readonly placementNumbers: ReadonlyMap<string, number>;
+  /**
+   * Which of the plan's dependencies have moved since it was made. Empty means it is current.
+   *
+   * Computed by `buildReport` from the document being reported on — see `./fingerprint.ts`.
+   */
+  readonly staleness: readonly PlanDependency[];
 }
 
 export function buildInstallation({
   plan,
   checklistTemplate,
   placementNumbers,
+  staleness,
 }: BuildInstallationInput): InstallationSection {
   const checklistText = new Map<string, Bilingual>(
     checklistTemplate.categories.flatMap((category) =>
@@ -107,11 +115,13 @@ export function buildInstallation({
     manpower: rangeOf(plan.manpower),
     duration: figureOf(plan.duration),
     ratesAvailable: plan.ratesAvailable,
+    staleness,
     provenance: {
       levelId: plan.provenance.levelId,
       placementCount: plan.provenance.placementCount,
       ruleSet: plan.provenance.ruleSet,
       optimisationCandidateId: plan.provenance.optimisation?.candidateId ?? null,
+      generatedAt: plan.provenance.generatedAt,
     },
   };
 }

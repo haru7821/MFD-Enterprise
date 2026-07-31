@@ -48,6 +48,7 @@ export * from './checklist';
 export * from './checklistTemplate';
 export * from './standards';
 export * from './build';
+export * from './fingerprint';
 
 export * from './render/types';
 export * from './render/paper';

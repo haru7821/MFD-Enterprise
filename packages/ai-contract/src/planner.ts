@@ -106,6 +106,32 @@ export interface PlanInput {
    * millimetre label, and `uncalibrated_level` is a blocker rather than a footnote.
    */
   readonly planStatus: 'none' | 'calibrated' | 'uncalibrated';
+  /**
+   * The whole project's revision, opaque to this package — Hardening decision 1.
+   *
+   * `@mfd/ai-contract` does not depend on `@mfd/document-model`, so this is supplied rather than
+   * derived: the caller's own notion of "when did the document last change" (in the editor,
+   * `project.updatedAt`), passed straight through into the plan's fingerprint. The planner does not
+   * interpret it — only carries it, the same way it carries `evaluation.ruleSet`.
+   */
+  readonly documentRevision: string;
+  /**
+   * The **whole** equipment library's revision, supplied for the same reason.
+   *
+   * Supplied rather than derived from `equipment` above, and the distinction is not academic: this
+   * input carries only the records **in use**, so deriving from it would fingerprint the subset the
+   * plan happens to touch. A catalogue that gained a machine would then leave every existing plan
+   * reading as current, while `projectFingerprint` — which sees the whole library — said otherwise.
+   *
+   * Caught by a browser test asserting that a freshly generated plan is *not* marked outdated: it
+   * was, immediately, because the two sides were fingerprinting different things.
+   *
+   * The split is: the planner derives what it can see (the layout it is planning, the rule set it
+   * was evaluated against) and is told what it cannot (the document, the library).
+   */
+  readonly equipmentLibraryRevision: string;
+  /** When this plan is being made. Injected — this package reads no clock (AD-3). */
+  readonly generatedAt: string;
 }
 
 /** One equipment record, reduced to what a plan needs — and to what it may state. */

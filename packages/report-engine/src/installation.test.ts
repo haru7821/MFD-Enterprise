@@ -4,6 +4,8 @@ import { deterministicPlanner } from '@mfd/ai-planner';
 import { dialysisSequenceSet } from '@mfd/ai-planner/sequences';
 
 import { dialysisChecklistTemplate } from '../checklists/index';
+import type { PlanDependency } from '@mfd/ai-contract';
+
 import { buildInstallation } from './installation';
 import { renderHtml } from './render/html';
 import { fixturePlanInput } from '../fixtures/planner';
@@ -22,7 +24,7 @@ import type { ReportModel } from './model';
 
 const plan = () => deterministicPlanner(dialysisSequenceSet).plan(fixturePlanInput());
 
-function section() {
+function section(staleness: PlanDependency[] = []) {
   return buildInstallation({
     plan: plan(),
     checklistTemplate: dialysisChecklistTemplate,
@@ -31,6 +33,7 @@ function section() {
       ['station_2', 2],
       ['station_3', 3],
     ]),
+    staleness,
   });
 }
 
@@ -58,6 +61,7 @@ describe('the section carries what the planner decided, and decides nothing', ()
       plan: plan(),
       checklistTemplate: dialysisChecklistTemplate,
       placementNumbers: new Map(),
+      staleness: [],
     });
     for (const stage of built.stages) {
       expect(stage.placementNumbers).toEqual([]);
@@ -100,6 +104,7 @@ describe('one source, two views', () => {
       plan: withStranger,
       checklistTemplate: dialysisChecklistTemplate,
       placementNumbers: new Map(),
+      staleness: [],
     });
     const stage = built.stages.find((entry) => entry.id === 'handover');
 
@@ -133,6 +138,7 @@ describe('one source, two views', () => {
       },
       checklistTemplate: dialysisChecklistTemplate,
       placementNumbers: new Map(),
+      staleness: [],
     });
 
     expect(built.risks[0]?.detail).toBeNull();

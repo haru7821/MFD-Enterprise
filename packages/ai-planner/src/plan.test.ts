@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { installationPlanSchema } from '@mfd/ai-contract';
+import { installationPlanSchema, planStaleness } from '@mfd/ai-contract';
 
 import { dialysisSequenceSet } from '../sequences/index';
 import { sequenceSetSchema } from './sequenceSet';
@@ -633,5 +633,116 @@ describe('the shipped sequence set', () => {
       'services_rough_in',
       'handover',
     ]);
+  });
+});
+
+describe('Hardening 1 — the plan carries its own fingerprint', () => {
+  it('records all four dependencies plus when it was made', () => {
+    const result = planInstallation(
+      dialysisSequenceSet,
+      fixtureInput({ documentRevision: 'doc:7', generatedAt: '2026-03-01T00:00:00.000Z' }),
+    );
+
+    expect(result.provenance.fingerprint.documentRevision).toBe('doc:7');
+    expect(result.provenance.fingerprint.layoutRevision).toBeTruthy();
+    expect(result.provenance.fingerprint.equipmentLibraryRevision).toBeTruthy();
+    expect(result.provenance.fingerprint.ruleSetRevision).toBe('dialysis@0.1.0');
+    expect(result.provenance.generatedAt).toBe('2026-03-01T00:00:00.000Z');
+  });
+
+  it('passes `document.revision` straight through without interpreting it', () => {
+    // This package has no opinion about what a document revision is — it is the caller's string,
+    // carried the same way `evaluation.ruleSet` is.
+    const result = planInstallation(dialysisSequenceSet, fixtureInput({ documentRevision: 'x' }));
+    expect(result.provenance.fingerprint.documentRevision).toBe('x');
+  });
+
+  it('changes the layout revision when the layout the plan was built from changes', () => {
+    const first = planInstallation(dialysisSequenceSet, fixtureInput());
+    const moved = planInstallation(
+      dialysisSequenceSet,
+      fixtureInput({
+        placements: fixtureInput().placements.map((placement, index) =>
+          index === 0
+            ? { ...placement, position: { x: placement.position.x + 500, y: placement.position.y } }
+            : placement,
+        ),
+      }),
+    );
+
+    expect(moved.provenance.fingerprint.layoutRevision).not.toBe(
+      first.provenance.fingerprint.layoutRevision,
+    );
+    // And everything else about the two calls was identical, so nothing else should have moved.
+    expect(moved.provenance.fingerprint.documentRevision).toBe(
+      first.provenance.fingerprint.documentRevision,
+    );
+    expect(moved.provenance.fingerprint.ruleSetRevision).toBe(
+      first.provenance.fingerprint.ruleSetRevision,
+    );
+  });
+
+  it('changes the rule set revision when the rule set version changes', () => {
+    const first = planInstallation(dialysisSequenceSet, fixtureInput());
+    const revised = planInstallation(
+      dialysisSequenceSet,
+      fixtureInput({
+        evaluation: { ...fixtureInput().evaluation, ruleSet: { id: 'dialysis', version: '0.2.0' } },
+      }),
+    );
+
+    expect(revised.provenance.fingerprint.ruleSetRevision).not.toBe(
+      first.provenance.fingerprint.ruleSetRevision,
+    );
+  });
+
+  it('carries the library revision it was given, rather than deriving one from the subset', () => {
+    /*
+     * The distinction a browser test caught. `input.equipment` holds only the records **in use**, so
+     * deriving from it fingerprints the subset a plan happens to touch — and a catalogue that gained
+     * a machine would leave every plan reading as current while `projectFingerprint`, which sees the
+     * whole library, said otherwise. Every fresh plan was marked outdated the instant it was made.
+     */
+    const first = planInstallation(dialysisSequenceSet, fixtureInput());
+    const upgraded = planInstallation(
+      dialysisSequenceSet,
+      fixtureInput({ equipmentLibraryRevision: 'lib:2' }),
+    );
+
+    expect(first.provenance.fingerprint.equipmentLibraryRevision).toBe('lib:1');
+    expect(upgraded.provenance.fingerprint.equipmentLibraryRevision).toBe('lib:2');
+
+    // And it does *not* move when only the in-use subset changes, because that is not the library.
+    const fewerRecords = planInstallation(
+      dialysisSequenceSet,
+      fixtureInput({ equipment: [fixtureEquipment({ version: '9.9.9' })] }),
+    );
+    expect(fewerRecords.provenance.fingerprint.equipmentLibraryRevision).toBe('lib:1');
+  });
+
+  it('reports no staleness against itself, and exactly the moved dependency against an edit', () => {
+    const original = planInstallation(dialysisSequenceSet, fixtureInput());
+    expect(planStaleness(original.provenance.fingerprint, original.provenance.fingerprint)).toEqual(
+      [],
+    );
+
+    const editedLayout = planInstallation(
+      dialysisSequenceSet,
+      fixtureInput({
+        placements: [
+          ...fixtureInput().placements,
+          {
+            placementId: 'station_4',
+            equipmentObjectId: 'vantive_ak98',
+            position: { x: 5_000, y: 1_000 },
+            rotation: 0,
+            spaceId: 'space_1',
+          },
+        ],
+      }),
+    );
+    expect(
+      planStaleness(original.provenance.fingerprint, editedLayout.provenance.fingerprint),
+    ).toEqual(['layout']);
   });
 });

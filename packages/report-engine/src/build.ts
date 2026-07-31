@@ -1,10 +1,12 @@
 import type { InstallationPlan } from '@mfd/ai-contract';
+import { planStaleness } from '@mfd/ai-contract';
 import { DOCUMENT_VERSION, type MfdDocument, isCalibrated } from '@mfd/document-model';
 import type { Catalog } from '@mfd/object-library';
 import { EVALUATION_RESULT_VERSION, type RuleSet, evaluate } from '@mfd/rule-engine';
 
 import { buildChecklist } from './checklist';
 import { buildInstallation } from './installation';
+import { projectFingerprint } from './fingerprint';
 import type { ChecklistTemplate } from './checklistTemplate';
 import { buildSummary } from './conclusion';
 import { buildDatasheet, buildEquipmentSchedule, equipmentUsage } from './equipment';
@@ -107,6 +109,35 @@ export function buildReport({
 
   const floorPlans = project.levels.map((level) => buildFloorPlan(level, catalog));
 
+  /*
+   * Built before the return object, because two sections need it: the installation section itself
+   * and the liability notice, which lists a stale plan beside an uncited figure. Computing it twice
+   * would let the two disagree about whether the plan is current.
+   */
+  const installation = installationPlan
+    ? buildInstallation({
+        plan: installationPlan,
+        checklistTemplate,
+        /*
+         * The numbers the floor plan prints, for the level the plan was made for — so the plan and
+         * the drawing name the same machines. A plan saying "station 4" beside a drawing labelling
+         * it 7 is worse than a plan with no numbers at all.
+         */
+        placementNumbers: numbersForPlannedLevel(project.levels, installationPlan),
+        /*
+         * Hardening decision 1: *"A stale plan must never produce a signed PDF without warning."*
+         *
+         * Computed **here**, from the same document, catalogue and rule set this report is being
+         * built from — not taken as an argument. A caller could pass the wrong answer; a caller
+         * cannot pass a different document than the one being reported on.
+         */
+        staleness: planStaleness(
+          installationPlan.provenance.fingerprint,
+          projectFingerprint(document, installationPlan.provenance.levelId, catalog, ruleSet),
+        ),
+      })
+    : null;
+
   const validation = project.levels.map((level, index) =>
     buildValidation({
       level,
@@ -148,23 +179,18 @@ export function buildReport({
       equipmentInUse,
       uncalibratedLevelNames: uncalibratedLevels.map((level) => level.name),
     }),
-    installation: installationPlan
-      ? buildInstallation({
-          plan: installationPlan,
-          checklistTemplate,
-          /*
-           * The numbers the floor plan prints, for the level the plan was made for — so the plan
-           * and the drawing name the same machines. A plan saying "station 4" beside a drawing
-           * labelling it 7 is worse than a plan with no numbers at all.
-           */
-          placementNumbers: numbersForPlannedLevel(project.levels, installationPlan),
-        })
-      : null,
+    installation,
     datasheets: equipmentInUse.map(buildDatasheet),
     standards: buildStandards(ruleSet, reports),
     notice: buildNotice({
       hasDraftInputs: reports.some((report) => report.hasDraftInputs),
       uncalibratedLevels: uncalibratedLevels.length,
+      /*
+       * Hardening decision 1, in the place a reader looks for what a report does *not* stand
+       * behind. The installation section already leads with the warning; this is the one that
+       * belongs on a signed document's liability page.
+       */
+      hasStalePlan: (installation?.staleness.length ?? 0) > 0,
     }),
     provenance: {
       reportVersion: REPORT_VERSION,

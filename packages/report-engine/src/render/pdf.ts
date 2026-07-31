@@ -1,4 +1,4 @@
-import type { PlanService } from '@mfd/ai-contract';
+import type { PlanDependency, PlanService } from '@mfd/ai-contract';
 import { PDFDocument, type PDFPage, degrees, rgb } from 'pdf-lib';
 
 import { renderReason } from '@mfd/rule-engine';
@@ -1085,7 +1085,45 @@ function drawInstallation(context: Context, model: ReportModel): void {
     return;
   }
 
+  /*
+   * Hardening decision 1: *"A stale plan must never produce a signed PDF without warning."*
+   *
+   * Drawn first, in the warning colour, with a rule under it — before a single stage, so a reader
+   * skimming the section cannot reach the sequence without passing the sentence. It names which
+   * dependencies moved, because "outdated" alone sends an engineer looking for what changed.
+   */
+  if (plan.staleness.length > 0) {
+    const pair = labelPair('plan_outdated');
+    reserve(context, leading(TYPE.subHeading) * 2 + leading(TYPE.small) * (plan.staleness.length + 1));
+    draw(context, pair[context.primary], MARGINS.left, TYPE.subHeading, {
+      bold: true,
+      colour: AMBER,
+      context: 'plan outdated',
+    });
+    advance(context, leading(TYPE.subHeading));
+    draw(context, pair[context.secondary], MARGINS.left, TYPE.body, {
+      bold: true,
+      colour: AMBER,
+      context: 'plan outdated',
+    });
+    advance(context, leading(TYPE.body));
+    draw(context, inlineLabel(context, 'plan_outdated_detail'), MARGINS.left, TYPE.small, {
+      colour: MUTED,
+      context: 'plan outdated detail',
+    });
+    advance(context, leading(TYPE.small));
+    for (const dependency of plan.staleness) {
+      draw(context, `· ${inlineLabel(context, DEPENDENCY_LABELS[dependency])}`, MARGINS.left + 8, TYPE.small, {
+        colour: AMBER,
+        context: `stale ${dependency}`,
+      });
+      advance(context, leading(TYPE.small));
+    }
+    advance(context, 6);
+  }
+
   fieldLine(context, 'field_sequence_set', `${plan.sequenceSet.id} v${plan.sequenceSet.version}`);
+  fieldLine(context, 'field_generated_plan_at', plan.provenance.generatedAt);
   if (plan.ratesAvailable) {
     fieldLine(context, 'field_manpower', rangeText(context, plan.manpower));
     fieldLine(context, 'field_duration', figureText(context, plan.duration));
@@ -1223,6 +1261,13 @@ function drawInstallation(context: Context, model: ReportModel): void {
     }
   }
 }
+
+const DEPENDENCY_LABELS = {
+  document: 'dependency_document',
+  layout: 'dependency_layout',
+  equipment_library: 'dependency_equipment_library',
+  rule_set: 'dependency_rule_set',
+} as const satisfies Record<PlanDependency, LabelKey>;
 
 const SERVICE_LABELS = {
   power: 'service_power',

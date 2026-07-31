@@ -1,7 +1,7 @@
 import { renderReason } from '@mfd/rule-engine';
 
 import { type LabelKey, labelPair } from '../labels';
-import type { PlanService } from '@mfd/ai-contract';
+import type { PlanDependency, PlanService } from '@mfd/ai-contract';
 
 import type {
   BomRow,
@@ -172,6 +172,13 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
     `<tr><td><span class="lead">${escape(row.title[primary])}</span><span class="alt">${escape(row.title[secondary])}</span></td>
       <td><code>${escape(row.id)}</code></td>
       <td class="numeric">${figure(row.quantity)}</td></tr>`;
+
+  const DEPENDENCY_LABEL = {
+    document: 'dependency_document',
+    layout: 'dependency_layout',
+    equipment_library: 'dependency_equipment_library',
+    rule_set: 'dependency_rule_set',
+  } as const satisfies Record<PlanDependency, LabelKey>;
 
   const SERVICE_LABEL = {
     power: 'service_power',
@@ -471,8 +478,27 @@ ${validation
     installation === null
       ? `<p class="empty">${inline('installation_none')}</p>`
       : `
+  ${
+    /*
+     * Hardening decision 1: *"A stale plan must never produce a signed PDF without warning."*
+     *
+     * First thing in the section, before a single stage — a reader who stops at the heading has
+     * still been told. It names which dependencies moved, because "outdated" alone sends an
+     * engineer looking for what changed.
+     */
+    installation.staleness.length > 0
+      ? `<div class="stale" data-testid="installation-stale">
+    <p class="stale-title"><span class="lead">${escape(labelPair('plan_outdated')[primary])}</span><span class="alt">${escape(labelPair('plan_outdated')[secondary])}</span></p>
+    <p class="stale-detail">${inline('plan_outdated_detail')}</p>
+    <ul>${installation.staleness
+      .map((dependency) => `<li data-dependency="${escape(dependency)}">${inline(DEPENDENCY_LABEL[dependency])}</li>`)
+      .join('')}</ul>
+  </div>`
+      : ''
+  }
   <dl class="meta">
     ${field('field_sequence_set', `${escape(installation.sequenceSet.id)} v${escape(installation.sequenceSet.version)}`)}
+    ${field('field_generated_plan_at', escape(installation.provenance.generatedAt))}
     ${
       /*
        * Owner decision B-7: *"The report must explicitly state 'Planning rate data not available.'
@@ -708,6 +734,11 @@ const STYLE = `
 .mfd-report .rc { display: inline-block; background: #f3f4f6; padding: 0 3px; margin-right: 4px; }
 .mfd-report .caveat { color: #b45309; font-size: 10px; }
 .mfd-report .checklist { list-style: none; padding: 0; }
+.mfd-report .stale { border: 2px solid #b45309; background: #fffbeb; padding: 10px 12px; margin: 0 0 12px; border-radius: 4px; }
+.mfd-report .stale-title { margin: 0; font-weight: 700; color: #7c2d12; }
+.mfd-report .stale-title .alt { display: block; font-weight: 400; }
+.mfd-report .stale-detail { margin: 4px 0 6px; color: #7c2d12; }
+.mfd-report .stale ul { margin: 0; padding-left: 18px; color: #7c2d12; }
 .mfd-report .checklist li { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px dotted #e5e7eb; font-size: 11px; }
 .mfd-report .checklist li::before { content: '☐'; }
 .mfd-report .action { color: #6b7280; font-size: 10px; white-space: nowrap; min-width: 130px; }

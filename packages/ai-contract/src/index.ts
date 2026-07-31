@@ -16,6 +16,7 @@
 
 export * from './context';
 export * from './evidence';
+export * from './fingerprint';
 export * from './scoring';
 export * from './rationale';
 export * from './requests';

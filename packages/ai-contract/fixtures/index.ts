@@ -208,6 +208,13 @@ export function fixturePlan(): InstallationPlan {
       evaluationVersion: 2,
       findingCounts: { red: 0, yellow: 4, green: 0 },
       optimisation: null,
+      fingerprint: {
+        documentRevision: 'doc:1',
+        layoutRevision: 'layout:1',
+        equipmentLibraryRevision: 'catalog:1',
+        ruleSetRevision: 'dialysis@0.1.0',
+      },
+      generatedAt: '2026-01-01T00:00:00.000Z',
     },
   };
 }

@@ -1,6 +1,7 @@
 import type {
   EvidenceStatus,
   PlanBlockerKind,
+  PlanDependency,
   PlanRiskOrigin,
   PlanService,
 } from '@mfd/ai-contract';
@@ -631,11 +632,21 @@ export interface InstallationSection {
    * leaving blanks, so a reader is told why a number is absent in the sentence the owner specified.
    */
   readonly ratesAvailable: boolean;
+  /**
+   * Which of the plan's dependencies have moved since it was made — Hardening decision 1.
+   *
+   * Empty means current. Non-empty means **the plan describes a layout that no longer exists**, and
+   * the renderers lead the section with a warning rather than printing stages as though they were
+   * about this drawing: *"A stale plan must never produce a signed PDF without warning."*
+   */
+  readonly staleness: readonly PlanDependency[];
   readonly provenance: {
     readonly levelId: string;
     readonly placementCount: number;
     readonly ruleSet: { readonly id: string; readonly version: string };
     readonly optimisationCandidateId: string | null;
+    /** When the plan was generated, so a reader can see how old it is. */
+    readonly generatedAt: string;
   };
 }
 

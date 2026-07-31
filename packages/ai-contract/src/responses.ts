@@ -2,6 +2,7 @@ import type { Bilingual } from '@mfd/rule-engine';
 
 import type { RefWithVersion } from './context';
 import type { SourcedNumber, SourcedRange, SourcedText } from './evidence';
+import type { PlanFingerprint } from './fingerprint';
 import type { KnowledgeCorpus } from './requests';
 import type { RationaleCode } from './rationale';
 import type { ScoreBreakdown } from './scoring';
@@ -257,6 +258,21 @@ export interface PlanProvenance {
     readonly total: number;
     readonly coverage: number;
   } | null;
+  /**
+   * What the plan was made from, as short comparable strings — Hardening decision 1.
+   *
+   * > *"An installation plan must never appear valid after the layout changes … Plan provenance
+   * > tracking: document revision, layout revision, equipment library revision, rule set revision,
+   * > generated timestamp."*
+   *
+   * Compared against the project's *current* fingerprint by `planStaleness` — never recomputed
+   * here, and never compared here. A plan states facts about itself; whether those facts still
+   * match the project is a question for whoever is holding both the plan and the project, which is
+   * the editor and the report builder, not the planner.
+   */
+  readonly fingerprint: PlanFingerprint;
+  /** ISO timestamp. Injected by the caller — this package reads no clock (AD-3). */
+  readonly generatedAt: string;
 }
 
 export interface InstallationPlan {

@@ -355,6 +355,157 @@ test('does not carry layout proposals across into a new project', async ({ page 
   await expect(page.getByTestId('layout-results')).toHaveCount(0);
 });
 
+/*
+ * ---------------------------------------------------------------------------
+ * Hardening 1 — plan staleness
+ * ---------------------------------------------------------------------------
+ */
+
+/** Draw, place, plan. The starting point for every staleness spec. */
+async function planAThreeStationWard(page: Page) {
+  await traceRoom(page);
+  await placeServices(page);
+  await selectRoom(page);
+  await page.getByTestId('layout-count').fill('3');
+  await page.getByTestId('layout-generate').click();
+  await page.getByTestId('layout-apply-1').click();
+  await page.getByTestId('plan-generate').click();
+  await expect(page.getByTestId('plan-results')).toBeVisible();
+}
+
+test('a fresh plan is not marked outdated', async ({ page }) => {
+  // The other half of the guard. A warning that is always on is a warning nobody reads.
+  await planAThreeStationWard(page);
+
+  await expect(page.getByTestId('plan-stale')).toHaveCount(0);
+  await expect(page.getByTestId('plan-generate')).toHaveText('Generate installation plan');
+});
+
+test('marks the plan outdated the moment the layout changes', async ({ page }) => {
+  /*
+   * > *"An installation plan must never appear valid after the layout changes … UI must clearly
+   * > show: 'Installation plan is outdated. Regenerate required.'"*
+   */
+  await planAThreeStationWard(page);
+
+  // One more machine, by hand.
+  const box = await canvasBox(page);
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.6);
+  await page.keyboard.press('v');
+
+  await expect(page.getByTestId('plan-stale')).toContainText(
+    'Installation plan is outdated. Regenerate required.',
+  );
+  await expect(page.getByTestId('plan-stale')).toContainText('the equipment layout changed');
+});
+
+test('does not silently update, and does not regenerate on its own', async ({ page }) => {
+  /*
+   * > *"Do not silently update. Do not automatically regenerate. The engineer must approve
+   * > regeneration."*
+   *
+   * The plan on screen after the edit is still the *old* plan — three stations, not four — and it
+   * stays that way until somebody presses the button. Asserted through the station count in the
+   * provenance line, which is the plan's own record of what it was made from.
+   */
+  await planAThreeStationWard(page);
+  await expect(page.getByTestId('plan-provenance')).toContainText('3 stations');
+
+  const box = await canvasBox(page);
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.6);
+  await page.keyboard.press('v');
+  await expect(page.getByTestId('field-placed')).toHaveText('4');
+
+  // Warned, and unchanged. Still the three-station plan.
+  await expect(page.getByTestId('plan-stale')).toBeVisible();
+  await expect(page.getByTestId('plan-provenance')).toContainText('3 stations');
+});
+
+test('clears the warning when the engineer regenerates', async ({ page }) => {
+  await planAThreeStationWard(page);
+
+  const box = await canvasBox(page);
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.6);
+  await page.keyboard.press('v');
+  await expect(page.getByTestId('plan-stale')).toBeVisible();
+
+  // The button says what it now does, and pressing it is the engineer's approval.
+  await expect(page.getByTestId('plan-generate')).toHaveText('Regenerate installation plan');
+  await page.getByTestId('plan-generate').click();
+
+  await expect(page.getByTestId('plan-stale')).toHaveCount(0);
+  await expect(page.getByTestId('plan-provenance')).toContainText('4 stations');
+});
+
+test('goes current again when the change is undone', async ({ page }) => {
+  /*
+   * The revision is derived from content, not from a counter — so undoing back to the layout a
+   * plan was made from makes the plan describe the drawing again. A counter would have said
+   * "outdated" forever and taught an engineer to regenerate out of habit.
+   */
+  await planAThreeStationWard(page);
+
+  const box = await canvasBox(page);
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.6);
+  await page.keyboard.press('v');
+  await expect(page.getByTestId('plan-stale')).toBeVisible();
+
+  await page.keyboard.press('Control+z');
+  await expect(page.getByTestId('field-placed')).toHaveText('3');
+  await expect(page.getByTestId('plan-stale')).toHaveCount(0);
+});
+
+test('a moved machine marks the plan outdated, not only an added one', async ({ page }) => {
+  // The layout revision covers position, not just count — a machine dragged 300 mm is a different
+  // installation, and the connection lengths in the plan are no longer the ones it printed.
+  await planAThreeStationWard(page);
+  await expect(page.getByTestId('plan-stale')).toHaveCount(0);
+
+  const box = await canvasBox(page);
+  await page.keyboard.press('v');
+  // Drag the first machine the layout placed.
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.5, { steps: 8 });
+  await page.mouse.up();
+
+  await expect(page.getByTestId('plan-stale')).toContainText('outdated');
+});
+
+test('a stale plan warns in the exported report', async ({ page }) => {
+  /*
+   * > *"A stale plan must never produce a signed PDF without warning."*
+   *
+   * Checked through the HTML export rather than the PDF, because the assertion is about the
+   * *content* and HTML is the format a test can read. Both renderers take the warning from the
+   * same `staleness` field on the model, and the PDF renderer's copy is unit-tested.
+   */
+  await planAThreeStationWard(page);
+
+  const box = await canvasBox(page);
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.6);
+  await page.keyboard.press('v');
+  await expect(page.getByTestId('plan-stale')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Report' }).click();
+  const download = page.waitForEvent('download');
+  await page.getByTestId('report-download-html').click();
+  const file = await download;
+
+  const stream = await file.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const html = Buffer.concat(chunks).toString('utf8');
+
+  expect(html).toContain('Installation plan is outdated. Regenerate required.');
+  expect(html).toContain('must not be used as a basis for installation');
+});
+
 test('produces the same plan twice', async ({ page }) => {
   // Determinism, at the level an engineer observes it: the same layout gives the same plan.
   await traceRoom(page);
