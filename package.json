@@ -25,7 +25,8 @@
     "dataset:ingest": "vite-node scripts/ingest-dataset.ts",
     "knowledge:extract": "vite-node scripts/extract-observations.ts",
     "verify:drawing": "vite-node scripts/verify-drawing.ts",
-    "validate:corpus": "vite-node scripts/validate-corpus.ts"
+    "validate:corpus": "vite-node scripts/validate-corpus.ts",
+    "study:rooms": "vite-node scripts/study-room-signals.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

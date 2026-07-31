@@ -77,8 +77,8 @@ By classification — a run can raise more than one:
 | Class | Count |
 | --- | ---: |
 | `unsupported_drawing` | 211 |
-| `insufficient_evidence` | 85 |
-| `extraction_error` | 21 |
+| `insufficient_evidence` | 86 |
+| `extraction_error` | 20 |
 | `drawing_error` | 3 |
 | `algorithm_defect` | 0 |
 
@@ -92,7 +92,7 @@ corpus is out of scope before any code runs, and that is worth knowing precisely
 two readable dimensions, or carry dimensions that do not agree on one scale. A sheet with a plan at
 1:100 beside a detail at 1:20 produces two internally consistent groups, and a reconciler that took
 the larger would measure the whole sheet against the detail. So the run requires four agreeing
-dimensions and under a fifth disagreeing, and refuses otherwise. Fifteen of these are classified
+dimensions and under a fifth disagreeing, and refuses otherwise. Fourteen of these are classified
 `extraction_error` rather than `insufficient_evidence`, because their outliers are an *order of
 magnitude* out — that is this reader pairing labels with the wrong lines, not a drawing disagreeing
 with itself, and it would be dishonest to file it against the drawing.
@@ -180,7 +180,16 @@ boundary derived from two wall lines and a door arc can name them; one predicted
 be cited in a report, and item 6 of the direction says every reported value must be traceable to a
 calculation path.
 
-**Not started.** The direction is validation before features, and this is the milestone after.
+**A deterministic feasibility study has been run before any of the six is implemented**, and it
+changed the order — see `docs/roadmap/ROOM_UNDERSTANDING_FEASIBILITY.md`. The short version: whole-
+sheet wall classification is unusable (0 of 6 sheets), region finding by flood fill works on 1 of 6,
+and no erosion radius isolates Hospital_044's hall because that hall's ends are **not doorways** —
+it opens onto circulation at room width. Room-name text, by contrast, is present and positioned on
+**6 of 6**.
+
+So the anchor has to be semantic and come first, with geometry bounding outward from it rather than
+being asked to find rooms unaided. No machine learning is warranted yet, and the study is the
+argument rather than the assertion.
 
 ---
 

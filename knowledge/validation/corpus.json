@@ -36,11 +36,11 @@
       },
       {
         "key": "insufficient_evidence",
-        "count": 85
+        "count": 86
       },
       {
         "key": "extraction_error",
-        "count": 21
+        "count": 20
       },
       {
         "key": "drawing_error",
@@ -4216,8 +4216,8 @@
       "discrepancies": [
         {
           "code": "VD-7",
-          "classification": "extraction_error",
-          "subject": "the sheet does not agree with itself on one scale"
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
         }
       ]
     },

@@ -62,6 +62,9 @@ const CUBIC_TO = 2;
 const QUADRATIC_TO = 3;
 const CLOSE_PATH = 4;
 
+/** Straight runs per curve. See `flatten`. */
+const CURVE_SEGMENTS = 8;
+
 export async function readPageGeometry(path: string, pageIndex = 0): Promise<PageGeometry> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const OPS = pdfjs.OPS;
@@ -89,6 +92,38 @@ export async function readPageGeometry(path: string, pageIndex = 0): Promise<Pag
       length,
       angle: foldAngle((Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI),
     });
+  };
+
+  /**
+   * A curve becomes a chain of short straight runs.
+   *
+   * Curves used to be followed to their end point and dropped, on the grounds that nothing in a
+   * dimension is a curve. True, and it cost the one thing curves are for on an architectural plan:
+   * a **door swing**. A swing arc together with its leaf closes the opening it is drawn across, and
+   * without them a region fill walks straight out of every room through its door — measured, on the
+   * reference drawing, as a 17.6 m hall filling to 26.5 m.
+   *
+   * {@link CURVE_SEGMENTS} pieces per curve. Enough that a door arc is a barrier and few enough that
+   * a hatch full of curves does not swamp the segment list; a chord alone would leave a gap between
+   * the arc and the wall it meets.
+   */
+  const flatten = (
+    from: [number, number],
+    control1: [number, number],
+    control2: [number, number],
+    to: [number, number],
+  ): void => {
+    let previous = from;
+    for (let step = 1; step <= CURVE_SEGMENTS; step += 1) {
+      const t = step / CURVE_SEGMENTS;
+      const u = 1 - t;
+      const point: [number, number] = [
+        u * u * u * from[0] + 3 * u * u * t * control1[0] + 3 * u * t * t * control2[0] + t * t * t * to[0],
+        u * u * u * from[1] + 3 * u * u * t * control1[1] + 3 * u * t * t * control2[1] + t * t * t * to[1],
+      ];
+      push(previous, point);
+      previous = point;
+    }
   };
 
   for (let index = 0; index < operators.fnArray.length; index += 1) {
@@ -123,10 +158,30 @@ export async function readPageGeometry(path: string, pageIndex = 0): Promise<Pag
             current = next;
             cursor += 3;
           } else if (op === CUBIC_TO) {
-            current = apply(ctm, values[cursor + 5]!, values[cursor + 6]!);
+            const next = apply(ctm, values[cursor + 5]!, values[cursor + 6]!);
+            if (current) {
+              flatten(
+                current,
+                apply(ctm, values[cursor + 1]!, values[cursor + 2]!),
+                apply(ctm, values[cursor + 3]!, values[cursor + 4]!),
+                next,
+              );
+            }
+            current = next;
             cursor += 7;
           } else if (op === QUADRATIC_TO) {
-            current = apply(ctm, values[cursor + 3]!, values[cursor + 4]!);
+            const control = apply(ctm, values[cursor + 1]!, values[cursor + 2]!);
+            const next = apply(ctm, values[cursor + 3]!, values[cursor + 4]!);
+            if (current) {
+              // A quadratic is a cubic whose two controls sit two-thirds of the way to the control.
+              flatten(
+                current,
+                [current[0] + (2 / 3) * (control[0] - current[0]), current[1] + (2 / 3) * (control[1] - current[1])],
+                [next[0] + (2 / 3) * (control[0] - next[0]), next[1] + (2 / 3) * (control[1] - next[1])],
+                next,
+              );
+            }
+            current = next;
             cursor += 5;
           } else if (op === CLOSE_PATH) {
             if (current && start) push(current, start);
