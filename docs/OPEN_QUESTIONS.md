@@ -8,45 +8,64 @@
 
 ## A. Blocking — the product cannot state a true verdict without these
 
-### A-1. The AK98 installation data package ← **the one that matters**
+### A-1. Installation planning standards and validated installation data ← **the one that matters**
 
-This is the single blocker for the product's purpose. Everything else on this page can
-wait.
+> **Redefined by owner decision — AK98 source clarification.** *"The missing A-1 is therefore not
+> 'missing AK98 manual'. It is 'missing installation planning standards and validated installation
+> data'."*
+>
+> *"The AK98 manual is not the source for installation planning requirements. Do not block
+> development waiting for AK98 service manual."*
 
-**This is now the only thing standing between the application and a usable answer.** The plan
-imports, the scale calibrates, the rooms trace, the rule engine evaluates, the report generates
-in two languages — and every clearance finding still reads `RC-110`, "no requirement to compare
-against", because there is no threshold. The machinery is finished and empty.
+This is the single blocker for the product's purpose. Everything else on this page can wait.
 
-Sprint 5 made the consequence impossible to overlook rather than hiding it: the report's verdict
-is **판정 불가 / Inconclusive**, and it counts the missing citations on page one.
+**What changed.** A-1 was written as "the AK98 installation data package" — one manual that would
+arrive and unblock everything. The owner has established that no such document exists: the AK98
+manual is equipment *operating* information, and the clearance and installation-layout figures MFD-E
+needs are not in it. Waiting for it was waiting for the wrong document.
 
-Phase 4.5 narrowed it: the AK98's **dimensions** are now real (585 × 620 × 1305 mm, plus an
-800 × 800 mm design footprint). What is still missing is the **service clearances** and the
-**citation** — a document, a revision and a section. Dimensions decide what fits; clearances
-decide whether it may be installed, and only the manual can say.
+So the blocker is now **two blockers with different owners**, and the data model separates them so
+neither can be satisfied by the other (see `packages/object-library/src/schema.ts` — the two source
+vocabularies are disjoint, and an installation figure citing a manufacturer document does not parse).
 
-The rule engine can be *built* without it. It cannot be *seeded* with anything true, and a
-seeded-with-guesses rule engine is worse than none: it produces a confident feasibility
-report a TS engineer might sign.
+**A-1a — installation planning standards.** The remaining blocker on verdicts. Every clearance
+finding reads `RC-110`, *"no requirement to compare against"*, until a threshold arrives, and the
+report's verdict is **판정 불가 / Inconclusive**. Each item needs a document number, a **revision**
+and a **section** — all three, or the schema will not accept the citation.
 
-**Needed, from the manufacturer installation manual:**
+| Item | Source the schema will accept | State |
+| --- | --- | --- |
+| Front · Rear · Left · Right service clearance | TS installation standard, hospital design standard, installation drawing, field-validated data | **Outstanding — the blocker** |
+| Maintenance access, per side | as above | Outstanding |
+| RO water · drain · power port locations on the machine | installation drawing or field-validated data | Outstanding |
+| Installation routing | TS installation standard | Outstanding |
+| Installation rates for duration and manpower | `standards/sequences/dialysis.json` (B-7) | Outstanding — planner reports *"Planning rate data not available."* |
 
-| Item | Why |
+**A-1b — the AK98 datasheet citation.** Not a blocker on verdicts; a blocker on the record saying
+what the owner has decided it says. The owner assigned `datasheet_verified` to the AK98's
+dimensions, weight, electrical requirements, water consumption and operating conditions. **The
+status exists and the schema accepts it; the record still reads `draft`,** because a sourced status
+requires a document, a revision and a section, and the datasheet reference has not been supplied.
+Inventing one would be exactly the failure the status exists to prevent.
+
+| Item | State |
 | --- | --- |
-| Manual document number and **revision** | A clearance is true "for the AK98 at revision X". Without the revision we cannot say what a report was based on, or what a future revision invalidates. |
-| Section reference for each figure | Specification section 6 requires source information per rule. "Manufacturer Manual" alone does not meet that bar. |
-| ~~Width · Depth · Height~~ | **Supplied** — 585 × 620 × 1305 mm, Phase 4.5. Still uncited, so that group stays `draft`. |
+| Datasheet document number and **revision** | **Needed** |
+| Section or page for: dimensions and weight; electrical; water consumption; operating conditions | **Needed** |
+| ~~Width · Depth · Height~~ | Supplied — 585 × 620 × 1,305 mm. Uncited, so `draft`. |
 | Weight | Not supplied |
-| Front · Rear · Left · Right service clearance | **The remaining blocker.** The 1200 mm in the rule specification is illustrative. Every clearance finding reads `RC-110` until these arrive. |
-| Power specification | Voltage, phase, rating |
-| RO water specification | Supply pressure, flow, connection type |
-| Drain specification | Diameter, connection type, height |
-| Environmental specification | Ambient temperature, humidity, heat output |
-| ~~One sentence for `designFootprint.basis`~~ | Still wanted for the report, but **not a verification item.** The footprint is an owner planning decision with no manufacturer citation (Phase 4.5), so nothing gates on it. |
+| ~~Planning footprint~~ | **Settled** — AK98 800 × 800 mm, bed 1,000 × 2,100 mm, with the owner's basis recorded. Not a verification item: it is an owner planning decision with no manufacturer citation, and nothing gates on it. |
 
-**Until this arrives:** every field group on the AK98 record ships as `draft`, and the engine
-caps any result that *reads one of them* at YELLOW.
+**Why this cannot be seeded with estimates.** The rule engine can be *built* without any of it. It
+cannot be *seeded* with anything true, and a seeded-with-guesses rule engine is worse than none: it
+produces a confident feasibility report a TS engineer might sign.
+
+**Until this arrives:** every field group on the AK98 record ships as `draft`, and the engine caps
+any result that *reads one of them* at YELLOW.
+
+**Next step, per the owner:** real hospital drawings decide whether A-1a is resolvable from
+installation drawings and field-validated data. See `docs/verification/DRAWING_IMPORT_VERIFICATION.md`
+— the drawing folder has not yet been provided.
 
 Verification is per group, so these can arrive in any order and each is worth having on its
 own — citing the dimensions alone makes the dimension and collision reporting verified while
