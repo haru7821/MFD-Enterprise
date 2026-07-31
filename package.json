@@ -24,7 +24,8 @@
     "knowledge:build": "vite-node scripts/build-knowledge.ts",
     "dataset:ingest": "vite-node scripts/ingest-dataset.ts",
     "knowledge:extract": "vite-node scripts/extract-observations.ts",
-    "verify:drawing": "vite-node scripts/verify-drawing.ts"
+    "verify:drawing": "vite-node scripts/verify-drawing.ts",
+    "verify:sweep": "vite-node scripts/sweep-drawings.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

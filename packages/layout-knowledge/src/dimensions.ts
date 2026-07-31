@@ -353,3 +353,61 @@ export function reconcileScale(
 
   return { scale, primary, consistent, inconsistent };
 }
+
+/** What a title block says about how the sheet was plotted. */
+export interface PrintedScale {
+  /** Denominator of the printed ratio: 100 for `1/100`. */
+  readonly ratio: number;
+  /** The paper size named beside it, e.g. `"A3"`, or null when none is. */
+  readonly claimedSheetSize: string | null;
+  /** The text it was read from, so a reader can find it on the sheet. */
+  readonly text: string;
+}
+
+/**
+ * The scale a sheet prints on itself.
+ *
+ * Read rather than assumed, and it is the gate that makes a corpus-wide sweep safe. Reconciling a
+ * sheet's dimensions to one scale assumes the sheet *has* one — and plenty do not: a plan at 1:100
+ * beside a detail at 1:20 produces two internally consistent groups, and the reconciler will happily
+ * pick whichever is larger and call the other wrong. Requiring the answer to agree with what the
+ * title block says turns that from an unnoticed failure into a refusal.
+ *
+ * A sheet naming several different ratios is treated as naming none: it is the multi-scale case
+ * announcing itself, and there is no way to know which ratio governs which dimension.
+ */
+export function readPrintedScale(texts: readonly TextRun[]): PrintedScale | null {
+  // `A3 : 1/100` — paper size and ratio together, which is how Korean title blocks write it.
+  const sized = /\b(A[0-5])\s*[:：]?\s*1\s*[/:]\s*(\d{1,5})\b/;
+  // `SCALE : 1 / 100` — the ratio alone.
+  const bare = /\b1\s*[/:]\s*(\d{1,5})\b/;
+
+  const found: PrintedScale[] = [];
+  for (const run of texts) {
+    /*
+     * `SLOPE : 1/100` is a fall, not a plot scale, and a drainage plan carries twenty of them. Read
+     * as scales they outvote the real one and the sheet looks like it states two — which, before
+     * this line, is exactly how one hospital's drainage sheets were being refused.
+     */
+    if (/SLOPE|구배|물매/i.test(run.text)) continue;
+    const withSize = sized.exec(run.text);
+    if (withSize?.[1] && withSize[2]) {
+      found.push({
+        ratio: Number(withSize[2]),
+        claimedSheetSize: withSize[1].toUpperCase(),
+        text: run.text.trim(),
+      });
+      continue;
+    }
+    const alone = bare.exec(run.text);
+    if (alone?.[1]) {
+      found.push({ ratio: Number(alone[1]), claimedSheetSize: null, text: run.text.trim() });
+    }
+  }
+
+  const ratios = new Set(found.map((entry) => entry.ratio));
+  if (ratios.size !== 1) return null;
+
+  // Prefer the statement that also names a paper size: it is the one the safety rule can check.
+  return found.find((entry) => entry.claimedSheetSize !== null) ?? found[0] ?? null;
+}
