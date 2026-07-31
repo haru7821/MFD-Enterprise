@@ -328,9 +328,11 @@ function emptyOptimisation(
  * machine outside every outline breaks the boundary rule.
  */
 function roomNameOf(level: Level, placement: Placement, catalog: Catalog): string | null {
+  // Indexed once rather than scanned per space: this runs for every machine on every blocking row.
+  const outlines = new Map(level.boundaries.map((entry) => [entry.id, entry.vertices]));
   for (const space of level.spaces) {
-    const boundary = level.boundaries.find((entry) => entry.id === space.boundaryId);
-    if (boundary && withinRoom(placement, boundary.vertices, catalog)) return space.name;
+    const vertices = outlines.get(space.boundaryId);
+    if (vertices && withinRoom(placement, vertices, catalog)) return space.name;
   }
   return null;
 }

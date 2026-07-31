@@ -235,6 +235,27 @@ export const SCORE_REASON_CODES = {
       en: '{criterion} cannot be measured: no figure for it has been observed in the drawing dataset.',
     },
   },
+  /*
+   * Something in the room has no catalogue entry, so its size is unknown.
+   *
+   * Every geometric criterion needs the footprint of everything it has to work around. Two helpers
+   * used to answer this differently and silently — one substituted the *measured* object's
+   * footprint, inventing a dimension for equipment nothing knows the size of; the other dropped the
+   * placement, so it blocked nothing and the room measured emptier than it is. Both were reachable
+   * once the scored population and the blocking population came apart.
+   *
+   * > Owner: *"Unknown must remain Unknown. Never interpolate. Never estimate. Never replace
+   * > missing data with assumptions."*
+   *
+   * Neither substituting nor ignoring survives that sentence, so the criterion is not measured.
+   */
+  'SC-906': {
+    title: { ko: '카탈로그에 없는 장비', en: 'Uncatalogued Equipment' },
+    template: {
+      ko: '도면의 장비 중 카탈로그에 없는 것이 있어 {criterion} 항목을 측정할 수 없습니다.',
+      en: '{criterion} cannot be measured: the room holds equipment that is not in the catalogue, so its size is unknown.',
+    },
+  },
 } as const;
 export type ScoreReasonCode = keyof typeof SCORE_REASON_CODES;
 

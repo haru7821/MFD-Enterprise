@@ -101,9 +101,17 @@ describe('machines already on the drawing', () => {
     });
     const alone = rank({ stationTarget: 3 });
 
-    const expansionOf = (result: ReturnType<typeof rank>) =>
-      result.layouts[0]?.score.criteria.find((entry) => entry.criterion === 'future_expansion')
-        ?.measured ?? 0;
+    /*
+     * Present, not defaulted. `?? 0` made this asymmetric: if the criterion ever went *unavailable*
+     * in the occupied run it would read 0 and the comparison would pass while measuring nothing.
+     */
+    const expansionOf = (result: ReturnType<typeof rank>) => {
+      const measurement = result.layouts[0]?.score.criteria.find(
+        (entry) => entry.criterion === 'future_expansion',
+      );
+      expect(measurement?.measured).toBeTypeOf('number');
+      return measurement?.measured as number;
+    };
 
     expect(result0Defined(withOccupants), 'the occupied run produced no layout').toBe(true);
     expect(expansionOf(withOccupants)).toBeLessThan(expansionOf(alone));

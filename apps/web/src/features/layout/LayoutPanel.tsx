@@ -247,7 +247,7 @@ export function LayoutPanel() {
                   the more common way for a drawing to end up blocked.
                 */}
                 {violation.placements.map((entry, index) => (
-                  <span key={entry.id} className="text-ink-faint">
+                  <span key={entry.id} className="text-ink-faint" data-testid="layout-blocking-machine">
                     {index === 0 ? ' · ' : ' + '}
                     {entry.label}
                     {!entry.inSelectedRoom && (

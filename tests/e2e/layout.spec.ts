@@ -544,11 +544,80 @@ test('names the room a blocking machine is actually in', async ({ page }) => {
   await optimise(page);
 
   await expect(page.getByTestId('layout-blocking')).toBeVisible();
+  /*
+   * The **name**, not merely that some room was named. Asserting `(in ` alone passed against a
+   * version that returned the neighbouring space's name for everything — the standing review
+   * demonstrated exactly that. The second room is the one the machines are in, and the room being
+   * optimised must not be the one named.
+   */
   const elsewhere = page.getByTestId('layout-blocking-elsewhere').first();
   await expect(elsewhere).toContainText('(in ');
-  // The name of a room, not the fallback for a machine standing in circulation.
   await expect(elsewhere).not.toContainText('not in any room');
+
+  // And it is the **other** room. Naming a room is not the property under test — naming the right
+  // one is, and asserting only that some name appeared passed against a version that returned the
+  // neighbouring space for everything. Read back rather than hardcoded: the editor numbers rooms
+  // itself, and the second one came out "Room 10".
+  const selected = ((await page.getByTestId('layout-room').textContent()) ?? '').replace('Room: ', '').trim();
+  expect(selected).not.toBe('');
+  expect(await elsewhere.textContent()).not.toContain(`(in ${selected})`);
+
   await expect(page.getByTestId('layout-results')).toHaveCount(0);
+});
+
+test('flags only the machine that is elsewhere, on a collision that spans two rooms', async ({
+  page,
+}) => {
+  /*
+   * The mixed row. A collision names two machines; when one is in the room being optimised and the
+   * other is not, a row-level flag says "A + B (not in this room)" — true of B and false of A.
+   *
+   * Both existing whole-level specs are homogeneous — every machine named is outside the selected
+   * room — so neither could tell a per-row flag from a per-machine one, which the standing review
+   * proved by reinstating the row-level version and watching all 22 specs pass.
+   *
+   * Here the two rooms abut, and a machine on each side of the shared edge collides across it.
+   */
+  await traceRoom(page, [
+    [0.25, 0.25],
+    [0.75, 0.25],
+    [0.75, 0.55],
+    [0.25, 0.55],
+  ]);
+  await placeServices(page);
+  await traceRoom(page, [
+    [0.25, 0.55],
+    [0.75, 0.55],
+    [0.75, 0.85],
+    [0.25, 0.85],
+  ]);
+
+  // One just inside the first room, one just inside the second, close enough to overlap.
+  await placeByHand(page, [
+    [0.5, 0.535],
+    [0.5, 0.565],
+  ]);
+
+  await selectRoom(page);
+  await optimise(page);
+
+  await expect(page.getByTestId('layout-blocking')).toBeVisible();
+  const row = page.getByTestId('layout-blocking-rule').first();
+  await expect(row).toContainText('RC-201');
+
+  const machines = row.getByTestId('layout-blocking-machine');
+  await expect(machines).toHaveCount(2);
+
+  /*
+   * Which machine carries the flag, not how many flags the row has.
+   *
+   * Counting was the first attempt and it was worthless: a row-level flag renders exactly one too,
+   * so the assertion passed against the very bug it was written for. The rule engine anchors this
+   * collision on the machine outside the selected room first, so the flag belongs on the **first**
+   * of the two named — and a row-level implementation puts it on the last.
+   */
+  await expect(machines.nth(0).getByTestId('layout-blocking-elsewhere')).toHaveCount(1);
+  await expect(machines.nth(1).getByTestId('layout-blocking-elsewhere')).toHaveCount(0);
 });
 
 test('says so plainly when there is nothing of that kind to rearrange', async ({ page }) => {

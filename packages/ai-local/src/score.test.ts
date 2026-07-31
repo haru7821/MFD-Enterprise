@@ -143,6 +143,71 @@ describe('what is measured, and what is merely in the way', () => {
   /** Machines sealing both service faces of `a`, and nothing else. */
   const SEALED = [placement('front', 1_000, 2_000), placement('rear', 1_000, 0)];
 
+  it('sizes each occupant from its own catalogue entry, not from the object being measured', () => {
+    /*
+     * The second correction in `future_expansion`, which the standing review showed no test could
+     * catch: the fixture catalogue held **one** record, so every "machine of another kind" was
+     * another station at the same footprint and sizing them all from `object.planningFootprint` was
+     * indistinguishable from sizing them properly.
+     *
+     * A bed is 1,000 x 2,100 against the station's 800 x 800 — the shipped catalogue's real spread.
+     * Laid across a narrow room, measuring it as an 800 mm square leaves room for a station that is
+     * not there.
+     */
+    const room = fixtureRoom(2_400, 6_000);
+    const boundaries = [fixtureRoomBoundary(2_400, 6_000)];
+    const stations = [placement('s1', 1_200, 1_000)];
+    const bed = { ...placement('bed', 1_200, 4_000), equipmentObjectId: 'fixture_bed' };
+
+    const asItIs = score({
+      placements: stations,
+      occupants: [...stations, bed],
+      room,
+      boundaries,
+      stationTarget: 1,
+    });
+    // The same drawing with the bed measured as a station-sized square: the mistake being guarded.
+    const asAStation = score({
+      placements: stations,
+      occupants: [...stations, placement('bed', 1_200, 4_000)],
+      room,
+      boundaries,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(asItIs, 'future_expansion')?.measured).toBeLessThan(
+      measurementOf(asAStation, 'future_expansion')?.measured ?? 0,
+    );
+  });
+
+  it('refuses to measure a room holding equipment the catalogue does not describe', () => {
+    /*
+     * > Owner: *"Unknown must remain Unknown. Never interpolate. Never estimate. Never replace
+     * > missing data with assumptions."*
+     *
+     * Two helpers used to answer this differently and silently — one substituted the measured
+     * object's footprint, inventing a dimension; the other dropped the placement, so it blocked
+     * nothing and the room measured emptier than it is. Both are assumptions. `SC-906` is not.
+     */
+    const stations = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
+    const stranger = { ...placement('mystery', 2_500, 1_000), equipmentObjectId: 'not_in_catalogue' };
+
+    const breakdown = score({ ...measurable, placements: stations, occupants: [...stations, stranger] });
+    const codes = breakdown.unavailable.map((entry) => entry.reasonCode);
+
+    for (const criterion of [
+      'compliance_margin',
+      'installation_feasibility',
+      'maintenance_access',
+      'future_expansion',
+    ]) {
+      expect(breakdown.unavailable.find((entry) => entry.criterion === criterion)?.reasonCode).toBe(
+        'SC-906',
+      );
+    }
+    expect(codes).not.toContain('SC-902');
+  });
+
   it('counts a machine of another kind as blocking maintenance access', () => {
     /*
      * Reachable means at least one service face is clear, so blocking one is not enough — `a` is

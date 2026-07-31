@@ -137,6 +137,13 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
   const obstacles = obstructionBounds(input.obstructions);
   const roomBounds = boundsOf(input.room);
   const ratios: number[] = [];
+  /*
+   * Hoisted out of the probe so the criterion can refuse rather than silently probing past an
+   * occupant it has no size for. One `null` here means the room holds equipment the catalogue does
+   * not describe, and there is no honest headroom figure to report — see `occupantBounds`.
+   */
+  const occupants = occupantBounds(input.occupants, input.catalog);
+  if (occupants === null) return unavailable('SC-906');
 
   for (const result of report.results) {
     if (result.category !== 'clearance' || result.appliedValue === null) continue;
@@ -149,7 +156,7 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
       const placement = input.placements.find((entry) => entry.id === placementId);
       if (!placement) continue;
 
-      const free = freeDistanceOnSide(placement, side, input, obstacles, roomBounds);
+      const free = freeDistanceOnSide(placement, side, input, obstacles, roomBounds, occupants);
       if (free === null) continue;
       ratios.push(free / result.appliedValue);
     }
@@ -194,6 +201,7 @@ function freeDistanceOnSide(
   input: MeasureInput,
   obstacles: readonly Bounds[],
   room: Bounds | null,
+  occupants: readonly OccupantBounds[],
 ): number | null {
   const object = input.catalog.get(placement.equipmentObjectId);
   if (!object) return null;
@@ -217,7 +225,8 @@ function freeDistanceOnSide(
   const reach =
     Math.abs(direction.x) > Math.abs(direction.y) ? footprint.width / 2 : footprint.depth / 2;
   // Everything in the room blocks the probe, not only this equipment kind — see `occupants`.
-  const others = footprintBoundsOf(input.occupants, input.catalog, placement.id);
+  // Excluded by id: the machine being probed is not an obstacle to its own service face.
+  const others = excluding(occupants, placement.id);
   const ceiling = required * PROBE_CEILING_MULTIPLE;
 
   for (let distance = 0; distance <= ceiling; distance += PROBE_STEP_MM) {
@@ -246,24 +255,52 @@ function within(bounds: Bounds, point: Vec2): boolean {
   );
 }
 
-function footprintBoundsOf(
-  placements: readonly Placement[],
-  catalog: Catalog,
-  exceptId: string,
-): Bounds[] {
-  return placements
-    .filter((placement) => placement.id !== exceptId)
-    .flatMap((placement) => {
-      const object = catalog.get(placement.equipmentObjectId);
-      if (!object) return [];
-      return [
-        boundsAround(
-          placement.transform.position,
-          object.planningFootprint.width,
-          object.planningFootprint.depth,
-        ),
-      ];
+/**
+ * The footprints of everything in the room except one placement, or **null** when any of them has
+ * no catalogue entry.
+ *
+ * ## Why null rather than a shorter list
+ *
+ * There were two of these, and they disagreed silently. One substituted the *measured* object's
+ * footprint for an unknown occupant — inventing a dimension for equipment nothing knows the size of.
+ * The other dropped it, so it blocked nothing and the room measured emptier than it is. Both became
+ * reachable the moment the scored population and the blocking population came apart, and neither
+ * was tested.
+ *
+ * > Owner: *"Unknown must remain Unknown. Never interpolate. Never estimate. Never replace missing
+ * > data with assumptions."*
+ *
+ * A guessed footprint and an ignored one are both assumptions — one about size, one about absence.
+ * So the answer is that the criterion cannot be measured, reported as `SC-906`, and every caller
+ * has to handle it because the type says so.
+ */
+interface OccupantBounds {
+  readonly placementId: string;
+  readonly bounds: Bounds;
+}
+
+function occupantBounds(placements: readonly Placement[], catalog: Catalog): OccupantBounds[] | null {
+  const found: OccupantBounds[] = [];
+  for (const placement of placements) {
+    const object = catalog.get(placement.equipmentObjectId);
+    if (!object) return null;
+    found.push({
+      placementId: placement.id,
+      bounds: boundsAround(
+        placement.transform.position,
+        object.planningFootprint.width,
+        object.planningFootprint.depth,
+      ),
     });
+  }
+  return found;
+}
+
+/** Everything except one placement — by id, which is the only thing that identifies it. */
+function excluding(occupants: readonly OccupantBounds[], placementId: string): Bounds[] {
+  return occupants
+    .filter((entry) => entry.placementId !== placementId)
+    .map((entry) => entry.bounds);
 }
 
 /**
@@ -273,7 +310,7 @@ function footprintBoundsOf(
  *
  * | | |
  * | --- | --- |
- * | **Delivery path** | Is there a route from the level's `access_entry` to this machine's position wide enough for its **crated** footprint? |
+ * | **Delivery path** | Is there a route from the level's `access_entry` to this machine's position, clear of everything installed? (**Not** yet checked against the crate's width — see below.) |
  * | **Working space** | Is there room at the connection faces for an installer, which is not the same envelope as service clearance in use? |
  *
  * A layout can satisfy every clearance rule and still require a machine to pass through a 700 mm
@@ -312,10 +349,23 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
   const allowance = input.knowledge.dimension('delivery_crate_allowance');
   if (!allowance || !allowance.isPattern) return unavailable('SC-905');
 
-  const crate = {
-    width: input.object.planningFootprint.width + allowance.maximumMm * 2,
-    depth: input.object.planningFootprint.depth + allowance.maximumMm * 2,
-  };
+  /*
+   * ## The observed allowance currently only decides *whether* this is measured
+   *
+   * The crated size was computed here and passed to the router as the **fallback footprint for a
+   * placement the catalogue does not describe** — nothing else. `routedDistance` routes a line and
+   * takes no width (routing.ts:89), so the route has never been checked against a crate's
+   * dimensions, and the heading above this function claiming *"wide enough for its crated
+   * footprint"* claims more than the code does.
+   *
+   * That gap was hidden while the fallback existed and is visible now that an uncatalogued occupant
+   * reports `SC-906` instead. Left as it is rather than quietly widened: inflating the blockers by
+   * the allowance would change every measured value on this criterion, and whether "feasible"
+   * means *a line reaches the machine* or *a crate fits along it* is what the criterion means. It
+   * is on the list for the owner.
+   */
+  const occupants = occupantBounds(input.occupants, input.catalog);
+  if (occupants === null) return unavailable('SC-906');
 
   let deliverable = 0;
   for (const placement of input.placements) {
@@ -324,7 +374,7 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
     // problem rather than this criterion's.
     const blockers = [
       ...obstructionBounds(input.obstructions),
-      ...footprintBounds(input.occupants, input.catalog, placement.id, crate),
+      ...excluding(occupants, placement.id),
     ];
 
     const route = routedDistance({
@@ -352,9 +402,12 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
   const clearance = input.object.serviceClearance;
   const footprint = input.object.planningFootprint;
 
+  const occupants = occupantBounds(input.occupants, input.catalog);
+  if (occupants === null) return unavailable('SC-906');
+
   let reachable = 0;
   for (const placement of input.placements) {
-    const others = footprintBounds(input.occupants, input.catalog, placement.id, footprint);
+    const others = excluding(occupants, placement.id);
     const centre = placement.transform.position;
 
     const faces: Bounds[] = [];
@@ -411,11 +464,14 @@ function measureFutureExpansion(input: MeasureInput): Measurement {
    *
    * Two corrections in one line. The population is `occupants` rather than `placements`, so space
    * a machine of another kind is standing in is not offered as room to expand into. And the size
-   * comes from each placement's own catalogue entry via `footprintBounds` rather than from
+   * comes from each placement's own catalogue entry via `occupantBounds` rather than from
    * `object.planningFootprint` applied to all of them — which was harmless while every placement
-   * here was the same kind and is wrong the moment it is not.
+   * here was the same kind and is wrong the moment it is not. A dialysis bed is 1,000 x 2,100 mm
+   * against the AK98's 800 x 800, so measuring one as the other misplaces a square metre.
    */
-  const occupied = footprintBounds(input.occupants, input.catalog, '', input.object.planningFootprint);
+  const occupants = occupantBounds(input.occupants, input.catalog);
+  if (occupants === null) return unavailable('SC-906');
+  const occupied = occupants.map((entry) => entry.bounds);
 
   const blocked = [
     ...input.obstructions,
@@ -492,22 +548,6 @@ function obstructionBounds(obstructions: readonly (readonly Vec2[])[]): Bounds[]
   return obstructions
     .map((polygon) => boundsOf(polygon))
     .filter((bounds): bounds is Bounds => bounds !== null);
-}
-
-function footprintBounds(
-  placements: readonly Placement[],
-  catalog: Catalog,
-  exceptId: string,
-  size: { width: number; depth: number },
-): Bounds[] {
-  return placements
-    .filter((placement) => placement.id !== exceptId)
-    .map((placement) => {
-      const object = catalog.get(placement.equipmentObjectId);
-      const width = object?.planningFootprint.width ?? size.width;
-      const depth = object?.planningFootprint.depth ?? size.depth;
-      return boundsAround(placement.transform.position, width, depth);
-    });
 }
 
 function overlaps(a: Bounds, b: Bounds): boolean {

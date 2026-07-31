@@ -74,8 +74,29 @@ export function fixtureMachineRecord(
   };
 }
 
+/**
+ * A second kind, so that "a machine of another kind" means one.
+ *
+ * 1,000 x 2,100 mm against the station's 800 x 800 — the shipped catalogue's real spread, a
+ * dialysis bed beside an AK98. The fixture catalogue held a **single** record until the standing
+ * review pointed out what that costs: every test claiming to place "equipment of another kind" was
+ * placing another station at the same footprint, so a criterion that sized every occupant from the
+ * measured object could not be caught by any of them.
+ */
+export function fixtureBedRecord(): Record<string, unknown> {
+  return {
+    ...fixtureMachineRecord({ id: 'fixture_bed' }),
+    model: 'FX-BED',
+    category: 'treatment_bed',
+    planningFootprint: { width: 1_000, depth: 2_100, basis: 'Fixture planning allowance' },
+  };
+}
+
 export function fixtureCatalog(options: FixtureMachineOptions = {}): Catalog {
-  return createCatalog([{ fileName: 'fixture_station.json', raw: fixtureMachineRecord(options) }]);
+  return createCatalog([
+    { fileName: 'fixture_station.json', raw: fixtureMachineRecord(options) },
+    { fileName: 'fixture_bed.json', raw: fixtureBedRecord() },
+  ]);
 }
 
 export function fixtureMachine(options: FixtureMachineOptions = {}): EquipmentObject {
