@@ -408,12 +408,33 @@ export const drawingMetadataSchema = z.strictObject({
 
 export type DrawingMetadata = z.infer<typeof drawingMetadataSchema>;
 
+/**
+ * What a sheet is *for*, as the dataset's own index states it.
+ *
+ * Taken from the dataset rather than inferred, and it is the field that decides which drawings are
+ * worth reading: a `3d_view` or an `interior_detail` carries no plan geometry, and a `base_plan` is
+ * the shell before any dialysis equipment was laid out.
+ */
+export const DRAWING_ROLES = [
+  'dialysis_layout',
+  'ro_room',
+  'base_plan',
+  'peritoneal_dialysis',
+  'interior_detail',
+  '3d_view',
+  'template',
+  'unknown',
+] as const;
+
+export type DrawingRole = (typeof DRAWING_ROLES)[number];
+
 export const drawingRecordSchema = z.strictObject({
   drawingId: z.string().min(1),
   /** Which `Hospital_NNN` folder it came from. */
   hospitalId: z.string().min(1),
   path: z.string().min(1),
   format: z.enum(['pdf', 'dwg', 'dxf', 'jpg', 'png', 'other']),
+  role: z.enum(DRAWING_ROLES),
   pageCount: z.number().int().positive().nullable(),
   sheet: z.string().min(1).nullable(),
   revision: z.string().min(1).nullable(),

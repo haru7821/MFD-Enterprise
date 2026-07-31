@@ -5,6 +5,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  DRAWING_ROLES,
   classifyDrawing,
   effectiveDpiOf,
   parseDataset,
@@ -156,10 +157,18 @@ function readRaster(format: DrawingRecord['format'], fileBytes: number): Read {
   };
 }
 
+/**
+ * Every file under a hospital folder, except the previews.
+ *
+ * `previews/` holds PNG renders **of the PDFs beside them**. Cataloguing those as drawings would
+ * count every sheet twice and would offer an engineer a lossy raster of a vector export as if it
+ * were a separate source — measurably worse than the file it was rendered from, and indexed as an
+ * equal to it.
+ */
 function walk(directory: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith('.')) continue;
+    if (entry.name.startsWith('.') || entry.name === 'previews') continue;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) found.push(...walk(path));
     else found.push(path);
@@ -167,7 +176,11 @@ function walk(directory: string): string[] {
   return found.sort();
 }
 
-async function catalogueDrawing(path: string, hospitalId: string): Promise<DrawingRecord | null> {
+async function catalogueDrawing(
+  path: string,
+  hospitalId: string,
+  index: Map<string, { revision: string | null; role: string }>,
+): Promise<DrawingRecord | null> {
   const format = formatOf(path);
   if (format === 'other') return null;
 
@@ -191,20 +204,28 @@ async function catalogueDrawing(path: string, hospitalId: string): Promise<Drawi
           }
         : readRaster(format, fileBytes);
 
+  const drawingId = `${hospitalId}/${basename(path)}`;
+  const indexed = index.get(drawingId);
+
   return {
-    drawingId: `${hospitalId}/${basename(path)}`,
+    drawingId,
     hospitalId,
     path: relative(DATASET_ROOT, path),
     format,
+    role: (DRAWING_ROLES as readonly string[]).includes(indexed?.role ?? '')
+      ? (indexed?.role as DrawingRecord['role'])
+      : 'unknown',
     pageCount: read.pageCount,
     /*
-     * Sheet and revision are printed on the drawing, in its title block, which is not machine
-     * readable here. Null rather than parsed out of a filename: a file called `A-201_Rev-C.pdf`
-     * usually means what it says and sometimes does not, and a wrong revision on a citation is
-     * worse than an absent one.
+     * The sheet number is printed in a title block, which is not machine readable here.
      */
     sheet: null,
-    revision: null,
+    /*
+     * From the dataset's index when it states one, null otherwise. Never parsed out of a filename:
+     * `A-201_Rev-C.pdf` usually means what it says and sometimes does not, and a wrong revision on
+     * a citation is worse than an absent one.
+     */
+    revision: indexed?.revision ?? null,
     sha256,
     classification: read.classification,
     metadata: read.metadata,
@@ -212,25 +233,85 @@ async function catalogueDrawing(path: string, hospitalId: string): Promise<Drawi
   };
 }
 
+/**
+ * Where the hospital folders actually are.
+ *
+ * The owner's decision described `dataset/Hospital_NNN/`; the repository as delivered puts them at
+ * the root. Both are accepted, because which one is right is a question about a dataset that has
+ * already been assembled — and an ingester that insisted on the documented layout would refuse the
+ * real one over a directory name.
+ */
+function hospitalRoot(): string {
+  const nested = join(DATASET_ROOT, 'dataset');
+  try {
+    if (statSync(nested).isDirectory()) return nested;
+  } catch {
+    /* not there; fall through to the repository root */
+  }
+  return DATASET_ROOT;
+}
+
+/**
+ * The dataset's own index, when it ships one.
+ *
+ * `metadata/drawings.json` carries the revision, the sheet's role and the original source path for
+ * every drawing — facts about the dataset that no amount of reading the file would recover. Used
+ * for exactly those, and for nothing that could be measured instead.
+ */
+function datasetIndex(): Map<string, { revision: string | null; role: string }> {
+  const index = new Map<string, { revision: string | null; role: string }>();
+  try {
+    const raw = JSON.parse(
+      readFileSync(join(DATASET_ROOT, 'metadata', 'drawings.json'), 'utf8'),
+    ) as { drawings?: { file?: string; hospital_id?: string; revision?: string | null; role?: string }[] };
+
+    for (const entry of raw.drawings ?? []) {
+      if (!entry.file || !entry.hospital_id) continue;
+      index.set(`${entry.hospital_id}/${entry.file}`, {
+        revision: entry.revision ?? null,
+        role: entry.role ?? 'unknown',
+      });
+    }
+  } catch {
+    /* no index shipped; every role falls back to unknown */
+  }
+  return index;
+}
+
 async function main(): Promise<void> {
-  const datasetDirectory = join(DATASET_ROOT, 'dataset');
+  const datasetDirectory = hospitalRoot();
+  const index = datasetIndex();
 
   let hospitals: string[] = [];
   try {
     hospitals = readdirSync(datasetDirectory, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+      /*
+       * The hospital projects, plus `_reference` — which is not a hospital but is a source the
+       * dataset's own index counts, holding workshop drawings, an interior detail sheet and a
+       * sample. Catalogued rather than skipped so the total reconciles against the index: 287 of
+       * 300 with 13 quietly dropped is exactly the kind of gap nobody investigates.
+       */
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          (/^Hospital_\d+$/.test(entry.name) || entry.name === '_reference'),
+      )
       .map((entry) => entry.name)
       .sort();
   } catch {
+    process.stdout.write(`dataset: cannot read ${datasetDirectory}\n`);
+  }
+
+  if (hospitals.length === 0) {
     process.stdout.write(
-      `dataset: no ${datasetDirectory} — the repository is present but holds no drawings yet.\n`,
+      `dataset: no Hospital_NNN folders under ${datasetDirectory} — nothing to catalogue yet.\n`,
     );
   }
 
   const drawings: DrawingRecord[] = [];
   for (const hospitalId of hospitals) {
     for (const path of walk(join(datasetDirectory, hospitalId))) {
-      const record = await catalogueDrawing(path, hospitalId);
+      const record = await catalogueDrawing(path, hospitalId, index);
       if (record) drawings.push(record);
     }
   }
