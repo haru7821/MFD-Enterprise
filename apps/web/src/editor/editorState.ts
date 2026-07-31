@@ -82,7 +82,29 @@ export interface BlockingViolation {
    * Without these the panel says a rule is broken and leaves an engineer to find *where* on a
    * drawing with ten machines on it, which is not a finding they can act on.
    */
-  readonly placementIds: readonly string[];
+  readonly placements: readonly BlockingPlacement[];
+}
+
+/**
+ * A machine named by a blocking violation, and whether it is in the room being optimised.
+ *
+ * > Owner decision: **the whole level**, not the selected room. Everything on the drawing counts
+ * > towards whether it is acceptable.
+ *
+ * Which means a machine the engineer did not select — one in the next room, or one whose centre
+ * falls outside the outline they clicked — can block the run. That is the decision working as
+ * intended and it is baffling without this flag: the panel would name a machine that is not in the
+ * room the engineer is looking at, with no hint of why it is being mentioned.
+ *
+ * Resolved where the partition is made rather than at render time, because the partition is what
+ * decides it. `runSolver` already computes exactly this to split `current` from `existing`, and a
+ * second answer worked out in the panel would be free to disagree with the first.
+ */
+export interface BlockingPlacement {
+  readonly id: string;
+  /** The label the engineer typed, or the id when the placement has none. */
+  readonly label: string;
+  readonly inSelectedRoom: boolean;
 }
 
 /**

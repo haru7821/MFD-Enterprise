@@ -53,20 +53,6 @@ const UNAVAILABLE_REASONS: Record<string, string> = {
   'SC-904': 'no requirement to compare against',
 };
 
-/**
- * The labels of the machines a finding is about, in drawing order.
- *
- * Labels rather than placement ids: an id is a uuid the engineer has never seen, and the label is
- * what is written on the machine on screen. Falls back to the id when a placement has been deleted
- * between the run and the render, rather than dropping it — a finding about a machine that is no
- * longer there is still worth naming.
- */
-function labelsFor(level: ReturnType<typeof activeLevel>, placementIds: readonly string[]): string {
-  return placementIds
-    .map((id) => level.placements.find((placement) => placement.id === id)?.label ?? id)
-    .join(' + ');
-}
-
 const EMPTY_MESSAGES = {
   no_room_selected: 'Select a room first — the solver needs an outline to work inside.',
   no_position_satisfies_rules:
@@ -233,7 +219,9 @@ export function LayoutPanel() {
           <ul className="mt-1 space-y-0.5">
             {results.blocking.map((violation) => (
               <li
-                key={`${violation.ruleId}:${violation.reasonCode}:${violation.placementIds.join('+')}`}
+                key={`${violation.ruleId}:${violation.reasonCode}:${violation.placements
+                  .map((entry) => entry.id)
+                  .join('+')}`}
                 className="text-[10px] text-ink-muted"
                 data-testid="layout-blocking-rule"
               >
@@ -242,8 +230,22 @@ export function LayoutPanel() {
                   Which machines, by the labels the engineer typed. A rule id and a reason code say
                   what is wrong; only these say where to go and move something.
                 */}
-                {violation.placementIds.length > 0 && (
-                  <span className="text-ink-faint"> · {labelsFor(level, violation.placementIds)}</span>
+                {violation.placements.length > 0 && (
+                  <span className="text-ink-faint">
+                    {' '}
+                    · {violation.placements.map((entry) => entry.label).join(' + ')}
+                  </span>
+                )}
+                {/*
+                  Owner decision: the gates judge the **whole level**, so a machine the engineer did
+                  not select can block this run. Saying so is what keeps that from reading as a bug
+                  — without it the panel names a machine that is not in the room on screen and
+                  offers no reason for mentioning it.
+                */}
+                {violation.placements.some((entry) => !entry.inSelectedRoom) && (
+                  <span className="ml-1 text-ink-faint" data-testid="layout-blocking-elsewhere">
+                    (not in this room)
+                  </span>
                 )}
               </li>
             ))}

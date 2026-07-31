@@ -85,7 +85,25 @@ export function rankLayouts(input: RankInput): RankResult {
   const scored = pipeline.feasible.map((entry) => ({
     entry,
     score: scoreLayout({
-      placements: [...input.existing, ...entry.placements],
+      /*
+       * The candidate's own placements, and not `[...input.existing, ...entry.placements]`.
+       *
+       * > Owner decision, following the standing review: the **gates** judge the whole scene; the
+       * > **score** measures only the equipment it was written for.
+       *
+       * They are different questions. A gate asks whether the drawing is acceptable, and everything
+       * on it counts. A criterion asks how good an arrangement of *this* equipment is, and it has
+       * one object to measure against: `input.object`. Handing it another kind made
+       * `maintenance_access` apply this machine's service clearance to a nurse station,
+       * `installation_feasibility` size a crate from this machine's planning footprint, and the
+       * routing criteria run an RO line to whatever was nearest. It also made the `station_count`
+       * constraint report `existing.length + candidate.length` against a target of the candidate's
+       * count — a number that is simply wrong, in a field whose whole purpose is traceability.
+       *
+       * Comparability is preserved because the incumbent is scored the same way (optimise.ts): both
+       * sides exclude `existing`, so the two totals still measure the same thing.
+       */
+      placements: entry.placements,
       catalog: input.catalog,
       ruleSet: input.ruleSet,
       boundaries: input.boundaries,

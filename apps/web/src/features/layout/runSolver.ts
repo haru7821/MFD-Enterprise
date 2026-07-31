@@ -165,7 +165,20 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
       blocking: result.blocking.map((violation) => ({
         ruleId: violation.detail.ruleId ?? '',
         reasonCode: violation.detail.reasonCode ?? '',
-        placementIds: violation.detail.placementIds ?? [],
+        /*
+         * Resolved here, against the same `withinRoom` that split `current` from `existing` above.
+         * A machine can block this run without being in the room the engineer selected — that is
+         * the owner's whole-level decision — and the panel has to be able to say so.
+         */
+        placements: (violation.detail.placementIds ?? []).map((id) => {
+          const placement = request.level.placements.find((entry) => entry.id === id);
+          return {
+            id,
+            label: placement?.label || id,
+            inSelectedRoom:
+              placement !== undefined && withinRoom(placement, room.vertices, request.catalog),
+          };
+        }),
       })),
     };
   }

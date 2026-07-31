@@ -471,6 +471,38 @@ test('optimises again once the blocking violation is removed', async ({ page }) 
   await expect(page.getByTestId('layout-results')).toBeVisible();
 });
 
+test('blocks on a machine outside the selected room, and says it is elsewhere', async ({
+  page,
+}) => {
+  /*
+   * > Owner decision: the gates judge the **whole level**, not the selected room.
+   *
+   * Until now nothing outside the unit tests exercised that. Every browser spec put its machines in
+   * one room, so `existing` was empty in all of them and the widened population was never the thing
+   * being tested.
+   *
+   * Here a machine is dropped **outside** the traced outline. It is not in `current` — `withinRoom`
+   * excludes it — so it lands in `existing`, and it breaks the boundary rule by standing outside
+   * every room. Under the owner's decision that blocks the run, which is correct and would be
+   * baffling on its own: the panel names a machine that is not in the room on screen. So it also
+   * says that it is not.
+   */
+  await traceRoom(page);
+  await placeServices(page);
+  await placeByHand(page, AWKWARD);
+  // Well clear of the room, which spans 0.25–0.75 of the canvas.
+  await placeByHand(page, [[0.9, 0.85]]);
+  await selectRoom(page);
+
+  await optimise(page);
+
+  await expect(page.getByTestId('layout-blocking')).toBeVisible();
+  await expect(page.getByTestId('layout-blocking-elsewhere')).toBeVisible();
+  await expect(page.getByTestId('layout-blocking-elsewhere')).toContainText('not in this room');
+  await expect(page.getByTestId('layout-results')).toHaveCount(0);
+  await expect(page.getByTestId('layout-empty-coverage')).toHaveCount(0);
+});
+
 test('says so plainly when there is nothing of that kind to rearrange', async ({ page }) => {
   // An empty room is not a layout with a low score. Owner constraint 2 of Step 5, from the outside.
   await traceRoom(page);

@@ -481,6 +481,62 @@ describe('D1 — a layout that fails a gate is not optimised, it is blocked', ()
   });
 });
 
+describe('the gates judge the scene, the score measures the equipment', () => {
+  /*
+   * > Owner decision, following the standing review.
+   *
+   * Two different questions, and an intermediate version answered them with one population. The
+   * gate widened correctly; the score followed it and started measuring equipment it has no
+   * dimensions for.
+   */
+  const other = [placement('other', 1_200, 1_200)];
+
+  it('counts only the equipment being optimised, whatever else is on the drawing', () => {
+    /*
+     * The number the review caught. `score.ts` derives the station count from the placements it is
+     * handed, so including `existing` made a two-station optimisation report three against a target
+     * of two — a measured value that does not mean what its name says, in the one field of the
+     * breakdown whose whole purpose is traceability.
+     */
+    const current = [placement('s1', 5_000, 3_000), placement('s2', 7_000, 3_000)];
+    const result = optimise({ current, existing: other });
+
+    expect(result.outcome).not.toBe('blocked');
+    expect(result.current?.constraints[0]).toEqual({
+      constraint: 'station_count',
+      measured: current.length,
+      unit: 'count',
+      target: current.length,
+    });
+  });
+
+  it('measures the incumbent and the candidates over the same population', () => {
+    /*
+     * What the widening was *for*, kept. Both sides now exclude `existing`, so the totals remain
+     * comparable — which is the property that made the earlier asymmetry a defect, and it does not
+     * require either side to measure a nurse station with a dialysis machine's clearances.
+     */
+    const result = optimise({ existing: other });
+    const proposal = result.proposals[0];
+
+    expect(result.current?.coverage).toBe(proposal?.score.coverage);
+    expect(result.current?.constraints[0]?.measured).toBe(AWKWARD.length);
+    for (const candidate of result.proposals) {
+      expect(candidate.score.constraints[0]?.measured).toBe(AWKWARD.length);
+    }
+  });
+
+  it('still gates on the whole scene while scoring only its own kind', () => {
+    // The two answers held together in one assertion: the machine that is not being rearranged
+    // blocks the run, and when it does not block, it is not in any measured number.
+    const onTop = [placement('other', 5_100, 3_000)];
+    expect(
+      optimise({ current: [placement('s1', 5_000, 3_000)], existing: onTop }).outcome,
+    ).toBe('blocked');
+    expect(optimise({ existing: other }).current?.constraints[0]?.measured).toBe(AWKWARD.length);
+  });
+});
+
 describe('what an engineer is told', () => {
   it('shows what improved and what it cost, per criterion', () => {
     const result = optimise();

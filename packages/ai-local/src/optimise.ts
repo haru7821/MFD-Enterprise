@@ -218,13 +218,20 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
   }
 
   /*
-   * Scored on the whole scene, for the same reason it is *gated* on the whole scene: `rankLayouts`
-   * scores every candidate as `[...existing, ...candidate]` (rank.ts:88), so scoring the incumbent
-   * on `current` alone would compare a number measured over part of the drawing against numbers
-   * measured over all of it. The two populations move together or the comparison is meaningless.
+   * Scored on `current` alone, while the gate above judged the whole scene — and that asymmetry is
+   * the point rather than an oversight.
+   *
+   * > Owner decision, following the standing review: the gates judge the whole scene; the score
+   * > measures only the equipment it was written for.
+   *
+   * An intermediate version widened this too, reasoning that the incumbent and the candidates must
+   * be measured over the same population. They must — and they are, because `rankLayouts` now
+   * excludes `existing` as well. What widening the score actually did was make every criterion
+   * measure equipment it has no dimensions for, and make `station_count` report a count that
+   * included machines the target never counted.
    */
   const currentScore = scoreLayout({
-    placements: [...input.existing, ...input.current],
+    placements: input.current,
     catalog: input.catalog,
     ruleSet: input.ruleSet,
     boundaries: input.boundaries,
