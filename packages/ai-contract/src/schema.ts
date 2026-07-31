@@ -9,6 +9,7 @@ import {
 import { KNOWLEDGE_CORPORA } from './requests';
 import { RATIONALE_CODES } from './rationale';
 import {
+  CITING_SOURCE_KINDS,
   EVIDENCE_SOURCE_KINDS,
   EVIDENCE_STATUSES,
   type EvidenceSourceKind,
@@ -262,35 +263,58 @@ export const aiProposalSchema = z.object({
 /* ------------------------------------------------------------------ evidence */
 
 /**
- * The five invariants of `evidence.ts`, as refinements.
+ * The seven invariants of `evidence.ts`, as refinements.
  *
  * One refinement per invariant, each named with its `EV-` id, because when one fires the message an
  * engineer sees should say *which rule about evidence* was broken rather than "invalid input". Each
  * is verified by breaking it — a schema check nobody has watched fail is a schema check nobody has
  * tested.
+ *
+ * EV-6 and EV-7 are B-7's: a planning calculation may name a rate only together with that rate's
+ * citation, and a source whose authority *is* an outside document must say which document.
  */
-const evidenceSourceSchema = z.object({
-  kind: z.enum(EVIDENCE_SOURCE_KINDS),
-  ref: z.string().min(1),
-  inputs: z.array(z.string().min(1)),
-});
+const evidenceSourceSchema = z
+  .object({
+    kind: z.enum(EVIDENCE_SOURCE_KINDS),
+    ref: z.string().min(1),
+    citation: z.string().min(1).nullable(),
+  })
+  .refine((source) => !CITING_SOURCE_KINDS.includes(source.kind) || source.citation !== null, {
+    message:
+      'EV-7: a standard, a manufacturer manual and an installation rate are authorities *because* ' +
+      'of a document. One with no reference is a claim about a document nobody can find',
+  });
 
-function withEvidenceInvariants<T extends z.ZodType<{ status: EvidenceStatus; source: { kind: EvidenceSourceKind; inputs: readonly string[] } }>>(
-  schema: T,
-) {
+const calculationSchema = z
+  .object({
+    formula: z.string().min(1),
+    inputs: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          value: z.number().finite(),
+          unit: z.string().min(1),
+          ref: z.string().min(1),
+        }),
+      )
+      .min(1),
+    rateId: z.string().min(1).nullable(),
+    citation: z.string().min(1).nullable(),
+  })
+  .refine((entry) => (entry.rateId === null) === (entry.citation === null), {
+    message:
+      'EV-6: a planning calculation names a rate only together with that rate\'s citation. ' +
+      'B-7: planning calculations may use only sourced installation rates',
+  });
+
+function withStatusInvariants<
+  T extends z.ZodType<{ status: EvidenceStatus; source: { kind: EvidenceSourceKind } }>,
+>(schema: T) {
   return schema
     .refine((entry) => (entry.source.kind === 'not_supplied') === (entry.status === 'unknown'), {
       message:
         'EV-2: a value is sourced `not_supplied` if and only if its status is `unknown` — this is ' +
         '"never generate uncited engineering values" in the only form that cannot be worked around',
-    })
-    .refine((entry) => (entry.status === 'calculated') === (entry.source.kind === 'derived'), {
-      message:
-        'EV-3: `calculated` means computed from something. If nothing is named, it was not ' +
-        'computed — it was chosen',
-    })
-    .refine((entry) => (entry.source.inputs.length > 0) === (entry.source.kind === 'derived'), {
-      message: 'EV-4: only a derived value has inputs, and every derived value has some',
     })
     .refine(
       (entry) => entry.status !== 'verified' || VERIFYING_SOURCE_KINDS.includes(entry.source.kind),
@@ -302,22 +326,65 @@ function withEvidenceInvariants<T extends z.ZodType<{ status: EvidenceStatus; so
     );
 }
 
-export const sourcedNumberSchema = withEvidenceInvariants(
+export const sourcedNumberSchema = withStatusInvariants(
   z
     .object({
       value: z.number().nullable(),
       unit: z.string().min(1),
       status: z.enum(EVIDENCE_STATUSES),
       source: evidenceSourceSchema,
+      calculation: calculationSchema.nullable(),
     })
     .refine((entry) => (entry.value === null) === (entry.status === 'unknown'), {
       message:
         'EV-1: a null with any other status is a figure that lost its number; a non-null ' +
         '`unknown` is a guess wearing a disclaimer',
-    }),
+    })
+    .refine(
+      (entry) =>
+        (entry.status === 'calculated') ===
+        (entry.source.kind === 'derived' && entry.calculation !== null),
+      {
+        message:
+          'EV-3: `calculated` means computed from something. If no arithmetic is attached, it was ' +
+          'not computed — it was chosen',
+      },
+    ),
 );
 
-export const sourcedTextSchema = withEvidenceInvariants(
+export const sourcedRangeSchema = withStatusInvariants(
+  z
+    .object({
+      minimum: z.number().nullable(),
+      recommended: z.number().nullable(),
+      unit: z.string().min(1),
+      status: z.enum(EVIDENCE_STATUSES),
+      source: evidenceSourceSchema,
+    })
+    .refine(
+      (entry) =>
+        (entry.minimum === null) === (entry.status === 'unknown') &&
+        (entry.recommended === null) === (entry.status === 'unknown'),
+      {
+        message:
+          'EV-1: both crew figures are absent together. A rate stating only one would leave a ' +
+          'reader unable to tell a floor from a recommendation',
+      },
+    )
+    .refine(
+      (entry) =>
+        entry.minimum === null ||
+        entry.recommended === null ||
+        entry.recommended >= entry.minimum,
+      {
+        message:
+          'a recommended crew smaller than the minimum is not a recommendation, it is a ' +
+          'transcription error in the rate',
+      },
+    ),
+);
+
+export const sourcedTextSchema = withStatusInvariants(
   z
     .object({
       value: bilingualSchema.nullable(),
@@ -328,6 +395,17 @@ export const sourcedTextSchema = withEvidenceInvariants(
       message: 'EV-1: a statement without text is unknown, and an unknown carries no text',
     }),
 );
+
+/** {@link InstallationRate} — every field required, because a partial rate is not a rate (B-7). */
+export const installationRateSchema = z.object({
+  id: z.string().min(1),
+  stage: z.string().min(1),
+  hoursFixed: z.number().nonnegative().finite(),
+  hoursPerStation: z.number().nonnegative().finite(),
+  minimumPersons: z.number().int().positive(),
+  recommendedPersons: z.number().int().positive(),
+  source: z.string().min(1),
+});
 
 /* ------------------------------------------------------------------ installation plan */
 
@@ -356,7 +434,7 @@ export const installationStageSchema = z.object({
   tools: z.array(planResourceSchema),
   materials: z.array(planResourceSchema),
   risks: z.array(planRiskSchema),
-  manpower: sourcedNumberSchema,
+  manpower: sourcedRangeSchema,
   duration: sourcedNumberSchema,
 });
 
@@ -413,8 +491,14 @@ export const installationPlanSchema: z.ZodType<InstallationPlan> = z
     connections: z.array(connectionPlanSchema).length(PLAN_SERVICES.length),
     materials: z.array(planResourceSchema),
     risks: z.array(planRiskSchema),
-    manpower: sourcedNumberSchema,
+    manpower: sourcedRangeSchema,
     duration: sourcedNumberSchema,
+    /*
+     * B-7: the report must say *"Planning rate data not available."* instead of numbers when no
+     * rate exists. A flag rather than inferring it from a null: a renderer that had to work out
+     * why a figure was absent would eventually work it out differently from another renderer.
+     */
+    ratesAvailable: z.boolean(),
     provenance: planProvenanceSchema,
   })
   .refine(

@@ -107,7 +107,10 @@ export function fixtureEvaluation(findings: readonly PlanFinding[] = []): PlanIn
  * Parsed through the real schema, so a fixture cannot be shaped in a way the shipped loader would
  * reject — which would let a test pass against data the application could never load.
  */
-export function fixtureSequenceSet(stages: readonly unknown[]): SequenceSet {
+export function fixtureSequenceSet(
+  stages: readonly unknown[],
+  rates: readonly unknown[] = [],
+): SequenceSet {
   /*
    * Exactly one stage has to carry the service materials, and a test about ordering should not have
    * to say so. The first stage takes the job unless a test has already given it to somebody —
@@ -130,8 +133,28 @@ export function fixtureSequenceSet(stages: readonly unknown[]): SequenceSet {
     checklistSet: { id: 'dialysis_installation', version: '0.1.0' },
     authority: { note: 'fixture' },
     rateAuthority: { note: 'fixture' },
+    installationRates: rates,
     stages: withCarrier,
   });
+}
+
+/**
+ * A complete {@link InstallationRate}, so a test states only the field it is about.
+ *
+ * Complete by default because B-7 has no partial rate: a fixture that left a field out would be
+ * testing a shape the schema rejects at the door.
+ */
+export function fixtureRate(overrides: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: 'rate_test',
+    stage: 'stage',
+    hoursFixed: 2,
+    hoursPerStation: 1.5,
+    minimumPersons: 2,
+    recommendedPersons: 3,
+    source: 'KS B 0000:2026 § 7.3',
+    ...overrides,
+  };
 }
 
 /** A stage with everything defaulted, so a test states only what it is about. */
@@ -144,8 +167,6 @@ export function fixtureStage(overrides: Record<string, unknown>): Record<string,
     tools: [],
     materials: [],
     risks: [],
-    manpower: { persons: null },
-    rate: { hoursFixed: null, hoursPerStation: null },
     carriesServiceMaterials: false,
     ...overrides,
   };

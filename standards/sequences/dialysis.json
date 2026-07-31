@@ -16,13 +16,12 @@
     "openQuestion": "B-7"
   },
   "rateAuthority": {
-    "note": "Every 'manpower' and 'rate' below is null, deliberately. A duration is an engineering commitment somebody resources against, and this project holds no labour data of any kind: no crew size, no hours per station, no site productivity factor. The planner therefore reports duration and manpower as Unknown, naming this file as what would answer them. Supplying a figure here is a reviewed change and must come with a source — see docs/OPEN_QUESTIONS.md B-7.",
-    "supplies": [
-      "manpower.persons",
-      "rate.hoursFixed",
-      "rate.hoursPerStation"
-    ]
+    "decision": "B-7",
+    "note": "Owner decision B-7: do not estimate manpower or installation duration. Every value must come from a referenced installation standard, and planning calculations may use only sourced installation rates. Duration = hoursFixed + (hoursPerStation x stationCount). Manpower = minimumPersons, recommendedPersons. If any required rate is missing, both are Unknown and the report states 'Planning rate data not available.' rather than a number. Never interpolate, never estimate, never infer.",
+    "howToSupply": "Add one entry per stage to installationRates below. EVERY field is required: id, stage, hoursFixed, hoursPerStation, minimumPersons, recommendedPersons, source. A rate missing any field is rejected at load — a partial rate is not a rate, and evaluating half the formula would be interpolation. 'source' must name the published standard, its revision and its section; it is printed beside every figure the rate produces.",
+    "noCodeChanges": "Supplying rates requires editing this file only. The planner reads installationRates by stage id, computes the formula above, and attaches the formula, the input values, the rate id and the citation to every figure it produces."
   },
+  "installationRates": [],
   "stages": [
     {
       "id": "site_preparation",
@@ -53,13 +52,6 @@
           }
         }
       ],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     },
     {
@@ -85,13 +77,6 @@
       "tools": [],
       "materials": [],
       "risks": [],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": true
     },
     {
@@ -147,13 +132,6 @@
           }
         }
       ],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     },
     {
@@ -186,13 +164,6 @@
       ],
       "materials": [],
       "risks": [],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     },
     {
@@ -213,13 +184,6 @@
       "tools": [],
       "materials": [],
       "risks": [],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     },
     {
@@ -242,13 +206,6 @@
       "tools": [],
       "materials": [],
       "risks": [],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     },
     {
@@ -269,13 +226,6 @@
       "tools": [],
       "materials": [],
       "risks": [],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     },
     {
@@ -297,13 +247,6 @@
       "tools": [],
       "materials": [],
       "risks": [],
-      "manpower": {
-        "persons": null
-      },
-      "rate": {
-        "hoursFixed": null,
-        "hoursPerStation": null
-      },
       "carriesServiceMaterials": false
     }
   ]

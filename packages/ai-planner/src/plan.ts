@@ -8,7 +8,13 @@ import type {
 
 import { collectBlockers, collectRisks } from './blockers';
 import { buildConnections } from './connections';
-import { durationFor, manpowerFor, peakManpower, totalDuration } from './effort';
+import {
+  durationFor,
+  manpowerFor,
+  peakManpower,
+  ratesAvailableFor,
+  totalDuration,
+} from './effort';
 import { billOfMaterials, materialsFor, toolsFor } from './materials';
 import { orderStages } from './order';
 import { type SequenceSet, sequenceSetRef } from './sequenceSet';
@@ -42,7 +48,7 @@ import { resolveStages } from './stages';
  * | Connections | Routed lengths measured by the caller, from the reference points |
  * | Materials | The equipment record's `connections` group × the machine count |
  * | Tools | The sequence file, each naming the check that entails it |
- * | Manpower, duration | Rates in the sequence file — **all null today, so all `unknown`** |
+ * | Manpower, duration | `InstallationRate` entries in the sequence file — **none supplied, so all `unknown`** (B-7) |
  * | Blockers | RED findings, excluded stages, an uncalibrated plan |
  *
  * Nothing in that table is a judgement made here. This file arranges; the rule engine judges, the
@@ -89,8 +95,8 @@ export function planInstallation(set: SequenceSet, input: PlanInput): Installati
     tools: toolsFor(stage, stationCount),
     materials: materialsFor(stage, input),
     risks: risksByStage.get(stage.id) ?? [],
-    manpower: manpowerFor(stage),
-    duration: durationFor(stage, stationCount),
+    manpower: manpowerFor(set, stage),
+    duration: durationFor(set, stage, stationCount),
   }));
 
   return {
@@ -102,6 +108,11 @@ export function planInstallation(set: SequenceSet, input: PlanInput): Installati
     risks,
     manpower: peakManpower(stages.map((stage) => stage.manpower)),
     duration: totalDuration(stages.map((stage) => stage.duration)),
+    /*
+     * B-7. One flag rather than three renderers each working out why a figure is absent — the one
+     * that got it wrong would print a blank where *"Planning rate data not available."* belongs.
+     */
+    ratesAvailable: ratesAvailableFor(set, ordered),
     provenance: {
       levelId: input.levelId,
       placementCount: stationCount,

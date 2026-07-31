@@ -65,6 +65,16 @@ export const EVIDENCE_SOURCE_KINDS = [
   'catalogue_field',
   /** The installation sequence set — `standards/sequences/dialysis.json`. */
   'sequence_set',
+  /**
+   * An {@link InstallationRate} from a referenced installation standard.
+   *
+   * > Owner decision, B-7: *"Every value must come from a referenced installation standard.
+   * > Planning calculations may use only sourced installation rates."*
+   *
+   * Its own kind rather than `sequence_set`, because a rate is the one thing in that file that
+   * carries an outside citation — and EV-7 requires one of exactly these kinds.
+   */
+  'installation_rate',
   /** The commissioning checklist set — `standards/checklists/dialysis.json`. */
   'checklist_set',
   /** An evaluation result from the rule engine. */
@@ -89,12 +99,57 @@ export interface EvidenceSource {
    */
   readonly ref: string;
   /**
-   * The refs this was computed from. Non-empty **exactly when** the kind is `derived`.
+   * The published document this rests on — *"KS B ISO 1234:2024 § 7.3"*.
    *
-   * A calculated figure whose inputs are not named is an uncited figure wearing a label that says
-   * otherwise, which is worse than an uncited one.
+   * > Owner decision, B-7: *"Every value must come from a referenced installation standard."*
+   *
+   * Null for a measurement off a drawing or a value nobody supplied, because those cite nothing and
+   * a fabricated citation would be worse than none. **Required** for a standard, a manufacturer's
+   * manual and an installation rate — EV-7 — which is what stops a rate being typed into the
+   * sequence file with nothing behind it.
    */
-  readonly inputs: readonly string[];
+  readonly citation: string | null;
+}
+
+/**
+ * One number that went into a calculation, with its value.
+ *
+ * > Owner decision, B-7: *"Every calculated value must expose: calculation formula, input values,
+ * > rate id, source citation."*
+ *
+ * The **value**, not only the name. A reader holding a printed plan can check
+ * `2 + (1.5 × 12) = 20` without opening a data file, which is the difference between a figure that
+ * can be argued with and one that has to be trusted.
+ */
+export interface CalculationInput {
+  /** As it appears in the formula: `hoursFixed`, `hoursPerStation`, `stationCount`. */
+  readonly name: string;
+  readonly value: number;
+  readonly unit: string;
+  /** Where this number came from — a rate id, a measurement, a catalogue field group. */
+  readonly ref: string;
+}
+
+/**
+ * How a calculated figure was arrived at.
+ *
+ * All four of the owner's disclosures in one object, so a `calculated` value cannot carry some of
+ * them: the formula, the input values, the rate id and the citation. EV-3 makes this non-null
+ * exactly when the status is `calculated`, and EV-6 makes the rate id and the citation stand or
+ * fall together — a rate without a citation is precisely what B-7 forbids.
+ */
+export interface Calculation {
+  /** The arithmetic as written in the decision: `hoursFixed + (hoursPerStation × stationCount)`. */
+  readonly formula: string;
+  readonly inputs: readonly CalculationInput[];
+  /**
+   * The installation rate this used, or null for arithmetic that used none.
+   *
+   * A summed pipe length is calculated and uses no rate; a duration uses one and must name it.
+   */
+  readonly rateId: string | null;
+  /** The standard the rate is cited from. Non-null **exactly when** `rateId` is (EV-6). */
+  readonly citation: string | null;
 }
 
 /** A quantity with its unit, its status and its source. Never a bare number. */
@@ -105,6 +160,50 @@ export interface SourcedNumber {
   readonly unit: string;
   readonly status: EvidenceStatus;
   readonly source: EvidenceSource;
+  /** Non-null **exactly when** the status is `calculated` (EV-3). */
+  readonly calculation: Calculation | null;
+}
+
+/**
+ * A crew size, as the two figures B-7 defines it with.
+ *
+ * > Owner decision, B-7: *"Manpower = minimumPersons, recommendedPersons."*
+ *
+ * A range rather than a number, and read straight from an {@link InstallationRate} — never
+ * calculated, never inferred from the work. Both figures are null together: a rate that stated only
+ * one of them would leave a reader unable to tell a floor from a recommendation.
+ */
+export interface SourcedRange {
+  readonly minimum: number | null;
+  readonly recommended: number | null;
+  readonly unit: string;
+  readonly status: EvidenceStatus;
+  readonly source: EvidenceSource;
+}
+
+/**
+ * A planning rate from a referenced installation standard — the owner's B-7 model, verbatim.
+ *
+ * ```
+ *   Duration = hoursFixed + (hoursPerStation × stationCount)
+ *   Manpower = minimumPersons, recommendedPersons
+ * ```
+ *
+ * Every field is required and `source` is a citation, so a rate that reaches the planner has an
+ * outside document behind it. **A rate with any field missing is not a partial rate — it is not a
+ * rate**, and the planner reports Unknown rather than evaluating half a formula. That is the whole
+ * decision: *"Never interpolate. Never estimate. Never infer."*
+ */
+export interface InstallationRate {
+  readonly id: string;
+  /** The stage this rate applies to. */
+  readonly stage: string;
+  readonly hoursFixed: number;
+  readonly hoursPerStation: number;
+  readonly minimumPersons: number;
+  readonly recommendedPersons: number;
+  /** The published installation standard — document, revision and section. */
+  readonly source: string;
 }
 
 /** A statement with its status and its source. Bilingual, because it may reach the report. */
@@ -134,18 +233,28 @@ export const EVIDENCE_INVARIANTS = [
   },
   {
     id: 'EV-3',
-    statement: 'The status is `calculated` if and only if the source kind is `derived`.',
-    why: 'Calculated means computed from something. If nothing is named, it was not computed — it was chosen.',
+    statement: 'The status is `calculated` if and only if the source kind is `derived` and a `calculation` is present.',
+    why: 'Calculated means computed from something. If no arithmetic is attached, it was not computed — it was chosen.',
   },
   {
     id: 'EV-4',
-    statement: '`source.inputs` is non-empty if and only if the source kind is `derived`.',
-    why: 'The arithmetic behind a calculated figure has to be checkable, and nothing else has arithmetic behind it.',
+    statement: 'A calculation states a non-empty formula and at least one input, each with its value.',
+    why: 'B-7 requires the formula and the input values. A reader holding a printed plan has to be able to check the sum without opening a data file.',
   },
   {
     id: 'EV-5',
-    statement: '`verified` requires a source kind of `manufacturer_manual`, `standard`, `rule` or `catalogue_field`.',
+    statement: '`verified` requires a source kind of `manufacturer_manual`, `standard`, `rule`, `catalogue_field` or `installation_rate`.',
     why: 'A measurement off a drawing is a fact about the drawing, not about the equipment. Only a document can verify.',
+  },
+  {
+    id: 'EV-6',
+    statement: 'A calculation names a rate id if and only if it names that rate\'s citation.',
+    why: 'B-7: "Planning calculations may use only sourced installation rates." A rate with no citation is the uncited figure the whole decision forbids.',
+  },
+  {
+    id: 'EV-7',
+    statement: 'A source of kind `installation_rate`, `standard` or `manufacturer_manual` carries a citation.',
+    why: 'These are the three kinds whose authority *is* an outside document. One without a reference is a claim about a document nobody can find.',
   },
 ] as const;
 
@@ -155,6 +264,14 @@ export const VERIFYING_SOURCE_KINDS: readonly EvidenceSourceKind[] = [
   'standard',
   'rule',
   'catalogue_field',
+  'installation_rate',
+];
+
+/** Source kinds whose authority is an outside document, so a citation is mandatory. See EV-7. */
+export const CITING_SOURCE_KINDS: readonly EvidenceSourceKind[] = [
+  'manufacturer_manual',
+  'standard',
+  'installation_rate',
 ];
 
 /* ------------------------------------------------------------------ constructors */
@@ -163,41 +280,77 @@ export const VERIFYING_SOURCE_KINDS: readonly EvidenceSourceKind[] = [
  * Not supplied.
  *
  * A function rather than a constant so the ref is mandatory: *what* is unknown is the useful half.
- * "Unknown" tells an engineer nothing; "unknown — no labour rate in `standards/sequences`" tells
- * them which file to edit.
+ * "Unknown" tells an engineer nothing; "unknown — no installation rate for `equipment_set`" tells
+ * them which file to edit and which standard to go and find.
  */
 export function unknownNumber(unit: string, ref: string): SourcedNumber {
   return {
     value: null,
     unit,
     status: 'unknown',
-    source: { kind: 'not_supplied', ref, inputs: [] },
+    source: { kind: 'not_supplied', ref, citation: null },
+    calculation: null,
   };
 }
 
 export function unknownText(ref: string): SourcedText {
-  return { value: null, status: 'unknown', source: { kind: 'not_supplied', ref, inputs: [] } };
+  return { value: null, status: 'unknown', source: { kind: 'not_supplied', ref, citation: null } };
 }
 
-/** Computed from named inputs. Throws on an empty input list rather than producing an EV-4 violation. */
+/** A crew size nobody has supplied. Both figures absent together — see {@link SourcedRange}. */
+export function unknownRange(unit: string, ref: string): SourcedRange {
+  return {
+    minimum: null,
+    recommended: null,
+    unit,
+    status: 'unknown',
+    source: { kind: 'not_supplied', ref, citation: null },
+  };
+}
+
+/**
+ * Computed, with the whole arithmetic attached.
+ *
+ * Throws rather than producing an EV-4 or EV-6 violation, because the caller is in a better
+ * position to say what went wrong than a schema error two layers up is. Both throws describe a
+ * figure that would be *presented as* checkable and not be.
+ */
 export function calculatedNumber(
   value: number,
   unit: string,
   ref: string,
-  inputs: readonly string[],
+  calculation: Calculation,
 ): SourcedNumber {
-  if (inputs.length === 0) {
+  if (calculation.inputs.length === 0 || calculation.formula.length === 0) {
     throw new Error(
-      `calculatedNumber(${ref}): a calculated figure with no named inputs is an uncited figure ` +
-        `wearing a label that says otherwise`,
+      `calculatedNumber(${ref}): a calculated figure needs its formula and its input values — ` +
+        `without them it is an uncited figure wearing a label that says otherwise`,
     );
   }
-  return { value, unit, status: 'calculated', source: { kind: 'derived', ref, inputs } };
+  if ((calculation.rateId === null) !== (calculation.citation === null)) {
+    throw new Error(
+      `calculatedNumber(${ref}): a planning rate must be named together with its citation. ` +
+        `B-7: planning calculations may use only sourced installation rates`,
+    );
+  }
+  return {
+    value,
+    unit,
+    status: 'calculated',
+    source: { kind: 'derived', ref, citation: calculation.citation },
+    calculation,
+  };
 }
 
 /** Measured off the drawing — a routed length, a count of machines. */
 export function measuredNumber(value: number, unit: string, ref: string): SourcedNumber {
-  return { value, unit, status: 'planning', source: { kind: 'measurement', ref, inputs: [] } };
+  return {
+    value,
+    unit,
+    status: 'planning',
+    source: { kind: 'measurement', ref, citation: null },
+    calculation: null,
+  };
 }
 
 /**
@@ -213,6 +366,29 @@ export function statedNumber(
   kind: EvidenceSourceKind,
   ref: string,
   status: 'verified' | 'draft' | 'planning',
+  citation: string | null = null,
 ): SourcedNumber {
-  return { value, unit, status, source: { kind, ref, inputs: [] } };
+  return { value, unit, status, source: { kind, ref, citation }, calculation: null };
+}
+
+/**
+ * A crew size read straight from an installation rate.
+ *
+ * Read, never derived: B-7 defines manpower as the rate's own two figures, so there is no arithmetic
+ * to show and `SourcedRange` has no `calculation` field to put one in.
+ */
+export function statedRange(
+  minimum: number,
+  recommended: number,
+  unit: string,
+  ref: string,
+  citation: string,
+): SourcedRange {
+  return {
+    minimum,
+    recommended,
+    unit,
+    status: 'planning',
+    source: { kind: 'installation_rate', ref, citation },
+  };
 }

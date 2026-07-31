@@ -1,5 +1,9 @@
 import type { Bilingual } from '@mfd/rule-engine';
-import { REFERENCE_POINT_KINDS, type RefWithVersion } from '@mfd/ai-contract';
+import {
+  REFERENCE_POINT_KINDS,
+  type RefWithVersion,
+  installationRateSchema,
+} from '@mfd/ai-contract';
 import { z } from 'zod';
 
 /**
@@ -18,11 +22,19 @@ import { z } from 'zod';
  * buried in a planner is one they have to go looking for. The set of conditions is closed — three
  * kinds — so a file cannot introduce a predicate the planner does not understand.
  *
- * ## What the file may not contain
+ * ## Planning rates live here too, and only here
  *
- * A duration or a crew size with a number in it, unless somebody supplies a source for it. The
- * shipped file has `null` throughout and says so in a `rateAuthority` block, so every figure the
- * planner reports today is `unknown`. See AD-19 as amended, and B-7.
+ * > Owner decision, B-7: *"Future updates should require only editing
+ * > `standards/sequences/dialysis.json`. No code changes."*
+ *
+ * `installationRates` is that promise's mechanism. Each entry carries the whole of the owner's
+ * `InstallationRate` model — the two hour figures, the two crew figures, and a citation — and the
+ * planner reads them by stage id. Supplying a rate is a data edit; nothing in `src/` names a stage,
+ * an hour or a person.
+ *
+ * The array ships **empty**, because no installation standard has been supplied, so every duration
+ * and every crew figure the product prints today is `unknown` and the report says *"Planning rate
+ * data not available."* See AD-19 as amended, AD-21, and B-7.
  */
 
 const bilingualSchema = z.object({ ko: z.string().min(1), en: z.string().min(1) });
@@ -68,12 +80,6 @@ const stageSchema = z.object({
   tools: z.array(toolSchema),
   materials: z.array(toolSchema),
   risks: z.array(riskSchema),
-  /** Null until somebody supplies a crew size with a source. See `rateAuthority`. */
-  manpower: z.object({ persons: z.number().positive().nullable() }),
-  rate: z.object({
-    hoursFixed: z.number().positive().nullable(),
-    hoursPerStation: z.number().positive().nullable(),
-  }),
   /** True on the one stage the per-machine service connections belong to. */
   carriesServiceMaterials: z.boolean(),
 });
@@ -88,6 +94,14 @@ export const sequenceSetSchema = z
     checklistSet: z.object({ id: z.string().min(1), version: z.string().min(1) }),
     authority: z.object({}).loose(),
     rateAuthority: z.object({}).loose(),
+    /**
+     * Planning rates, per owner decision B-7.
+     *
+     * **Shipped empty**, because no installation standard has been supplied. Every field of every
+     * entry is required — a rate missing one is rejected here rather than reaching the planner and
+     * tempting it to evaluate half a formula, which is interpolation by another name.
+     */
+    installationRates: z.array(installationRateSchema),
     stages: z.array(stageSchema).min(1),
   })
   .refine((set) => new Set(set.stages.map((stage) => stage.id)).size === set.stages.length, {
@@ -114,7 +128,29 @@ export const sequenceSetSchema = z
     message:
       'exactly one stage must carry the per-machine service connections: zero would drop them ' +
       'from the bill of materials, and two would order them twice',
-  });
+  })
+  .refine(
+    (set) => {
+      const ids = new Set(set.stages.map((stage) => stage.id));
+      return set.installationRates.every((rate) => ids.has(rate.stage));
+    },
+    {
+      /*
+       * A rate for a stage that does not exist is a rate nobody will ever see applied, and the
+       * likeliest cause is a typo in a stage id — which would silently leave the real stage
+       * reporting Unknown while somebody believed they had supplied its figures.
+       */
+      message: 'every installation rate must name a stage in this file',
+    },
+  )
+  .refine(
+    (set) => new Set(set.installationRates.map((rate) => rate.stage)).size === set.installationRates.length,
+    {
+      message:
+        'a stage may have at most one installation rate: two would make the duration depend on ' +
+        'which one the planner happened to read first',
+    },
+  );
 
 export type SequenceSet = z.infer<typeof sequenceSetSchema>;
 

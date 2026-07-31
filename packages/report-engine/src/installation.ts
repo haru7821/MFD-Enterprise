@@ -4,6 +4,7 @@ import type {
   InstallationPlan,
   PlanRisk,
   SourcedNumber,
+  SourcedRange,
   SourcedText,
 } from '@mfd/ai-contract';
 import type { Bilingual } from '@mfd/rule-engine';
@@ -18,6 +19,7 @@ import type {
   InstallationStageRow,
   RiskRow,
   SourcedFigure,
+  SourcedRangeFigure,
 } from './model';
 
 /**
@@ -85,7 +87,7 @@ export function buildInstallation({
     })),
     tools: stage.tools.map(toBomRow),
     materials: stage.materials.map(toBomRow),
-    manpower: figureOf(stage.manpower),
+    manpower: rangeOf(stage.manpower),
     duration: figureOf(stage.duration),
   }));
 
@@ -102,8 +104,9 @@ export function buildInstallation({
         stageId: blocker.stageId,
       }),
     ),
-    manpower: figureOf(plan.manpower),
+    manpower: rangeOf(plan.manpower),
     duration: figureOf(plan.duration),
+    ratesAvailable: plan.ratesAvailable,
     provenance: {
       levelId: plan.provenance.levelId,
       placementCount: plan.provenance.placementCount,
@@ -128,11 +131,36 @@ function figureOf(figure: SourcedNumber): SourcedFigure {
     unit: figure.unit,
     status: figure.status,
     sourceRef: figure.source.ref,
+    citation: figure.source.citation,
     /*
-     * The inputs of a calculated figure, so the arithmetic is checkable in the signed document.
-     * Empty for everything else, and empty is correct — a stated figure has no arithmetic to show.
+     * The whole arithmetic behind a calculated figure — owner decision B-7's four disclosures, so
+     * the sum is checkable in the signed document. Null for everything else, and null is correct:
+     * a stated figure has no arithmetic to show.
      */
-    inputs: figure.source.inputs,
+    calculation: figure.calculation
+      ? {
+          formula: figure.calculation.formula,
+          inputs: figure.calculation.inputs.map((entry) => ({
+            name: entry.name,
+            value: entry.value,
+            unit: entry.unit,
+          })),
+          rateId: figure.calculation.rateId,
+          citation: figure.calculation.citation,
+        }
+      : null,
+  };
+}
+
+/** A crew size, as B-7 defines it. Read from a rate, so there is no arithmetic to carry. */
+function rangeOf(range: SourcedRange): SourcedRangeFigure {
+  return {
+    minimum: range.minimum,
+    recommended: range.recommended,
+    unit: range.unit,
+    status: range.status,
+    sourceRef: range.source.ref,
+    citation: range.source.citation,
   };
 }
 

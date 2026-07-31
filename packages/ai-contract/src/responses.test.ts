@@ -68,14 +68,17 @@ describe('InstallationPlan', () => {
     for (const stage of fixturePlan().stages) {
       expect(stage.duration.status).toBe('unknown');
       expect(stage.duration.value).toBeNull();
-      // And it says *what* is missing, which is the half an engineer can act on.
-      expect(stage.duration.source.ref).toContain('duration');
+      // And it says *what* is missing, which is the half an engineer can act on: B-7's answer is
+      // an installation rate from a referenced standard, so that is what the ref names.
+      expect(stage.duration.source.ref).toContain('installation_rate');
+      // No arithmetic, because none was possible.
+      expect(stage.duration.calculation).toBeNull();
     }
   });
 
   it('rejects a duration stated without a source', () => {
     // The check the amendment rests on. A figure that reaches a plan with `not_supplied` behind it
-    // is exactly the invented duration AD-19 was written to prevent.
+    // is exactly the invented duration AD-19 and B-7 were written to prevent.
     const plan = fixturePlan();
     const stages = plan.stages.map((stage) => ({
       ...stage,

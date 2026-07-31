@@ -1,4 +1,4 @@
-import type { PlanService, SourcedNumber } from '@mfd/ai-contract';
+import type { PlanService, SourcedNumber, SourcedRange } from '@mfd/ai-contract';
 import { catalog } from '@mfd/object-library/catalog';
 import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
 
@@ -114,16 +114,36 @@ export function InstallationPanel() {
 
       {plan && (
         <div className="mt-2" data-testid="plan-results">
-          <dl className="mb-2 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
-            <dt className="text-ink-faint">Manpower</dt>
-            <dd className="text-right" data-testid="plan-manpower">
-              <Figure figure={plan.manpower} />
-            </dd>
-            <dt className="text-ink-faint">Duration</dt>
-            <dd className="text-right" data-testid="plan-duration">
-              <Figure figure={plan.duration} />
-            </dd>
-          </dl>
+          {/*
+            Owner decision B-7: *"The report must explicitly state 'Planning rate data not
+            available.' instead of displaying calculated numbers."* The panel says the same thing
+            in the same words — a figure absent here and a sentence in the PDF would be two
+            accounts of one project.
+          */}
+          {plan.ratesAvailable ? (
+            <dl className="mb-2 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
+              <dt className="text-ink-faint">Manpower</dt>
+              <dd className="text-right" data-testid="plan-manpower">
+                <Range range={plan.manpower} />
+              </dd>
+              <dt className="text-ink-faint">Duration</dt>
+              <dd className="text-right" data-testid="plan-duration">
+                <Figure figure={plan.duration} />
+              </dd>
+            </dl>
+          ) : (
+            <p
+              className="mb-2 text-[10px] leading-snug text-amber-200/80"
+              data-testid="plan-rates-unavailable"
+            >
+              Planning rate data not available.
+              <span className="mt-0.5 block text-ink-faint">
+                Manpower and duration come from installation rates in{' '}
+                <span className="font-mono">standards/sequences/dialysis.json</span>, each citing a
+                referenced standard. None has been supplied, so neither is estimated.
+              </span>
+            </p>
+          )}
 
           {plan.blockers.length > 0 && (
             <div className="mb-2" data-testid="plan-blockers">
@@ -156,9 +176,11 @@ export function InstallationPanel() {
                 </p>
                 <p className="text-[10px] text-ink-faint">{stage.title.ko}</p>
 
-                <p className="mt-0.5 text-[10px] text-ink-faint">
-                  <Figure figure={stage.manpower} /> · <Figure figure={stage.duration} />
-                </p>
+                {plan.ratesAvailable && (
+                  <p className="mt-0.5 text-[10px] text-ink-faint">
+                    <Range range={stage.manpower} /> · <Figure figure={stage.duration} />
+                  </p>
+                )}
 
                 {stage.checklistItemIds.length > 0 && (
                   <ul className="mt-1 space-y-px">
@@ -281,6 +303,36 @@ function Figure({ figure }: { readonly figure: SourcedNumber }) {
   return (
     <span data-status={figure.status} className="font-mono tabular-nums">
       {figure.value.toLocaleString('en-US')} {figure.unit}
+      {/*
+        B-7's four disclosures. The formula and its input values make the number checkable; the
+        rate id and the citation say which standard permitted it to exist at all.
+      */}
+      {figure.calculation && (
+        <span className="ml-1 text-[9px] font-normal text-ink-faint">
+          {figure.calculation.formula} ·{' '}
+          {figure.calculation.inputs.map((entry) => `${entry.name} ${entry.value}`).join(', ')}
+          {figure.calculation.rateId && ` · ${figure.calculation.citation ?? ''}`}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** A crew size — B-7's `minimumPersons, recommendedPersons` — with the rate it was read from. */
+function Range({ range }: { readonly range: SourcedRange }) {
+  if (range.minimum === null || range.recommended === null) {
+    return (
+      <span className="text-ink-faint" data-status="unknown">
+        Unknown <span className="font-mono text-[9px]">{range.source.ref}</span>
+      </span>
+    );
+  }
+  return (
+    <span data-status={range.status} className="font-mono tabular-nums">
+      {range.minimum}–{range.recommended} {range.unit}
+      {range.source.citation && (
+        <span className="ml-1 text-[9px] font-normal text-ink-faint">{range.source.citation}</span>
+      )}
     </span>
   );
 }

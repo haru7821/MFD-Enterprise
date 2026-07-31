@@ -305,17 +305,31 @@ makes them safe**, so the refusal moves rather than lifting:
 
 | | Before | Now |
 | --- | --- | --- |
-| A duration may be stated | Never | When a rate in the sequence set supports it |
+| A duration may be stated | Never | When a **sourced** `InstallationRate` supports it (B-7) |
 | A duration may be **invented** | Never | **Never** |
 | Nothing supplies a rate | The field could not exist | The field says `unknown`, naming the file that would answer it |
 
-The mechanics are in `packages/ai-planner/src/effort.ts`. A stage's duration is
-`hoursFixed + hoursPerStation × stationCount`, `calculated`, with those rate ids and
-`measurement:placement_count` named as its inputs. `standards/sequences/dialysis.json` supplies
-**no rate and no crew size** — see its `rateAuthority` block, and B-7 — so every figure the product
-ships with today is `unknown`. That is the same answer AD-19 gave, reached by a mechanism that can
-produce a real one when somebody supplies a rate with a source instead of by a type that forbids it
-forever.
+**B-7 settles the mechanics**, and they are `packages/ai-planner/src/effort.ts`:
+
+```
+InstallationRate { id, stage, hoursFixed, hoursPerStation, minimumPersons, recommendedPersons, source }
+
+Duration = hoursFixed + (hoursPerStation × stationCount)
+Manpower = minimumPersons, recommendedPersons
+```
+
+Every field of a rate is required and `source` is a citation, so **a partial rate is not a rate** —
+there is no half-formula to evaluate, which is what closes the door on interpolation. Each figure
+carries a `Calculation` with the owner's four disclosures: the formula, every input *with its
+value*, the rate id and the citation. EV-6 makes the last two stand or fall together.
+
+`standards/sequences/dialysis.json` ships `installationRates: []`, so every figure the product
+prints today is `unknown` and the report states *"Planning rate data not available."* — verbatim,
+because a paraphrase would be a different document from the one approved. That is the same answer
+AD-19 gave, reached by a mechanism that produces a real one the moment somebody supplies a rate.
+
+**Supplying one needs no code change**, and that is tested rather than asserted: a test takes the
+shipped set, adds rates the way an editor of that file would, and the whole feature comes on.
 
 **Totals refuse partial knowledge.** A duration summed over the stages that happened to have rates
 is smaller than the truth, looks complete, and is the one somebody quotes; so a total with any
@@ -799,4 +813,5 @@ rather than a habit — see AI_SERVICE_API.md § D.
 | AD-17 | **Hard compliance is a filter, never a weight.** A candidate breaching a rule is discarded, not scored lower. Only compliance *margin* is scored, so no arrangement of other criteria can purchase a violation. |
 | AD-18 | **A measurement that was not taken is reported unavailable, never zero.** Routing criteria without a reference point, retrieval with nothing indexed, a duration with no labour data. |
 | AD-19 | **Sequence is derived; duration is not invented.** The installation plan orders stages from a dependency graph in `standards/sequences/`. A duration or crew size is **calculated from a rate in that file, with the rate id and the machine count named as its inputs, or reported `unknown`** — never chosen. Amended in Sprint 6; see § C-3a. |
-| AD-20 | **A planner value is a number, a status and a source.** `verified` / `draft` / `planning` / `calculated` / `unknown`, with five invariants making an uncited figure unrepresentable — `evidence.ts`, EV-1…EV-5. |
+| AD-20 | **A planner value is a number, a status and a source.** `verified` / `draft` / `planning` / `calculated` / `unknown`, with seven invariants making an uncited figure unrepresentable — `evidence.ts`, EV-1…EV-7. |
+| AD-21 | **A planning figure comes from a sourced `InstallationRate` or it is Unknown** (B-7). Every field of a rate is required, so there is no partial rate and no half-formula; a calculated figure carries its formula, its input values, the rate id and the citation. |

@@ -7,7 +7,13 @@ import type {
   SourcedNumber,
   SourcedText,
 } from '@mfd/ai-contract';
-import { PLAN_SERVICES, measuredNumber, unknownNumber, unknownText } from '@mfd/ai-contract';
+import {
+  PLAN_SERVICES,
+  calculatedNumber,
+  measuredNumber,
+  unknownNumber,
+  unknownText,
+} from '@mfd/ai-contract';
 
 /**
  * The power, RO and drain connection plans — the owner's Sprint 6 § 3.
@@ -100,7 +106,7 @@ function requirementFor(service: PlanService, equipmentId: string, input: PlanIn
       en: 'Per the connection specification in the equipment datasheet.',
     },
     status: declared.status === 'verified' ? 'verified' : 'draft',
-    source: { kind: 'catalogue_field', ref, inputs: [] },
+    source: { kind: 'catalogue_field', ref, citation: null },
   };
 }
 
@@ -121,14 +127,20 @@ function sumLengths(runs: readonly ConnectionRun[], service: PlanService): Sourc
   }
 
   const total = values.reduce((sum: number, value) => sum + (value ?? 0), 0);
-  return {
-    value: total,
-    unit: 'mm',
-    status: 'calculated',
-    source: {
-      kind: 'derived',
-      ref: `route:${service}:total`,
-      inputs: runs.map((run) => `route:${service}:${run.placementId}`),
-    },
-  };
+  /*
+   * Calculated, and citing nothing — correctly. Every input is a length measured off the drawing,
+   * so there is no standard to name, and EV-6 permits a rate id and a citation to be null together.
+   * A total that borrowed a citation from somewhere would be the least honest figure in the plan.
+   */
+  return calculatedNumber(total, 'mm', `route:${service}:total`, {
+    formula: 'Σ run lengths',
+    inputs: runs.map((run) => ({
+      name: run.placementId,
+      value: run.length.value ?? 0,
+      unit: 'mm',
+      ref: `route:${service}:${run.placementId}`,
+    })),
+    rateId: null,
+    citation: null,
+  });
 }

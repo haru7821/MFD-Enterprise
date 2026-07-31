@@ -82,7 +82,7 @@ export function collectRisks(
         detail: {
           value: risk.detail,
           status: 'planning',
-          source: { kind: 'sequence_set', ref: `${stage.id}.risks.${risk.id}`, inputs: [] },
+          source: { kind: 'sequence_set', ref: `${stage.id}.risks.${risk.id}`, citation: null },
         },
         stageId: stage.id,
       });

@@ -11,6 +11,7 @@ import type {
   FloorPlanSection,
   ReportModel,
   SourcedFigure,
+  SourcedRangeFigure,
 } from '../model';
 import { DEFAULT_RENDER_OPTIONS, type RenderOptions } from './types';
 
@@ -139,11 +140,32 @@ export function renderHtml(model: ReportModel, options: RenderOptions = DEFAULT_
           : value.status === 'draft'
             ? inline('status_draft')
             : inline('status_planning');
-    const inputs =
-      value.inputs.length > 0
-        ? `<span class="src">${value.inputs.map((entry) => escape(entry)).join(' + ')}</span>`
-        : '';
-    return `<span data-status="${value.status}">${escape(String(value.value))} ${escape(value.unit)} <span class="alt">${status}</span>${inputs}</span>`;
+    /*
+     * Owner decision B-7's four disclosures, printed beside the figure: the formula, every input
+     * with its value, the rate id and the citation. A reader can check `2 + (1.5 × 12) = 20` on the
+     * page rather than take it — which is the difference between a figure that can be argued with
+     * and one that has to be trusted.
+     */
+    const workings = value.calculation
+      ? `<span class="src">${escape(value.calculation.formula)} = ${value.calculation.inputs
+          .map((entry) => `${escape(entry.name)} ${entry.value}`)
+          .join(', ')}${
+          value.calculation.rateId
+            ? ` · ${escape(value.calculation.rateId)} · ${escape(value.calculation.citation ?? '')}`
+            : ''
+        }</span>`
+      : '';
+    return `<span data-status="${value.status}">${escape(String(value.value))} ${escape(value.unit)} <span class="alt">${status}</span>${workings}</span>`;
+  };
+
+  /** A crew size — B-7's `minimumPersons, recommendedPersons`, or the word Unknown. */
+  const range = (value: SourcedRangeFigure): string => {
+    if (value.minimum === null || value.recommended === null) {
+      return `<span class="unknown" data-status="unknown">${inline('status_unknown')}<span class="src">${escape(value.sourceRef)}</span></span>`;
+    }
+    return `<span data-status="${value.status}">${value.minimum}–${value.recommended} ${escape(value.unit)}${
+      value.citation ? `<span class="src">${escape(value.sourceRef)} · ${escape(value.citation)}</span>` : ''
+    }</span>`;
   };
 
   const bomRow = (row: BomRow): string =>
@@ -451,8 +473,17 @@ ${validation
       : `
   <dl class="meta">
     ${field('field_sequence_set', `${escape(installation.sequenceSet.id)} v${escape(installation.sequenceSet.version)}`)}
-    ${field('field_manpower', figure(installation.manpower))}
-    ${field('field_duration', figure(installation.duration))}
+    ${
+      /*
+       * Owner decision B-7: *"The report must explicitly state 'Planning rate data not available.'
+       * instead of displaying calculated numbers."* One sentence, in place of the two figures —
+       * not two blanks, which a reader would have to interpret for themselves.
+       */
+      installation.ratesAvailable
+        ? `${field('field_manpower', range(installation.manpower))}
+    ${field('field_duration', figure(installation.duration))}`
+        : `<div class="field" data-testid="planning-rates-unavailable"><dt>${inline('field_duration')}</dt><dd>${inline('planning_rates_unavailable')}</dd></div>`
+    }
   </dl>
 
   ${
@@ -475,8 +506,8 @@ ${validation
       <dl class="meta">
         ${stage.dependsOn.length > 0 ? field('field_depends_on', stage.dependsOn.map((id) => `<code>${escape(id)}</code>`).join(' ')) : ''}
         ${stage.placementNumbers.length > 0 ? field('field_equipment', stage.placementNumbers.map((n) => `<span class="pin">${n}</span>`).join(' ')) : ''}
-        ${field('field_manpower', figure(stage.manpower))}
-        ${field('field_duration', figure(stage.duration))}
+        ${installation.ratesAvailable ? field('field_manpower', range(stage.manpower)) : ''}
+        ${installation.ratesAvailable ? field('field_duration', figure(stage.duration)) : ''}
       </dl>
       ${
         stage.checks.length > 0

@@ -47,7 +47,7 @@ browser, so the deterministic half is now two thirds of the sprint rather than h
 | **Approved** | The architecture, at revision 2, plus the B-5a weights. **Implementation has started.** |
 | **Blocks the language half** | **B-4** — may project data leave the hospital network? |
 | **Closed by decision 3** | **B-5** — what makes one satisfying layout better than another. |
-| **Closed by the owner** | **B-5a** — the default engineering weights. |
+| **Closed by the owner** | **B-5a** — the default engineering weights. **B-7** — installation rates: sourced or Unknown, never estimated. |
 | **Open, blocks nothing** | **B-5b** — the normalisation *references*, which are still a developer's estimate. |
 | **Blocks nothing here, still blocks the product** | **A-1** — the AK98 manual. |
 

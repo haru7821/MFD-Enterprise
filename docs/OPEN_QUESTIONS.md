@@ -211,29 +211,36 @@ Worth an engineer's eye because a reference can distort a weight: a criterion wh
 too generously scores near 1.0 for every layout and stops discriminating, which makes its weight
 decorative regardless of the number in the table.
 
-### B-7. Labour rates and crew sizes — before any duration is printed
+### B-7. ~~Labour rates and crew sizes~~ — **decided**
 
-**The planner ships with none, and reports every duration and every manpower figure as `unknown`.**
-That is deliberate rather than unfinished: the owner's Sprint 6 §§ 4–5 require a figure to be cited
-or Unknown, and this project holds no labour data of any kind — no crew size, no hours per station,
-no site productivity factor.
+> **Approved.** *"Do not estimate manpower or installation duration. Every value must come from a
+> referenced installation standard. Planning calculations may use only sourced installation rates …
+> Never interpolate. Never estimate. Never infer. Unknown is always preferred over an unsupported
+> value."*
 
-What would close it, per stage in `standards/sequences/dialysis.json`:
+The model, as approved:
 
-| Field | What it means |
+```
+InstallationRate { id, stage, hoursFixed, hoursPerStation, minimumPersons, recommendedPersons, source }
+
+Duration = hoursFixed + (hoursPerStation × stationCount)
+Manpower = minimumPersons, recommendedPersons
+```
+
+| Requirement | Where it is held |
 | --- | --- |
-| `manpower.persons` | How many people this stage needs at once |
-| `rate.hoursFixed` | Setup and overhead independent of the station count |
-| `rate.hoursPerStation` | Marginal hours per dialysis station |
+| Every value from a referenced standard | `InstallationRate.source` is required, and EV-7 makes a rate source with no citation unrepresentable |
+| Calculations use only sourced rates | EV-6: a calculation names a rate id **if and only if** it names that rate's citation |
+| Formula, input values, rate id, citation | All four on `Calculation`, attached to the figure — so a printed plan can be checked without a data file |
+| Any required rate missing → Unknown | Every field of a rate is required at the schema. **A partial rate is not a rate**, so there is no half-formula to evaluate |
+| The report states *"Planning rate data not available."* | `InstallationPlan.ratesAvailable`, and the exact sentence as a label. Verbatim in English, because a paraphrase would be a different document from the one approved |
+| Future updates need no code changes | `standards/sequences/dialysis.json` → `installationRates`. Verified by supplying rates as a pure data edit and watching the whole feature come on |
 
-Supplying any of them is a **reviewed change and needs a source** — whose figures, from which
-projects, on what kind of site. A number typed in without one produces a `calculated` duration that
-looks identical to a sourced one on the page, which is the exact failure AD-19 was written to
-prevent and the reason `EvidenceSource` has no way to express "somebody reckoned".
-
-Until then the mechanism is built and idle, which is the right state for it: the moment a figure
-arrives with a source, the plan, the panel and the PDF all start reporting real hours with the
-arithmetic shown.
+**The shipped file has `installationRates: []`**, because no installation standard has been
+supplied. So every duration and every crew figure is Unknown today, and the report says so in the
+owner's words. Supplying one is a data edit: add an entry naming the stage, the four figures and the
+standard, and the panel, the plan and the PDF all start reporting real hours with the arithmetic
+shown.
 
 ### B-6. Digital twin scope — Version 4
 

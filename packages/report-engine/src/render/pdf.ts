@@ -10,6 +10,7 @@ import type {
   FloorPlanSection,
   ReportModel,
   SourcedFigure,
+  SourcedRangeFigure,
 } from '../model';
 import { type EmbeddedFonts, embedFonts } from './fonts';
 import {
@@ -1075,8 +1076,27 @@ function drawInstallation(context: Context, model: ReportModel): void {
   }
 
   fieldLine(context, 'field_sequence_set', `${plan.sequenceSet.id} v${plan.sequenceSet.version}`);
-  fieldLine(context, 'field_manpower', figureText(context, plan.manpower));
-  fieldLine(context, 'field_duration', figureText(context, plan.duration));
+  if (plan.ratesAvailable) {
+    fieldLine(context, 'field_manpower', rangeText(context, plan.manpower));
+    fieldLine(context, 'field_duration', figureText(context, plan.duration));
+  } else {
+    /*
+     * Owner decision B-7, verbatim: *"The report must explicitly state 'Planning rate data not
+     * available.' instead of displaying calculated numbers."*
+     *
+     * The sentence, not two blank fields. A blank is something a reader interprets; a sentence is
+     * something they act on — and this one names the thing that would fill it.
+     */
+    reserve(context, leading(TYPE.body));
+    draw(
+      context,
+      inlineLabel(context, 'planning_rates_unavailable'),
+      MARGINS.left,
+      TYPE.body,
+      { colour: AMBER, context: 'planning rates unavailable' },
+    );
+    advance(context, leading(TYPE.body));
+  }
   advance(context, 4);
 
   if (plan.blockers.length > 0) {
@@ -1113,8 +1133,10 @@ function drawInstallation(context: Context, model: ReportModel): void {
     if (stage.placementNumbers.length > 0) {
       fieldLine(context, 'field_equipment', stage.placementNumbers.join(', '), 8);
     }
-    fieldLine(context, 'field_manpower', figureText(context, stage.manpower), 8);
-    fieldLine(context, 'field_duration', figureText(context, stage.duration), 8);
+    if (plan.ratesAvailable) {
+      fieldLine(context, 'field_manpower', rangeText(context, stage.manpower), 8);
+      fieldLine(context, 'field_duration', figureText(context, stage.duration), 8);
+    }
 
     for (const check of stage.checks) {
       reserve(context, leading(TYPE.small));
@@ -1208,7 +1230,30 @@ const SERVICE_LABELS = {
  */
 function figureText(context: Context, figure: SourcedFigure): string {
   if (figure.value === null) return inlineLabel(context, 'status_unknown');
+  /*
+   * B-7's four disclosures, on the page beside the number: the formula with its input values, the
+   * rate id, and the standard it is cited from. A signed document should let a reader check the
+   * arithmetic rather than take it.
+   */
+  if (figure.calculation) {
+    const workings = figure.calculation.inputs
+      .map((entry) => `${entry.name}=${entry.value}`)
+      .join(', ');
+    const rate = figure.calculation.rateId
+      ? ` [${figure.calculation.rateId}: ${figure.calculation.citation ?? ''}]`
+      : '';
+    return `${figure.value} ${figure.unit} (${figure.calculation.formula}; ${workings})${rate}`;
+  }
   return `${figure.value} ${figure.unit}`;
+}
+
+/** A crew size — B-7's `minimumPersons, recommendedPersons` — or the word Unknown. */
+function rangeText(context: Context, range: SourcedRangeFigure): string {
+  if (range.minimum === null || range.recommended === null) {
+    return inlineLabel(context, 'status_unknown');
+  }
+  const citation = range.citation ? ` [${range.sourceRef}: ${range.citation}]` : '';
+  return `${range.minimum}–${range.recommended} ${range.unit}${citation}`;
 }
 
 function subHeading(context: Context, key: LabelKey): void {

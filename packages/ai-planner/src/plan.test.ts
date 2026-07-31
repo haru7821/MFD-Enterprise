@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { installationPlanSchema } from '@mfd/ai-contract';
 
 import { dialysisSequenceSet } from '../sequences/index';
+import { sequenceSetSchema } from './sequenceSet';
 import {
   FIXTURE_CHECKLIST_IDS,
   fixtureEquipment,
   fixtureEvaluation,
   fixtureInput,
+  fixtureRate,
   fixtureSequenceSet,
   fixtureStage,
 } from '../fixtures/index';
@@ -205,45 +207,94 @@ describe('§ 3 — the commissioning checklist is referenced, never re-authored'
   });
 });
 
-describe('§§ 4–5 — every figure cited, or Unknown', () => {
+describe('B-7 — planning rates, or Unknown', () => {
   it('reports duration and manpower as unknown on the shipped data', () => {
     /*
-     * AD-19, amended. `standards/sequences/dialysis.json` supplies no labour rate and no crew size,
-     * so there is nothing to calculate from — and the answer is `unknown`, naming the file that
-     * would answer it, rather than a plausible number.
+     * `standards/sequences/dialysis.json` ships `installationRates: []`, because no installation
+     * standard has been supplied. So there is nothing to calculate from, and the answer is
+     * `unknown` naming the rate that would answer it — never a plausible number.
      */
     const result = plan();
+    expect(result.ratesAvailable).toBe(false);
     expect(result.duration.status).toBe('unknown');
     expect(result.duration.value).toBeNull();
     expect(result.manpower.status).toBe('unknown');
+    expect(result.manpower.minimum).toBeNull();
+    expect(result.manpower.recommended).toBeNull();
 
     for (const stage of result.stages) {
       expect(stage.duration.value).toBeNull();
-      expect(stage.duration.source.ref).toContain('sequence_set:');
+      expect(stage.duration.calculation).toBeNull();
+      expect(stage.duration.source.ref).toContain('installation_rate');
     }
   });
 
-  it('calculates a duration when a rate is supplied, and names its inputs', () => {
-    // The other half of the amendment: the mechanism produces a real figure the moment somebody
-    // supplies a rate with a source, instead of a type forbidding it forever.
-    const set = fixtureSequenceSet([
-      fixtureStage({
-        id: 'equipment_set',
-        appliesWhen: { kind: 'has_placements' },
-        rate: { hoursFixed: 2, hoursPerStation: 1.5 },
-        manpower: { persons: 2 },
-      }),
-    ]);
-    const result = planInstallation(set, fixtureInput());
-    const stage = result.stages[0];
+  it('calculates the duration by the formula, and shows all four disclosures', () => {
+    /*
+     * B-7: *"Every calculated value must expose: calculation formula, input values, rate id, source
+     * citation."* All four ride on the figure, so a printed plan can be checked without a data file.
+     */
+    const set = fixtureSequenceSet(
+      [fixtureStage({ id: 'equipment_set', appliesWhen: { kind: 'has_placements' } })],
+      [fixtureRate({ id: 'rate_equipment_set', stage: 'equipment_set' })],
+    );
+    const stage = planInstallation(set, fixtureInput()).stages[0];
 
     // 2 fixed + 1.5 × 3 stations.
     expect(stage?.duration.value).toBe(6.5);
     expect(stage?.duration.status).toBe('calculated');
-    expect(stage?.duration.source.inputs).toContain('measurement:placement_count');
-    expect(stage?.duration.source.inputs).toContain('sequence_set:equipment_set.rate.hoursPerStation');
-    expect(stage?.manpower.value).toBe(2);
-    expect(stage?.manpower.status).toBe('planning');
+    expect(stage?.duration.calculation?.formula).toBe(
+      'hoursFixed + (hoursPerStation × stationCount)',
+    );
+    expect(stage?.duration.calculation?.rateId).toBe('rate_equipment_set');
+    expect(stage?.duration.calculation?.citation).toBe('KS B 0000:2026 § 7.3');
+
+    // The input *values*, so the arithmetic is checkable rather than merely attributed.
+    const inputs = Object.fromEntries(
+      (stage?.duration.calculation?.inputs ?? []).map((entry) => [entry.name, entry.value]),
+    );
+    expect(inputs).toEqual({ hoursFixed: 2, hoursPerStation: 1.5, stationCount: 3 });
+  });
+
+  it('reads manpower as the rate’s two figures, never derived', () => {
+    // B-7: `Manpower = minimumPersons, recommendedPersons`. A range read from the rate, with the
+    // rate id and its citation attached — and no calculation, because none happened.
+    const set = fixtureSequenceSet(
+      [fixtureStage({ id: 'equipment_set', appliesWhen: { kind: 'has_placements' } })],
+      [
+        fixtureRate({
+          id: 'rate_equipment_set',
+          stage: 'equipment_set',
+          minimumPersons: 2,
+          recommendedPersons: 4,
+        }),
+      ],
+    );
+    const stage = planInstallation(set, fixtureInput()).stages[0];
+
+    expect(stage?.manpower.minimum).toBe(2);
+    expect(stage?.manpower.recommended).toBe(4);
+    expect(stage?.manpower.source.kind).toBe('installation_rate');
+    expect(stage?.manpower.source.citation).toBe('KS B 0000:2026 § 7.3');
+  });
+
+  it('never evaluates half a formula', () => {
+    /*
+     * The heart of B-7. A rate missing any field is rejected at the schema, so it cannot reach the
+     * planner at all — which is what stops a stage with only a per-station figure producing a
+     * duration as though its fixed overhead were zero. Treating a missing component as zero is
+     * interpolation, and the decision forbids it by name.
+     */
+    for (const field of ['hoursFixed', 'hoursPerStation', 'minimumPersons', 'source'] as const) {
+      const partial: Record<string, unknown> = fixtureRate({ stage: 'equipment_set' });
+      delete partial[field];
+      expect(() =>
+        fixtureSequenceSet(
+          [fixtureStage({ id: 'equipment_set', appliesWhen: { kind: 'has_placements' } })],
+          [partial],
+        ),
+      ).toThrow();
+    }
   });
 
   it('reports an unknown total rather than the sum of the stages that had rates', () => {
@@ -251,24 +302,79 @@ describe('§§ 4–5 — every figure cited, or Unknown', () => {
      * The most dangerous number this package could produce: a total over the stages that happened
      * to have rates is smaller than the truth, looks complete, and is the one somebody quotes.
      */
-    const set = fixtureSequenceSet([
-      fixtureStage({ id: 'timed', rate: { hoursFixed: 8, hoursPerStation: null } }),
-      fixtureStage({ id: 'untimed', dependsOn: ['timed'] }),
-    ]);
+    const set = fixtureSequenceSet(
+      [
+        fixtureStage({ id: 'timed' }),
+        fixtureStage({ id: 'untimed', dependsOn: ['timed'] }),
+      ],
+      [fixtureRate({ id: 'rate_timed', stage: 'timed', hoursFixed: 8, hoursPerStation: 0 })],
+    );
     const result = planInstallation(set, fixtureInput());
 
     expect(result.stages[0]?.duration.value).toBe(8);
     expect(result.stages[1]?.duration.value).toBeNull();
     expect(result.duration.status).toBe('unknown');
     expect(result.duration.source.ref).toContain('incomplete');
+    // And the flag the report branches on says the same thing, once.
+    expect(result.ratesAvailable).toBe(false);
+  });
+
+  it('totals the durations when every stage has a rate, naming every standard behind it', () => {
+    const set = fixtureSequenceSet(
+      [fixtureStage({ id: 'one' }), fixtureStage({ id: 'two', dependsOn: ['one'] })],
+      [
+        fixtureRate({ id: 'rate_one', stage: 'one', hoursFixed: 4, hoursPerStation: 0 }),
+        fixtureRate({
+          id: 'rate_two',
+          stage: 'two',
+          hoursFixed: 1,
+          hoursPerStation: 2,
+          source: 'KS B 1111:2026 § 3',
+        }),
+      ],
+    );
+    const result = planInstallation(set, fixtureInput());
+
+    // 4 + (1 + 2 × 3).
+    expect(result.duration.value).toBe(11);
+    expect(result.ratesAvailable).toBe(true);
+    // Both rates named, and both citations — one id would be a lie about where the other hours came
+    // from, and EV-6 would not catch it because the field would be populated.
+    expect(result.duration.calculation?.rateId).toBe('rate_one + rate_two');
+    expect(result.duration.calculation?.citation).toContain('KS B 1111:2026 § 3');
   });
 
   it('takes the peak crew rather than the sum, because stages run in sequence', () => {
-    const set = fixtureSequenceSet([
-      fixtureStage({ id: 'small', manpower: { persons: 2 } }),
-      fixtureStage({ id: 'large', dependsOn: ['small'], manpower: { persons: 5 } }),
-    ]);
-    expect(planInstallation(set, fixtureInput()).manpower.value).toBe(5);
+    const set = fixtureSequenceSet(
+      [fixtureStage({ id: 'small' }), fixtureStage({ id: 'large', dependsOn: ['small'] })],
+      [
+        fixtureRate({ id: 'rate_small', stage: 'small', minimumPersons: 1, recommendedPersons: 2 }),
+        fixtureRate({ id: 'rate_large', stage: 'large', minimumPersons: 3, recommendedPersons: 5 }),
+      ],
+    );
+    const result = planInstallation(set, fixtureInput());
+
+    expect(result.manpower.recommended).toBe(5);
+    expect(result.manpower.minimum).toBe(3);
+    // The peak keeps the citation of the stage that set it, so a reader can see which one did.
+    expect(result.manpower.source.ref).toBe('rate_large');
+  });
+
+  it('rejects a rate for a stage that does not exist', () => {
+    // The likeliest cause is a typo in a stage id, which would leave the real stage reporting
+    // Unknown while somebody believed they had supplied its figures.
+    expect(() =>
+      fixtureSequenceSet([fixtureStage({ id: 'real' })], [fixtureRate({ stage: 'typo' })]),
+    ).toThrow(/name a stage in this file/);
+  });
+
+  it('rejects two rates for one stage', () => {
+    expect(() =>
+      fixtureSequenceSet(
+        [fixtureStage({ id: 'one' })],
+        [fixtureRate({ id: 'a', stage: 'one' }), fixtureRate({ id: 'b', stage: 'one' })],
+      ),
+    ).toThrow(/at most one installation rate/);
   });
 });
 
@@ -293,7 +399,9 @@ describe('§ 3 — the connection plans', () => {
     expect(ro?.runs).toHaveLength(3);
     expect(ro?.totalLength.value).toBe(6_000);
     expect(ro?.totalLength.status).toBe('calculated');
-    expect(ro?.totalLength.source.inputs).toHaveLength(3);
+    expect(ro?.totalLength.calculation?.inputs).toHaveLength(3);
+    // Cites nothing, correctly: every input is a length measured off the drawing.
+    expect(ro?.totalLength.calculation?.citation).toBeNull();
   });
 
   it('reports an unknown total when one machine could not be routed', () => {
@@ -341,10 +449,15 @@ describe('§ 9 — the bill of materials', () => {
     expect(power?.quantity.status).toBe('calculated');
     // Both halves of the arithmetic named: the catalogue said power is required, the drawing holds
     // three machines.
-    expect(power?.quantity.source.inputs).toContain('measurement:placement_count');
-    expect(power?.quantity.source.inputs).toContain(
-      'catalogue_field:vantive_ak98.connections.power',
-    );
+    // The arithmetic is on the figure, line by line: which record contributed how many.
+    expect(power?.quantity.calculation?.inputs).toEqual([
+      {
+        name: 'vantive_ak98',
+        value: 3,
+        unit: 'each',
+        ref: 'catalogue_field:vantive_ak98.connections.power',
+      },
+    ]);
   });
 
   it('omits a service the equipment does not require', () => {
@@ -462,14 +575,46 @@ describe('the shipped sequence set', () => {
     expect(dialysisSequenceSet.stages.length).toBeGreaterThan(0);
   });
 
-  it('supplies no labour rate, and says so where a reader will look', () => {
-    // If this ever fails, somebody has supplied a rate — and it needs a source before it ships.
-    for (const stage of dialysisSequenceSet.stages) {
-      expect(stage.rate.hoursFixed).toBeNull();
-      expect(stage.rate.hoursPerStation).toBeNull();
-      expect(stage.manpower.persons).toBeNull();
-    }
+  it('supplies no installation rate, and says so where a reader will look', () => {
+    // If this ever fails, somebody has supplied a rate — and B-7 requires it to carry a source,
+    // which the schema enforces, so this failing means the feature became live rather than broken.
+    expect(dialysisSequenceSet.installationRates).toEqual([]);
     expect(JSON.stringify(dialysisSequenceSet.rateAuthority)).toContain('Unknown');
+    expect(JSON.stringify(dialysisSequenceSet.rateAuthority)).toContain('B-7');
+  });
+
+  it('turns on from a data edit alone, with no code change', () => {
+    /*
+     * Owner decision B-7: *"Future updates should require only editing
+     * `standards/sequences/dialysis.json`. No code changes."*
+     *
+     * That promise is testable, and this is the test of it: take the **shipped** set, add rates the
+     * way an editor of that file would, and the whole feature comes on — calculated durations with
+     * their formula and citation, a crew range, and `ratesAvailable` flipping the report from the
+     * B-7 sentence to figures. Nothing in `src/` names a stage, an hour or a person.
+     */
+    const withRates = sequenceSetSchema.parse({
+      ...dialysisSequenceSet,
+      installationRates: dialysisSequenceSet.stages.map((stage) => ({
+        id: `rate_${stage.id}`,
+        stage: stage.id,
+        hoursFixed: 2,
+        hoursPerStation: 1.5,
+        minimumPersons: 2,
+        recommendedPersons: 3,
+        source: 'KS B 0000:2026 § 7.3',
+      })),
+    });
+
+    const result = planInstallation(withRates, fixtureInput());
+
+    expect(result.ratesAvailable).toBe(true);
+    // Six applicable stages at 2 + 1.5 × 3 = 6.5 hours each.
+    expect(result.stages.every((stage) => stage.duration.value === 6.5)).toBe(true);
+    expect(result.duration.value).toBe(6.5 * result.stages.length);
+    expect(result.manpower.minimum).toBe(2);
+    expect(result.manpower.recommended).toBe(3);
+    expect(result.duration.calculation?.citation).toContain('KS B 0000:2026');
   });
 
   it('marks exactly one stage as carrying the service connections', () => {

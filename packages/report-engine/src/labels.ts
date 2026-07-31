@@ -242,6 +242,18 @@ export const LABELS = {
   status_calculated: { ko: '산출값', en: 'Calculated' },
   status_unknown: { ko: '미상', en: 'Unknown' },
 
+  /**
+   * Owner decision B-7, verbatim in English.
+   *
+   * The exact sentence the decision names, because a report that paraphrased it would be a
+   * different document from the one that was approved. The Korean is a rendering of it; the English
+   * is quoted.
+   */
+  planning_rates_unavailable: {
+    ko: '설치 기준 산정 자료가 없습니다.',
+    en: 'Planning rate data not available.',
+  },
+
   installation_none: {
     ko: '승인된 배치가 없어 설치 계획이 생성되지 않았습니다.',
     en: 'No installation plan was generated: no approved layout.',

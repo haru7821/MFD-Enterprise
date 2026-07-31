@@ -1,7 +1,7 @@
 import type { Bilingual } from '@mfd/rule-engine';
 
 import type { RefWithVersion } from './context';
-import type { SourcedNumber, SourcedText } from './evidence';
+import type { SourcedNumber, SourcedRange, SourcedText } from './evidence';
 import type { KnowledgeCorpus } from './requests';
 import type { RationaleCode } from './rationale';
 import type { ScoreBreakdown } from './scoring';
@@ -197,13 +197,26 @@ export interface InstallationStage {
    * when computed.
    *
    * So the refusal moves rather than lifting. It was *"a duration is never stated"*; it is now
-   * **"a duration is never invented"** — it is calculated from a rate in the sequence set, with the
-   * rate id and the machine count named as its inputs, or it is `unknown`. No rate has been
-   * supplied for dialysis, so every figure this ships with today is `unknown` — which is the same
-   * answer as before, arrived at by a mechanism that can produce a real one when somebody supplies
-   * the rate rather than by a type that forbids it forever.
+   * **"a duration is never invented"**.
+   *
+   * ## B-7 settles exactly how
+   *
+   * > *"Do not estimate manpower or installation duration. Every value must come from a referenced
+   * > installation standard … Never interpolate. Never estimate. Never infer. Unknown is always
+   * > preferred over an unsupported value."*
+   *
+   * ```
+   *   Duration = hoursFixed + (hoursPerStation × stationCount)
+   *   Manpower = minimumPersons, recommendedPersons
+   * ```
+   *
+   * Both come from an {@link InstallationRate}, whose every field is required and whose `source` is
+   * a citation. **A rate missing any field is not a partial rate — it is not a rate**, so the
+   * planner reports Unknown rather than evaluating half a formula. `standards/sequences/dialysis
+   * .json` ships with no rates at all, so every figure today is `unknown` and the report says
+   * *"Planning rate data not available."*
    */
-  readonly manpower: SourcedNumber;
+  readonly manpower: SourcedRange;
   readonly duration: SourcedNumber;
 }
 
@@ -256,8 +269,19 @@ export interface InstallationPlan {
   readonly materials: readonly PlanResource[];
   readonly risks: readonly PlanRisk[];
   /** Peak crew across stages, and total duration. `unknown` unless every stage's figure is known. */
-  readonly manpower: SourcedNumber;
+  readonly manpower: SourcedRange;
   readonly duration: SourcedNumber;
+  /**
+   * Whether the sequence set supplied a usable {@link InstallationRate} for every stage.
+   *
+   * > Owner decision, B-7: *"The report must explicitly state 'Planning rate data not available.'
+   * > instead of displaying calculated numbers."*
+   *
+   * A flag rather than something each renderer infers from a null. Three renderers working out
+   * *why* a figure is absent would eventually work it out differently, and the one that got it
+   * wrong would print a blank where a sentence belongs.
+   */
+  readonly ratesAvailable: boolean;
   readonly provenance: PlanProvenance;
 }
 

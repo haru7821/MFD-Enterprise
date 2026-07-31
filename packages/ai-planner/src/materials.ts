@@ -1,5 +1,5 @@
 import type { PlanInput, PlanResource, PlanService } from '@mfd/ai-contract';
-import { calculatedNumber, unknownNumber } from '@mfd/ai-contract';
+import { calculatedNumber, statedNumber, unknownNumber } from '@mfd/ai-contract';
 
 import type { SequenceStage } from './sequenceSet';
 
@@ -61,7 +61,13 @@ export function materialsFor(stage: SequenceStage, input: PlanInput): PlanResour
 
   if (!stage.carriesServiceMaterials) return declared;
 
-  const byService = new Map<PlanService, { count: number; inputs: string[] }>();
+  interface ServiceTotal {
+    count: number;
+    /** Which equipment record contributed how many, so the sum can be checked line by line. */
+    contributors: { equipmentId: string; count: number }[];
+  }
+
+  const byService = new Map<PlanService, ServiceTotal>();
 
   for (const equipment of input.equipment) {
     const count = input.placements.filter(
@@ -71,9 +77,9 @@ export function materialsFor(stage: SequenceStage, input: PlanInput): PlanResour
 
     for (const connection of equipment.connections) {
       if (!connection.required) continue;
-      const entry = byService.get(connection.service) ?? { count: 0, inputs: [] };
+      const entry = byService.get(connection.service) ?? { count: 0, contributors: [] };
       entry.count += count;
-      entry.inputs.push(`catalogue_field:${equipment.id}.connections.${connection.service}`);
+      entry.contributors.push({ equipmentId: equipment.id, count });
       byService.set(connection.service, entry);
     }
   }
@@ -85,10 +91,19 @@ export function materialsFor(stage: SequenceStage, input: PlanInput): PlanResour
     .map(([service, entry]) => ({
       id: `${service}_connection_set`,
       title: SERVICE_TITLES[service],
-      quantity: calculatedNumber(entry.count, 'each', `bom:${service}_connection_set`, [
-        ...entry.inputs,
-        'measurement:placement_count',
-      ]),
+      quantity: calculatedNumber(entry.count, 'each', `bom:${service}_connection_set`, {
+        formula: 'Σ (machines of each kind requiring this service)',
+        inputs: [
+          ...entry.contributors.map((contributor) => ({
+            name: contributor.equipmentId,
+            value: contributor.count,
+            unit: 'each',
+            ref: `catalogue_field:${contributor.equipmentId}.connections.${service}`,
+          })),
+        ],
+        rateId: null,
+        citation: null,
+      }),
     }));
 
   return [...declared, ...services];
@@ -117,10 +132,15 @@ export function billOfMaterials(perStage: readonly (readonly PlanResource[])[]):
       quantity:
         a === null || b === null
           ? unknownNumber(existing.quantity.unit, `bom:${resource.id}:incomplete`)
-          : calculatedNumber(a + b, existing.quantity.unit, `bom:${resource.id}`, [
-              ...existing.quantity.source.inputs,
-              ...resource.quantity.source.inputs,
-            ]),
+          : calculatedNumber(a + b, existing.quantity.unit, `bom:${resource.id}`, {
+              formula: 'Σ stage quantities',
+              inputs: [
+                ...(existing.quantity.calculation?.inputs ?? []),
+                ...(resource.quantity.calculation?.inputs ?? []),
+              ],
+              rateId: null,
+              citation: null,
+            }),
     });
   }
 
@@ -135,15 +155,20 @@ function quantityOf(
 ) {
   if (entry.quantity === null) return unknownNumber('each', ref);
   if (entry.per === 'stage') {
-    return {
-      value: entry.quantity,
-      unit: 'each',
-      status: 'planning' as const,
-      source: { kind: 'sequence_set' as const, ref, inputs: [] },
-    };
+    return statedNumber(entry.quantity, 'each', 'sequence_set', ref, 'planning');
   }
-  return calculatedNumber(entry.quantity * stationCount, 'each', ref, [
-    ref,
-    'measurement:placement_count',
-  ]);
+  return calculatedNumber(entry.quantity * stationCount, 'each', ref, {
+    formula: 'quantityPerStation × stationCount',
+    inputs: [
+      { name: 'quantityPerStation', value: entry.quantity, unit: 'each', ref },
+      {
+        name: 'stationCount',
+        value: stationCount,
+        unit: 'count',
+        ref: 'measurement:placement_count',
+      },
+    ],
+    rateId: null,
+    citation: null,
+  });
 }

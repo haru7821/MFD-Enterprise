@@ -517,7 +517,34 @@ export interface SourcedFigure {
   readonly unit: string;
   readonly status: EvidenceStatus;
   readonly sourceRef: string;
-  readonly inputs: readonly string[];
+  /** The published document behind it, when one exists. Null for a measurement or an unknown. */
+  readonly citation: string | null;
+  /**
+   * The whole arithmetic behind a `calculated` figure — owner decision B-7.
+   *
+   * Formula, input values, rate id and citation, so a reader holding the signed PDF can check
+   * `2 + (1.5 × 12) = 20` rather than take it. Null for anything that was not calculated.
+   */
+  readonly calculation: {
+    readonly formula: string;
+    readonly inputs: readonly {
+      readonly name: string;
+      readonly value: number;
+      readonly unit: string;
+    }[];
+    readonly rateId: string | null;
+    readonly citation: string | null;
+  } | null;
+}
+
+/** A crew size, as B-7 defines it: the rate's two figures, or Unknown. */
+export interface SourcedRangeFigure {
+  readonly minimum: number | null;
+  readonly recommended: number | null;
+  readonly unit: string;
+  readonly status: EvidenceStatus;
+  readonly sourceRef: string;
+  readonly citation: string | null;
 }
 
 export interface StageCheckRow {
@@ -542,7 +569,7 @@ export interface InstallationStageRow {
   readonly checks: readonly StageCheckRow[];
   readonly tools: readonly BomRow[];
   readonly materials: readonly BomRow[];
-  readonly manpower: SourcedFigure;
+  readonly manpower: SourcedRangeFigure;
   readonly duration: SourcedFigure;
 }
 
@@ -595,8 +622,15 @@ export interface InstallationSection {
   readonly bom: readonly BomRow[];
   readonly risks: readonly RiskRow[];
   readonly blockers: readonly InstallationBlockerRow[];
-  readonly manpower: SourcedFigure;
+  readonly manpower: SourcedRangeFigure;
   readonly duration: SourcedFigure;
+  /**
+   * False when no installation rate covers every stage — owner decision B-7.
+   *
+   * The renderers print *"Planning rate data not available."* instead of the figures rather than
+   * leaving blanks, so a reader is told why a number is absent in the sentence the owner specified.
+   */
+  readonly ratesAvailable: boolean;
   readonly provenance: {
     readonly levelId: string;
     readonly placementCount: number;

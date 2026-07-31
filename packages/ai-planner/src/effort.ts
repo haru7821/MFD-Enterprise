@@ -1,80 +1,103 @@
-import type { SourcedNumber } from '@mfd/ai-contract';
-import { calculatedNumber, unknownNumber } from '@mfd/ai-contract';
+import type { InstallationRate, SourcedNumber, SourcedRange } from '@mfd/ai-contract';
+import { calculatedNumber, statedRange, unknownNumber, unknownRange } from '@mfd/ai-contract';
 
-import type { SequenceStage } from './sequenceSet';
+import type { SequenceSet, SequenceStage } from './sequenceSet';
 
 /**
- * Manpower and duration — the owner's Sprint 6 § 3, under their §§ 4–5.
+ * Manpower and duration — owner decision **B-7**.
  *
- * ## AD-19, amended rather than abandoned
+ * > *"Do not estimate manpower or installation duration. Every value must come from a referenced
+ * > installation standard. Planning calculations may use only sourced installation rates … If any
+ * > required rate is missing: Duration = Unknown, Manpower = Unknown. Never interpolate. Never
+ * > estimate. Never infer. Unknown is always preferred over an unsupported value."*
  *
- * The architecture said plainly that a plan must not carry durations, because *"nobody has supplied
- * labour rates or crew sizes, and a plan with invented durations is a schedule somebody would
- * resource against"*. `InstallationStage` enforced it with `durationDays?: never`.
+ * ```
+ *   Duration = hoursFixed + (hoursPerStation × stationCount)
+ *   Manpower = minimumPersons, recommendedPersons
+ * ```
  *
- * The owner now requires both as outputs, and in the same decision says how: **cited or unknown**,
- * and labelled `calculated` when computed. Those two requirements do not conflict — they relocate
- * the refusal:
+ * ## There is no partial rate
  *
- * | | Before | Now |
- * | --- | --- | --- |
- * | A duration may be stated | Never | When a rate in the sequence set supports it |
- * | A duration may be invented | Never | **Never** |
- * | Nothing supplies a rate | The field cannot exist | The field says `unknown`, naming the file that would answer it |
+ * The earlier version of this file computed from whichever rate fields happened to be present — a
+ * stage with only a per-station figure produced a duration as though its fixed overhead were zero.
+ * B-7 closes that: `InstallationRate` requires all six fields at the schema, and a stage with no
+ * rate gets `unknown` rather than an evaluation of half the formula. **Treating a missing component
+ * as zero is interpolation**, and it is the specific thing the decision forbids.
  *
- * So this file computes hours from rates and reports `unknown` when there are none — and the shipped
- * `standards/sequences/dialysis.json` has none, so **every figure this produces today is unknown**.
- * That is the same answer AD-19 gave, reached by a mechanism that can produce a real one when
- * somebody supplies a rate with a source, instead of by a type that forbids it forever.
+ * ## Every figure carries its whole arithmetic
  *
- * ## Totals are unknown if any part is
+ * The owner's four disclosures — formula, input values, rate id, source citation — travel on the
+ * figure itself as a {@link Calculation}, so a printed plan can be checked without opening a data
+ * file. EV-6 makes the rate id and the citation stand or fall together, which is what stops a rate
+ * being typed into the sequence file with nothing behind it.
  *
- * A total over the stages that happened to have rates is the most dangerous number here: it is
- * smaller than the truth, it looks complete, and it is the one somebody quotes. Partial knowledge
- * produces `unknown`, and the per-stage rows show which stages are missing.
+ * ## Totals refuse partial knowledge
+ *
+ * A duration summed over the stages that happened to have rates is smaller than the truth, looks
+ * complete, and is the one somebody quotes. Any unknown part makes the total unknown, and the
+ * per-stage rows show which.
  */
 
-/** One stage's crew size, straight from the file — never inferred from the work. */
-export function manpowerFor(stage: SequenceStage): SourcedNumber {
-  const ref = `sequence_set:${stage.id}.manpower`;
-  if (stage.manpower.persons === null) return unknownNumber('person', ref);
-
-  return {
-    value: stage.manpower.persons,
-    unit: 'person',
-    status: 'planning',
-    source: { kind: 'sequence_set', ref, inputs: [] },
-  };
+/** The rate for a stage, or null. Null is a complete answer, not a missing one. */
+export function rateFor(set: SequenceSet, stageId: string): InstallationRate | null {
+  return set.installationRates.find((rate) => rate.stage === stageId) ?? null;
 }
 
 /**
- * One stage's duration: a fixed part plus a per-station part.
+ * Whether every applicable stage has a rate.
  *
- * **Both null means unknown; one null means the other is used alone.** A stage with only a
- * per-station rate is a stage whose fixed overhead nobody stated, not a stage with no overhead —
- * but treating a missing component as zero is precisely the AD-18 failure ("an untaken measurement
- * is `unavailable`, never zero"), so a stage that declares *neither* reports unknown rather than
- * zero hours.
+ * > Owner decision, B-7: *"The report must explicitly state 'Planning rate data not available.'
+ * > instead of displaying calculated numbers."*
+ *
+ * **Every stage, not some.** A plan with rates for four stages of eight can state no total, so
+ * printing four figures and three blanks would be a document a reader has to reconcile themselves.
+ * One flag, one sentence, and the per-stage rows still show what is known.
  */
-export function durationFor(stage: SequenceStage, stationCount: number): SourcedNumber {
-  const ref = `sequence_set:${stage.id}.duration`;
-  const { hoursFixed, hoursPerStation } = stage.rate;
+export function ratesAvailableFor(
+  set: SequenceSet,
+  stages: readonly SequenceStage[],
+): boolean {
+  return stages.length > 0 && stages.every((stage) => rateFor(set, stage.id) !== null);
+}
 
-  if (hoursFixed === null && hoursPerStation === null) return unknownNumber('hour', ref);
+/**
+ * One stage's crew, read straight from its rate.
+ *
+ * Read, never derived: B-7 defines manpower as the rate's own two figures, so there is no
+ * arithmetic and `SourcedRange` has nowhere to put one.
+ */
+export function manpowerFor(set: SequenceSet, stage: SequenceStage): SourcedRange {
+  const rate = rateFor(set, stage.id);
+  if (!rate) return unknownRange('person', `installation_rate:${stage.id}`);
+  return statedRange(rate.minimumPersons, rate.recommendedPersons, 'person', rate.id, rate.source);
+}
 
-  const inputs: string[] = [];
-  let hours = 0;
+/** One stage's duration, by B-7's formula, with the formula attached. */
+export function durationFor(
+  set: SequenceSet,
+  stage: SequenceStage,
+  stationCount: number,
+): SourcedNumber {
+  const rate = rateFor(set, stage.id);
+  if (!rate) return unknownNumber('hour', `installation_rate:${stage.id}`);
 
-  if (hoursFixed !== null) {
-    hours += hoursFixed;
-    inputs.push(`sequence_set:${stage.id}.rate.hoursFixed`);
-  }
-  if (hoursPerStation !== null) {
-    hours += hoursPerStation * stationCount;
-    inputs.push(`sequence_set:${stage.id}.rate.hoursPerStation`, 'measurement:placement_count');
-  }
+  const hours = rate.hoursFixed + rate.hoursPerStation * stationCount;
 
-  return calculatedNumber(round(hours), 'hour', ref, inputs);
+  return calculatedNumber(round(hours), 'hour', `${stage.id}.duration`, {
+    formula: 'hoursFixed + (hoursPerStation × stationCount)',
+    inputs: [
+      { name: 'hoursFixed', value: rate.hoursFixed, unit: 'hour', ref: rate.id },
+      { name: 'hoursPerStation', value: rate.hoursPerStation, unit: 'hour', ref: rate.id },
+      {
+        name: 'stationCount',
+        value: stationCount,
+        unit: 'count',
+        ref: 'measurement:placement_count',
+      },
+    ],
+    rateId: rate.id,
+    citation: rate.source,
+  });
 }
 
 /**
@@ -83,38 +106,55 @@ export function durationFor(stage: SequenceStage, stationCount: number): Sourced
  * The maximum rather than the sum: stages run in sequence, so the crew a job needs is the biggest
  * any one stage needs, not everybody added together. Unknown if any stage is unknown, because a
  * stage with no stated crew could be the largest one.
+ *
+ * The **citation** of a peak is the rate it came from, so a reader can see which stage set the
+ * figure — a maximum with a general reference would be the least checkable number in the document.
  */
-export function peakManpower(perStage: readonly SourcedNumber[]): SourcedNumber {
-  const ref = 'plan:manpower';
-  if (perStage.length === 0) return unknownNumber('person', ref);
-  if (perStage.some((entry) => entry.value === null)) {
-    return unknownNumber('person', `${ref}:incomplete`);
+export function peakManpower(perStage: readonly SourcedRange[]): SourcedRange {
+  const ref = 'installation_rate:peak';
+  if (perStage.length === 0) return unknownRange('person', ref);
+  if (perStage.some((entry) => entry.recommended === null)) {
+    return unknownRange('person', `${ref}:incomplete`);
   }
 
-  const peak = Math.max(...perStage.map((entry) => entry.value ?? 0));
-  return calculatedNumber(
-    peak,
-    'person',
-    ref,
-    perStage.map((entry) => entry.source.ref),
+  const peak = perStage.reduce((highest, entry) =>
+    (entry.recommended ?? 0) > (highest.recommended ?? 0) ? entry : highest,
   );
+  return peak;
 }
 
 /** Total duration: the sum, or unknown if any stage is unknown. */
 export function totalDuration(perStage: readonly SourcedNumber[]): SourcedNumber {
-  const ref = 'plan:duration';
+  const ref = 'installation_rate:total';
   if (perStage.length === 0) return unknownNumber('hour', ref);
   if (perStage.some((entry) => entry.value === null)) {
     return unknownNumber('hour', `${ref}:incomplete`);
   }
 
   const total = perStage.reduce((sum, entry) => sum + (entry.value ?? 0), 0);
-  return calculatedNumber(
-    round(total),
-    'hour',
-    ref,
-    perStage.map((entry) => entry.source.ref),
-  );
+  const rateIds = [
+    ...new Set(perStage.flatMap((entry) => (entry.calculation?.rateId ? [entry.calculation.rateId] : []))),
+  ];
+  const citations = [
+    ...new Set(perStage.flatMap((entry) => (entry.calculation?.citation ? [entry.calculation.citation] : []))),
+  ];
+
+  return calculatedNumber(round(total), 'hour', 'plan.duration', {
+    formula: 'Σ stage durations',
+    inputs: perStage.map((entry, index) => ({
+      name: entry.calculation?.rateId ?? `stage_${index + 1}`,
+      value: entry.value ?? 0,
+      unit: 'hour',
+      ref: entry.source.ref,
+    })),
+    /*
+     * A total drawn from several rates names them all, joined — and its citation names every
+     * standard behind it. One rate id would be a lie about where the other hours came from, and
+     * EV-6 would not catch it because the field would be populated.
+     */
+    rateId: rateIds.length > 0 ? rateIds.join(' + ') : null,
+    citation: citations.length > 0 ? citations.join(' · ') : null,
+  });
 }
 
 function round(value: number): number {

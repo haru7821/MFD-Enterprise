@@ -125,7 +125,7 @@ describe('one source, two views', () => {
             detail: {
               value: null,
               status: 'unknown',
-              source: { kind: 'not_supplied', ref: 'finding:RC-110', inputs: [] },
+              source: { kind: 'not_supplied', ref: 'finding:RC-110', citation: null },
             },
             stageId: null,
           },
@@ -140,28 +140,38 @@ describe('one source, two views', () => {
   });
 });
 
-describe('unknown reaches the page as a word', () => {
+describe('B-7 — the report says what is missing, in the owner’s words', () => {
   it('carries a null value rather than a zero', () => {
-    // The owner's "unknown values remain Unknown", at the model boundary. A zero here would print
-    // as a real figure, and nothing downstream could tell the difference.
+    // "Unknown values remain Unknown", at the model boundary. A zero here would print as a real
+    // figure, and nothing downstream could tell the difference.
     const built = section();
+    expect(built.ratesAvailable).toBe(false);
     expect(built.duration.value).toBeNull();
     expect(built.duration.status).toBe('unknown');
-    expect(built.manpower.value).toBeNull();
+    expect(built.manpower.minimum).toBeNull();
+    expect(built.manpower.recommended).toBeNull();
   });
 
-  it('prints the word in the HTML rather than a dash', () => {
+  it('prints the sentence the decision names, instead of the figures', () => {
+    /*
+     * > *"The report must explicitly state 'Planning rate data not available.' instead of
+     * > displaying calculated numbers."*
+     *
+     * Verbatim in English, because a report that paraphrased it would be a different document from
+     * the one that was approved.
+     */
     const html = renderHtml(modelWith(section()));
-    expect(html).toContain('data-testid="report-installation"');
-    expect(html).toContain('Unknown');
-    expect(html).toContain('미상');
+    expect(html).toContain('data-testid="planning-rates-unavailable"');
+    expect(html).toContain('Planning rate data not available.');
+    expect(html).toContain('설치 기준 산정 자료가 없습니다.');
   });
 
   it('carries the arithmetic behind a calculated figure', () => {
     // A signed document should let somebody check a sum rather than take it.
     const ro = section().connections.find((entry) => entry.service === 'ro_water');
     expect(ro?.total.status).toBe('calculated');
-    expect(ro?.total.inputs.length).toBe(3);
+    expect(ro?.total.calculation?.inputs.length).toBe(3);
+    expect(ro?.total.calculation?.formula).toBe('Σ run lengths');
   });
 });
 

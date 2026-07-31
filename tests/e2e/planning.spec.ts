@@ -184,11 +184,16 @@ test('shows the steps, tools, materials, connections and risks', async ({ page }
   await expect(page.getByTestId('plan-connection-drain')).toBeVisible();
 });
 
-test('says Unknown, and says what would answer it', async ({ page }) => {
+test('states B-7’s sentence instead of estimating', async ({ page }) => {
   /*
-   * The owner's §§ 4–5, where an engineer actually meets them. No labour rate has been supplied, so
-   * duration and manpower are unknown — and the panel prints the word plus the file that would
-   * answer it, rather than a dash. A dash reads as a layout choice; this reads as a job.
+   * Owner decision B-7, where an engineer actually meets it.
+   *
+   * > *"Do not estimate manpower or installation duration … If any required rate is missing:
+   * > Duration = Unknown, Manpower = Unknown … The report must explicitly state 'Planning rate data
+   * > not available.' instead of displaying calculated numbers."*
+   *
+   * `standards/sequences/dialysis.json` ships `installationRates: []`, so this is what every
+   * project sees today — and it names the file and the rule rather than leaving a blank.
    */
   await traceRoom(page);
   await placeServices(page);
@@ -198,13 +203,15 @@ test('says Unknown, and says what would answer it', async ({ page }) => {
   await page.getByTestId('layout-apply-1').click();
   await page.getByTestId('plan-generate').click();
 
-  await expect(page.getByTestId('plan-duration')).toContainText('Unknown');
-  // The total says why a *total* is unknown; the stage below it names the file that would answer it.
-  await expect(page.getByTestId('plan-duration')).toContainText('not every stage has one');
-  await expect(page.getByTestId('plan-stage-equipment_set')).toContainText('sequence_set');
-  await expect(page.getByTestId('plan-manpower')).toContainText('Unknown');
-  // And never a zero, which would read as a real figure.
-  await expect(page.getByTestId('plan-duration')).not.toContainText('0 hour');
+  const notice = page.getByTestId('plan-rates-unavailable');
+  await expect(notice).toContainText('Planning rate data not available.');
+  await expect(notice).toContainText('standards/sequences/dialysis.json');
+
+  // The figures are absent rather than shown as zero or as a dash — B-7's "instead of displaying
+  // calculated numbers", which is a stronger requirement than "display Unknown".
+  await expect(page.getByTestId('plan-duration')).toHaveCount(0);
+  await expect(page.getByTestId('plan-manpower')).toHaveCount(0);
+  await expect(page.getByTestId('plan-results')).not.toContainText('0 hour');
 });
 
 test('names the missing reference point instead of quietly dropping a stage', async ({ page }) => {

@@ -9,7 +9,7 @@ import type {
   RetrievedPassage,
 } from '../src/responses';
 import { PLAN_SERVICES } from '../src/responses';
-import { unknownNumber } from '../src/evidence';
+import { unknownNumber, unknownRange } from '../src/evidence';
 import { AI_CONTRACT_VERSION } from '../src/context';
 import type { CitationScope } from '../src/validate';
 import type { CriterionConfig, ScoreBreakdown, ScoringCriterion, ScoringModel } from '../src/scoring';
@@ -198,8 +198,9 @@ export function fixturePlan(): InstallationPlan {
     connections: PLAN_SERVICES.map(blankConnection),
     materials: [],
     risks: [],
-    manpower: unknownNumber('person', 'sequence_set:manpower'),
-    duration: unknownNumber('hour', 'sequence_set:duration'),
+    manpower: unknownRange('person', 'installation_rate:none'),
+    duration: unknownNumber('hour', 'installation_rate:none'),
+    ratesAvailable: false,
     provenance: {
       levelId: 'level_3f',
       placementCount: 1,
@@ -226,8 +227,8 @@ function blankStage(
     tools: [],
     materials: [],
     risks: [],
-    manpower: unknownNumber('person', `sequence_set:${id}.manpower`),
-    duration: unknownNumber('hour', `sequence_set:${id}.duration`),
+    manpower: unknownRange('person', `installation_rate:${id}`),
+    duration: unknownNumber('hour', `installation_rate:${id}`),
   };
 }
 
