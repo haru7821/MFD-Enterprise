@@ -1,6 +1,6 @@
 import type { PlacementSummary } from '@mfd/ai-contract';
 import type { Catalog } from '@mfd/object-library';
-import type { RuleSet } from '@mfd/rule-engine';
+import type { ReasonParams, RuleSet } from '@mfd/rule-engine';
 import type { Boundary, Placement } from '@mfd/document-model';
 import { evaluate } from '@mfd/rule-engine';
 
@@ -57,6 +57,15 @@ export interface Rejection {
      * useless to a person looking at a drawing with ten machines on it.
      */
     readonly placementIds?: readonly string[];
+    /** What the rule measured, in millimetres, or null when there was nothing to measure. */
+    readonly measured?: number | null;
+    /**
+     * The values the finding's sentence interpolates — labels, the obstruction it names, the
+     * distance. Carried for {@link distinctViolations}, which cannot tell two problems apart
+     * without them: two obstructions under one machine produce findings identical in rule,
+     * reason code and placement, and differ only here.
+     */
+    readonly reasonParams?: ReasonParams;
   };
 }
 
@@ -68,16 +77,54 @@ export interface Rejection {
  * one collision between two machines is one problem, and printing it twice inflates the count an
  * engineer is being asked to work through.
  *
- * Keyed on the *unordered* set of placements, so the two anchorings of one collision collapse and
- * two genuinely separate collisions do not.
+ * ## What makes two findings the same problem
+ *
+ * They name the same things and measure the same value, **whichever way round they are anchored**.
+ * That last clause is the whole of it, and it is why the key sorts rather than concatenates: the
+ * only difference between the two halves of a collision is which machine is the subject, so an
+ * order-insensitive key collapses them and nothing else.
+ *
+ * An earlier version keyed on the placements alone and claimed that two separate problems could not
+ * collapse. They could, and the review found it: one machine intruding on **two** obstructions
+ * produces two findings with the same rule, the same reason code and the same single placement,
+ * differing only in which obstruction they name and how far in it reaches. The panel reported one
+ * problem where there were two — an undercount in a list of work, which is the worse direction.
+ *
+ * ## What it still cannot separate
+ *
+ * Two findings that name the same things *and* measure the same value are indistinguishable here,
+ * because nothing in a `Rejection` distinguishes them. Two identically-labelled obstructions at an
+ * identical intrusion depth would collapse into one. Stated rather than hidden: the honest claim is
+ * order-insensitivity, not completeness.
  */
 export function distinctViolations(violations: readonly Rejection[]): readonly Rejection[] {
   const seen = new Set<string>();
   const distinct: Rejection[] = [];
 
   for (const violation of violations) {
-    const placements = [...(violation.detail.placementIds ?? [])].sort().join('+');
-    const key = `${violation.code}|${violation.detail.ruleId ?? ''}|${violation.detail.reasonCode ?? ''}|${placements}`;
+    const { ruleId, reasonCode, measured, placementIds, reasonParams } = violation.detail;
+    const key = [
+      violation.code,
+      ruleId ?? '',
+      reasonCode ?? '',
+      [...(placementIds ?? [])].sort().join('+'),
+      measured ?? '',
+      /*
+       * Sorted values, not the object: `{label: a, other: b}` and `{label: b, other: a}` are one
+       * collision seen from each end, and must not read as two.
+       *
+       * `JSON.stringify` and not `String`, because a `ReasonParamValue` may be a bilingual pair by
+       * type, and `String({en, ko})` is `"[object Object]"` for every one of them — two different
+       * values keying alike, silently. No reason code emits one on this path today, so this is
+       * defensive rather than a fix; the type permits it and the failure it would cause is the
+       * kind nothing notices.
+       */
+      Object.values(reasonParams ?? {})
+        .map((value) => JSON.stringify(value))
+        .sort()
+        .join('+'),
+    ].join('|');
+
     if (seen.has(key)) continue;
     seen.add(key);
     distinct.push(violation);
@@ -195,6 +242,8 @@ export function applyGates(
           ruleId: result.ruleId,
           reasonCode: result.reasonCode,
           placementIds: result.placementIds,
+          measured: result.measured,
+          reasonParams: result.reasonParams,
         },
       })),
     unevaluableCount: report.results.filter((result) => result.reasonCode.startsWith('RC-9'))

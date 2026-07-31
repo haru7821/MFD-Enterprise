@@ -26,41 +26,54 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Source trees whose changes must reach the bundle before a spec can mean anything. */
+/**
+ * Everything a change to which must reach the bundle before a spec can mean anything.
+ *
+ * Source trees **and** the files that configure or feed the build. The first version watched only
+ * source, and the review found the hole: `platform.spec.ts` fetches `/sw.js` out of `dist` and
+ * asserts its *contents*, so an unbuilt service-worker edit is exactly the stale-build false pass
+ * this exists to close — and `apps/web/index.html`, `vite.config.ts` and the lockfile all change
+ * the bundle without any file under `src` moving.
+ */
 const WATCHED = [
   join(REPO, 'apps/web/src'),
+  join(REPO, 'apps/web/public'),
+  join(REPO, 'apps/web/index.html'),
+  join(REPO, 'apps/web/vite.config.ts'),
   join(REPO, 'packages'),
   join(REPO, 'standards'),
   join(REPO, 'knowledge'),
+  join(REPO, 'pnpm-lock.yaml'),
 ];
 
 const DIST = join(REPO, 'apps/web/dist');
 
-/** Directories that hold no source and can be large. */
-const SKIP = new Set(['node_modules', 'dist', '.turbo', 'coverage']);
+/**
+ * Directories that hold no build input and can be large.
+ *
+ * Named rather than pattern-matched, and dotfiles are **not** skipped: an earlier version ignored
+ * every name beginning with `.`, which would have quietly excluded a future `.env` — a file whose
+ * whole purpose is to change what the build produces.
+ */
+const SKIP = new Set(['node_modules', 'dist', '.turbo', '.git', 'coverage']);
 
-function newestModification(directory: string): number {
-  let newest = 0;
-  let entries;
+/** The newest modification anywhere under a path, whether it is a file or a directory. */
+function newestModification(path: string): number {
+  let stats;
   try {
-    entries = readdirSync(directory, { withFileTypes: true });
+    stats = statSync(path);
   } catch {
+    // A watched path that does not exist cannot be newer than the build. A file that vanished
+    // between listing and stat is the same case; neither is the same as ignoring a real change.
     return 0;
   }
 
-  for (const entry of entries) {
-    if (entry.name.startsWith('.') || SKIP.has(entry.name)) continue;
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      newest = Math.max(newest, newestModification(path));
-      continue;
-    }
-    try {
-      newest = Math.max(newest, statSync(path).mtimeMs);
-    } catch {
-      // A file that vanished between listing and stat cannot be newer than the build in any
-      // sense that matters; skipping it is not the same as ignoring a real source change.
-    }
+  if (!stats.isDirectory()) return stats.mtimeMs;
+
+  let newest = stats.mtimeMs;
+  for (const entry of readdirSync(path, { withFileTypes: true })) {
+    if (SKIP.has(entry.name)) continue;
+    newest = Math.max(newest, newestModification(join(path, entry.name)));
   }
   return newest;
 }

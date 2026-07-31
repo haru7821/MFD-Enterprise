@@ -9,7 +9,7 @@ import {
   fixtureRoomBoundary,
   fixtureRuleSet,
 } from '../fixtures/index';
-import { applyGates, passesStationCountGate } from './gates';
+import { type Rejection, applyGates, distinctViolations, passesStationCountGate } from './gates';
 
 /**
  * The two hard gates.
@@ -146,6 +146,80 @@ describe('Gate 2 — no mandatory violation', () => {
       expect(violation.code).toBe('GX-201');
       expect(violation.detail.ruleId).toBeTruthy();
     }
+  });
+
+  it('keeps two obstructions under one machine as two problems', () => {
+    /*
+     * The case the first `distinctViolations` collapsed, found by the standing review.
+     *
+     * One machine sitting on two columns produces two findings with the **same** rule, the same
+     * reason code and the same single placement — everything the first key looked at. They differ
+     * only in which column they name and how far into it the machine reaches, so the panel reported
+     * one problem where there were two. An undercount in a list of work is the worse direction to
+     * be wrong in: the engineer moves the machine off one column and is surprised.
+     */
+    const outcome = applyGates(
+      {
+        placements: [placement('a', 3_300, 2_800)],
+        catalog: fixtureCatalog(),
+        ruleSet: fixtureRuleSet(),
+        boundaries: [
+          fixtureRoomBoundary(),
+          fixtureColumn({ x: 3_000, y: 2_500 }, 600, { id: 'col-a', label: 'Column C4' }),
+          fixtureColumn({ x: 3_600, y: 3_000 }, 600, { id: 'col-b', label: 'Column D7' }),
+        ],
+        planStatus: 'calibrated',
+      },
+      1,
+      1,
+    );
+
+    // Identical in everything the placement-only key could see.
+    expect(outcome.violations).toHaveLength(2);
+    expect(new Set(outcome.violations.map((entry) => entry.detail.ruleId)).size).toBe(1);
+    expect(new Set(outcome.violations.map((entry) => entry.detail.reasonCode)).size).toBe(1);
+    expect(outcome.violations.every((entry) => entry.detail.placementIds?.length === 1)).toBe(true);
+
+    expect(distinctViolations(outcome.violations)).toHaveLength(2);
+  });
+
+  it('still reports one collision once, from either end', () => {
+    // The other side of the same key, and what it was built for. Two machines on one another are
+    // reported by the rule engine twice — once anchored on each — and are one thing to fix.
+    const outcome = gate([placement('a', 1_000, 1_000), placement('b', 1_200, 1_000)], 2);
+
+    expect(outcome.violations).toHaveLength(2);
+    expect(distinctViolations(outcome.violations)).toHaveLength(1);
+  });
+
+  it('tells structured reason params apart rather than flattening them', () => {
+    /*
+     * Guards the `JSON.stringify` in the key. `ReasonParamValue` admits a bilingual pair, and
+     * `String({en, ko})` is `"[object Object]"` for every one of them — so a `String`-based key
+     * would report two different findings as one, silently. No reason code emits such a param on
+     * this path today; the type permits it, and the failure it would cause is the kind nothing
+     * notices, so it is held here rather than left to be discovered.
+     */
+    const of = (obstruction: { en: string; ko: string }): Rejection => ({
+      code: 'GX-201',
+      detail: {
+        ruleId: 'boundary',
+        reasonCode: 'RC-311',
+        placementIds: ['a'],
+        measured: 250,
+        reasonParams: { obstruction },
+      },
+    });
+
+    const violations = [
+      of({ en: 'Column C4', ko: '기둥 C4' }),
+      of({ en: 'Column D7', ko: '기둥 D7' }),
+    ];
+
+    expect(String(violations[0]?.detail.reasonParams?.['obstruction'])).toBe(
+      String(violations[1]?.detail.reasonParams?.['obstruction']),
+    );
+    expect(distinctViolations(violations)).toHaveLength(2);
   });
 
   it('reports how much of the compliance it actually established', () => {

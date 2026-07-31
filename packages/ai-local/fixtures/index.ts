@@ -174,10 +174,20 @@ export function fixtureRoomBoundary(width = 8_000, depth = 6_000): Boundary {
   return createBoundary('boundary-room', 'space_outline', fixtureRoom(width, depth), 'Ward');
 }
 
-/** A column, for the obstruction path. */
-export function fixtureColumn(at: Vec2 = { x: 3_000, y: 2_500 }, size = 600): Boundary {
+/**
+ * A column, for the obstruction path.
+ *
+ * `id` and `label` are arguments so a test can put **two different** obstructions on a drawing.
+ * They were fixed strings until the two-obstruction case had to be tested, and two columns that
+ * are indistinguishable are not a test of telling obstructions apart.
+ */
+export function fixtureColumn(
+  at: Vec2 = { x: 3_000, y: 2_500 },
+  size = 600,
+  { id = 'boundary-column', label = 'Column C4' }: { id?: string; label?: string } = {},
+): Boundary {
   return createObstruction(
-    'boundary-column',
+    id,
     'column',
     [
       { x: at.x, y: at.y },
@@ -185,7 +195,7 @@ export function fixtureColumn(at: Vec2 = { x: 3_000, y: 2_500 }, size = 600): Bo
       { x: at.x + size, y: at.y + size },
       { x: at.x, y: at.y + size },
     ],
-    'Column C4',
+    label,
   );
 }
 
