@@ -61,6 +61,14 @@ export default defineConfig({
     },
   ],
 
+  /*
+   * Refuse to run against a bundle older than the source — see `tests/freshBuild.ts`.
+   *
+   * `vite preview` serves the built `dist` and `reuseExistingServer` keeps a stale one alive, so
+   * without this a source change that was never built is simply invisible to every spec below.
+   */
+  globalSetup: './tests/freshBuild.ts',
+
   webServer: {
     command: `pnpm --filter @mfd/web preview --port ${PORT}`,
     url: `http://localhost:${PORT}`,

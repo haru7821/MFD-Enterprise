@@ -76,6 +76,13 @@ export interface LayoutProposalSet {
 export interface BlockingViolation {
   readonly ruleId: string;
   readonly reasonCode: string;
+  /**
+   * The machines it is about — one for a clearance, two for a collision.
+   *
+   * Without these the panel says a rule is broken and leaves an engineer to find *where* on a
+   * drawing with ten machines on it, which is not a finding they can act on.
+   */
+  readonly placementIds: readonly string[];
 }
 
 /**

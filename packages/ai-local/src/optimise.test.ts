@@ -13,6 +13,7 @@ import {
   fixtureRoomBoundary,
   fixtureRuleSet,
 } from '../fixtures/index';
+import { applyGates, distinctViolations } from './gates';
 import {
   type OptimiseInput,
   assertNoDeletions,
@@ -333,8 +334,23 @@ describe('D1 — a layout that fails a gate is not optimised, it is blocked', ()
     placement('s1', 3_000, 3_000),
     placement('s2', 3_200, 3_000),
     placement('s3', 5_000, 5_000),
-    placement('s4', 7_000, 3_000),
+    placement('s4', 5_200, 5_000),
   ];
+
+  /** What the gates say about that layout, computed the same way the panel's list is. */
+  function violationsOf(placements: readonly Placement[]) {
+    return applyGates(
+      {
+        placements,
+        catalog: fixtureCatalog(),
+        ruleSet: fixtureRuleSet(),
+        boundaries: [fixtureRoomBoundary()],
+        planStatus: 'calibrated',
+      },
+      placements.length,
+      placements.length,
+    ).violations;
+  }
 
   it('blocks instead of proposing', () => {
     const result = optimise({ current: OVERLAPPING });
@@ -350,14 +366,41 @@ describe('D1 — a layout that fails a gate is not optimised, it is blocked', ()
     expect(result.current).toBeNull();
   });
 
-  it('names every rule that blocks it, not just the first', () => {
+  it('names every problem that blocks it, not just the first', () => {
+    /*
+     * Two separate collisions — s1 on s2, and s3 on s4. Asserting `length > 0` would pass against
+     * an implementation that reported only the first, which is exactly what the earlier version of
+     * this test did: the count has to be tied to what the gates actually found.
+     */
     const result = optimise({ current: OVERLAPPING });
+    const distinct = distinctViolations(violationsOf(OVERLAPPING));
 
-    expect(result.blocking.length).toBeGreaterThan(0);
+    expect(distinct.length).toBe(2);
+    expect(result.blocking.length).toBe(distinct.length);
     for (const violation of result.blocking) {
       expect(violation.code).toBe('GX-201');
       expect(violation.detail.ruleId).toBeTruthy();
     }
+  });
+
+  it('names the machines, so the engineer knows which ones to move', () => {
+    // "Violates a mandatory engineering rule" is enough for a solver discarding a candidate and
+    // useless to a person looking at a drawing with ten machines on it.
+    for (const violation of optimise({ current: OVERLAPPING }).blocking) {
+      expect(violation.detail.placementIds?.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('reports one collision once, not once per machine', () => {
+    /*
+     * The rule engine anchors a collision on both machines — right for a findings list, wrong for a
+     * list of things to fix. Four machines in two colliding pairs is **two** problems, and the raw
+     * gate output has four findings.
+     */
+    const raw = violationsOf(OVERLAPPING);
+
+    expect(raw.length).toBe(4);
+    expect(optimise({ current: OVERLAPPING }).blocking).toHaveLength(2);
   });
 
   it('was suppressing compliant candidates before this, which is why it matters', () => {

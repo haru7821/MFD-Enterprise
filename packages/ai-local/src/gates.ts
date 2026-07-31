@@ -49,7 +49,41 @@ export interface Rejection {
     readonly reasonCode?: string;
     readonly expected?: number;
     readonly actual?: number;
+    /**
+     * Which placements the finding is about — one for a clearance, two for a collision.
+     *
+     * Carried because a rejection an engineer is asked to *act on* has to say which machines.
+     * "Violates a mandatory engineering rule" is enough for a solver discarding a candidate and
+     * useless to a person looking at a drawing with ten machines on it.
+     */
+    readonly placementIds?: readonly string[];
   };
+}
+
+/**
+ * The same problem, reported once.
+ *
+ * The rule engine anchors a collision on **both** machines — `[a, b]` and `[b, a]`, so the panel
+ * can highlight either — which is right for a findings list and wrong for a list of things to fix:
+ * one collision between two machines is one problem, and printing it twice inflates the count an
+ * engineer is being asked to work through.
+ *
+ * Keyed on the *unordered* set of placements, so the two anchorings of one collision collapse and
+ * two genuinely separate collisions do not.
+ */
+export function distinctViolations(violations: readonly Rejection[]): readonly Rejection[] {
+  const seen = new Set<string>();
+  const distinct: Rejection[] = [];
+
+  for (const violation of violations) {
+    const placements = [...(violation.detail.placementIds ?? [])].sort().join('+');
+    const key = `${violation.code}|${violation.detail.ruleId ?? ''}|${violation.detail.reasonCode ?? ''}|${placements}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    distinct.push(violation);
+  }
+
+  return distinct;
 }
 
 export interface GateInput {
@@ -85,25 +119,6 @@ export function passesStationCountGate(
   };
 }
 
-/**
- * Gate 2 — no mandatory violation.
- *
- * ## What counts as a violation, and what does not
- *
- * A **RED** result is a violation: the rule set says this layout is not acceptable.
- *
- * A **YELLOW** is not. Yellow means "review required", and on this product it is overwhelmingly
- * produced by *missing data* rather than by a breach — every clearance finding reads YELLOW today
- * because the AK98 manual has not been supplied (A-1), and every result on an uncalibrated level
- * is downgraded to YELLOW whatever it was. A gate that rejected YELLOW would reject **every**
- * candidate on the projects this product currently has, and report "no layout satisfies the rules"
- * when it means "no threshold has been supplied to check against".
- *
- * That distinction is the whole reason this function reads `level === 'RED'` and not
- * `level !== 'GREEN'`. It is also why the caller is told how many YELLOWs survived: a proposal
- * built entirely from unevaluable rules is a proposal whose compliance nobody has actually
- * checked, and the panel says so rather than presenting it as cleared.
- */
 export interface GateOutcome {
   /**
    * Every mandatory violation, in the order the rule engine reported them. Empty means the gates
@@ -126,7 +141,32 @@ export interface GateOutcome {
   readonly reviewCount: number;
 }
 
-/** Both gates, in the owner's order: count first, then compliance. */
+/**
+ * Both gates, in the owner's order: count first, then compliance.
+ *
+ * ## Gate 2 — what counts as a violation, and what does not
+ *
+ * A **RED** result is a violation: the rule set says this layout is not acceptable.
+ *
+ * A **YELLOW** is not. Yellow means "review required", and on this product it is overwhelmingly
+ * produced by *missing data* rather than by a breach — every clearance finding reads YELLOW today
+ * because the AK98 manual has not been supplied (A-1), and every result on an uncalibrated level
+ * is downgraded to YELLOW whatever it was. A gate that rejected YELLOW would reject **every**
+ * candidate on the projects this product currently has, and report "no layout satisfies the rules"
+ * when it means "no threshold has been supplied to check against".
+ *
+ * That distinction is the whole reason this reads `level === 'RED'` and not `level !== 'GREEN'`.
+ * It is also why the caller is told how many YELLOWs survived: a proposal built entirely from
+ * unevaluable rules is a proposal whose compliance nobody has actually checked, and the panel says
+ * so rather than presenting it as cleared.
+ *
+ * ## Gate 1 cannot fire on a layout that is already on the drawing
+ *
+ * `optimiseLayout` passes the drawn station count as **both** `stationCount` and `requested`, so
+ * the count gate is structurally satisfied there — the count is not a request on that path, it is a
+ * fact read off the drawing, and the owner's first Step 5 constraint makes it immutable. Gate 1 is
+ * live only for generated candidates, which is the population it was written for.
+ */
 export function applyGates(
   input: GateInput,
   stationCount: number,
@@ -151,7 +191,11 @@ export function applyGates(
       .filter((result) => result.level === 'RED')
       .map((result) => ({
         code: 'GX-201' as const,
-        detail: { ruleId: result.ruleId, reasonCode: result.reasonCode },
+        detail: {
+          ruleId: result.ruleId,
+          reasonCode: result.reasonCode,
+          placementIds: result.placementIds,
+        },
       })),
     unevaluableCount: report.results.filter((result) => result.reasonCode.startsWith('RC-9'))
       .length,

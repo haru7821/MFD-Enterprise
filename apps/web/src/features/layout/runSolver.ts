@@ -165,6 +165,7 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
       blocking: result.blocking.map((violation) => ({
         ruleId: violation.detail.ruleId ?? '',
         reasonCode: violation.detail.reasonCode ?? '',
+        placementIds: violation.detail.placementIds ?? [],
       })),
     };
   }

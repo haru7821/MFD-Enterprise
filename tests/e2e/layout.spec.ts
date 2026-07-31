@@ -416,12 +416,31 @@ test('refuses to optimise a layout that breaks a rule, and says which rules', as
   await optimise(page);
 
   await expect(page.getByTestId('layout-blocking')).toBeVisible();
-  await expect(page.getByTestId('layout-blocking')).toContainText('blocking rule violation');
-  expect(await page.getByTestId('layout-blocking-rule').count()).toBeGreaterThan(0);
+  /*
+   * **One** row, not two. The rule engine anchors a collision on both machines so the findings
+   * panel can highlight either; a list of things to fix counts problems, and two machines on one
+   * another is one problem. Asserting `> 0` would have passed on the duplicated pair.
+   */
+  await expect(page.getByTestId('layout-blocking')).toContainText('1 blocking rule violation');
+  await expect(page.getByTestId('layout-blocking-rule')).toHaveCount(1);
+  // And it names the machines, by the labels on the drawing rather than by placement id.
+  await expect(page.getByTestId('layout-blocking-rule')).toContainText('RC-201');
+  await expect(page.getByTestId('layout-blocking-rule')).toContainText(' + ');
 
   await expect(page.getByTestId('layout-results')).toHaveCount(0);
-  await expect(page.getByTestId('layout-current-score')).toHaveCount(0);
   await expect(page.getByTestId('layout-empty')).toContainText('breaks the rules below');
+
+  /*
+   * *"No baseline comparison"*, asserted on the element that would actually carry one here.
+   *
+   * An earlier version of this spec asserted `layout-current-score` absent. That testid lives
+   * inside the `proposals.length > 0` branch of the panel, so it is absent in **every** empty state
+   * and the assertion could not fail — it would have passed against an optimiser that scored the
+   * blocked layout and printed the number. `layout-empty-coverage` is the one that renders beside
+   * an empty result whenever `currentScore` is non-null, and it is asserted *visible* for
+   * `already_best` further down, which is what makes its absence here mean something.
+   */
+  await expect(page.getByTestId('layout-empty-coverage')).toHaveCount(0);
 });
 
 test('optimises again once the blocking violation is removed', async ({ page }) => {

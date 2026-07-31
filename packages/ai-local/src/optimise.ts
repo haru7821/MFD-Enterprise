@@ -1,7 +1,7 @@
 import type { ProposedCommand, ScoreBreakdown, ScoringCriterion } from '@mfd/ai-contract';
 import type { Placement } from '@mfd/document-model';
 
-import { type Rejection, applyGates } from './gates';
+import { type Rejection, applyGates, distinctViolations } from './gates';
 import { type RankInput, type RankedLayout, rankLayouts } from './rank';
 import { scoreLayout } from './score';
 
@@ -195,7 +195,9 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
       current: null,
       proposals: [],
       stationCount,
-      blocking: gates.violations,
+      // Deduplicated, because this list is a list of things to fix rather than a findings list —
+      // see `distinctViolations`. One collision between two machines is one problem.
+      blocking: distinctViolations(gates.violations),
     };
   }
 
