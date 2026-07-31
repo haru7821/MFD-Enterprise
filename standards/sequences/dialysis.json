@@ -1,0 +1,310 @@
+{
+  "id": "dialysis_installation",
+  "version": "0.1.0",
+  "title": {
+    "ko": "투석실 설치 순서",
+    "en": "Dialysis Unit Installation Sequence"
+  },
+  "checklistSet": {
+    "id": "dialysis_installation",
+    "version": "0.1.0"
+  },
+  "authority": {
+    "decidedBy": "developer",
+    "status": "planning",
+    "note": "Stage names, order and dependencies are ordinary construction sequencing: a loop is pressure tested before anything is connected to it, power is energised before commissioning, and the floor is finished before anything is anchored to it. They are stated here as data so a customer whose site sequences differently edits a file rather than the solver. NONE of it is a manufacturer instruction, and nothing here is verified: every entry carries status 'planning' and the planner passes that through. Labour rates and crew sizes are null because nobody has supplied any; see notes on each stage.",
+    "openQuestion": "B-6"
+  },
+  "rateAuthority": {
+    "note": "Every 'manpower' and 'rate' below is null, deliberately. A duration is an engineering commitment somebody resources against, and this project holds no labour data of any kind: no crew size, no hours per station, no site productivity factor. The planner therefore reports duration and manpower as Unknown, naming this file as what would answer them. Supplying a figure here is a reviewed change and must come with a source — see docs/OPEN_QUESTIONS.md B-6.",
+    "supplies": [
+      "manpower.persons",
+      "rate.hoursFixed",
+      "rate.hoursPerStation"
+    ]
+  },
+  "stages": [
+    {
+      "id": "site_preparation",
+      "title": {
+        "ko": "현장 준비",
+        "en": "Site Preparation"
+      },
+      "dependsOn": [],
+      "appliesWhen": {
+        "kind": "always"
+      },
+      "checklistItemIds": [
+        "bed_route",
+        "evacuation"
+      ],
+      "tools": [],
+      "materials": [],
+      "risks": [
+        {
+          "id": "floor_finish_unknown",
+          "title": {
+            "ko": "바닥 마감 미확인",
+            "en": "Floor Finish Not Established"
+          },
+          "detail": {
+            "ko": "장비 고정 방식이 바닥 마감에 따라 달라지므로 마감 사양을 먼저 확인해야 합니다.",
+            "en": "How the machines are secured depends on the floor finish, so the finish specification has to be established before anything is anchored."
+          }
+        }
+      ],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    },
+    {
+      "id": "services_rough_in",
+      "title": {
+        "ko": "설비 배관·배선 선행",
+        "en": "Services Rough-In"
+      },
+      "dependsOn": [
+        "site_preparation"
+      ],
+      "appliesWhen": {
+        "kind": "always"
+      },
+      "checklistItemIds": [
+        "supply_capacity",
+        "outlet_position",
+        "connection_point",
+        "drain_capacity",
+        "data_point",
+        "segregation"
+      ],
+      "tools": [],
+      "materials": [],
+      "risks": [],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": true
+    },
+    {
+      "id": "ro_pressure_test",
+      "title": {
+        "ko": "RO 배관 수압 시험",
+        "en": "RO Loop Pressure Test"
+      },
+      "dependsOn": [
+        "services_rough_in"
+      ],
+      "appliesWhen": {
+        "kind": "has_reference_point",
+        "referencePointKind": "ro_supply"
+      },
+      "checklistItemIds": [
+        "loop_pressure",
+        "water_quality"
+      ],
+      "tools": [
+        {
+          "id": "pressure_test_rig",
+          "title": {
+            "ko": "수압 시험 장비",
+            "en": "Pressure Test Rig"
+          },
+          "per": "stage",
+          "quantity": 1,
+          "entailedBy": "loop_pressure"
+        },
+        {
+          "id": "water_sampling_kit",
+          "title": {
+            "ko": "수질 시료 채취 키트",
+            "en": "Water Sampling Kit"
+          },
+          "per": "stage",
+          "quantity": 1,
+          "entailedBy": "water_quality"
+        }
+      ],
+      "materials": [],
+      "risks": [
+        {
+          "id": "test_before_connection",
+          "title": {
+            "ko": "접속 전 시험 필요",
+            "en": "Test Before Connection"
+          },
+          "detail": {
+            "ko": "장비 접속 후에 누수가 발견되면 해체 작업이 필요합니다. 접속 전에 시험을 완료해야 합니다.",
+            "en": "A leak found after the machines are connected means taking connections apart again. The test belongs before the connection stage."
+          }
+        }
+      ],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    },
+    {
+      "id": "electrical_energisation",
+      "title": {
+        "ko": "전원 인가 및 접지 확인",
+        "en": "Electrical Energisation And Earthing"
+      },
+      "dependsOn": [
+        "services_rough_in"
+      ],
+      "appliesWhen": {
+        "kind": "has_reference_point",
+        "referencePointKind": "electrical_panel"
+      },
+      "checklistItemIds": [
+        "earthing"
+      ],
+      "tools": [
+        {
+          "id": "earth_continuity_tester",
+          "title": {
+            "ko": "접지 연속성 시험기",
+            "en": "Earth Continuity Tester"
+          },
+          "per": "stage",
+          "quantity": 1,
+          "entailedBy": "earthing"
+        }
+      ],
+      "materials": [],
+      "risks": [],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    },
+    {
+      "id": "equipment_set",
+      "title": {
+        "ko": "장비 반입 및 배치",
+        "en": "Equipment Set"
+      },
+      "dependsOn": [
+        "site_preparation"
+      ],
+      "appliesWhen": {
+        "kind": "has_placements"
+      },
+      "checklistItemIds": [
+        "staff_observation"
+      ],
+      "tools": [],
+      "materials": [],
+      "risks": [],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    },
+    {
+      "id": "service_connection",
+      "title": {
+        "ko": "장비 접속",
+        "en": "Service Connection"
+      },
+      "dependsOn": [
+        "equipment_set",
+        "ro_pressure_test",
+        "electrical_energisation"
+      ],
+      "appliesWhen": {
+        "kind": "has_placements"
+      },
+      "checklistItemIds": [
+        "air_gap"
+      ],
+      "tools": [],
+      "materials": [],
+      "risks": [],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    },
+    {
+      "id": "commissioning",
+      "title": {
+        "ko": "시운전",
+        "en": "Commissioning"
+      },
+      "dependsOn": [
+        "service_connection"
+      ],
+      "appliesWhen": {
+        "kind": "has_placements"
+      },
+      "checklistItemIds": [
+        "manual_reference"
+      ],
+      "tools": [],
+      "materials": [],
+      "risks": [],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    },
+    {
+      "id": "handover",
+      "title": {
+        "ko": "인수인계",
+        "en": "Handover"
+      },
+      "dependsOn": [
+        "commissioning"
+      ],
+      "appliesWhen": {
+        "kind": "always"
+      },
+      "checklistItemIds": [
+        "as_built",
+        "sign_off"
+      ],
+      "tools": [],
+      "materials": [],
+      "risks": [],
+      "manpower": {
+        "persons": null
+      },
+      "rate": {
+        "hoursFixed": null,
+        "hoursPerStation": null
+      },
+      "carriesServiceMaterials": false
+    }
+  ]
+}

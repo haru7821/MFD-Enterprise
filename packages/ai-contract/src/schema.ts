@@ -9,6 +9,13 @@ import {
 import { KNOWLEDGE_CORPORA } from './requests';
 import { RATIONALE_CODES } from './rationale';
 import {
+  EVIDENCE_SOURCE_KINDS,
+  EVIDENCE_STATUSES,
+  type EvidenceSourceKind,
+  type EvidenceStatus,
+  VERIFYING_SOURCE_KINDS,
+} from './evidence';
+import {
   CITATION_KINDS,
   type AiAnswer,
   type AiExplanation,
@@ -16,6 +23,8 @@ import {
   type InstallationPlan,
   type RetrievalResult,
   PLAN_BLOCKER_KINDS,
+  PLAN_RISK_ORIGINS,
+  PLAN_SERVICES,
   PROPOSAL_CONFIDENCES,
   PROPOSAL_KINDS,
   PROPOSAL_SOURCES,
@@ -250,7 +259,92 @@ export const aiProposalSchema = z.object({
   evaluation: proposalEvaluationSchema,
 });
 
+/* ------------------------------------------------------------------ evidence */
+
+/**
+ * The five invariants of `evidence.ts`, as refinements.
+ *
+ * One refinement per invariant, each named with its `EV-` id, because when one fires the message an
+ * engineer sees should say *which rule about evidence* was broken rather than "invalid input". Each
+ * is verified by breaking it — a schema check nobody has watched fail is a schema check nobody has
+ * tested.
+ */
+const evidenceSourceSchema = z.object({
+  kind: z.enum(EVIDENCE_SOURCE_KINDS),
+  ref: z.string().min(1),
+  inputs: z.array(z.string().min(1)),
+});
+
+function withEvidenceInvariants<T extends z.ZodType<{ status: EvidenceStatus; source: { kind: EvidenceSourceKind; inputs: readonly string[] } }>>(
+  schema: T,
+) {
+  return schema
+    .refine((entry) => (entry.source.kind === 'not_supplied') === (entry.status === 'unknown'), {
+      message:
+        'EV-2: a value is sourced `not_supplied` if and only if its status is `unknown` — this is ' +
+        '"never generate uncited engineering values" in the only form that cannot be worked around',
+    })
+    .refine((entry) => (entry.status === 'calculated') === (entry.source.kind === 'derived'), {
+      message:
+        'EV-3: `calculated` means computed from something. If nothing is named, it was not ' +
+        'computed — it was chosen',
+    })
+    .refine((entry) => (entry.source.inputs.length > 0) === (entry.source.kind === 'derived'), {
+      message: 'EV-4: only a derived value has inputs, and every derived value has some',
+    })
+    .refine(
+      (entry) => entry.status !== 'verified' || VERIFYING_SOURCE_KINDS.includes(entry.source.kind),
+      {
+        message:
+          'EV-5: only a document can verify. A measurement off a drawing is a fact about the ' +
+          'drawing, not about the equipment',
+      },
+    );
+}
+
+export const sourcedNumberSchema = withEvidenceInvariants(
+  z
+    .object({
+      value: z.number().nullable(),
+      unit: z.string().min(1),
+      status: z.enum(EVIDENCE_STATUSES),
+      source: evidenceSourceSchema,
+    })
+    .refine((entry) => (entry.value === null) === (entry.status === 'unknown'), {
+      message:
+        'EV-1: a null with any other status is a figure that lost its number; a non-null ' +
+        '`unknown` is a guess wearing a disclaimer',
+    }),
+);
+
+export const sourcedTextSchema = withEvidenceInvariants(
+  z
+    .object({
+      value: bilingualSchema.nullable(),
+      status: z.enum(EVIDENCE_STATUSES),
+      source: evidenceSourceSchema,
+    })
+    .refine((entry) => (entry.value === null) === (entry.status === 'unknown'), {
+      message: 'EV-1: a statement without text is unknown, and an unknown carries no text',
+    }),
+);
+
 /* ------------------------------------------------------------------ installation plan */
+
+const planResourceSchema = z.object({
+  id: z.string().min(1),
+  title: bilingualSchema,
+  quantity: sourcedNumberSchema,
+});
+
+const planRiskSchema = z.object({
+  id: z.string().min(1),
+  origin: z.enum(PLAN_RISK_ORIGINS),
+  ref: z.string().min(1),
+  title: bilingualSchema,
+  detail: sourcedTextSchema,
+  stageId: z.string().min(1).nullable(),
+});
 
 export const installationStageSchema = z.object({
   id: z.string().min(1),
@@ -259,6 +353,11 @@ export const installationStageSchema = z.object({
   dependsOn: z.array(z.string().min(1)),
   placementIds: z.array(z.string().min(1)),
   checklistItemIds: z.array(z.string().min(1)),
+  tools: z.array(planResourceSchema),
+  materials: z.array(planResourceSchema),
+  risks: z.array(planRiskSchema),
+  manpower: sourcedNumberSchema,
+  duration: sourcedNumberSchema,
 });
 
 export const planBlockerSchema = z.object({
@@ -267,12 +366,68 @@ export const planBlockerSchema = z.object({
   stageId: z.string().min(1).nullable(),
 });
 
+const connectionPlanSchema = z.object({
+  service: z.enum(PLAN_SERVICES),
+  originPointId: z.string().min(1).nullable(),
+  runs: z.array(
+    z.object({
+      placementId: z.string().min(1),
+      length: sourcedNumberSchema,
+      requirement: sourcedTextSchema,
+    }),
+  ),
+  totalLength: sourcedNumberSchema,
+});
+
+const planProvenanceSchema = z.object({
+  levelId: z.string().min(1),
+  placementCount: z.number().int().nonnegative(),
+  ruleSet: refWithVersionSchema,
+  evaluationVersion: z.number().int().positive(),
+  findingCounts: z.object({
+    red: z.number().int().nonnegative(),
+    yellow: z.number().int().nonnegative(),
+    green: z.number().int().nonnegative(),
+  }),
+  optimisation: z
+    .object({
+      candidateId: z.string().min(1),
+      scoringModel: refWithVersionSchema,
+      total: z.number(),
+      coverage: z.number(),
+    })
+    .nullable(),
+});
+
 export const installationPlanSchema: z.ZodType<InstallationPlan> = z
   .object({
     sequenceSet: refWithVersionSchema,
     stages: z.array(installationStageSchema),
     blockers: z.array(planBlockerSchema),
+    /*
+     * All three services, always. `.length(3)` rather than an array of any size: a plan that
+     * omitted drain because nobody placed the point would read as a project with no drain
+     * requirement, and the difference between "no requirement" and "nobody said" is the difference
+     * this whole package exists to keep.
+     */
+    connections: z.array(connectionPlanSchema).length(PLAN_SERVICES.length),
+    materials: z.array(planResourceSchema),
+    risks: z.array(planRiskSchema),
+    manpower: sourcedNumberSchema,
+    duration: sourcedNumberSchema,
+    provenance: planProvenanceSchema,
   })
+  .refine(
+    (plan) => new Set(plan.connections.map((entry) => entry.service)).size === PLAN_SERVICES.length,
+    { message: 'each of power, RO water and drain appears exactly once' },
+  )
+  .refine(
+    (plan) => {
+      const ids = new Set(plan.stages.map((stage) => stage.id));
+      return plan.risks.every((risk) => risk.stageId === null || ids.has(risk.stageId));
+    },
+    { message: 'a risk attached to a stage must name a stage in the plan' },
+  )
   .refine(
     (plan) => {
       const ids = new Set(plan.stages.map((stage) => stage.id));

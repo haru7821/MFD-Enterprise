@@ -15,10 +15,12 @@
  */
 
 export * from './context';
+export * from './evidence';
 export * from './scoring';
 export * from './rationale';
 export * from './requests';
 export * from './responses';
 export * from './client';
+export * from './planner';
 export * from './schema';
 export * from './validate';

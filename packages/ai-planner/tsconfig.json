@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM". The planner runs in the browser, in a test runner, and would run server-side
+       unchanged — it reads no window and opens no socket (AD-3, and the owner's Sprint 6 § 6). */
+    "lib": ["ES2022"],
+    "resolveJsonModule": true
+  },
+  "include": ["src", "sequences", "fixtures"]
+}

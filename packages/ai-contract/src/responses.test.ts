@@ -55,12 +55,35 @@ describe('InstallationPlan', () => {
     ).toBe(false);
   });
 
-  it('carries no duration field, by type', () => {
-    // AD-19. `durationDays?: never` means this cannot be written at all — the assertion here is
-    // that the shipped fixture has none, and the compiler holds the rest.
+  it('carries a duration that cannot be a bare number', () => {
+    /*
+     * AD-19, amended. The old assertion here was that `durationDays` was absent, which the owner's
+     * Sprint 6 § 3 now asks for — so the refusal moved rather than lifting.
+     *
+     * A duration is a `SourcedNumber`: it has a status and a source, and EV-2 makes an uncited one
+     * unrepresentable. The shipped standards data supplies no labour rate, so every figure today is
+     * `unknown` — the same answer as before, from a mechanism that can produce a real one when
+     * somebody supplies a rate.
+     */
     for (const stage of fixturePlan().stages) {
-      expect('durationDays' in stage).toBe(false);
+      expect(stage.duration.status).toBe('unknown');
+      expect(stage.duration.value).toBeNull();
+      // And it says *what* is missing, which is the half an engineer can act on.
+      expect(stage.duration.source.ref).toContain('duration');
     }
+  });
+
+  it('rejects a duration stated without a source', () => {
+    // The check the amendment rests on. A figure that reaches a plan with `not_supplied` behind it
+    // is exactly the invented duration AD-19 was written to prevent.
+    const plan = fixturePlan();
+    const stages = plan.stages.map((stage) => ({
+      ...stage,
+      duration: { ...stage.duration, value: 16, status: 'planning' as const },
+    }));
+    const result = installationPlanSchema.safeParse({ ...plan, stages });
+    expect(result.success).toBe(false);
+    expect(String(result.error)).toMatch(/EV-/);
   });
 
   it('accepts a plan that leads with a blocker', () => {

@@ -1,6 +1,7 @@
 import type { Bilingual } from '@mfd/rule-engine';
 
 import type { RefWithVersion } from './context';
+import type { SourcedNumber, SourcedText } from './evidence';
 import type { KnowledgeCorpus } from './requests';
 import type { RationaleCode } from './rationale';
 import type { ScoreBreakdown } from './scoring';
@@ -90,6 +91,82 @@ export interface AiProposal {
 
 /* ------------------------------------------------------------------ installation plan */
 
+/** A tool or a material a stage needs. Materials aggregate into the bill of materials. */
+export interface PlanResource {
+  /** Stable id from the sequence set, so the BOM can aggregate across stages. */
+  readonly id: string;
+  readonly title: Bilingual;
+  /**
+   * How many, sourced.
+   *
+   * Usually `calculated` — "one per machine, twelve machines" — and the inputs name both halves.
+   * A quantity nobody can derive is `unknown`, which is a purchasable answer: it tells a buyer to
+   * ask rather than letting them order the number a planner guessed.
+   */
+  readonly quantity: SourcedNumber;
+}
+
+export const PLAN_SERVICES = ['power', 'ro_water', 'drain'] as const;
+export type PlanService = (typeof PLAN_SERVICES)[number];
+
+/** One machine's connection to one service. */
+export interface ConnectionRun {
+  /**
+   * The machine, by id.
+   *
+   * By id and **not by label**. A label copied in here is a second copy of a string an engineer can
+   * edit, and the two would disagree the moment they renamed a station — the report and the panel
+   * already resolve placement ids to labels, and one resolution is better than two strings.
+   */
+  readonly placementId: string;
+  /**
+   * Routed length from the service origin, avoiding obstructions. `unknown` when there is no
+   * reference point to route from, or no route that avoids what is in the way.
+   *
+   * **A planning length, never a verified one.** It is measured off a drawing, and a drawing is not
+   * a site survey — EV-5 is what stops it being printed as though a manual had said it.
+   */
+  readonly length: SourcedNumber;
+  /** The connection fitting or rating, when the catalogue states one. Usually `unknown` today. */
+  readonly requirement: SourcedText;
+}
+
+/**
+ * The power / RO / drain connection plan, per the owner's § 3.
+ *
+ * One per service, always all three, even when a service has no origin marked. A plan that omitted
+ * drain because nobody placed the point would read as a project with no drain requirement.
+ */
+export interface ConnectionPlan {
+  readonly service: PlanService;
+  /** The reference point everything routes from, or null when none is placed. */
+  readonly originPointId: string | null;
+  readonly runs: readonly ConnectionRun[];
+  /** Summed run length, or `unknown` if any run is. A total over a subset is a misleading total. */
+  readonly totalLength: SourcedNumber;
+}
+
+export const PLAN_RISK_ORIGINS = ['finding', 'data_gap', 'sequence_set', 'unroutable'] as const;
+export type PlanRiskOrigin = (typeof PLAN_RISK_ORIGINS)[number];
+
+/**
+ * Something that could go wrong, and where the planner learned about it.
+ *
+ * No severity ranking. The rule engine already grades findings RED / YELLOW / GREEN, and a second
+ * scale invented here would be a planner's opinion competing with a rule set's judgement — the
+ * thing § C-3 of the architecture exists to prevent. A risk that came from a finding carries the
+ * finding's ref, and the reader can look up what the rule engine said about it.
+ */
+export interface PlanRisk {
+  readonly id: string;
+  readonly origin: PlanRiskOrigin;
+  /** A reason code, a stage id, or a catalogue field group. Language-independent. */
+  readonly ref: string;
+  readonly title: Bilingual;
+  readonly detail: SourcedText;
+  readonly stageId: string | null;
+}
+
 export interface InstallationStage {
   readonly id: string;
   readonly order: number;
@@ -105,13 +182,29 @@ export interface InstallationStage {
    * one that is not in the signed report.
    */
   readonly checklistItemIds: readonly string[];
+  readonly tools: readonly PlanResource[];
+  readonly materials: readonly PlanResource[];
+  readonly risks: readonly PlanRisk[];
   /**
-   * Declared, and always absent.
+   * How many people, and how long.
    *
-   * Duration is not ours to state (AD-19), and `?: never` makes that a contract a reviewer can see
-   * rather than a decision to be re-argued the next time somebody wants a Gantt chart.
+   * ## AD-19, amended rather than abandoned
+   *
+   * These fields did not exist. `InstallationStage` declared `durationDays?: never`, and the
+   * architecture said plainly that *"duration is not derivable from anything the project holds"*.
+   * The owner's Sprint 6 § 3 requires **Required Manpower** and **Estimated Installation Duration**
+   * as planner outputs, and their §§ 4–5 say how: cited or `unknown`, and labelled `calculated`
+   * when computed.
+   *
+   * So the refusal moves rather than lifting. It was *"a duration is never stated"*; it is now
+   * **"a duration is never invented"** — it is calculated from a rate in the sequence set, with the
+   * rate id and the machine count named as its inputs, or it is `unknown`. No rate has been
+   * supplied for dialysis, so every figure this ships with today is `unknown` — which is the same
+   * answer as before, arrived at by a mechanism that can produce a real one when somebody supplies
+   * the rate rather than by a type that forbids it forever.
    */
-  readonly durationDays?: never;
+  readonly manpower: SourcedNumber;
+  readonly duration: SourcedNumber;
 }
 
 export const PLAN_BLOCKER_KINDS = [
@@ -129,10 +222,43 @@ export interface PlanBlocker {
   readonly stageId: string | null;
 }
 
+/**
+ * What the plan was made from — the owner's § 1, as evidence rather than as a promise.
+ *
+ * > *"AI Planner receives only validated layouts. Never plan directly from raw user drawings."*
+ *
+ * `PlanInput.evaluation` being required is what enforces that: a caller with an unevaluated drawing
+ * cannot construct an input. This records *which* evaluation, so a plan found on somebody's desk
+ * six months later can be checked against the layout it was made for rather than assumed current.
+ */
+export interface PlanProvenance {
+  readonly levelId: string;
+  readonly placementCount: number;
+  readonly ruleSet: RefWithVersion;
+  readonly evaluationVersion: number;
+  readonly findingCounts: { readonly red: number; readonly yellow: number; readonly green: number };
+  /** The optimisation the layout came from, when it came from one. Null for a hand-drawn layout. */
+  readonly optimisation: {
+    readonly candidateId: string;
+    readonly scoringModel: RefWithVersion;
+    readonly total: number;
+    readonly coverage: number;
+  } | null;
+}
+
 export interface InstallationPlan {
   readonly sequenceSet: RefWithVersion;
   readonly stages: readonly InstallationStage[];
   readonly blockers: readonly PlanBlocker[];
+  /** All three services, always. See {@link ConnectionPlan}. */
+  readonly connections: readonly ConnectionPlan[];
+  /** The bill of materials: every stage's materials, aggregated by id. */
+  readonly materials: readonly PlanResource[];
+  readonly risks: readonly PlanRisk[];
+  /** Peak crew across stages, and total duration. `unknown` unless every stage's figure is known. */
+  readonly manpower: SourcedNumber;
+  readonly duration: SourcedNumber;
+  readonly provenance: PlanProvenance;
 }
 
 /* ------------------------------------------------------------------ language */

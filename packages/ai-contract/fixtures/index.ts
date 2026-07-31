@@ -2,9 +2,14 @@ import type { AiRequestContext } from '../src/context';
 import type {
   AiAnswer,
   AiExplanation,
+  ConnectionPlan,
   InstallationPlan,
+  InstallationStage,
+  PlanService,
   RetrievedPassage,
 } from '../src/responses';
+import { PLAN_SERVICES } from '../src/responses';
+import { unknownNumber } from '../src/evidence';
 import { AI_CONTRACT_VERSION } from '../src/context';
 import type { CitationScope } from '../src/validate';
 import type { CriterionConfig, ScoreBreakdown, ScoringCriterion, ScoringModel } from '../src/scoring';
@@ -159,36 +164,78 @@ function spanOf(text: string, needle: string): { start: number; end: number } {
   return { start, end: start + needle.length };
 }
 
-/** A three-stage plan, printed in an order its dependencies allow. */
+/**
+ * A three-stage plan, printed in an order its dependencies allow.
+ *
+ * Every sourced figure is `unknown`, which is not laziness — it is what the shipped standards data
+ * actually produces. No labour rate has been supplied for dialysis, so a fixture with a duration in
+ * it would be testing against a world that does not exist yet.
+ */
 export function fixturePlan(): InstallationPlan {
+  const stages: InstallationStage[] = [
+    {
+      ...blankStage('services_rough_in', 1, { ko: '설비 배관 선행', en: 'Services Rough-In' }),
+      checklistItemIds: ['loop_pressure'],
+    },
+    {
+      ...blankStage('equipment_set', 2, { ko: '장비 반입 및 설치', en: 'Equipment Set' }),
+      dependsOn: ['services_rough_in'],
+      placementIds: ['placement_1'],
+      checklistItemIds: ['outlet_position'],
+    },
+    {
+      ...blankStage('commissioning', 3, { ko: '시운전', en: 'Commissioning' }),
+      dependsOn: ['equipment_set'],
+      placementIds: ['placement_1'],
+      checklistItemIds: ['earthing'],
+    },
+  ];
+
   return {
     sequenceSet: { id: 'dialysis_installation', version: '0.1.0' },
-    stages: [
-      {
-        id: 'services_rough_in',
-        order: 1,
-        title: { ko: '설비 배관 선행', en: 'Services Rough-In' },
-        dependsOn: [],
-        placementIds: [],
-        checklistItemIds: ['loop_pressure'],
-      },
-      {
-        id: 'equipment_set',
-        order: 2,
-        title: { ko: '장비 반입 및 설치', en: 'Equipment Set' },
-        dependsOn: ['services_rough_in'],
-        placementIds: ['placement_1'],
-        checklistItemIds: ['outlet_position'],
-      },
-      {
-        id: 'commissioning',
-        order: 3,
-        title: { ko: '시운전', en: 'Commissioning' },
-        dependsOn: ['equipment_set'],
-        placementIds: ['placement_1'],
-        checklistItemIds: ['earthing'],
-      },
-    ],
+    stages,
     blockers: [],
+    connections: PLAN_SERVICES.map(blankConnection),
+    materials: [],
+    risks: [],
+    manpower: unknownNumber('person', 'sequence_set:manpower'),
+    duration: unknownNumber('hour', 'sequence_set:duration'),
+    provenance: {
+      levelId: 'level_3f',
+      placementCount: 1,
+      ruleSet: { id: 'dialysis', version: '0.1.0' },
+      evaluationVersion: 2,
+      findingCounts: { red: 0, yellow: 4, green: 0 },
+      optimisation: null,
+    },
+  };
+}
+
+function blankStage(
+  id: string,
+  order: number,
+  title: { readonly ko: string; readonly en: string },
+): InstallationStage {
+  return {
+    id,
+    order,
+    title,
+    dependsOn: [],
+    placementIds: [],
+    checklistItemIds: [],
+    tools: [],
+    materials: [],
+    risks: [],
+    manpower: unknownNumber('person', `sequence_set:${id}.manpower`),
+    duration: unknownNumber('hour', `sequence_set:${id}.duration`),
+  };
+}
+
+function blankConnection(service: PlanService): ConnectionPlan {
+  return {
+    service,
+    originPointId: null,
+    runs: [],
+    totalLength: unknownNumber('mm', `reference_point:${service}`),
   };
 }

@@ -1,0 +1,30 @@
+{
+  "name": "@mfd/ai-planner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The deterministic installation planner: dependency ordering, connection plans, bill of materials, risks and blockers from a validated layout. Pure TypeScript, offline, and no model in it.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./sequences": {
+      "types": "./sequences/index.ts",
+      "default": "./sequences/index.ts"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "sequences"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mfd/ai-contract": "workspace:*",
+    "@mfd/rule-engine": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}
