@@ -60,7 +60,8 @@ The product owner has delegated two of their duties to a standing reviewer, defi
 ## The loop
 
 ```
-lead developer builds  →  cto verifies  →  findings applied  →  cto directs  →  next piece
+lead developer builds  →  cto verifies  →  findings applied  →  ┬→  engineering work continues
+                                                               └→  owner decides  →  next piece
 ```
 
 **Before committing any substantive change**, the lead developer invokes the `cto` agent on the
@@ -69,10 +70,12 @@ produces, breaks at least one load-bearing guard to confirm it fails, and return
 
 - a **verdict** — approve, approve with conditions, or reject;
 - **findings**, each with a severity and what to do about it;
-- a **direction** — the next instruction, in the owner's voice.
+- **next** — the engineering work the findings imply, which needs nobody's permission;
+- **decisions required** — the choices the work has forced that are the owner's, each with its
+  options, the evidence for each, and what is blocked until it is answered.
 
 `blocking` findings are fixed before the commit. `should-fix` findings are fixed or answered in the
-commit message. The direction is what the next piece of work starts from.
+commit message.
 
 ## What the reviewer is for
 
@@ -85,10 +88,25 @@ Every failure in `.claude/agents/cto.md`'s hunting list is one this project actu
 
 ## What it cannot do
 
-It stands in for the owner; it is not the owner. It may **decide on their behalf and say so**, and
-they may overrule it. Anything that changes the product's direction, its scope, or a standing
-decision is theirs — the reviewer's job there is to put the question in front of them, clearly, with
-what it hangs on.
+> Owner instruction: *"The CTO agent is responsible for technical correctness, verification,
+> evidence, testing, architecture review, and engineering quality. The CTO agent must not make
+> product decisions on behalf of the owner. When a decision affects product behaviour, UX, workflow,
+> priorities, or engineering semantics, the CTO agent should present alternatives with evidence and
+> explicitly request an owner decision instead of making it. The implementation agent may implement
+> only after the owner has decided."*
+
+It does not stand in for the owner. **Product behaviour, UX, workflow, priorities and engineering
+semantics are the owner's**, and the reviewer's job there is to put the question in front of them
+with the evidence and the cost of each option — not to settle it, not to settle it provisionally,
+and not to settle it with an invitation to overrule.
+
+**The lead developer may not implement past an open decision either.** Where work is blocked on one,
+it stops, and what is delivered is the question rather than a guess at the answer.
+
+The test, when it is unclear which side a question falls on: if two competent engineers could both be
+right and the difference is what the product *does*, who it is for, what order things happen in, or
+what a word in the model *means* — it is the owner's. If one answer is simply wrong, it is the
+reviewer's.
 
 # Development Principles
 

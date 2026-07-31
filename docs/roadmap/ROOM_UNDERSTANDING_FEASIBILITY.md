@@ -143,8 +143,10 @@ data and both citable:
    *unlabelled* — it is the large space the labelled rooms are arranged around — so its identity is
    partly *"the region none of the other labels falls in"*, which is still a deterministic statement
    about text positions.
-2. **The station pattern.** Ten beds at a 2,000 mm pitch is what makes a dialysis room a dialysis
-   room, and the pitch is printed on the drawing. A first attempt at finding it by looking for
+2. **The station pattern.** A run of repeated congruent rectangles at *a consistent* pitch is what
+   makes a dialysis room a dialysis room — the repetition is the signal, not any particular spacing.
+   Specifying it as "2,000 mm" would be building the milestone on one drawing: across the corpus the
+   annotated pitch runs 1,200–2,000 mm with a median of 1,700 over 71 distinct sheets. A first attempt at finding it by looking for
    repeated congruent *segments* found the wall hatching instead — 750 mm runs at 1,500 mm pitch —
    so this needs assembled rectangles rather than raw segments, and it has not been tried yet.
 

@@ -140,14 +140,25 @@ bounds the room. Same-colour matters: the sheet has a grey setting-out line and 
 201 mm apart that would otherwise read as a wall that is not there. Outermost matters: the bed frames
 are drawn 202 mm across and are a plausible wall pair by every local test.
 
-The independent check is the title block's own area figure: 27,000 mm (17,600 + 4,500 + 4,900) ×
-7,402 mm = 199.8 m² against a stated **201.1 m²**, 0.6 % apart on a plan that is not a true rectangle.
+The independent check is the title block's own area figure: 27,000 mm (the printed chain 17,600 +
+4,500 + 4,900) × 7,402 mm = 199.8 m² against a stated **201.1 m²**, 0.6 % apart on a plan that is not
+a true rectangle.
+
+**Read what that check does and does not establish.** Its arithmetic multiplies **27,000 mm** — the
+whole building — by the width. So it corroborates the *scale* and the *width*, and says nothing about
+the 17,600 mm the pipeline actually places into. The length is accepted on a separate ground: that
+dimension's own extension lines fall on the walls that end the hall, read off the drawing by a
+person. Nothing geometric confirms those ends — the free-space fill runs to 27.5 m from inside this
+hall, which is §8's finding and the reason room understanding is the next milestone.
 
 That measurement is recorded as `calibrated_measurement`, never `dimension_line`, and a printed
 dimension would supersede it. It is discrepancy VD-4, not a footnote.
 
-**Placement.** Ten stations in two rows of five facing each other, at the drawing's own 2,000 mm
-pitch — the arrangement the drawing shows. AK98 at its **800 × 800 mm planning footprint**; beds at
+**Placement.** Ten stations in two rows of five facing each other, at **1,800 mm** — the width the
+two planning footprints occupy side by side, derived from the catalogue records themselves. Not the
+drawing's 2,000 mm: an earlier run required that figure before a sheet could proceed and then
+recorded it as an observation, which made the reading circular, and the pitch is now nothing but the
+smallest spacing at which the equipment placed here physically fits. AK98 at its **800 × 800 mm planning footprint**; beds at
 **1,000 × 2,100 mm**. The AK98's manufacturer width is 345 mm and is used nowhere in any geometry;
 that separation is asserted by test.
 
@@ -158,7 +169,7 @@ that separation is asserted by test.
 | Rule engine | **0 RED · 60 YELLOW · 0 GREEN** — reason codes `RC-110`, `RC-202`, `RC-321` |
 | Optimiser | 3 ranked proposals for 10 stations |
 | Installation planner | 6 stages, 2 blockers |
-| Report | `inconclusive`, report version 2, 164,367 bytes of PDF |
+| Report | `inconclusive`, report version 2, 164,079 bytes of PDF |
 
 **0 GREEN is correct and is not a failure.** Every rule in `standards/rules/dialysis` is still
 `status: draft`, and a draft rule cannot certify a pass (AD-6a). The 60 YELLOW are 40 clearance
@@ -320,8 +331,11 @@ Two readings, and the difference between them is the point.
 
 | Value | Method | Confidence |
 | --- | --- | --- |
-| `station_pitch` 2,000 mm, hemodialysis treatment | `dimension_line` | high — the drawing states it, and its geometry agrees to 0.004 % |
 | `treatment_room_width` 7,402 mm, hemodialysis treatment | `calibrated_measurement` | medium — nothing on the drawing states it |
+
+A `station_pitch` of 2,000 mm was recorded here and has been **retracted**. The run that produced it
+accepted a drawing only if it already printed 2,000 mm, so the observation could not have come out
+otherwise — circular, and withdrawn rather than re-explained.
 
 `treatment_room_width` is new to `DIMENSION_NAMES`. It decides whether a hall can hold two facing
 rows or only one, so it is worth carrying across drawings — and it is precisely the dimension this

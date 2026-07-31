@@ -205,7 +205,7 @@
       "widthMm": 7401.898796875506,
       "lengthSource": "longest printed dimension \"17,600\", taken as the room's extent (inferred)",
       "widthSource": "calibrated measurement between wall inner faces",
-      "corroboration": "Hall length 17,600 mm is a printed dimension whose extension lines bound the hall; width 7,402 mm measured between wall inner faces. Corroborated against the title block's own area: 27,000 mm (17,600 + 4,500 + 4,900, the printed chain) x 7,402 mm = 199.8 m2 against a stated 201.1 m2, 0.6 per cent apart on a plan that is not a true rectangle."
+      "corroboration": "Corroborates the scale and the WIDTH, not the length. The title block's stated area 201.1 m2 is the building's: 27,000 mm (the printed chain 17,600 + 4,500 + 4,900) x 7,402 mm = 199.8 m2, 0.6 per cent apart. The 17,600 mm length is accepted separately, because that dimension's own extension lines fall on the walls that end the hall - read off the drawing by a person, not derived here. The free-space fill reaches 27.5 m from inside this hall, so nothing geometric confirms the ends."
     },
     "placements": [
       {

@@ -226,7 +226,7 @@
       "widthMm": 7400.147565981584,
       "lengthSource": "longest printed dimension \"17,600\", taken as the room's extent (inferred)",
       "widthSource": "calibrated measurement between wall inner faces",
-      "corroboration": "The same hall as Hospital_044/dialysis.pdf, corroborated the same way against the same title block area figure."
+      "corroboration": "The same hall as Hospital_044/dialysis.pdf and corroborated the same way: the stated area confirms the scale and the width, the 17,600 mm length is a person's reading of where that dimension's extension lines land."
     },
     "placements": [
       {

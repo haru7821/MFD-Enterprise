@@ -152,13 +152,18 @@ value, measurement method, observer, confidence. `page` was added for this progr
 is one file holding several sheets, and every page of it shares one hash, so without it a reading
 from sheet 7 is indistinguishable from one off the cover.
 
-Two readings are in the base from the verification programme so far, and the difference between them
-is the discipline:
+**One** reading is in the base from the verification programme so far:
 
 | Value | Method | Confidence |
 | --- | --- | --- |
-| `station_pitch` 2,000 mm | `dimension_line` — the drawing states it | high |
-| `treatment_room_width` 7,402 mm | `calibrated_measurement` — nothing states it | medium |
+| `treatment_room_width` 7,402 mm | `calibrated_measurement` — nothing on the drawing states it | medium |
+
+There were two. `station_pitch` 2,000 mm was **retracted**, because the run that recorded it had also
+required the drawing to print 2,000 mm before it could proceed — so the reading could not have come
+out any other way. A number that could not have been different is not evidence of anything. The
+corpus still holds the pitch from 117 drawings whose dimensions are *annotated* as a bed spacing;
+geometry alone cannot tell a pitch from any other 2,000 mm dimension, and that naming is what makes
+those readings mean something.
 
 `pnpm validate:corpus` writes **no observations at all**. Only `pnpm verify:drawing` does, one
 drawing at a time, after a person has read what it found. A knowledge base a batch job can fill on
