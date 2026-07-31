@@ -182,6 +182,7 @@ describe('v2 → v3 migration', () => {
     // Reference points arrive in version 4, so a genuine v2 file has none. See v1Document().
     for (const level of project['levels'] as Record<string, unknown>[]) {
       delete level['referencePoints'];
+      delete (level['planImage'] as Record<string, unknown> | null)?.['renderDpi'];
     }
     return { ...current, documentVersion: 2 };
   }
@@ -226,7 +227,10 @@ describe('v3 → v4 migration', () => {
   function v3Document(): Record<string, unknown> {
     const current = JSON.parse(JSON.stringify(populated())) as Record<string, unknown>;
     const project = current['project'] as { levels: Record<string, unknown>[] };
-    for (const level of project.levels) delete level['referencePoints'];
+    for (const level of project.levels) {
+      delete level['referencePoints'];
+      delete (level['planImage'] as Record<string, unknown> | null)?.['renderDpi'];
+    }
     return { ...current, documentVersion: 3 };
   }
 
@@ -336,7 +340,11 @@ describe('v1 → v2 migration', () => {
     // the test pass through a shape no v1 file ever had, and since the migrations refuse to
     // overwrite an occupied field it would not even reach the assertions.
     delete (project as unknown as Record<string, unknown>)['settings'];
-    for (const level of project.levels) delete level['referencePoints'];
+    for (const level of project.levels) {
+      delete level['referencePoints'];
+      // `renderDpi` arrives in version 5, so no earlier file carries it.
+      delete (level['planImage'] as Record<string, unknown> | null)?.['renderDpi'];
+    }
     return { ...current, documentVersion: 1 };
   }
 
@@ -390,7 +398,10 @@ describe('v1 → v2 migration', () => {
      * versions later tests a conversion nobody will ever perform.
      */
     delete (project as unknown as Record<string, unknown>)['settings'];
-    for (const entry of project.levels) delete entry['referencePoints'];
+    for (const entry of project.levels) {
+      delete entry['referencePoints'];
+      delete (entry['planImage'] as Record<string, unknown> | null)?.['renderDpi'];
+    }
 
     expect(() => parseDocument({ ...bare, documentVersion: 1 })).not.toThrow();
   });

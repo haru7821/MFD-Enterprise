@@ -8,11 +8,13 @@ import {
   fixturePlanImage,
 } from '../fixtures/index';
 import { isCalibrated, requireLevel } from './document';
+import type { PlanImage } from './schema';
 import {
   calibrateFromStatedRatio,
   calibrateFromTwoPoints,
   clearPlanImage,
   planTransformOf,
+  recommendCalibration,
   setCoordinateMapping,
   setMappingOrigin,
   setMappingRotation,
@@ -184,5 +186,118 @@ describe('the transform handed to the geometry layer', () => {
     if (!transform) return;
 
     expect(pixelToModel(transform, { x: 340, y: 100 })).toEqual({ x: 2_400, y: 0 });
+  });
+});
+
+/**
+ * Owner decision, Q-4.
+ *
+ * > *"Implement both calibration methods: dimension-line calibration (preferred), printed drawing
+ * > scale calibration (fallback). The application should automatically recommend the most reliable
+ * > method available for each drawing."*
+ *
+ * The recommendation has content only because the application genuinely knows something the
+ * engineer would have to work out: whether a printed ratio can be converted at all. These assert
+ * that it uses what it knows and does not guess at what it does not.
+ */
+describe('recommending a calibration method', () => {
+  function image(renderDpi: number | null): PlanImage {
+    return { ...fixturePlanImage(), renderDpi };
+  }
+
+  it('prefers the dimension line whenever the drawing has one', () => {
+    // It measures the drawing as it actually is. A printed scale describes the sheet as its author
+    // intended, before somebody printed it at 94 % to fit A3.
+    const advice = recommendCalibration({ planImage: image(150), hasDimensionLine: true });
+
+    expect(advice.recommended).toBe('two-point');
+    expect(advice.code).toBe('prefer_two_point');
+    // The fallback is still listed — the engineer may want to cross-check one against the other.
+    expect(advice.available).toEqual(['two-point', 'stated-ratio']);
+  });
+
+  it('falls back to the printed scale when there is no dimension line but the resolution is known', () => {
+    const advice = recommendCalibration({ planImage: image(150), hasDimensionLine: false });
+
+    expect(advice.recommended).toBe('stated-ratio');
+    expect(advice.code).toBe('fallback_stated_ratio');
+    expect(advice.available).toEqual(['stated-ratio']);
+  });
+
+  it('offers nothing at all for a scan with no dimension line', () => {
+    /*
+     * The outcome that matters most, and the one a helpful implementation would get wrong by
+     * nudging the engineer towards the weaker method anyway. A raster import's resolution is
+     * unknown, so "1:100" cannot be converted to millimetres per pixel by any honest arithmetic.
+     *
+     * Uncalibrated is a state this application already handles properly — every rule YELLOW, never
+     * GREEN — and it is a better answer than a scale derived from a resolution nobody recorded.
+     */
+    const advice = recommendCalibration({ planImage: image(null), hasDimensionLine: false });
+
+    expect(advice.recommended).toBeNull();
+    expect(advice.available).toEqual([]);
+    expect(advice.code).toBe('no_method_available');
+  });
+
+  it('does not offer the printed scale for a raster import, even before the question is answered', () => {
+    // A scanned PNG carries no trustworthy statement of the size it was scanned at, so the route is
+    // withheld rather than offered and then failed at the last step.
+    const advice = recommendCalibration({ planImage: image(null), hasDimensionLine: null });
+
+    expect(advice.available).toEqual(['two-point']);
+    expect(advice.code).toBe('awaiting_dimension_line_answer');
+  });
+
+  it('recommends nothing when there is no drawing', () => {
+    expect(recommendCalibration({ planImage: null, hasDimensionLine: true })).toEqual({
+      recommended: null,
+      available: [],
+      code: 'no_plan_image',
+    });
+  });
+
+  it('never infers a dimension line, because it cannot', () => {
+    /*
+     * A PDF's vector content is never read, so nothing in the file says whether a dimension is
+     * printed on it. `null` means "nobody has looked" and stays distinct from `false`, which means
+     * "somebody looked and there is none" — and the two lead to different advice.
+     */
+    const unanswered = recommendCalibration({ planImage: image(150), hasDimensionLine: null });
+    const answeredNo = recommendCalibration({ planImage: image(150), hasDimensionLine: false });
+
+    expect(unanswered.recommended).toBe('two-point');
+    expect(answeredNo.recommended).toBe('stated-ratio');
+  });
+});
+
+describe('the printed-scale route produces a real mapping', () => {
+  it('converts a stated ratio at a known resolution', () => {
+    /*
+     * 1:100 at 150 dpi. One pixel is 1/150 inch = 0.169333 mm on the sheet, and the sheet is at
+     * 1:100, so one pixel is 16.9333 mm in the building. Asserted as arithmetic rather than against
+     * a recorded constant, because the whole point of the route is that the number is derived.
+     */
+    const mapping = calibrateFromStatedRatio({
+      statedRatio: '1:100',
+      dotsPerInch: 150,
+      now: FIXTURE_NOW,
+    });
+
+    expect(mapping?.millimetresPerPixel).toBeCloseTo((25.4 / 150) * 100, 6);
+    expect(mapping?.calibration.method).toBe('stated-ratio');
+    // The evidence is kept, so a reviewer can see which of the two methods produced the scale.
+    expect(mapping?.calibration.statedRatio).toBe('1:100');
+    expect(mapping?.calibration.dotsPerInch).toBe(150);
+    expect(mapping?.calibration.knownDistance).toBeNull();
+  });
+
+  it('refuses a ratio it cannot parse rather than guessing one', () => {
+    for (const ratio of ['one to a hundred', '1:', '', '1:0']) {
+      expect(
+        calibrateFromStatedRatio({ statedRatio: ratio, dotsPerInch: 150, now: FIXTURE_NOW }),
+        ratio,
+      ).toBeNull();
+    }
   });
 });

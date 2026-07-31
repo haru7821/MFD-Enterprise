@@ -75,6 +75,8 @@ import { CatalogValidationError, DuplicateEquipmentIdError } from './errors';
 import {
   CLEARANCE_SIDES,
   FIELD_GROUP_ORIGIN,
+  INSTALLATION_FIELD_GROUPS,
+  fieldStatus,
   VERIFIED_FIELD_GROUPS,
   fieldVerification,
   groupsWithStatus,
@@ -185,21 +187,55 @@ describe('the shipped catalogue', () => {
     expect(ak98.category).toBe('dialysis_machine');
   });
 
-  it('has no verified group on the AK98 yet, because nothing is cited', () => {
-    // Its dimensions are real figures from the product owner. What is missing is the
-    // citation — no document, revision or section — so `verified` would be a claim the
-    // record cannot support. Per-group verification means each of these flips on its own
-    // the moment its reference arrives.
+  it('cites its dimensions to the approved specification, and nothing else', () => {
+    /*
+     * > Owner decision: *"Use the approved specification document as the authoritative source for
+     * > equipment dimensions and technical specifications. Do not wait for a service manual. Only
+     * > installation-specific values (such as maintenance clearances) remain draft until supported
+     * > by engineering evidence from drawings or future documentation."*
+     *
+     * This is per-group verification finally doing the thing it was built for: one group flips and
+     * the other eight do not. The dimensions have a document, a revision and a section behind them;
+     * the clearances have nothing, and saying so is the record's job.
+     */
     const ak98 = catalog.require('vantive_ak98');
 
-    expect(groupsWithStatus(ak98, 'verified')).toEqual([]);
+    expect(groupsWithStatus(ak98, 'verified')).toEqual(['manufacturerDimensions']);
+    // Still a draft record overall, because eight groups remain uncited — a partly verified record
+    // is still partly unknown, and the palette has to keep saying so.
     expect(catalog.draftObjects).toContain(ak98);
+  });
+
+  it('names the specification rather than a manufacturer document', () => {
+    // The distinction the source type exists for. An approved specification is the owner
+    // designating a figure to build against; a datasheet is the manufacturer describing their
+    // product. A report that printed one as the other would misstate where the number came from.
+    const source = fieldVerification(catalog.require('vantive_ak98'), 'manufacturerDimensions')
+      .source;
+
+    expect(source.type).toBe('approved_specification');
+    expect(source.document).toBe('MFD-E Vantive AK98 Object Specification');
+    expect(source.revision).toBe('0.1');
+  });
+
+  it('leaves every installation group draft, whatever the specification says', () => {
+    /*
+     * The owner's carve-out, and the disjoint source vocabularies make it structural: an
+     * installation group cannot cite `approved_specification` at all, so designating a document
+     * authoritative for dimensions cannot reach a clearance even by accident.
+     */
+    const ak98 = catalog.require('vantive_ak98');
+
+    for (const group of INSTALLATION_FIELD_GROUPS) {
+      expect(fieldStatus(ak98, group), group).toBe('draft');
+    }
   });
 
   it('invents no engineering data', () => {
     const ak98 = catalog.require('vantive_ak98');
 
-    // Everything not yet taken from a manual must be null, not a plausible number.
+    // Everything not yet supplied must be null, not a plausible number. The dimensions are now
+    // cited, but the weight was never given and is still absent from the specification.
     expect(ak98.manufacturerDimensions.weight).toBeNull();
     expect(ak98.environmental.specification).toBeNull();
     /*
@@ -221,11 +257,12 @@ describe('the shipped catalogue', () => {
     expect(ak98.connections.power.specification).toBeNull();
     expect(ak98.connections.roWater.specification).toBeNull();
     expect(ak98.connections.drain.specification).toBeNull();
-    // No group can cite itself, which is why none of them is verified.
-    for (const group of VERIFIED_FIELD_GROUPS) {
-      expect(fieldVerification(ak98, group).source.document).toBeNull();
-      expect(fieldVerification(ak98, group).source.revision).toBeNull();
-      expect(fieldVerification(ak98, group).source.section).toBeNull();
+    // Every group that is still draft cites nothing — which is why it is draft. The dimensions are
+    // excluded because they now do cite something, and that is the point of the group above.
+    for (const group of VERIFIED_FIELD_GROUPS.filter((name) => name !== 'manufacturerDimensions')) {
+      expect(fieldVerification(ak98, group).source.document, group).toBeNull();
+      expect(fieldVerification(ak98, group).source.revision, group).toBeNull();
+      expect(fieldVerification(ak98, group).source.section, group).toBeNull();
     }
   });
 

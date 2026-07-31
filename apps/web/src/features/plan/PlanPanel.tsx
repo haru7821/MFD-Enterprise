@@ -5,7 +5,12 @@ import { formatLength } from '@mfd/cad-engine';
 import { timestamp } from '@/editor/clock';
 import { activeLevel, planStatusOf } from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
-import { calibrateFromTwoPoints } from '@mfd/document-model';
+import {
+  calibrateFromStatedRatio,
+  calibrateFromTwoPoints,
+  recommendCalibration,
+  type CalibrationAdviceCode,
+} from '@mfd/document-model';
 
 import { PlanImportError, importPlanFile } from './planImport';
 
@@ -59,6 +64,24 @@ function Step({
   );
 }
 
+/**
+ * What the recommendation means, in words an engineer can act on.
+ *
+ * Typed as a total record over the advice codes, so adding a code to the document model without
+ * writing its sentence is a compile error rather than a blank line in the panel.
+ */
+const CALIBRATION_ADVICE_TEXT: Readonly<Record<CalibrationAdviceCode, string>> = {
+  prefer_two_point:
+    'Measure the printed dimension. It measures the drawing as it is, including any rescaling on printing or scanning.',
+  fallback_stated_ratio:
+    'No dimension to measure, but this drawing was rendered at a known resolution, so its printed scale can be converted. Weaker: it assumes the sheet was neither rescaled on printing nor cropped on scanning.',
+  no_method_available:
+    'Neither method can be completed for this drawing.',
+  awaiting_dimension_line_answer:
+    'Answer above and the stronger method will be offered first.',
+  no_plan_image: 'Import a drawing first.',
+};
+
 export function PlanPanel() {
   const { state, dispatch } = useEditor();
   const level = activeLevel(state);
@@ -67,9 +90,22 @@ export function PlanPanel() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [distance, setDistance] = useState('');
+  const [ratio, setRatio] = useState('');
+  /**
+   * Whether this drawing carries a printed dimension, as the engineer reports it.
+   *
+   * Session state rather than document state, and null until they answer. The application cannot
+   * work this out — a PDF's vector content is never read — so it asks, and `null` stays distinct
+   * from `false` because "nobody has looked" and "there is none" lead to different advice.
+   */
+  const [hasDimensionLine, setHasDimensionLine] = useState<boolean | null>(null);
 
   const picked = state.pick?.kind === 'calibrate' ? state.pick.points : [];
   const readyToCalibrate = picked.length === 2;
+  const advice = recommendCalibration({
+    planImage: level.planImage,
+    hasDimensionLine,
+  });
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -114,6 +150,35 @@ export function PlanPanel() {
 
     setError(null);
     setDistance('');
+    dispatch({ type: 'plan/setMapping', mapping });
+  }
+
+  /**
+   * The fallback route — Owner decision, Q-4.
+   *
+   * Only reachable when `renderDpi` is known, because the conversion needs it. The panel does not
+   * offer this button otherwise: a route that could only fail at the last step is worse than one
+   * that is honestly absent.
+   */
+  function commitStatedRatio() {
+    const dotsPerInch = level.planImage?.renderDpi;
+    if (dotsPerInch == null) return;
+
+    const mapping = calibrateFromStatedRatio({
+      statedRatio: ratio,
+      dotsPerInch,
+      now: timestamp(),
+      origin: level.coordinateMapping?.origin ?? { x: 0, y: 0 },
+      rotation: level.coordinateMapping?.rotation ?? 0,
+    });
+
+    if (!mapping) {
+      setError(`"${ratio}" is not a scale this can read. Try a form like 1:100.`);
+      return;
+    }
+
+    setError(null);
+    setRatio('');
     dispatch({ type: 'plan/setMapping', mapping });
   }
 
@@ -176,6 +241,33 @@ export function PlanPanel() {
         </Step>
 
         <Step index={2} title="Set the scale" done={status === 'calibrated'}>
+          {status !== 'none' && status !== 'calibrated' && state.pick?.kind !== 'calibrate' && (
+            <div className="mb-1.5" data-testid="calibration-advice" data-code={advice.code}>
+              <p className="text-[10px] text-ink-faint">
+                Does this drawing show a dimension with its value printed on it?
+              </p>
+              <div className="mt-1 flex items-center gap-1">
+                {([true, false] as const).map((answer) => (
+                  <button
+                    key={String(answer)}
+                    type="button"
+                    data-testid={`dimension-line-${answer ? 'yes' : 'no'}`}
+                    className={`rounded border px-1.5 py-0.5 text-[10px] ${
+                      hasDimensionLine === answer
+                        ? 'border-accent bg-accent/15 text-ink'
+                        : 'border-edge text-ink-muted hover:border-accent hover:text-ink'
+                    }`}
+                    onClick={() => setHasDimensionLine(answer)}
+                  >
+                    {answer ? 'Yes' : 'No'}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[10px] text-ink-faint" data-testid="calibration-advice-text">
+                {CALIBRATION_ADVICE_TEXT[advice.code]}
+              </p>
+            </div>
+          )}
           {status === 'none' ? (
             <p className="text-[10px] text-ink-faint">Import a drawing first.</p>
           ) : state.pick?.kind === 'calibrate' ? (
@@ -241,14 +333,62 @@ export function PlanPanel() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              data-testid="calibrate"
-              className="mt-1 rounded border border-amber-500/60 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-200 hover:bg-amber-500/20"
-              onClick={() => dispatch({ type: 'calibration/start' })}
-            >
-              Set scale — required
-            </button>
+            <div className="mt-1 flex flex-col gap-1.5">
+              {advice.available.includes('two-point') && (
+                <button
+                  type="button"
+                  data-testid="calibrate"
+                  className={`self-start rounded border px-1.5 py-0.5 text-[10px] ${
+                    advice.recommended === 'two-point'
+                      ? 'border-amber-500/60 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+                      : 'border-edge text-ink-muted hover:border-accent hover:text-ink'
+                  }`}
+                  onClick={() => dispatch({ type: 'calibration/start' })}
+                >
+                  Measure a dimension{advice.recommended === 'two-point' ? ' — recommended' : ''}
+                </button>
+              )}
+
+              {advice.available.includes('stated-ratio') && (
+                <div className="flex items-center gap-1.5" data-testid="stated-ratio-route">
+                  <input
+                    type="text"
+                    placeholder="1:100"
+                    value={ratio}
+                    data-testid="stated-ratio-input"
+                    className="w-20 rounded border border-edge bg-canvas px-1.5 py-0.5 font-mono text-[11px] text-ink outline-none focus:border-accent"
+                    onChange={(event) => setRatio(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') commitStatedRatio();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    data-testid="stated-ratio-apply"
+                    className={`rounded border px-1.5 py-0.5 text-[10px] ${
+                      advice.recommended === 'stated-ratio'
+                        ? 'border-amber-500/60 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+                        : 'border-edge text-ink-muted hover:border-accent hover:text-ink'
+                    }`}
+                    onClick={commitStatedRatio}
+                  >
+                    Use printed scale
+                  </button>
+                </div>
+              )}
+
+              {advice.available.length === 0 && (
+                <p
+                  className="rounded border border-amber-500/50 bg-amber-500/10 px-1.5 py-1 text-[10px] text-amber-200"
+                  data-testid="calibration-impossible"
+                >
+                  Calibration required, and neither method can be completed for this drawing. It was
+                  imported as pixels, so its resolution is unknown and a printed scale cannot be
+                  converted; and it carries no dimension to measure against. Every measurement on
+                  this level stays unavailable until a drawing with one or the other is imported.
+                </p>
+              )}
+            </div>
           )}
         </Step>
 

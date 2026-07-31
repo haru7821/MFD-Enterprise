@@ -189,12 +189,15 @@ test('states verification per field group, not per record', async ({ page }) => 
     await expect(page.getByTestId(`data-status-vantive_ak98-${group}`)).toBeVisible();
   }
 
-  // Today every group on the AK98 is draft, because no group cites a document. The
-  // assertion is on the attribute rather than the colour, so a future record with sourced
-  // dimensions and unsourced clearances changes this to a mixed row and this test with it.
+  /*
+   * The mixed row this test was written to anticipate. The owner designated the approved
+   * specification authoritative for dimensions, so that one group is now `verified` while the
+   * clearances stay `draft` — which is per-group verification doing the thing it exists for,
+   * visible in the palette.
+   */
   await expect(
     page.getByTestId('data-status-vantive_ak98-manufacturerDimensions'),
-  ).toHaveAttribute('data-status', 'draft');
+  ).toHaveAttribute('data-status', 'verified');
   await expect(page.getByTestId('data-status-vantive_ak98-serviceClearance')).toHaveAttribute(
     'data-status',
     'draft',

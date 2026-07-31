@@ -90,7 +90,7 @@ test('deletes a point and undo brings it back', async ({ page }) => {
   await expect(page.getByTestId('reference-point-list').locator('li')).toHaveCount(1);
 });
 
-test('survives a save and reopen at document version 4', async ({ page }) => {
+test('survives a save and reopen at the current document version', async ({ page }) => {
   await placePoint(page, 'ro_supply', { x: 0.45, y: 0.3 });
   await page.getByTestId('reference-point-label').fill('Loop tee');
 
@@ -105,7 +105,7 @@ test('survives a save and reopen at document version 4', async ({ page }) => {
     project: { levels: { referencePoints: { kind: string; label: string | null }[] }[] };
   };
 
-  expect(parsed.documentVersion).toBe(4);
+  expect(parsed.documentVersion).toBe(5);
   expect(parsed.project.levels[0]?.referencePoints).toEqual([
     expect.objectContaining({ kind: 'ro_supply', label: 'Loop tee' }),
   ]);

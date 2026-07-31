@@ -1,0 +1,355 @@
+{
+  "documentVersion": 4,
+  "project": {
+    "id": "prj_gangnam_3f_2026",
+    "name": "강남 성심병원 — 3F 인공신장실 증설",
+    "customer": {
+      "hospital": "강남 성심병원",
+      "site": "본관 3층 인공신장실",
+      "contact": "김수진 시설팀장"
+    },
+    "reviewedBy": "박지훈 (Vantive TS)",
+    "createdAt": "2026-03-02T01:15:00.000Z",
+    "updatedAt": "2026-03-11T07:42:00.000Z",
+    "ruleSetRef": {
+      "id": "dialysis",
+      "version": "0.1.0"
+    },
+    "settings": {
+      "reportRenderMode": "vector"
+    },
+    "levels": [
+      {
+        "id": "lvl_3f",
+        "name": "3F",
+        "elevation": 0,
+        "planImage": {
+          "sourceFormat": "png",
+          "sourceFileName": "gangnam-3f-dialysis.png",
+          "pageIndex": 0,
+          "pixelWidth": 2480,
+          "pixelHeight": 1754,
+          "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+          "importedAt": "2026-03-02T01:22:00.000Z"
+        },
+        "coordinateMapping": {
+          "millimetresPerPixel": 5,
+          "origin": {
+            "x": 120,
+            "y": 1600
+          },
+          "rotation": 0,
+          "calibration": {
+            "method": "two-point",
+            "pointA": {
+              "x": 120,
+              "y": 1600
+            },
+            "pointB": {
+              "x": 600,
+              "y": 1600
+            },
+            "knownDistance": 2400,
+            "statedRatio": null,
+            "dotsPerInch": null,
+            "calibratedAt": "2026-03-02T01:31:00.000Z"
+          },
+          "mappedAt": "2026-03-02T01:31:00.000Z"
+        },
+        "boundaries": [
+          {
+            "id": "bnd_treatment",
+            "kind": "space_outline",
+            "vertices": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 12000,
+                "y": 0
+              },
+              {
+                "x": 12000,
+                "y": 7000
+              },
+              {
+                "x": 0,
+                "y": 7000
+              }
+            ],
+            "label": "치료실",
+            "obstructionType": null
+          },
+          {
+            "id": "bnd_store",
+            "kind": "space_outline",
+            "vertices": [
+              {
+                "x": 12500,
+                "y": 0
+              },
+              {
+                "x": 16000,
+                "y": 0
+              },
+              {
+                "x": 16000,
+                "y": 3500
+              },
+              {
+                "x": 12500,
+                "y": 3500
+              }
+            ],
+            "label": "창고",
+            "obstructionType": null
+          },
+          {
+            "id": "bnd_corridor_wall",
+            "kind": "wall",
+            "vertices": [
+              {
+                "x": 0,
+                "y": 7000
+              },
+              {
+                "x": 16000,
+                "y": 7000
+              },
+              {
+                "x": 16000,
+                "y": 7200
+              },
+              {
+                "x": 0,
+                "y": 7200
+              }
+            ],
+            "label": "복도 벽",
+            "obstructionType": null
+          },
+          {
+            "id": "bnd_column_c4",
+            "kind": "obstruction",
+            "vertices": [
+              {
+                "x": 5800,
+                "y": 3000
+              },
+              {
+                "x": 6400,
+                "y": 3000
+              },
+              {
+                "x": 6400,
+                "y": 3600
+              },
+              {
+                "x": 5800,
+                "y": 3600
+              }
+            ],
+            "label": "구조 기둥 C4",
+            "obstructionType": "column"
+          }
+        ],
+        "spaces": [
+          {
+            "id": "spc_treatment",
+            "name": "치료실 A",
+            "function": "hemodialysis_treatment",
+            "boundaryId": "bnd_treatment"
+          },
+          {
+            "id": "spc_store",
+            "name": "소모품 창고",
+            "function": "storage",
+            "boundaryId": "bnd_store"
+          }
+        ],
+        "placements": [
+          {
+            "id": "plc_st01",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 1200,
+                "y": 1200
+              },
+              "rotation": 0,
+              "mirrored": false
+            },
+            "label": "ST-01",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st02",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 3000,
+                "y": 1200
+              },
+              "rotation": 0,
+              "mirrored": false
+            },
+            "label": "ST-02",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st03",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 4800,
+                "y": 1200
+              },
+              "rotation": 0,
+              "mirrored": false
+            },
+            "label": "ST-03",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st04",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 6600,
+                "y": 1200
+              },
+              "rotation": 0,
+              "mirrored": false
+            },
+            "label": "ST-04",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st05",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 8400,
+                "y": 1200
+              },
+              "rotation": 0,
+              "mirrored": false
+            },
+            "label": "ST-05",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st06",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 10200,
+                "y": 1200
+              },
+              "rotation": 0,
+              "mirrored": false
+            },
+            "label": "ST-06",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st07",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 1200,
+                "y": 5000
+              },
+              "rotation": 180000,
+              "mirrored": false
+            },
+            "label": "ST-07",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_st08",
+            "equipmentObjectId": "vantive_ak98",
+            "equipmentObjectVersion": "0.2.0",
+            "transform": {
+              "position": {
+                "x": 3000,
+                "y": 5000
+              },
+              "rotation": 180000,
+              "mirrored": true
+            },
+            "label": "ST-08",
+            "spaceId": "spc_treatment"
+          },
+          {
+            "id": "plc_bed01",
+            "equipmentObjectId": "dialysis_bed",
+            "equipmentObjectVersion": "0.1.0",
+            "transform": {
+              "position": {
+                "x": 9000,
+                "y": 4600
+              },
+              "rotation": 90000,
+              "mirrored": false
+            },
+            "label": "BED-01",
+            "spaceId": "spc_treatment"
+          }
+        ],
+        "referencePoints": []
+      },
+      {
+        "id": "lvl_b1",
+        "name": "B1 — 수처리실",
+        "elevation": -3600,
+        "planImage": null,
+        "coordinateMapping": null,
+        "boundaries": [
+          {
+            "id": "bnd_ro_room",
+            "kind": "space_outline",
+            "vertices": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 5000,
+                "y": 0
+              },
+              {
+                "x": 5000,
+                "y": 4000
+              },
+              {
+                "x": 0,
+                "y": 4000
+              }
+            ],
+            "label": "수처리실",
+            "obstructionType": null
+          }
+        ],
+        "spaces": [
+          {
+            "id": "spc_ro",
+            "name": "RO 수처리실",
+            "function": "water_treatment",
+            "boundaryId": "bnd_ro_room"
+          }
+        ],
+        "placements": [],
+        "referencePoints": []
+      }
+    ]
+  }
+}

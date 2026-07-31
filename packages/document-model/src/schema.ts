@@ -81,7 +81,7 @@ const identifierSchema = z.string().min(1);
  * it. Adding it later means either abandoning real project documents or writing the
  * migration you skipped, under pressure, against files you cannot inspect.
  */
-export const DOCUMENT_VERSION = 4;
+export const DOCUMENT_VERSION = 5;
 
 // ---------------------------------------------------------------------------
 // Placement
@@ -313,6 +313,18 @@ export const planImageSchema = z.strictObject({
   pixelHeight: z.number().int().positive(),
   /** `data:image/png;base64,…` — the rendered page or the imported raster. */
   dataUrl: z.string().startsWith('data:', 'must be a data URL'),
+  /**
+   * Pixels per inch of the stored image, when it is known. Version 5.
+   *
+   * Known for a PDF, because **we** rasterised it and chose the resolution. Null for an imported
+   * PNG or JPG, because a raster file carries no reliable statement of the size it was scanned at —
+   * and a wrong DPI turns a printed "1:100" into a scale that is confidently wrong.
+   *
+   * This is what makes the printed-scale calibration route possible at all: converting a ratio into
+   * millimetres per pixel needs the resolution, and inventing one would produce a mapping that
+   * measures nothing. Where it is null, that route is not offered — see `recommendCalibration`.
+   */
+  renderDpi: positiveMillimetres.nullable(),
   importedAt: timestampSchema,
 });
 

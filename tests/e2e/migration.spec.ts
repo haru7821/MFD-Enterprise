@@ -131,7 +131,7 @@ test('exports a PDF from the migrated project', async ({ page }) => {
   expect(bytes.length).toBeGreaterThan(10_000);
 });
 
-test('re-saves at version 4, and the saved file reopens', async ({ page }) => {
+test('re-saves at the current version, and the saved file reopens', async ({ page }) => {
   /*
    * The migration runs once. After a save the file is a v4 document, and opening it again takes no
    * migration path at all — which is what stops a project drifting a little further on every open.
@@ -145,7 +145,8 @@ test('re-saves at version 4, and the saved file reopens', async ({ page }) => {
 
   const path = await download.path();
   const saved = JSON.parse(readFileSync(path, 'utf8')) as { documentVersion: number };
-  expect(saved.documentVersion).toBe(4);
+  // 5 since Q-4 added `PlanImage.renderDpi`. The v3 fixture now travels two steps to get here.
+  expect(saved.documentVersion).toBe(5);
 
   await page.getByTestId('new-project').click();
   await expect(page.getByTestId('field-placed')).toHaveText('0');

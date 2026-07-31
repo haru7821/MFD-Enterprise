@@ -266,6 +266,8 @@ function planImage() {
     // does not carry a floor plan around in the repository.
     dataUrl:
       'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+    // A PDF we rendered, so the resolution is known and the printed-scale route is available.
+    renderDpi: 150,
     importedAt: TIMESTAMP,
   };
 }

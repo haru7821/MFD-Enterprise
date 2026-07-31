@@ -6,7 +6,14 @@ import {
 } from '@mfd/cad-engine';
 
 import { requireLevel } from './document';
-import type { CoordinateMapping, Level, MfdDocument, PlanImage, ScaleCalibration } from './schema';
+import type {
+  CalibrationMethod,
+  CoordinateMapping,
+  Level,
+  MfdDocument,
+  PlanImage,
+  ScaleCalibration,
+} from './schema';
 
 /**
  * Plan import and calibration.
@@ -222,5 +229,108 @@ export function planTransformOf(level: Level): PlanTransform | null {
     millimetresPerPixel: mapping.millimetresPerPixel,
     origin: mapping.origin,
     rotation: mapping.rotation,
+  };
+}
+
+/**
+ * Which calibration route to use for this drawing.
+ *
+ * > Owner decision, Q-4: *"Implement both calibration methods: dimension-line calibration
+ * > (preferred), printed drawing scale calibration (fallback). The application should
+ * > automatically recommend the most reliable method available for each drawing."*
+ *
+ * ## What the application can and cannot work out for itself
+ *
+ * It **cannot** tell whether a drawing carries a dimension line. A PDF is rasterised and its vector
+ * content is never read, so nothing in the file tells us. That is a question for the engineer, and
+ * `hasDimensionLine` is how they answer it — `null` until they have looked.
+ *
+ * It **can** tell whether the printed-scale route is even possible, and this is the useful half.
+ * Converting "1:100" into millimetres per pixel needs the resolution the image is stored at, and we
+ * only know that for a PDF we rasterised ourselves. A scanned PNG carries no trustworthy statement
+ * of the size it was scanned at, so the ratio cannot be converted at all — and offering the route
+ * anyway would produce a mapping that measures nothing while looking calibrated.
+ *
+ * ## Why dimension-line is preferred whenever it exists
+ *
+ * It measures the drawing **as it actually is**. A printed scale describes the sheet as the author
+ * intended it, before somebody printed it at 94 % to fit A3 or a scanner cropped a margin. Those
+ * changes are invisible and they are common, so a stated ratio is a claim about a document's
+ * history rather than a measurement of the file in front of us.
+ *
+ * ## The fourth outcome is the important one
+ *
+ * A raster scan with no dimension line has **no method at all**, and this returns exactly that
+ * rather than nudging the engineer towards the weaker route. Uncalibrated is a state the whole
+ * application already handles honestly — every rule YELLOW, never GREEN — and it is a better answer
+ * than a scale derived from a resolution nobody recorded.
+ */
+export const CALIBRATION_ADVICE_CODES = [
+  /** A dimension line was reported; measure against it. */
+  'prefer_two_point',
+  /** No dimension line, but the image's resolution is known, so the printed ratio converts. */
+  'fallback_stated_ratio',
+  /** No dimension line and an unknown resolution: neither route can produce a true scale. */
+  'no_method_available',
+  /** Nobody has said yet whether the drawing carries a dimension line. */
+  'awaiting_dimension_line_answer',
+  /** There is no drawing to calibrate. */
+  'no_plan_image',
+] as const;
+
+export type CalibrationAdviceCode = (typeof CALIBRATION_ADVICE_CODES)[number];
+
+export interface CalibrationAdvice {
+  /** The method to offer first, or null when none can produce a true scale. */
+  readonly recommended: CalibrationMethod | null;
+  /** Every method that could be completed for this drawing, strongest first. */
+  readonly available: readonly CalibrationMethod[];
+  readonly code: CalibrationAdviceCode;
+}
+
+export interface CalibrationAdviceInput {
+  readonly planImage: PlanImage | null;
+  /**
+   * Whether the drawing carries a printed dimension with a stated value.
+   *
+   * Null until an engineer has looked. Not inferred, because it cannot be: the vector content of a
+   * PDF is never read, and guessing would decide the calibration route on no evidence.
+   */
+  readonly hasDimensionLine: boolean | null;
+}
+
+export function recommendCalibration(input: CalibrationAdviceInput): CalibrationAdvice {
+  if (input.planImage === null) {
+    return { recommended: null, available: [], code: 'no_plan_image' };
+  }
+
+  // The printed ratio is convertible only when we know what resolution the image is stored at,
+  // which is true for a PDF we rendered and false for anything imported as pixels.
+  const ratioConvertible = input.planImage.renderDpi !== null;
+
+  if (input.hasDimensionLine === true) {
+    return {
+      recommended: 'two-point',
+      available: ratioConvertible ? ['two-point', 'stated-ratio'] : ['two-point'],
+      code: 'prefer_two_point',
+    };
+  }
+
+  if (input.hasDimensionLine === false) {
+    return ratioConvertible
+      ? { recommended: 'stated-ratio', available: ['stated-ratio'], code: 'fallback_stated_ratio' }
+      : { recommended: null, available: [], code: 'no_method_available' };
+  }
+
+  /*
+   * Unanswered. Two-point leads because it is the better method and because an engineer who has not
+   * yet looked for a dimension line is being asked to go and look — but the ratio route is listed
+   * when it is possible, so they can see there is a fallback before they conclude the drawing is
+   * unusable.
+   */
+  return {
+    recommended: 'two-point',
+    available: ratioConvertible ? ['two-point', 'stated-ratio'] : ['two-point'],
+    code: 'awaiting_dimension_line_answer',
   };
 }

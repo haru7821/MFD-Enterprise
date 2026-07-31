@@ -94,11 +94,12 @@ describe('buildReport', () => {
     // `specification_data` and `installation_data`. A consumer holding a version 1 report would
     // read `manufacturer_data`, find nothing, and print an empty datasheet without saying so.
     expect(provenance.reportVersion).toBe(2);
-    // 4 since Sprint 6: `Level.referencePoints`. Written as a literal rather than imported from
-    // the schema on purpose — a shape lock that read `DOCUMENT_VERSION` would follow any bump
+    // 5 since Q-4: `PlanImage.renderDpi`, which is what lets the printed-scale calibration route
+    // be offered for a drawing whose resolution we know. Written as a literal rather than imported
+    // from the schema on purpose — a shape lock that read `DOCUMENT_VERSION` would follow any bump
     // silently, and the point of this line is that changing what a report says about its own
     // provenance has to be a deliberate edit somebody made.
-    expect(provenance.documentVersion).toBe(4);
+    expect(provenance.documentVersion).toBe(5);
     expect(provenance.evaluationResultVersion).toBe(2);
     expect(provenance.ruleSetId).toBe('fixture');
     expect(provenance.ruleSetVersion).toBe('0.0.1');

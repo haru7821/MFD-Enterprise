@@ -204,6 +204,55 @@ export const MIGRATIONS: readonly Migration[] = [
       return { ...document, project: { ...project, levels } };
     },
   },
+  {
+    from: 4,
+    to: 5,
+    /**
+     * Version 5 adds `PlanImage.renderDpi`.
+     *
+     * **Every existing plan image gets `null`, and the temptation here is real.**
+     *
+     * A version 4 PDF import was rendered at 150 dpi, and the value is sitting in a constant one
+     * package over — so it would be easy to write 150 and have every old project gain the
+     * printed-scale calibration route for free.
+     *
+     * It would also be wrong twice. A page large enough to hit the 4,096 px cap was rendered at
+     * *less* than 150 dpi, and the page size needed to work out how much less is not in the
+     * document. And a PNG or JPG import was never rendered by us at any resolution at all, so
+     * there is no figure to recover. Writing 150 would put a confident scale behind drawings that
+     * do not have one, which is the failure this field exists to prevent.
+     *
+     * Null means "we do not know what resolution this image is", the printed-scale route is not
+     * offered for it, and two-point calibration — which measures the image as it actually is —
+     * works exactly as before.
+     */
+    migrate(document) {
+      const project = document['project'];
+      if (!isRecord(project) || !Array.isArray(project['levels'])) return document;
+
+      const occupied: DocumentIssue[] = [];
+      project['levels'].forEach((level, index) => {
+        const planImage = isRecord(level) ? level['planImage'] : null;
+        if (isRecord(planImage) && carriesData(planImage['renderDpi'])) {
+          occupied.push({
+            path: `project.levels.${index}.planImage.renderDpi`,
+            message: 'a version 4 plan image cannot carry a render resolution',
+          });
+        }
+      });
+      refuseIfOccupied(4, 5, occupied);
+
+      const levels = project['levels'].map((level) => {
+        if (!isRecord(level)) return level;
+        const planImage = level['planImage'];
+        return isRecord(planImage)
+          ? { ...level, planImage: { ...planImage, renderDpi: null } }
+          : level;
+      });
+
+      return { ...document, project: { ...project, levels } };
+    },
+  },
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {

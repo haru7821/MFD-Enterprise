@@ -77,6 +77,25 @@ export const DATA_STATUSES = ['draft', 'datasheet_verified', 'verified'] as cons
 export const SPECIFICATION_SOURCE_TYPES = [
   'manufacturer_manual',
   'datasheet',
+  /**
+   * An approved MFD-E specification document.
+   *
+   * > Owner decision: *"Use the approved specification document as the authoritative source for
+   * > equipment dimensions and technical specifications. Do not wait for a service manual."*
+   *
+   * Its own document class, not folded into `datasheet`, because the two are different kinds of
+   * authority and a report that conflated them would misstate where a figure came from. A datasheet
+   * is the manufacturer describing their product; an approved specification is this project's owner
+   * designating a figure as the one to build against. Both are citable, and a reader is entitled to
+   * know which they are looking at.
+   *
+   * It is a *specification* source and not an installation one, which matters: designating a
+   * document authoritative for dimensions does not make it authoritative for clearances. The
+   * owner's decision says exactly that — *"only installation-specific values … remain draft until
+   * supported by engineering evidence"* — and the disjoint vocabularies mean it could not reach
+   * them even if somebody tried.
+   */
+  'approved_specification',
   'field_measurement',
   'estimate',
 ] as const;

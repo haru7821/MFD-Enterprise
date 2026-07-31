@@ -42,6 +42,8 @@ export function fixturePlanImage(overrides: Partial<PlanImage> = {}): PlanImage 
     pixelWidth: 2_000,
     pixelHeight: 1_400,
     dataUrl: FIXTURE_PLAN_DATA_URL,
+    // Rendered by us at 150 dpi, so the printed-scale route is available on this fixture.
+    renderDpi: 150,
     importedAt: FIXTURE_NOW,
     ...overrides,
   };

@@ -70,7 +70,7 @@ function loadImage(dataUrl: string): Promise<HTMLImageElement> {
 async function rasterisePdf(
   file: File,
   pageIndex: number,
-): Promise<{ dataUrl: string; width: number; height: number }> {
+): Promise<{ dataUrl: string; width: number; height: number; dpi: number }> {
   const pdfjs = await import('pdfjs-dist');
   const workerSource = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
   pdfjs.GlobalWorkerOptions.workerSrc = workerSource.default;
@@ -100,7 +100,21 @@ async function rasterisePdf(
   context.fillRect(0, 0, canvas.width, canvas.height);
   await page.render({ canvas, canvasContext: context, viewport }).promise;
 
-  return { dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height };
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    width: canvas.width,
+    height: canvas.height,
+    /*
+     * The resolution actually used, not the constant. A page large enough to hit
+     * `MAX_PLAN_PIXELS` is rendered at less than `PDF_RENDER_DPI`, and this is the only place
+     * that scaling is known — recovering it later from the pixel dimensions alone is impossible
+     * without the page size, which the document does not carry.
+     *
+     * This is what makes the printed-scale calibration route available for a PDF: converting a
+     * stated ratio to millimetres per pixel needs it.
+     */
+    dpi: PDF_RENDER_DPI * cap,
+  };
 }
 
 function document_createCanvas(width: number, height: number): HTMLCanvasElement {
@@ -140,6 +154,7 @@ export async function importPlanFile(
       pixelWidth: rendered.width,
       pixelHeight: rendered.height,
       dataUrl: rendered.dataUrl,
+      renderDpi: rendered.dpi,
       importedAt: options.now,
     };
   }
@@ -158,6 +173,14 @@ export async function importPlanFile(
     pixelWidth: image.naturalWidth,
     pixelHeight: image.naturalHeight,
     dataUrl,
+    /*
+     * Null, and it has to be. A PNG or JPG arrives as pixels with no trustworthy statement of the
+     * size it was scanned at — a file's own DPI metadata is routinely wrong or absent, and a wrong
+     * resolution turns a printed "1:100" into a scale that is confidently incorrect. Null withholds
+     * the printed-scale route for this drawing and leaves two-point, which measures the image as it
+     * actually is.
+     */
+    renderDpi: null,
     importedAt: options.now,
   };
 }

@@ -28,7 +28,7 @@ import { loadDocument, parseDocument, saveDocument } from './serialize';
  * The first test below exists to keep it that way.
  */
 
-const FIXTURE = join(
+const MIGRATION_FIXTURES = join(
   dirname(fileURLToPath(import.meta.url)),
   '..',
   '..',
@@ -36,8 +36,17 @@ const FIXTURE = join(
   'fixtures',
   'projects',
   'migration',
-  'v3-project.json',
 );
+
+/**
+ * The file one version behind the build — the step this suite is mainly about.
+ *
+ * Renamed from a constant pointing at v3 when `DOCUMENT_VERSION` reached 5. The v3 file is still
+ * here and still tested, but it now exercises a *chain*; only the newest file tests the step that
+ * an engineer upgrading today will actually take.
+ */
+const FIXTURE = join(MIGRATION_FIXTURES, 'v4-project.json');
+const V3_FIXTURE = join(MIGRATION_FIXTURES, 'v3-project.json');
 
 function v3Text(): string {
   return readFileSync(FIXTURE, 'utf8');
@@ -56,29 +65,31 @@ function migrated(): MfdDocument {
   return loadDocument(v3Text());
 }
 
-describe('the fixture is genuinely a version 3 file', () => {
+describe('the fixture is genuinely a version 4 file', () => {
   /*
    * These four assertions are not about the migration. They are about the fixture staying the thing
    * the migration is tested against — a file somebody could quietly "fix" into a v4 document, after
    * which every test below would pass while testing nothing at all.
    */
 
-  it('claims version 3', () => {
-    expect(v3Raw()['documentVersion']).toBe(3);
+  it('claims version 4', () => {
+    expect(v3Raw()['documentVersion']).toBe(4);
   });
 
-  it('carries no reference points, because version 3 had none', () => {
+  it('carries no render resolution, because version 4 had none', () => {
     for (const level of levelsOf(v3Raw())) {
-      expect(level, String(level['id'])).not.toHaveProperty('referencePoints');
+      const planImage = level['planImage'] as Record<string, unknown> | null;
+      if (planImage) expect(planImage, String(level['id'])).not.toHaveProperty('renderDpi');
     }
   });
 
-  it('carries the fields version 3 did have', () => {
-    // Settings arrive in v3 and obstruction types in v2, so a genuine v3 file has both. A fixture
-    // missing them would be exercising the v2 → v3 or v1 → v2 step by accident.
+  it('carries the fields version 4 did have', () => {
+    // Reference points arrive in v4, settings in v3, obstruction types in v2. A fixture missing any
+    // of them would be exercising an earlier step by accident.
     const raw = v3Raw();
     expect(raw['project']).toHaveProperty('settings');
     for (const level of levelsOf(raw)) {
+      expect(level, String(level['id'])).toHaveProperty('referencePoints');
       for (const boundary of level['boundaries'] as Record<string, unknown>[]) {
         expect(boundary, String(boundary['id'])).toHaveProperty('obstructionType');
       }
@@ -86,9 +97,46 @@ describe('the fixture is genuinely a version 3 file', () => {
   });
 
   it('is one version behind the build, so this file tests the current step', () => {
-    // When DOCUMENT_VERSION moves to 5, this fails — and it should: a v3 fixture would then be
-    // testing v3 → v4 → v5, and nothing in the repository would cover a real v4 file opening.
+    /*
+     * When DOCUMENT_VERSION moves to 6, this fails — and it should. It already fired once: a v3
+     * fixture was the newest file here until `renderDpi` arrived, at which point it silently
+     * started testing v3 → v4 → v5 and nothing covered a real v4 file opening. The v4 file was
+     * added because this line failed, which is the whole reason it is written this way.
+     */
     expect(v3Raw()['documentVersion']).toBe(DOCUMENT_VERSION - 1);
+  });
+});
+
+describe('the version 3 file still opens, two steps along', () => {
+  /*
+   * Kept and still asserted. A chain is not the same test as a step: it is where a migration that
+   * assumed the shape its predecessor produced — rather than the shape on disk — goes wrong, and
+   * that failure only appears when two of them run in sequence.
+   */
+  function v3(): MfdDocument {
+    return loadDocument(readFileSync(V3_FIXTURE, 'utf8'));
+  }
+
+  it('arrives at the current version', () => {
+    expect(v3().documentVersion).toBe(DOCUMENT_VERSION);
+  });
+
+  it('gains both fields the two steps add, and neither is invented', () => {
+    for (const level of v3().project.levels) {
+      expect(level.referencePoints, level.id).toEqual([]);
+      expect(level.planImage?.renderDpi ?? null, level.id).toBeNull();
+    }
+  });
+
+  it('still loses nothing', () => {
+    const stripped = JSON.parse(JSON.stringify(v3())) as Record<string, unknown>;
+    stripped['documentVersion'] = 3;
+    for (const level of levelsOf(stripped)) {
+      delete level['referencePoints'];
+      delete (level['planImage'] as Record<string, unknown> | null)?.['renderDpi'];
+    }
+
+    expect(stripped).toEqual(JSON.parse(readFileSync(V3_FIXTURE, 'utf8')));
   });
 });
 
@@ -105,10 +153,13 @@ describe('opening it', () => {
      * quietly normalised shows up here, without a test having to know which fields exist.
      */
     const stripped = JSON.parse(JSON.stringify(migrated())) as Record<string, unknown>;
-    stripped['documentVersion'] = 3;
+    stripped['documentVersion'] = 4;
     for (const level of levelsOf(stripped)) {
-      expect(level['referencePoints']).toEqual([]);
-      delete level['referencePoints'];
+      const planImage = level['planImage'] as Record<string, unknown> | null;
+      if (planImage) {
+        expect(planImage['renderDpi']).toBeNull();
+        delete planImage['renderDpi'];
+      }
     }
 
     expect(stripped).toEqual(v3Raw());
@@ -176,16 +227,23 @@ describe('opening it', () => {
     expect(b1?.coordinateMapping).toBeNull();
   });
 
-  it('creates the version 4 provenance field on every level, empty', () => {
-    // Empty is the honest value: no engineer has placed a point. Seeding one would score four
-    // criteria off a position nobody chose, and for a criterion that minimises, a convenient guess
-    // is the best possible score (AD-18).
+  it('creates the version 5 field as null, rather than recovering a plausible resolution', () => {
+    /*
+     * The temptation this guards against. A v4 PDF import was rendered at 150 dpi and the constant
+     * is one package away — but a page large enough to hit the 4,096 px cap was rendered at less
+     * than that, and the page size needed to work out how much less is not in the document. A PNG
+     * import was never rendered by us at all.
+     *
+     * Null means "we do not know what resolution this is", which withholds the printed-scale
+     * calibration route for this drawing. Writing 150 would offer it, backed by a number nobody
+     * measured.
+     */
     const levels = migrated().project.levels;
 
     expect(levels).toHaveLength(2);
-    for (const level of levels) {
-      expect(level.referencePoints, level.id).toEqual([]);
-    }
+    expect(levels[0]?.planImage?.renderDpi ?? null).toBeNull();
+    // Reference points came from the previous step and are still empty rather than seeded.
+    for (const level of levels) expect(level.referencePoints, level.id).toEqual([]);
   });
 
   it('keeps the rooms, the wall and the typed column', () => {
@@ -258,8 +316,15 @@ describe('no silent repair', () => {
    * cleanly and saved over the original.
    */
 
-  it('refuses a version 3 file that already carries reference points', () => {
+  it('refuses a version 4 file that already carries a render resolution', () => {
     const raw = v3Raw();
+    (levelsOf(raw)[0]!['planImage'] as Record<string, unknown>)['renderDpi'] = 300;
+
+    expect(() => parseDocument(raw)).toThrow(DocumentMigrationError);
+  });
+
+  it('refuses a version 3 file that already carries reference points', () => {
+    const raw = JSON.parse(readFileSync(V3_FIXTURE, 'utf8')) as Record<string, unknown>;
     levelsOf(raw)[0]!['referencePoints'] = [
       { id: 'rp1', kind: 'drain', position: { x: 1_000, y: 2_000 }, label: 'Drain A' },
     ];
@@ -268,7 +333,7 @@ describe('no silent repair', () => {
   });
 
   it('names the level whose points would have been deleted', () => {
-    const raw = v3Raw();
+    const raw = JSON.parse(readFileSync(V3_FIXTURE, 'utf8')) as Record<string, unknown>;
     levelsOf(raw)[1]!['referencePoints'] = [
       { id: 'rp1', kind: 'ro_supply', position: { x: 0, y: 0 }, label: null },
     ];
@@ -291,20 +356,20 @@ describe('no silent repair', () => {
   it('refuses rather than overwriting, so the file on disk is untouched', () => {
     // The property that matters more than the error type: nothing was written. The engineer still
     // has their points, and can open the project with a build that understands them.
-    const before = v3Text();
-    const raw = v3Raw();
+    const before = readFileSync(V3_FIXTURE, 'utf8');
+    const raw = JSON.parse(before) as Record<string, unknown>;
     levelsOf(raw)[0]!['referencePoints'] = [
       { id: 'rp1', kind: 'drain', position: { x: 1, y: 2 }, label: null },
     ];
 
     expect(() => parseDocument(raw)).toThrow(DocumentMigrationError);
-    expect(readFileSync(FIXTURE, 'utf8')).toBe(before);
+    expect(readFileSync(V3_FIXTURE, 'utf8')).toBe(before);
   });
 
   it('lets an empty array through, because an empty field loses nothing', () => {
     // The line between refusing and pedantry. A file carrying the key with nothing in it is an
     // ordinary file; refusing it would cost an engineer their project to protect no data.
-    const raw = v3Raw();
+    const raw = JSON.parse(readFileSync(V3_FIXTURE, 'utf8')) as Record<string, unknown>;
     for (const level of levelsOf(raw)) level['referencePoints'] = [];
 
     expect(() => parseDocument(raw)).not.toThrow();
@@ -313,7 +378,7 @@ describe('no silent repair', () => {
   it('refuses a version 2 file that already carries settings', () => {
     // The same rule one step earlier: overwriting would silently replace a chosen render mode with
     // the default, and a report re-issued a month later would differ in a way nobody chose.
-    const raw = v3Raw();
+    const raw = JSON.parse(readFileSync(V3_FIXTURE, 'utf8')) as Record<string, unknown>;
     for (const level of levelsOf(raw)) delete level['referencePoints'];
     raw['documentVersion'] = 2;
 
@@ -321,7 +386,7 @@ describe('no silent repair', () => {
   });
 
   it('refuses a version 1 file whose boundaries already carry an obstruction type', () => {
-    const raw = v3Raw();
+    const raw = JSON.parse(readFileSync(V3_FIXTURE, 'utf8')) as Record<string, unknown>;
     delete (raw['project'] as Record<string, unknown>)['settings'];
     raw['documentVersion'] = 1;
 

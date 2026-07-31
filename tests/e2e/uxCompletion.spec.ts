@@ -516,3 +516,70 @@ async function footprintLeftPx(page: Page): Promise<number | null> {
     return null;
   });
 }
+
+test.describe('calibration method recommendation', () => {
+  /*
+   * Owner decision, Q-4: *"Implement both calibration methods … The application should
+   * automatically recommend the most reliable method available for each drawing."*
+   *
+   * The imported fixture here is a PNG, so its resolution is unknown and the printed-scale route
+   * cannot be offered — which makes this the case that matters: a scan with no dimension line has
+   * no method at all, and the panel must say so rather than nudge towards the weaker route.
+   */
+
+  async function importPng(page: Page) {
+    await page.getByTestId('plan-file-input').setInputFiles({
+      name: 'ward.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+    await expect(page.getByTestId('calibration-advice')).toBeVisible();
+  }
+
+  test('asks whether the drawing carries a dimension, rather than guessing', async ({ page }) => {
+    // A PDF's vector content is never read, so nothing in the file answers this. Guessing would
+    // pick the calibration route on no evidence.
+    await importPng(page);
+
+    await expect(page.getByTestId('calibration-advice')).toHaveAttribute(
+      'data-code',
+      'awaiting_dimension_line_answer',
+    );
+  });
+
+  test('recommends measuring a dimension when the drawing has one', async ({ page }) => {
+    await importPng(page);
+    await page.getByTestId('dimension-line-yes').click();
+
+    await expect(page.getByTestId('calibration-advice')).toHaveAttribute(
+      'data-code',
+      'prefer_two_point',
+    );
+    await expect(page.getByTestId('calibrate')).toContainText('recommended');
+  });
+
+  test('offers no method for a raster scan with no dimension, and says why', async ({ page }) => {
+    /*
+     * The honest dead end. A PNG carries no trustworthy statement of the size it was scanned at, so
+     * "1:100" cannot be converted by any arithmetic that is not invented. Uncalibrated is a state
+     * this application handles properly — every rule YELLOW, never GREEN — and it beats a scale
+     * derived from a resolution nobody recorded.
+     */
+    await importPng(page);
+    await page.getByTestId('dimension-line-no').click();
+
+    await expect(page.getByTestId('calibration-advice')).toHaveAttribute(
+      'data-code',
+      'no_method_available',
+    );
+    await expect(page.getByTestId('calibration-impossible')).toContainText(
+      'neither method can be completed',
+    );
+    // Neither route is offered — not offered-and-then-failed at the last step.
+    await expect(page.getByTestId('calibrate')).toHaveCount(0);
+    await expect(page.getByTestId('stated-ratio-route')).toHaveCount(0);
+  });
+});
