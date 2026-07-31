@@ -113,6 +113,16 @@ export const DIMENSION_NAMES = [
   'station_row_spacing',
   /** Clear width of a circulation corridor. */
   'corridor_width',
+  /**
+   * Wall face to wall face across a treatment room.
+   *
+   * Added by the Hospital_044 verification, which needed it and found no name for it. It is the
+   * figure that decides whether a hall can hold two rows of stations facing each other or only one,
+   * so it is worth carrying across drawings — and it is the one dimension that hall did **not**
+   * print, which is why every reading of it so far carries `calibrated_measurement` rather than
+   * `dimension_line`.
+   */
+  'treatment_room_width',
   /** Clear opening of the door equipment is delivered through. */
   'door_clear_width',
   /** Allowance around a machine's footprint for its delivery crate. */

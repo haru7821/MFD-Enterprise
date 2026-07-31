@@ -1,0 +1,249 @@
+{
+  "version": 1,
+  "drawingId": "Hospital_044/dialysis.pdf",
+  "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4",
+  "verifiedAt": "2026-07-31T00:00:00.000Z",
+  "observer": {
+    "type": "ai",
+    "name": "MFD Drawing Verification Harness",
+    "version": "1.0"
+  },
+  "page": {
+    "widthPt": 841.92004,
+    "heightPt": 1190.52002,
+    "sheetSize": "A3",
+    "claimedSheetSize": "A3",
+    "renderDpi": 150,
+    "pixelWidth": 1754,
+    "pixelHeight": 2480
+  },
+  "dimensions": [
+    {
+      "label": "17,600",
+      "statedMm": 17600,
+      "measuredPt": 498.76285380736454,
+      "impliedScale": 100.0270236620234,
+      "role": "primary",
+      "from": {
+        "x": 1382.8617430757135,
+        "y": 1316.99578457372
+      },
+      "to": {
+        "x": 1215.3862262233863,
+        "y": 291.49177166098343
+      }
+    },
+    {
+      "label": "4,900",
+      "statedMm": 4900,
+      "measuredPt": 138.86509555142703,
+      "impliedScale": 100.02343443017077,
+      "role": "consistent",
+      "from": {
+        "x": 1474.351884556022,
+        "y": 1876.427392962772
+      },
+      "to": {
+        "x": 1427.6237836959222,
+        "y": 1590.9238112143694
+      }
+    },
+    {
+      "label": "4,500",
+      "statedMm": 4500,
+      "measuredPt": 127.48232686594042,
+      "impliedScale": 100.0601873640497,
+      "role": "consistent",
+      "from": {
+        "x": 1426.5923035655385,
+        "y": 1585.1357694869403
+      },
+      "to": {
+        "x": 1383.8896211799936,
+        "y": 1323.0030496894883
+      }
+    },
+    {
+      "label": "3000",
+      "statedMm": 3000,
+      "measuredPt": 87.66139521886977,
+      "impliedScale": 97.00891694276253,
+      "role": "inconsistent",
+      "from": {
+        "x": 728.1075719398995,
+        "y": 1546.7152670897478
+      },
+      "to": {
+        "x": 698.6336999684145,
+        "y": 1366.4814101737506
+      }
+    },
+    {
+      "label": "2,600",
+      "statedMm": 2600,
+      "measuredPt": 73.68400621879131,
+      "impliedScale": 100.02277452549698,
+      "role": "consistent",
+      "from": {
+        "x": 816.1780882425396,
+        "y": 697.1497202702369
+      },
+      "to": {
+        "x": 664.6739569475259,
+        "y": 721.8744160413155
+      }
+    },
+    {
+      "label": "2,500",
+      "statedMm": 2500,
+      "measuredPt": 70.88275311168152,
+      "impliedScale": 99.97656499124423,
+      "role": "consistent",
+      "from": {
+        "x": 752.624046787668,
+        "y": 516.5845565667224
+      },
+      "to": {
+        "x": 728.9027025419723,
+        "y": 370.8298440084085
+      }
+    },
+    {
+      "label": "2,000",
+      "statedMm": 2000,
+      "measuredPt": 56.67990626789438,
+      "impliedScale": 100.02294837586872,
+      "role": "consistent",
+      "from": {
+        "x": 696.3236401423708,
+        "y": 1352.3831494146577
+      },
+      "to": {
+        "x": 677.9070874328461,
+        "y": 1235.7449992237846
+      }
+    }
+  ],
+  "calibration": {
+    "method": "two-point",
+    "fromDimension": "17,600",
+    "pointA": {
+      "x": 1382.8617430757135,
+      "y": 1316.99578457372
+    },
+    "pointB": {
+      "x": 1215.3862262233863,
+      "y": 291.49177166098343
+    },
+    "knownDistanceMm": 17600,
+    "millimetresPerPixel": 16.937909340102628
+  },
+  "crossCheck": {
+    "statedRatio": "1:100",
+    "millimetresPerPixel": 16.933333333333334,
+    "deviationFraction": 0.00027023662023384354,
+    "agrees": true
+  },
+  "mappingChecks": [
+    {
+      "label": "4,900",
+      "statedMm": 4900,
+      "mappedMm": 4900.175831155745,
+      "deviationFraction": 0.000035883909335732156
+    },
+    {
+      "label": "4,500",
+      "statedMm": 4500,
+      "mappedMm": 4498.508531084643,
+      "deviationFraction": -0.0003314375367459155
+    },
+    {
+      "label": "2,600",
+      "statedMm": 2600,
+      "mappedMm": 2600.110452394678,
+      "deviationFraction": 0.00004248169026066506
+    },
+    {
+      "label": "2,500",
+      "statedMm": 2500,
+      "mappedMm": 2501.261762463624,
+      "deviationFraction": 0.0005047049854496333
+    },
+    {
+      "label": "2,000",
+      "statedMm": 2000,
+      "mappedMm": 2000.0814870231407,
+      "deviationFraction": 0.00004074351157035139
+    }
+  ],
+  "discrepancies": [
+    {
+      "code": "VD-1",
+      "subject": "printed dimension \"3000\"",
+      "detail": "The label states 3,000 mm; the geometry beneath it measures 3,093 mm at the sheet's scale of 1:100.02 (implied 1:97.01, -3.01 % out). Excluded from the calibration and from the knowledge base. Not corrected — a dimension text that disagrees with its own geometry is a question for whoever holds the CAD file.",
+      "resolved": false
+    },
+    {
+      "code": "VD-4",
+      "subject": "hall width",
+      "detail": "The drawing dimensions the hall along its length (17,600 mm) but not across it. The width used below, 7,402 mm, is a calibrated measurement between the inner faces of the two walls (200 mm and 199 mm thick), not a printed dimension. It carries the weaker `calibrated_measurement` method wherever it is recorded, and a printed dimension would supersede it.",
+      "resolved": false
+    },
+    {
+      "code": "VD-5",
+      "subject": "rule engine — equipment flush against a room wall",
+      "detail": "10 of 60 findings report equipment as extending beyond the room outline while every corner of that equipment is inside the outline. The cause is a T-junction: an edge of the footprint ends on the interior of a room edge, and `segmentIntersectionPoint` in @mfd/cad-engine reports that touch as a proper crossing, so `polygonContainsPolygon` refuses containment. Its own documentation says shared endpoints and collinear overlap are not crossings; an endpoint touching the interior of another segment is neither of those cases and is not excluded. Equipment stood against a wall is the ordinary layout — it is what this drawing shows — so every such machine reports RED. Reported, not fixed, per the owner instruction to stop and report a discrepancy first.",
+      "resolved": false
+    }
+  ],
+  "pipeline": {
+    "room": {
+      "lengthMm": 17600,
+      "widthMm": 7401.898796875506,
+      "lengthSource": "printed dimension \"17,600\"",
+      "widthSource": "calibrated measurement between wall inner faces"
+    },
+    "placements": [
+      {
+        "equipmentObjectId": "dialysis_bed",
+        "count": 10,
+        "footprint": {
+          "width": 1000,
+          "depth": 2100
+        }
+      },
+      {
+        "equipmentObjectId": "vantive_ak98",
+        "count": 10,
+        "footprint": {
+          "width": 800,
+          "depth": 800
+        }
+      }
+    ],
+    "evaluation": {
+      "red": 10,
+      "yellow": 50,
+      "green": 0,
+      "reasonCodes": [
+        "RC-110",
+        "RC-202",
+        "RC-302"
+      ]
+    },
+    "optimiser": {
+      "proposals": 3,
+      "resolvedCount": 10,
+      "emptyReason": null
+    },
+    "installationPlan": {
+      "stages": 6,
+      "blockers": 12
+    },
+    "report": {
+      "reportVersion": 2,
+      "overallVerdict": "not_acceptable",
+      "pdfBytes": 162990
+    }
+  }
+}

@@ -64,8 +64,12 @@ produces a confident feasibility report a TS engineer might sign.
 any result that *reads one of them* at YELLOW.
 
 **Next step, per the owner:** real hospital drawings decide whether A-1a is resolvable from
-installation drawings and field-validated data. See `docs/verification/DRAWING_IMPORT_VERIFICATION.md`
-— the drawing folder has not yet been provided.
+installation drawings and field-validated data. The drawings have arrived and the first has been
+verified end to end — see `docs/verification/HOSPITAL_044_VERIFICATION.md`. **It does not resolve
+A-1a.** Hospital_044 dimensions its bed pitch and its overall length; it dimensions no service
+clearance around any machine, and neither does the analysis of the other 299 sheets. A layout
+drawing shows where equipment went, not how much space its manufacturer or its installer requires
+around it, and the two are not interchangeable.
 
 Verification is per group, so these can arrive in any order and each is worth having on its
 own — citing the dimensions alone makes the dimension and collision reporting verified while
@@ -85,15 +89,38 @@ inverts left and right, putting both side clearances on the wrong face of every 
 This cannot be settled from inside the code — only the document settles it. It is item one
 of reading the manual, before any figure is transcribed.
 
-### A-3. One real hospital drawing
+### A-3. One real hospital drawing — **resolved**
 
-Sprint 4's acceptance criterion "a 900 mm machine measures 900 mm against the drawing's own
-dimension lines" is unverified. The maths is tested and a synthetic plan round-trips
-correctly, but nobody has calibrated against a real printed dimension line and confirmed
-the result.
+Sprint 4's acceptance criterion — "a 900 mm machine measures 900 mm against the drawing's own
+dimension lines" — is verified. `Hospital_044/dialysis.pdf`, calibrated from its printed 17,600 mm
+dimension, reproduces the sheet's other five consistent dimensions to within 0.05 %, and agrees with
+its printed 1:100 to 0.027 %. The drawing is plotted about 9° off the sheet, so the rotation step
+was exercised too.
 
-**Needed:** one PDF floor plan of the kind TS engineers actually receive — ideally one that
-is scanned slightly off square, since that is the case the rotation step exists for.
+Full account in `docs/verification/HOSPITAL_044_VERIFICATION.md`; the record it rests on is
+`knowledge/verification/Hospital_044-dialysis.json` and CI re-derives its arithmetic on every push.
+
+### A-4. Is equipment against a wall inside the room? — **raised by the verification, awaiting a decision**
+
+Found by placing a real layout on a real drawing. A room outline traced at the walls' inner faces
+has equipment standing **on** it, and `polygonContainsPolygon` in `@mfd/cad-engine` refuses
+containment for that case: a footprint edge whose endpoint lands on the interior of a room edge is
+reported as a proper crossing. Every machine against a wall therefore reports RED *"extends beyond
+the room"* while every corner of it is inside the room, and the report's verdict becomes
+`not_acceptable` for a layout with nothing wrong with it.
+
+The code is one predicate away from either behaviour, and which one is right is a product question,
+not a geometry one:
+
+1. **Touching is inside.** A machine flush against a wall is in the room. Matches what an engineer
+   means and what every dialysis drawing in the corpus shows.
+2. **The room outline is traced at a clearance from the wall face**, and touching it really is a
+   violation. Changes what a traced room *is*, and every existing project's boundaries with it.
+
+Nothing has been changed pending the answer — the discrepancy is recorded as VD-5 in the
+verification record with `resolved: false`. Until it is settled, a verdict on any layout with
+equipment against a wall reads RED for the wrong reason, and a corpus-wide sweep would produce
+findings nobody should act on.
 
 ---
 

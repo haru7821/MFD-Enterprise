@@ -2,6 +2,7 @@
   "kind": "ro_room_pattern",
   "knowledgeVersion": 1,
   "generatedFrom": [
+    "knowledge/observations/hospital-044-verification.json",
     "knowledge/observations/hospital-dataset-analyzer.json"
   ],
   "entries": []

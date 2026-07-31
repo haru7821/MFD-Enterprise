@@ -16,12 +16,14 @@
 | --- | --- |
 | 1. 지원 가능한 PDF 유형 분류 | Done — below, from what the importer actually does |
 | 2. 필요한 metadata 목록 작성 | Done — below |
-| 3. 첫 번째 검증용 drawing 선정 | **Blocked.** The drawing folder has not been provided. Selection criteria are written below and will be applied the moment it arrives. |
+| 3. 첫 번째 검증용 drawing 선정 | Done — `Hospital_044/dialysis.pdf`, selected in `docs/DATASET_AUDIT.md` and now verified end to end. See `HOSPITAL_044_VERIFICATION.md`. |
 | 4. 추가 필요한 정보 요청 | Done — below |
 
-Nothing in this document is a description of drawings I have seen. No drawing folder exists in
-this repository, and none was attached. Steps 1 and 2 are properties of the importer and of what
-the product needs; step 3 is a property of the drawings and cannot be answered without them.
+Sections 1 and 2 below were written before any drawing existed, and they are properties of the
+importer and of what the product needs rather than descriptions of drawings. They are left as they
+were. Step 3 has since been answered from the real corpus — 300 drawings catalogued in
+`knowledge/dataset.json`, audited in `docs/DATASET_AUDIT.md` — and the first of them verified in
+`HOSPITAL_044_VERIFICATION.md`.
 
 ---
 

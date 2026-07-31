@@ -44,5 +44,7 @@ export * from './provenance';
 export * from './schema';
 export * from './aggregate';
 export * from './classify';
+export * from './geometry';
+export * from './dimensions';
 export * from './query';
 export * from './load';
