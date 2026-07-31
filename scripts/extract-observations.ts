@@ -149,6 +149,9 @@ for (const drawing of drawings) {
           datasetId: 'dialysis-drawings',
           drawingId,
           path: catalogued.path,
+          // Every drawing in this dataset is a single sheet; the analysis it came from is not
+          // page-scoped, so there is no other page it could be.
+          page: 0,
           sheet: null,
           revision: drawing.revision ?? null,
           sha256: catalogued.sha256,

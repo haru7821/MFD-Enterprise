@@ -79,6 +79,25 @@ See [OBJECT_MODEL.md](data-model/OBJECT_MODEL.md).
 Note also that every rule in `standards/rules/dialysis/` is itself `draft`, which caps its
 own findings independently. Both sides need their sources before anything reads GREEN.
 
+### A-5. Three traceability gaps in the report — raised by the validation programme
+
+> Owner direction: *"Each reported value must identify: source document · revision · section ·
+> observation · calculation path."*
+
+Audited in `docs/roadmap/VALIDATION_PROGRAM.md` § 5. Unknown-stays-Unknown holds throughout; three
+things do not, and each needs a decision rather than just work:
+
+- **T-1** — a finding carries its threshold's source but not the calculation path behind its
+  *measured* value: which two faces, along which normal, against which neighbour.
+- **T-2** — equipment and planner citations are formatted strings; `StandardRow` already carries
+  document, revision and section as separate fields and shows the better shape.
+- **T-3** — `CalibrationInfo` does not name the printed dimension the scale came from, so the signed
+  report is less traceable about its own scale than the verification record beside it.
+
+None is fixed: the direction is validation before features. The fifth item on the owner's list,
+*observation*, is vacuous today — no report figure comes from a `knowledge/` observation, and the
+rule engine cannot read that package at all — and should stay that way until T-1 to T-3 are closed.
+
 ### A-2. Left / right side convention — check this first when the manual arrives
 
 Clearance sides are implemented from **an operator standing at the front, looking at the

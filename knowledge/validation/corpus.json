@@ -1,0 +1,4407 @@
+{
+  "version": 1,
+  "datasetId": "dialysis-drawings",
+  "validatedAt": "2026-07-31T00:00:00.000Z",
+  "observer": {
+    "type": "ai",
+    "name": "MFD Drawing Verification Harness",
+    "version": "1.0"
+  },
+  "totals": {
+    "drawings": 306,
+    "completed": 2,
+    "stopped": 304,
+    "byStage": [
+      {
+        "key": "import",
+        "count": 211
+      },
+      {
+        "key": "calibrate",
+        "count": 80
+      },
+      {
+        "key": "room",
+        "count": 8
+      },
+      {
+        "key": "place",
+        "count": 5
+      }
+    ],
+    "byClassification": [
+      {
+        "key": "unsupported_drawing",
+        "count": 211
+      },
+      {
+        "key": "insufficient_evidence",
+        "count": 85
+      },
+      {
+        "key": "extraction_error",
+        "count": 21
+      },
+      {
+        "key": "drawing_error",
+        "count": 3
+      }
+    ]
+  },
+  "drawings": [
+    {
+      "drawingId": "Hospital_001/dialysis.dwg",
+      "sha256": "844249497a30f178c0f44d65466180d8330f8b00a294ca81c1a5eed3b3b84779",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis.pdf",
+      "sha256": "dd7551368b1b309782d1db486664467e91fd2336f1c56d8a4602575d8ddc411b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis_2.dwg",
+      "sha256": "5973ad575c7b86b129129a8fb1fe98cd54925e8ea5110700617578f37e4a0e27",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis_2.pdf",
+      "sha256": "413aa0f39214ab9d4a2d9e1c2595318f5477c5c8a30461bc74329f7c13909e14",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis_3.dwg",
+      "sha256": "a9bccc98bb9f4097cef67af07a7293bab718668a6e20100a1d760187e9a1f30e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis_3.pdf",
+      "sha256": "40129d72842a707357263294b9225c14c7935439d765a07f2dbad1ed35b7fd5d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis_4.pdf",
+      "sha256": "2ad12ae8fcb519424cc64fa0e6ea8049eb17ba2a1cd8d2ef34383e901dd54c4f",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_001/dialysis_5.pdf",
+      "sha256": "256fd3683476b227fa1272653b5003d09a5e01c1de594366613de712128af131",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_002/dialysis_typeA.dwg",
+      "sha256": "6c217667bc1390ab5da176f2c2a88bdc84932a443cd5132429f20f70c5d01400",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_003/dialysis.dwg",
+      "sha256": "dc2b2c5b915c7da688b0dd28780600169fcd25efd7b9ed25a5235e8a14df01de",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_004/dialysis.pdf",
+      "sha256": "df9eca43084c936e8948a136c25a76a6557196687be8258b5b2a2cd053a439fd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_004/ro_room.dwg",
+      "sha256": "eac453b904cf88537a3e7261a28e1c441c08935ae4067c05c78d571603da2953",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_004/ro_room_2.dwg",
+      "sha256": "c6ca054f8f227b073c43280cbab00d94703155467af5991ec78f6d7ae24709bc",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_005/base_plan.dwg",
+      "sha256": "b2da0baac9a050e70cbb7db21faa6504f633c956208625f83dfa77353bb14e58",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_005/dialysis.dwg",
+      "sha256": "6b2e9df0fd87ef8597c64e547c2614b44ff8d52e17e51d667041d235614dec9d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_005/dialysis_typeA_30bed.dwg",
+      "sha256": "dc57de18c0d3c09d67d230019490b58e7d0888ff0f8f41b346030c2af0bf5688",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_006/dialysis_typeA.dwg",
+      "sha256": "e0320e67ed49f280c88e923a2be3a351851b244ee2c494ff65dd810498ae7964",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_006/dialysis_typeA.pdf",
+      "sha256": "fd5eae23101d9c950653fd9529d9d1d1c68f0568a67a34d224fb6677ced87b52",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_006/dialysis_typeB.dwg",
+      "sha256": "6ee1545c84f9fbe46a8e80bcaa4c50eff6ff6356c7ff595611bd2fcf4227745f",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_006/dialysis_typeB.pdf",
+      "sha256": "2ea6639967d0399c6102cbeb0ceddc98dc26ed964c588e97903dd60b64240ed1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_007/dialysis.dwg",
+      "sha256": "8290b035b5f4652568a6e592fb136041f1205b02163a12d89d06dabca7dd4e3b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_007/dialysis_typeA.dwg",
+      "sha256": "83bd7ea8fff169fb0686a34d13db2d46dd605daee52fd515baacd8d320d84498",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_007/dialysis_typeA.pdf",
+      "sha256": "239e5c8076d0e5501fff061bd927050ca94505a3aed2da99b9af42387b97b3a6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_007/dialysis_typeB.dwg",
+      "sha256": "e1e52ebd74be99602ced0148239649355315e413c4501beea2a10b9a3303fd86",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_007/dialysis_typeB.pdf",
+      "sha256": "75e37a4596b3b7789484884aeb376b0530d19b20fb994fa36eb9c56cbbd9c074",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis.dwg",
+      "sha256": "7bdaf2ead8ff385d71902ca1cec067a5982777445cd6240b3b280105b81c4aeb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeA.pdf",
+      "sha256": "97e753a83b43c1b6e6b2f123e6a03fc7c00652d87217954b16585f0ab5b5900d",
+      "page": 0,
+      "reached": "room",
+      "stoppedAt": "place",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        },
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "station pitch is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeA_19bed.dwg",
+      "sha256": "9c9b5197e83ab922336d3bff683b6882970621abefdc9e8f07f82a00625e3cfb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeA_20bed.dwg",
+      "sha256": "8987ad7a157d6519604f15f58a3aea8b48e59d5e8927e3910b1711841343b4b4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeA_20bed_2.dwg",
+      "sha256": "5acb929864a079f2c0b0c7f5e323a9fd85bc3d02c40adae3be724eb99f290bcf",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeA_20bed_3.dwg",
+      "sha256": "65da2a459651db858cb98223b71d22d630f4e90f692f0aa1f09ef786f81b36e5",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeB.pdf",
+      "sha256": "5dedb795d834e4e287d8939b9f4a79c30e86bd844fa729997c7a4fad1d395a87",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_008/dialysis_typeC_20bed.pdf",
+      "sha256": "9a723ad66890b66a56caafa81c6cf926fff434f6a5a9adac2f602f205174273f",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_009/dialysis.dwg",
+      "sha256": "9f87a551a3bf6dc5f764f7d70509b230cd7702ac69cac23ce7c048f5f42766e6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_009/dialysis.pdf",
+      "sha256": "1ed2a60385f2654151252deb5ddde76de6f977c01160ec509807ecc04d0d7344",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_009/dialysis_2.dwg",
+      "sha256": "dddf314586527cbed0930fb597a6ba387461c10ebfff5b6dac988bb5b49cd705",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_010/dialysis_typeA.dwg",
+      "sha256": "2ad6c60b9b8cf295973b6473cc1bcf7593fbb3d54c65fbf4752b80565a879a01",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_010/dialysis_typeA.pdf",
+      "sha256": "6999d8e0df11f714e67342e3792f4503b3a5783b71287f4fc37dbb6c0cfb5e7c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis.dwg",
+      "sha256": "0c70af817f32a62ab4a412cd44a2fb628bfbd7877f3d3e74ed2123055fc10e79",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev01.dwg",
+      "sha256": "0ea2c269542a0d9a9c04d57c5505b065d3ca656192db7f9adb6c4ac0825e087d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev01.pdf",
+      "sha256": "8aee44f10193863c04ca6d4d6289b8d317b2f78efc3ef80250b08bd0a0b224e4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev01_2.pdf",
+      "sha256": "1897d3ff6071e2c141d878e29024975f70ed925cdb55bca6d4f603a5972c845a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev02.dwg",
+      "sha256": "9956b112df4ed5562cca2d80847ad89e5f4960a47c405d5cf9e07bfad54e4ea8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev02.pdf",
+      "sha256": "7c5f0fd2d814fa8a8b4c2e19828ee4f7f501c336815d599e91cfe06985009e11",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev02_2.dwg",
+      "sha256": "9924c79c577fa56d753724caa8e0830245666ea81ab1978cd8252831c17bfc2d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev02_2.pdf",
+      "sha256": "79339b1222b21cfeba6102f006ab95f28e6df493e660ecf35d67ed6b887828d1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev02_3.dwg",
+      "sha256": "e638621931c233cfd946a6addc822fce2b6ac3d9ce4f7b81e84583329a41feb3",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_011/dialysis_rev02_4.dwg",
+      "sha256": "9e8cff3a637eb4d1e898f413d0ba1f6fdca63d705998a5b65d34f5bd8084f830",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis.dwg",
+      "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis.pdf",
+      "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_2.pdf",
+      "sha256": "c848019aff00638f113b90857accb58c3f58a02dbd59e2a654ddb4f20eed628e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeB.pdf",
+      "sha256": "6bdef745c6a047487af66e1a9cea327424a9c4b8759ff14dc94c15e0770af771",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeC.pdf",
+      "sha256": "7e9ba41a715c6c29a0179ede33e7c7f7484a551fc8b3d244faf1a89943e86194",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeD.dwg",
+      "sha256": "fd61f180261026e31bbe361884af837f14917ecb8135ac3bfc4948764b10fe18",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeD.pdf",
+      "sha256": "763debcb24f097f4fcd95b71a9dd95109b883fd5c951cb01f887dc88c8d5332c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeD_2.pdf",
+      "sha256": "60e0086b537ed231761863c4e48b0a525ca74d23b0399a8efa7bdfc82497f0d9",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeE.dwg",
+      "sha256": "02d1e006e421a87a3bccf0296d3420b854cf6916f87044eb5c8c7a1fe7680990",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeE.pdf",
+      "sha256": "3901ddc9e113298bbaa540657a1b318c0f3f07ea809a6f7301efbb382a650196",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeF.dwg",
+      "sha256": "a76ec8f6b1349e7af641b9ec94ec6adeaab7d5027698471a54ff3c4b15c1892b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeF.pdf",
+      "sha256": "4988e8e0172f5691f8bdcc85c859ef77d9ddd96f4093967c6f4531baa86cdb77",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeG.dwg",
+      "sha256": "d84626f050b12958832cfed390a1936dfb970b6a312e2b9a693c34dcee895060",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeG.pdf",
+      "sha256": "0c4d59b47edda13a2c8bfee3c38d46c9b737a7270903d7eaee511c893bf7af9e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeH.dwg",
+      "sha256": "f4644e6bf921883a27551f8ae549408d8f4b07fb8e61f6447165e85e9aba02d4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_012/dialysis_typeH.pdf",
+      "sha256": "20a9ffe603a2774c899742d9aaba7049d072b919afda20901d8c22804bb9a465",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_013/dialysis.dwg",
+      "sha256": "c78b8260a27296096185e0721edd41f05b726c5e7d7216fc10cbb0c7ced2ea09",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_013/dialysis.pdf",
+      "sha256": "bc6030b17650d5064ad9f0e6b9806432c096ae6ebba96682857fb41729e79c86",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_013/dialysis_typeE.pdf",
+      "sha256": "b0479950689cb4569fca384bef153f9724519ca30f30871b845cf3e52cf5d90c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_014/base_plan.dwg",
+      "sha256": "5def2f9bc434588e0a10bf8e8fb982073275044e00c57ee2c58cb8d114b72508",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_014/base_plan_2.dwg",
+      "sha256": "6967f9d1ab3416dfc9ea98c713bf2bcd57a062bdc8b809dfccae56bf6e014f8b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_014/dialysis_typeA.dwg",
+      "sha256": "a5ea129ca7dc66847870cf585a1ae572045c32fbc6c253f4a9b3dea228dd12c1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_014/dialysis_typeB.dwg",
+      "sha256": "904f14362b86ddffe87e7d90d7bca1063b0b0f85f0c5ab2c2e72121f83da0dfe",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_014/dialysis_typeB.pdf",
+      "sha256": "3a82c443a1b6c3ded856a47237c2300a64234206630a019f77ec9c8b21d36adb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/base_plan.dwg",
+      "sha256": "489df8d8b094e95181c6a16feb2424c04841f13a41a6eb86dbfd0509666893df",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis.dwg",
+      "sha256": "aea3259fc6a10c8e0c135b85041f640f6261cda47cc8edc752ab5aedc345f7f6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis.pdf",
+      "sha256": "589e0ae12c694a09ae3de6eb41067cd7f478d786bc2f473d839f31a19015ea6b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis_2.pdf",
+      "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis_typeA.dwg",
+      "sha256": "d9f2a9be483167a243e6276f17bae3e744afc08068000221d42919933deb18a8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis_typeA.pdf",
+      "sha256": "039472f410799fdf1ccb3f71c106f6fcfae1e9ed7f07ab79b25a1b443b77e2d6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis_typeB.dwg",
+      "sha256": "462192d7890c99d50f66ff3130816a88b712bfc891a31299e535762c6300b9e2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/dialysis_typeB.pdf",
+      "sha256": "2f39e402a579cc7ef21007aa2e83c5d3bec6faed4823cad89dea17ed3b99d871",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_015/ro_room.pdf",
+      "sha256": "21dbc25d84b2eb4119b873ef3bd02d8264b9ddaee75d6d9648b40c9be60a9759",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/base_plan.dwg",
+      "sha256": "6c417fa9e88553795afe8be5e1dd71feddde7de2031045eaf8768a67af2f94e4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 1,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 2,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 3,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 4,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 5,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_016/dialysis.pdf",
+      "sha256": "4226b2b35d9cbcd176cab421790a4de931beda9844efebb5054537881b8cb219",
+      "page": 6,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_017/dialysis.dwg",
+      "sha256": "7cd48374d7b284b36c43e9c8ecbd2e8677637a4f851002f21497951bf7343cde",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_017/dialysis.pdf",
+      "sha256": "4f10efe20feacf975202e52ac177927c0fa2c5aa011666b3a4724c2423ab7b96",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_017/dialysis_2.dwg",
+      "sha256": "91fccfab0d9a4132fec6746914c7e785e264a26d9562121b18b49ffa01899a29",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis.dwg",
+      "sha256": "b809038a45cc832aacc604ce5df357e93210eb9380b05c542ce54b4db6b4fecc",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeA.pdf",
+      "sha256": "1e02288a633becc05bd70ae4dba246bd6176fbd71dc54452e2f8f5b2ba817535",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeA_2.pdf",
+      "sha256": "411be8d283784d784c64300fa923a3c57670eb18aef3f29b80db7e5babdf30d7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeA_26bed.pdf",
+      "sha256": "4fe4a7c2cd35079129c4376c1ce0ccd71720b83ab3f0fe7a3db6ef38246bf843",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeA_30bed.pdf",
+      "sha256": "9d5011f44480d99f5ebda2c20778953a5d26c318d01f79275a465d753f129396",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeB.pdf",
+      "sha256": "f23dfe7aeafb276712a4669e49e839bd394acd82ebc11d1a5bb3dd7656efda75",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeB_2.pdf",
+      "sha256": "0b0977642db15e156d76e86c46b76dc90cba41141774f13e8d04f78601424f76",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeB_26bed.pdf",
+      "sha256": "c3b80b4e8cce9367b5f6e74c0c936febe67401323466d0d38f07cf24adcb419b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeC.pdf",
+      "sha256": "2ca98de4561a5518a22c1815decd0253aab36b9b69233fc6c9ce4750a03f410c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeC_2.pdf",
+      "sha256": "d5f19e9e74c1db0a48858a6a01c9a126d19125f0962158990e2947c2cba78829",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeC_28bed.pdf",
+      "sha256": "5066df85112239695b989b0eb569ab41a1ddf63a97535c360d596e55401fa470",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeD_28bed.pdf",
+      "sha256": "39a9dc83343e6e4e824ce9a2edb56106415a1b33fc85cac8d8ac02ca41ffb3b7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeD_28bed_2.pdf",
+      "sha256": "9c822cc37b673b1fadcbd66a529a467c4f2b9167d6bbbef366220fd9fc8ca65a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/dialysis_typeD_29bed.pdf",
+      "sha256": "c4a28badeadadd4e40e661e24bf45afe14e8ef9ee10dd0e9ef695dceb9237b47",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_018/ro_room.pdf",
+      "sha256": "919bacf416d720d89047ab89a2e59a152be93038fa2d9bcb899c3a20952fc4fd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_019/ro_room.dwg",
+      "sha256": "8f95e3f7298f23c6fa72e7792a04d1c2692ec35403e3b6d16758cd67846cb2a5",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_019/ro_room.pdf",
+      "sha256": "cb28dbe5f532e79006f49f50e3e4e5e25f67144a92837a6d40bfe559e6eff398",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_020/dialysis_typeA.pdf",
+      "sha256": "270654f86b0a9a2e2d8a0e5fa6ec85e51920b6bf3e08196680f23b4e693d5251",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_020/dialysis_typeB.pdf",
+      "sha256": "a786b0332f75921eb49b73fc1d6f79058d0eb124066c45daa2ce65d28f7cd6fd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_020/dialysis_typeC.pdf",
+      "sha256": "e9feaff397fc1b59f6f234093a5f6030a0f68d879b8c71372f6962284fc58fbb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/3d_view.dwg",
+      "sha256": "17d4c1b946b49d0751a23b0d4a42d137411a6f442b807c47f5e1ce0cb6586802",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/3d_view.pdf",
+      "sha256": "3d75867f6f45acac015730c4185102440d15734fa51917095ba01ae7e12a373c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/3d_view_2.pdf",
+      "sha256": "2b5fd73a49f0e9f4798c29a2cd180294cb6a2a06b260e966090a43b629796a25",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/base_plan.dwg",
+      "sha256": "69920a1f7037ef5481e730185d445a7a7cbf77cf5484d40ee082353eaea82175",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/base_plan.pdf",
+      "sha256": "4d484b80c007944a84eb91b5bc3eab5bc8d3fab95c38b61544d7f4cf9cfc5ca1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis.dwg",
+      "sha256": "f4bc8b83de4dea557ffca404a1a0645725987729245b957911b13e1541043d52",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeA.dwg",
+      "sha256": "45c73e3190f46d2867c0fd557fcdebbb28624aafc7568232d1b73d2160b58a8f",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeA.pdf",
+      "sha256": "36583b5399692580012b41e9a1520f47548d51ee68e43f6aa409182c13b4914e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeAa.pdf",
+      "sha256": "5a0aa21762bf00461227acc8a88dbb969ed388707bf54168b17d7ca637090a63",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeB.dwg",
+      "sha256": "a37a7772b6a4af0dfa504a30e872627da0c8915ec79477484efd3970c9f0be21",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeB.pdf",
+      "sha256": "f2dd8b8545c4ad19d7e461fc45f4e387e70516cf975f8738a6f3245eb3c242d3",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
+      "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeC.dwg",
+      "sha256": "995a68f7c868d92b6ce69d22230729520b05706b6120cb081d7628d2cb18a641",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeC.pdf",
+      "sha256": "6b7e8716c2dff4fa3c99d364695976fdcdb4e56c4f22df4bbb3ecbcba5ab43bf",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeD.dwg",
+      "sha256": "a2212a60801221d4c059b5b88ebc03949ba56be75e6da7457373391485fb0b4e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeD.pdf",
+      "sha256": "7c3e7c1a4232dfefbf4bceb92d39a0358a3f1e740812207ab85eb433be1f2988",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeE.dwg",
+      "sha256": "2cc2bd602ae440844b99e860c1329f8c1dad3c5ad90791520d058997c9ec8df7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_021/dialysis_typeE.pdf",
+      "sha256": "e2a42ed99ddc6dd5bceccd23bc96c0ae71b7ee0afe44d72465962b8747cff6c3",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_022/dialysis.pdf",
+      "sha256": "281e9b21790fcd2ab348354df2ffd46e1a9c85e12667e08e916191c39a5490e4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_022/dialysis_36bed.pdf",
+      "sha256": "cc84968629da085be60b03ac5d19c1323994db268d8859e6c66944b90dd65815",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_022/dialysis_typeB.pdf",
+      "sha256": "c9869a0329f7f46ea589b6f6f91c5ede159be2e45f7315f7ed1a5d7fd8d10d34",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "extraction_error",
+          "subject": "printed dimension \"2,300\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_20bed.dwg",
+      "sha256": "8833c73e871e0c971a0ceacca82219a094b33a6ac291225f8ab386065181883a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_20bed.pdf",
+      "sha256": "27553952bbee66034c687e3176a157bc251370be8600006ab2cad4bc106c8eb9",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_23bed.dwg",
+      "sha256": "d987537d3f9c364a8986daf1975ad973503ac633c8c6635683ecc6f268b9c7ec",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_23bed.pdf",
+      "sha256": "d4ee106ffecf9eb16f797ed7a0d66f66c9f2a1c835e8f74cc2a001ec9f391f13",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_24bed.dwg",
+      "sha256": "8be17863bd01f63575cfbd074ea60e6ee23752fdcb811d0299edcc269eb63683",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_24bed.pdf",
+      "sha256": "6c4b94fe533273160f9ab32b544643c998eeede9434e15172c81fc1624b0ea90",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_24bed_2.dwg",
+      "sha256": "5b3692f0858ce79397ba522b815df40087db4cadec4d49139f6932896669c019",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_24bed_3.dwg",
+      "sha256": "5a175c96fdf5b5ee568f1560ee7b7304200cdd0432641fb3fe5a55d8b283845b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_24bed_4.dwg",
+      "sha256": "42553586c137e7dc89196f090ed59bdf67b9285c54bcb506a4bea4b0f07a6dbb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_25bed.dwg",
+      "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_25bed.pdf",
+      "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_25bed_2.dwg",
+      "sha256": "4a1496292a9ac56deadc1bc50c1ed89d3b4e259c18521b8a236cb573e29d96b0",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_25bed_2.pdf",
+      "sha256": "f2589f285ae63314f44d0ae66d76cabf2ce060c341ed4000ce08eacbf7472d83",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_26bed.dwg",
+      "sha256": "396e6883a2b65a42bce738c88afda2594e4a4c189d3d53000a371ce2e17deb05",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_26bed.pdf",
+      "sha256": "b5cbda90b90f36455019bb21ec1e85de2550bde10ffcd7279afd985b8896ec2c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_27bed.dwg",
+      "sha256": "4c5e6f66279b8546954960e9b1c3a9209e984b847e6deb522a10b93087ee7c70",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_27bed.pdf",
+      "sha256": "ebcd0df55c4e6220430c0bdbbd2c01b23e4122374627ddf54ca42be0ffec78bb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_28bed.dwg",
+      "sha256": "b687b0b45b03f39905871685d619604ff518308c68f3be29fc6f2093c59437dd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_28bed.pdf",
+      "sha256": "434a9539d095eb482f9f2eeac2a660fcc283720cb6342a95e2509918addfbf24",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_28bed_2.dwg",
+      "sha256": "2876b04289cdac2bf8afc6f4a2a24e6d884460b712a00ee2920e7a5f0822e515",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_28bed_3.dwg",
+      "sha256": "a700fb671656e0caa3e1425fabdea369c7250128dfcd5b2c0cfb4a4080dfd3a4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_28bed_4.dwg",
+      "sha256": "225d24d5030b575d679be4541d65057b4aaec9c8af6100e161e67fa6a0e5476e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_28bed_5.dwg",
+      "sha256": "a464a21873a369b3fd0440736315060cdc4a78ee8a0148c96a0b3717454b5fea",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_typeA_30bed.pdf",
+      "sha256": "fda380866ea1d6cc7ebb9f6eb16723a3d01036ed9b19c1c159947454d715737a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_023/dialysis_typeB_30bed.pdf",
+      "sha256": "1f25e7f4fa062870ef39c27f5e7fec5786fdf177a760f9a6a5251b6f6f1967a6",
+      "page": 0,
+      "reached": "room",
+      "stoppedAt": "place",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        },
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "station pitch is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_024/dialysis.dwg",
+      "sha256": "9bec43a118104b2ef98777a9bdf0c17ba151011e88f44bec7245dcacf14e64d8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_024/dialysis_typeA.dwg",
+      "sha256": "b7b8980789a7eb7b21463eb6e1ac444dae6b760d625681955a174410f38dfeee",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_024/dialysis_typeB.dwg",
+      "sha256": "75c117aedad9a5ef78436c4609305bb9ad7f37fb0df3e096a84ddac533516c42",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_024/dialysis_typeB.pdf",
+      "sha256": "93110f48bda345a46fb6d9dc69212a51f85dfc29e33f652d18ce18d52ae09ba7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_024/dialysis_typeC.dwg",
+      "sha256": "8f79e772912586b6fb55e586c2f4c07d0046405fb9284c4624bd929c94906c07",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_024/dialysis_typeC.pdf",
+      "sha256": "1a75816c37713a032b1cdb4377f1dac36a6401c40ade0b5a513446aa501d1c4d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis.dwg",
+      "sha256": "cbb89ff7ba481e3e6bc54900bfbfc5e694fc2bb658a806a9cd1e5864ec555baa",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis.pdf",
+      "sha256": "4ab4bc869ca1c7535f141c944820062c0ebaeb645548c7421bcccd90cec88b95",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeA.dwg",
+      "sha256": "0aab942cd83049f99341a6f238c81c13b82a4d7709e705091775f77e60d8300d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeA.pdf",
+      "sha256": "dc34f84cc492457818ecb448fe98d5009d891556620e14f45fd22a7170527eab",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "drawing_error",
+          "subject": "printed dimension \"1,950\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeB.dwg",
+      "sha256": "e75c2813e233cdac3378858d19509710e7c4a6a4180527e878a62d83b4f8fd69",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeB.pdf",
+      "sha256": "da81ef3ed4c887dcc1bc311dac96775e2b8b19b893e0680cd67c311195cd9d92",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeC.dwg",
+      "sha256": "4bc0f8e9940c94c4edc75c4174404d40d995cf0cb75ca0828c0706601d74bc49",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeC.pdf",
+      "sha256": "0bc248abd59badff69c2f8e3f4d135f9902d62f2e61961068cafafde9f2bd986",
+      "page": 0,
+      "reached": "room",
+      "stoppedAt": "place",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        },
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "station pitch is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_025/dialysis_typeC_2.dwg",
+      "sha256": "8577f73510aef8e273fff74527881021cc13e4cac4899d80a77c0d9f3a0708b1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_026/dialysis.pdf",
+      "sha256": "d4de216135f8929f19bf79cde351127b4fded2dec5bfda393a6aaa397cd2fa60",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_026/dialysis_2.pdf",
+      "sha256": "f0451b3255a56e635cc9cb4ed0661b5c720bf22e6e00cfa5d1359fca4a29abaa",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_026/dialysis_25bed.pdf",
+      "sha256": "3a1daa182b370c6dfd22354b7c79c2ab614cf8b0ef2266964bdf6643deab27d3",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_026/dialysis_3.pdf",
+      "sha256": "52938dffdebc258fbd88928d0e8010653481c899cf0136f840bee758dc7498a0",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_026/dialysis_rev01.dwg",
+      "sha256": "4287772b8c9233bd90104ba6af9f494bdae2971ed530e3950c4a437b8f6cf514",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_026/dialysis_rev01_2.dwg",
+      "sha256": "c6674d52346db83ecb3954409da3f25942ba1f69a52859d571aef04fec0fcfce",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_027/dialysis_typeA.pdf",
+      "sha256": "5424c86466cfcc4b295a5b1cdc3d3b3296a732444d7b35392f94ec855b58f798",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_027/dialysis_typeB.pdf",
+      "sha256": "8f965311fd66a03f96b5305739648fbafdbd4f3d882e5447fec40824058244d8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_027/dialysis_typeC.pdf",
+      "sha256": "3b7641af8a2e6c2b7405909644c6a012629d63c081b8909ce5eaab19e8d448a4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_027/dialysis_typeD.pdf",
+      "sha256": "0a9b0ac8f20baf85bfabcf4c7050faa33c41b433e690fe6fae9e16f1a0f2ba15",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_027/peritoneal.dwg",
+      "sha256": "617a377380d78d73b0214efff2ca39ea089ca7cffe4bae3fb9634a4083ea1800",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_027/peritoneal.pdf",
+      "sha256": "3e3271ed1e999bd739139431723e9b7ceb78d5346dc5ba98ed8ff61945a7b3e7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/base_plan.dwg",
+      "sha256": "32943cd9143e81690da8bb1e5b4729478a766da3b6c70de71bfdfe0f1ca606e9",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/base_plan.pdf",
+      "sha256": "63b75c7155941e7ab82a596f24107fbe03ff659e717e6d796577566bab455f6a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis.dwg",
+      "sha256": "b9b8e6eb90cbd3753ffe97d953b74c6e2703118ea6d9eebb01a8bfafd093ca26",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_2.dwg",
+      "sha256": "34935712b8b29f56bc945afcdaf377003c76c9aa4057c3ebc139262ba8ce08bf",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_3.dwg",
+      "sha256": "295199d0a3c376639869a99386cb23df485acfab9c02e7db794759a2899931e2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_rev01.dwg",
+      "sha256": "19b16f1c987e01b6d0fec25c95ee46edcd25112f9cfe86808d4d9a1d5f5da3bf",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_rev01.pdf",
+      "sha256": "8c0e652a172879cb741c51399fbb5619e23f4c2fb0a1aa3bec14c2e876ebaa32",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_rev02.dwg",
+      "sha256": "20bb557bce0417189e44fd0534e378309d523b4edee75d4a9bf276a79b7c8b49",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_typeA.dwg",
+      "sha256": "11c5a0e14f1f3958bf9001e70c53d31424c82fd3be1c960098369dc647c166f3",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_028/dialysis_typeA.pdf",
+      "sha256": "eee53503e9a7ef5395fa8c4142162cffae6df95b2828228916a290a1397b824d",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeA.dwg",
+      "sha256": "2afe0e5523d9a86a0a9b0b1359fb84f5da52fcbd5283012117f393a4c3ea7157",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeA.pdf",
+      "sha256": "e723081bbd652c9a43cf21096fcb3acf20b51eeb56ab2cf91f341b6f0580f639",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeA_2.dwg",
+      "sha256": "e1ab926df9f0bc569e7d9eb4daba55bfc2f52a770ee5f201f2fcde47f27563a6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeA_2.pdf",
+      "sha256": "511bd3b7afcbbb0d7760284fe349a2f42e7f68f36724e4f0e433724bc7b721bd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeB.dwg",
+      "sha256": "219a402cbfb27d3e383b56adc72bdf9cf14392ed6097765662f2408cf466fa97",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeB.pdf",
+      "sha256": "1518818517bc4dbbb87f4618894dc0949c931c563aa777ba539b2d1215b1442a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeC.dwg",
+      "sha256": "b73148725935ffe439153901087df8cdfe5a47241d88daefab884dfce7c9af2a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/dialysis_typeC.pdf",
+      "sha256": "dd597ab47f95ad1e7bdabcdcda249350f41975517074e123262000a8017be8a0",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_029/ro_room.pdf",
+      "sha256": "ec7e843c19c5c450efd46e2af9c83b05f0d5eab3e0c5d2bcf6c478785bd6d3ae",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_030/dialysis.dwg",
+      "sha256": "1246b7cd836259daa9a57d9e4a3d65c83933a6cd2fbe091d2e96c009554b5934",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_030/dialysis_typeA_22bed.pdf",
+      "sha256": "24214d0422dc2fae3cfc5aca05e6d065924ffb0e946f0dc536455e3ec0f4414d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeA.dwg",
+      "sha256": "8fdc11f965c4ce4bef6a41aaa9036123cee856eb1c47d2a38443b778123e3971",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeA.pdf",
+      "sha256": "37b60a0131cf19be91085382d4104a4414b4e7122e2f914d087829f1813c9c55",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeA_2.dwg",
+      "sha256": "687215f6dbddf328e6d822f490da1e4145f7566d5134b959d428520b730ba791",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeA_2.pdf",
+      "sha256": "d6b38b1a69ff898f56503f5deda034263baa61f8aeee9c7b3868c576bd9ca3bf",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeB.dwg",
+      "sha256": "a53ae1a650ae56958b7de1a29e648350fd1aa954895706e0027f47bc1ea5d2b2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeB.pdf",
+      "sha256": "a79cc702c2969d4cdd40911ee95b6aa520b160c6a8eb62b1b3380b20d9d342af",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeC.dwg",
+      "sha256": "d04d2e736e1b1f3774567e17bf9c8b96f79c29e910f43d95c3c056822a11e755",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeC.pdf",
+      "sha256": "e4e2848a487ab9d188d4be598faed6bb3a6703d49525f9c7aed64b3e83c6dd0d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeD.dwg",
+      "sha256": "4931b7993fd584b0f9468b66e1d5ba7a4cb6d2b2b0528b707a4d2b146806dd25",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeD.pdf",
+      "sha256": "adde7e1a30e6f6cd5b244a84628f750f7c3c09bb6c8f00d2487799bfb47f7b40",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeE.dwg",
+      "sha256": "ff3471ded623d63247b6000e38d68d08ff8f13b65d823460f52040c5a91cc567",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_031/dialysis_typeE.pdf",
+      "sha256": "4c09b0f19167302c78bdab59cc46e1f9b1adc2a3cd76d1ef427260ead268d813",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_032/dialysis.dwg",
+      "sha256": "368ffbd07ad5436217e95f838627f671aad2f041c38e4453d2da3b7a63729141",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev01.dwg",
+      "sha256": "1901447bb4b1acda420e1ef90454b75bcecc1fb65d51a662ddddca129eff8175",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev01.pdf",
+      "sha256": "438f6adb8b868fa9f312ede8c95e7abd011427a5df1a62d3031916aac3cc49b3",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "extraction_error",
+          "subject": "printed dimension \"1,650\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev01_2.dwg",
+      "sha256": "ea341f75386870fd048ee73df7b14df01ddb600d01e6e69269d9d49b2e7b7748",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev02.dwg",
+      "sha256": "aa093f80dac7f534f0e4fe1905c1f0a70513f91572bacab38085e3b58e8412ed",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev02_2.dwg",
+      "sha256": "93d82614c8fc9ef92faaaa86ef35064325b1918faf5d033dc2e1a307f0fc0ea7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev02_3.dwg",
+      "sha256": "51727374ed7836f69927931121c87db4da5a3de72cfccc569c43eaea761ea5d9",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev03.dwg",
+      "sha256": "2ee8aa1f77a053ec6768f7aecd1724e153fc7dfcd07ae9dfa5cf1d229b1ad01c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev03.pdf",
+      "sha256": "16f4bc38fe5e9345004407d4e2f0340fb17fef14389da1c4b2422f9a6baf876a",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "extraction_error",
+          "subject": "printed dimension \"2,267\""
+        },
+        {
+          "code": "VD-1",
+          "classification": "extraction_error",
+          "subject": "printed dimension \"1,650\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev04.dwg",
+      "sha256": "57cebadcd6518783e9b2bcc0d48ca743baea1ac6dfad0624d547b229028cb4c6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_033/dialysis_rev04.pdf",
+      "sha256": "0218fff94142f31b42b38c51b44ce8bbe047f616b445d272ef4ec5da8e00f18c",
+      "page": 0,
+      "reached": "room",
+      "stoppedAt": "place",
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "extraction_error",
+          "subject": "printed dimension \"1,650\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        },
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "station pitch is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_034/dialysis.pdf",
+      "sha256": "e8a1d1126b7e9a7e31ea6773721d61f3963bd42c4e0396368c6b1bbb14c2f27d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_035/base_plan_16bed.dwg",
+      "sha256": "f59b4f75885919badeb74720ce0c9f50ea1e81c0c304a4d72dbfeba7e1a43edd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_035/dialysis_typeA_16bed.pdf",
+      "sha256": "dc3640e76240ba29cdb60409c98a276227bef3570bea7ed1f808594c2fcac899",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_035/dialysis_typeA_16bed_2.pdf",
+      "sha256": "ff70b30b90bc0df1b014e8c7575544b9a55296239ecfe155072c26542e279498",
+      "page": 0,
+      "reached": "room",
+      "stoppedAt": "place",
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "extraction_error",
+          "subject": "printed dimension \"1700\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        },
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "station pitch is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_34bed_rev03.pdf",
+      "sha256": "07c664e8161b8dd441c477e2202f439a460e32f170d74803069a2d390a3f12c9",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_35bed_rev01.pdf",
+      "sha256": "4835ca64a65d9373171c11ce7a7509a8603b9276eb2e161f5eea51a50cbf48ff",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_35bed_rev02.pdf",
+      "sha256": "be951e2d69835333000459a0f2d16c6fa670747d78eb0d678239bb9f9a0d120b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_35bed_rev03.pdf",
+      "sha256": "1220f7aa01954da90285b675177c22ae13fb8e9f52595ab7f7a745f629a2b8d4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_rev01.dwg",
+      "sha256": "0aebf3aee34d53782e7a2038e9f8e0b74afdcd9d60bf3c1edc3e3c6ff53aacec",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_rev02.dwg",
+      "sha256": "382bd633b5d066d74461385438c071c2c485f4ef55246c093d97b0e00b63184e",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_rev03.dwg",
+      "sha256": "9ad002de2d0d15672c51ecbe239c0298de9818f3014721e311dfa2e94b7bb4da",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_036/dialysis_rev04.dwg",
+      "sha256": "2c4aa3844f66f2089cf59ba72bc3e2d6be1a80b287033e777d66d41181289d4b",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_037/dialysis_typeA.dwg",
+      "sha256": "fc87314c52b0f0d7dd041b3b498cbe6e525406e187bb7da153f61672b1bc35c2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_037/dialysis_typeA_2.dwg",
+      "sha256": "28d25a732387fa896e03b3443cd781ee07b62d04afc262a9ad47b240de9443ab",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/3d_view_typeH.dwg",
+      "sha256": "86ddcb84fa61c28623ced6f3346b431339676d0544065aec7a5783a9840d9604",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/3d_view_typeH.pdf",
+      "sha256": "25ecc6fadbbb2bfc58dddecb68aa612ed85760cb90d05e1d26e432d873f380a2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/3d_view_typeH_2.pdf",
+      "sha256": "8d865e35cb0cb5f0096686ef35783a1bcc409217f45334c05d0a69dcc792fcd8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/3d_view_typeH_3.pdf",
+      "sha256": "0b4c1102c3d32f7b90b188fd509d8ba553b95c543a91853b515b6068c3f9ab4f",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/3d_view_typeH_4.pdf",
+      "sha256": "c6897d4827e85f410d354ea50416703b0f9634f27e1ab880f43cb8d3cf4f4acb",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/dialysis_typeH.dwg",
+      "sha256": "6273c1f30489fc00e12718bccc009e0a5618db432460179ee850c6838ffff977",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/dialysis_typeH.pdf",
+      "sha256": "86815c3d10f2676bce02e58e2e659084c64bb68eca46305cf01b7b9f58a3f910",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_038/dialysis_typeH_2.dwg",
+      "sha256": "7de8994bdfca53d9e2c8389851b57e14fea851a2261982e976489dcfe86d4f09",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_039/dialysis_18bed.dwg",
+      "sha256": "276d6c9e8cbdb818674012760731604cbf90a037c98475c08af3e3a8f3fd29e7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_039/dialysis_18bed_rev01.pdf",
+      "sha256": "032ed5cbfb211ca9d53742001abb3d2ebb59c282f9cf208610bda333b6d6f983",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/base_plan.dwg",
+      "sha256": "f48a863c1e0857eb1d89a531dbe106d26548254a8be70cdc8d2af32d9c95e3b3",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis.dwg",
+      "sha256": "cd96fc46302bf890c270c13b24a107f81f5adfbbb6fddb6d0929009bfc4904fd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_2.dwg",
+      "sha256": "0142694fdcd61e99db363e1ab9f3122febd7d42035258596dda4aab59d39e0ab",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_3.dwg",
+      "sha256": "b4e8e008c254e7e54aac6f316923f81a2a1fcef2b2ce508281bfc95a27cd1c8d",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeA.dwg",
+      "sha256": "4295f4b85784cbdab26eeac25ee3d480c2e1640c7da45bf03eb06e28f16cbe0a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeA.pdf",
+      "sha256": "b76bf80418fe13499bd6e35b30415480de5004bf829c5aa877425b5a078167f1",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeA_2.dwg",
+      "sha256": "03c63b283db1135a81f5982b10351b4a4053b24a06b87477c029d436e8f460ca",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeA_2.pdf",
+      "sha256": "71135f682e217a5751dfb0852a1feaea25ce1f9d896b4281b166c2a134de2281",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeB.dwg",
+      "sha256": "7a202656f25efd4fc03a9d5fddad35d66957397fcf7f3b003a91e2a4a4990e94",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeC.dwg",
+      "sha256": "b52c3792dab9491cb9064b866a1c69b1a8035d4289277cbe433e7e7ad8ef82b6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeC.pdf",
+      "sha256": "2bfd8d53fa48ea6a54c3da80b41dd9d64939e83c142f097bb2ef986dedb661cf",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeD.dwg",
+      "sha256": "929060cc128775f7a7b9789b0637872776b9d4d6fd8acf9f1c26a97995d42ee8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeD.pdf",
+      "sha256": "2043bd77393e9ce90346c70075337643b8d28e50300c659ab0ccf1fa35912253",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeE.dwg",
+      "sha256": "e838922f01befc1a47506ac44bb1d43bb6f177390195fb6d7058a1200635d303",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_040/dialysis_typeE.pdf",
+      "sha256": "8095e399e648f83dd7914ad0e934ada51262faf6f23c5920c9c4f37df45471e5",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_041/base_plan_typeA.dwg",
+      "sha256": "c3b1612bf5eece0bc37fe192a4ec29e6f524d7aa19a11f6a3f39a647a17f5f3f",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_041/base_plan_typeA_2.dwg",
+      "sha256": "354b2f2a812c8e5862f4783cf5f723c0173568eceeeef50ec2e469ba0696a431",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_041/base_plan_typeA_3.dwg",
+      "sha256": "9f55075629adc2d2d67bd7d612677a1813aed8c0b36f7e6fe1c70e4e4b279284",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_041/dialysis.pdf",
+      "sha256": "a450fed93cfc9aec8ca287d420900bb526fbb0a35e7ba08db618eacd03eb705a",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_041/dialysis_2.pdf",
+      "sha256": "4f9411a5ee3a1c24276a21874117641e3dffb49d137b1bc393f9df40dc3a2cff",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_042/base_plan.dwg",
+      "sha256": "a9f1e149d65087602e838e26a16d6e29c258185776ca51849ef75cad7b087b12",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_043/dialysis.dwg",
+      "sha256": "b6e106e3eeeef2ea90cef7b768f9b10630bec6bcadba7673d8624d9ba306c2dd",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_043/dialysis.pdf",
+      "sha256": "ddd6cde03715d99c5ec5c2bda921162265e48ed10af1470bb7ea3a6787a1e643",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_043/dialysis_typeA.dwg",
+      "sha256": "ea73275a6f08053757bad9e3f6d49f0e2d20a37de228b697b0ed2ad4d4e4aa74",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_043/dialysis_typeA.pdf",
+      "sha256": "d45d72aea2496e6d673acb48fc772ef646043333f80f1ea5fd4e70c96195ce30",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_043/dialysis_typeC.pdf",
+      "sha256": "6e308e63920452492e9e4535e5a36f343c36535dde43a31f66da6f98d0425617",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_044/dialysis.pdf",
+      "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4",
+      "page": 0,
+      "reached": "report",
+      "stoppedAt": null,
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "drawing_error",
+          "subject": "printed dimension \"3000\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_044/ro_room.pdf",
+      "sha256": "538d8c3de53eee0425001acecce1438aae7d9a7d066daab70b5d2a3b8b9a1a58",
+      "page": 0,
+      "reached": "report",
+      "stoppedAt": null,
+      "discrepancies": [
+        {
+          "code": "VD-1",
+          "classification": "drawing_error",
+          "subject": "printed dimension \"3000\""
+        },
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "room width is not printed"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis.dwg",
+      "sha256": "e00943fea80a37cc1e16b82f3cdde5831dd57ecc97712d4f4ab9401b966be324",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeA.dwg",
+      "sha256": "2a072289867558d032f9126df117eea80f1a0d84cb0fd2ca7369d39cae1101f5",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeA.pdf",
+      "sha256": "4503b9d344eae117f4e29d67d6969a1f34908e7b36bdafa26ff32282bc089f57",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeA_2.pdf",
+      "sha256": "196a4a3fc804f6829fb6f48cf52dcd3e4094bb884b39e5d12fbfe26e67a85cad",
+      "page": 0,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
+      "discrepancies": [
+        {
+          "code": "VD-4",
+          "classification": "insufficient_evidence",
+          "subject": "treatment room could not be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeAa.pdf",
+      "sha256": "065c56680938d2fa16d6667bfa6ae9f574488c78172958880de25edd579203a6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeB.dwg",
+      "sha256": "3f8713446f9a34c319bfa47eebee345ede03714cc01f673efd115ce97174bb75",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeB.pdf",
+      "sha256": "a91c11d53ff72daa77081cee7b6d570e4c206ebb8cbf4655be29a47c66fa7700",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeB_2.pdf",
+      "sha256": "52bc080db90be26bcffb2c4d655337c352803a53b3c2e6ba2f7cb2e8fb9f25f2",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeBb.pdf",
+      "sha256": "90d8e47d25fa9b75776ae74bf621d456837482928997b38fc93352cafb38d0ce",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeC.dwg",
+      "sha256": "dc7039b17e8c313a1caffd7b0d8fa8878ae712b0d86dff4b9e867a366afbbc55",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeC.pdf",
+      "sha256": "5ce0cebdaa10041eaf093a450ed20c44c571d240a73477042de3cec9e968b2b8",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "Hospital_045/dialysis_typeC_2.pdf",
+      "sha256": "33b20000e3329619cc0b138bce80e0732d11ca36f9ebc3b61a197f062e96e511",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "extraction_error",
+          "subject": "the sheet does not agree with itself on one scale"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/30대_sample.pdf",
+      "sha256": "6639cf3822b175887c5e14b5186b7d6de016734b1e2affe3f4ddf82d6460bfa6",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/3층_이전_도면.dwg",
+      "sha256": "fa319c7089367fc75dda3a66cf41cf726eddf33f4bde6a4a8f04e2bc6506d8f4",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/64_HT.dwg",
+      "sha256": "2afa170b160f698828132aac12f26b64883f0f093b87accf834d59279a737651",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/Baxter_Workshwop_세스코.pdf",
+      "sha256": "c2e1e8e1b7ec6dce070fe71092226641aa8969e45707b40fadb658de4a484181",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/Baxter_Workshwop_세스코_1.pdf",
+      "sha256": "0fea1ddbaf99e49824e59884296f72407bc22b65912479101bc6f258e81093c7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/Interior_details.pdf",
+      "sha256": "d9448ce39ebde82dd4a73c05f87d2f48495ba334d2f3ff2f9e70df47dc04f5f7",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "calibrate",
+      "discrepancies": [
+        {
+          "code": "VD-7",
+          "classification": "insufficient_evidence",
+          "subject": "no scale can be established"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/WORKSHOP.dwg",
+      "sha256": "b9c0bebf3a191147f28d5e0ec76897a46684eee12b75c33e8fe9a5e98a45ca90",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/WORKSHOP_1.dwg",
+      "sha256": "426bb5257895d405502c5e146d57954e39bf82622c4f063946a4358e3b9cf1bc",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/WORKSHOP_1_Model.pdf",
+      "sha256": "209a058670983901107c5e49277d963e5e747ec2a9bce258e55a44d8ebe95353",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/WORKSHOP_Model.pdf",
+      "sha256": "a14bac642f1c8b0b247872822bcc688c4b27125d07179df75d3689660ebc777c",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/WORKSHOP_Sesco.dwg",
+      "sha256": "dc1841876b08cc7ebb00a912298ce81f9cfd41d7afd247c7c0338279fca0c309",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "dwg / native_cad"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/WORKSHOP_exit.pdf",
+      "sha256": "dddb2f90fba0d4ede6f96c1c1f1f5cb2b5990437e6d2138c84e357ad0e42b160",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    },
+    {
+      "drawingId": "_reference/blank.pdf",
+      "sha256": "ae8fa0ccf41d589b2416d4af1e8b5838a0bf228f4f246567affe265b83a31701",
+      "page": 0,
+      "reached": "import",
+      "stoppedAt": "import",
+      "discrepancies": [
+        {
+          "code": "VD-6",
+          "classification": "unsupported_drawing",
+          "subject": "pdf / scanned_pdf"
+        }
+      ]
+    }
+  ]
+}

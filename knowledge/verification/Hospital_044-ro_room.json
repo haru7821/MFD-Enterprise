@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "drawingId": "Hospital_044/ro_room.pdf",
+  "sha256": "538d8c3de53eee0425001acecce1438aae7d9a7d066daab70b5d2a3b8b9a1a58",
+  "verifiedAt": "2026-07-31T00:00:00.000Z",
+  "observer": {
+    "type": "ai",
+    "name": "MFD Drawing Verification Harness",
+    "version": "1.0"
+  },
+  "page": {
+    "widthPt": 1191,
+    "heightPt": 842,
+    "sheetSize": "A3",
+    "claimedSheetSize": "A3",
+    "renderDpi": 150,
+    "pixelWidth": 2481,
+    "pixelHeight": 1754
+  },
+  "dimensions": [
+    {
+      "label": "17,600",
+      "statedMm": 17600,
+      "measuredPt": 498.8812779152826,
+      "impliedScale": 100.00327931327898,
+      "role": "primary",
+      "from": {
+        "x": 1383.1117597959649,
+        "y": 1316.9969137578403
+      },
+      "to": {
+        "x": 1215.6365710228204,
+        "y": 291.2428628209735
+      }
+    },
+    {
+      "label": "4,900",
+      "statedMm": 4900,
+      "measuredPt": 138.92430732260394,
+      "impliedScale": 99.9808028358447,
+      "role": "consistent",
+      "from": {
+        "x": 1474.6023712293409,
+        "y": 1876.4337317486613
+      },
+      "to": {
+        "x": 1427.8952498362676,
+        "y": 1590.8017201525602
+      }
+    },
+    {
+      "label": "4,500",
+      "statedMm": 4500,
+      "measuredPt": 127.5414952813079,
+      "impliedScale": 100.01376794020143,
+      "role": "consistent",
+      "from": {
+        "x": 1426.8611456037515,
+        "y": 1584.979086049238
+      },
+      "to": {
+        "x": 1383.8879929660022,
+        "y": 1322.7656576787808
+      }
+    },
+    {
+      "label": "3,300",
+      "statedMm": 3300,
+      "measuredPt": 93.51049508747543,
+      "impliedScale": 100.03508910856269,
+      "role": "consistent",
+      "from": {
+        "x": 753.6395375845724,
+        "y": 1716.0216386363556
+      },
+      "to": {
+        "x": 785.1181225279174,
+        "y": 1908.2751450258756
+      }
+    },
+    {
+      "label": "3000",
+      "statedMm": 3000,
+      "measuredPt": 87.54294721710716,
+      "impliedScale": 97.14017266044506,
+      "role": "inconsistent",
+      "from": {
+        "x": 728.3556019097141,
+        "y": 1546.4479231655105
+      },
+      "to": {
+        "x": 698.880038159507,
+        "y": 1366.4643923014141
+      }
+    },
+    {
+      "label": "2,600",
+      "statedMm": 2600,
+      "measuredPt": 73.68400537296655,
+      "impliedScale": 100.02277567366664,
+      "role": "consistent",
+      "from": {
+        "x": 816.2998426361961,
+        "y": 696.8798867920098
+      },
+      "to": {
+        "x": 664.7957030286661,
+        "y": 721.6045206862941
+      }
+    },
+    {
+      "label": "2,500",
+      "statedMm": 2500,
+      "measuredPt": 70.82351297162602,
+      "impliedScale": 100.06019012453469,
+      "role": "consistent",
+      "from": {
+        "x": 752.8719070088619,
+        "y": 516.3143629876856
+      },
+      "to": {
+        "x": 729.128524571297,
+        "y": 370.68828403728855
+      }
+    },
+    {
+      "label": "2,000",
+      "statedMm": 2000,
+      "measuredPt": 56.67992924086569,
+      "impliedScale": 100.02290783551601,
+      "role": "consistent",
+      "from": {
+        "x": 696.3488814874498,
+        "y": 1352.2842366453347
+      },
+      "to": {
+        "x": 677.8911150228117,
+        "y": 1235.652552897766
+      }
+    }
+  ],
+  "calibration": {
+    "method": "two-point",
+    "fromDimension": "17,600",
+    "pointA": {
+      "x": 1383.1117597959649,
+      "y": 1316.9969137578403
+    },
+    "pointB": {
+      "x": 1215.6365710228204,
+      "y": 291.2428628209735
+    },
+    "knownDistanceMm": 17600,
+    "millimetresPerPixel": 16.9338886303819
+  },
+  "crossCheck": {
+    "statedRatio": "1:100",
+    "millimetresPerPixel": 16.933333333333334,
+    "deviationFraction": 0.00003279313278947704,
+    "agrees": true
+  },
+  "mappingChecks": [
+    {
+      "label": "4,900",
+      "statedMm": 4900,
+      "mappedMm": 4901.1015588623395,
+      "deviationFraction": 0.00022480793108958785
+    },
+    {
+      "label": "4,500",
+      "statedMm": 4500,
+      "mappedMm": 4499.528076762598,
+      "deviationFraction": -0.00010487183053375926
+    },
+    {
+      "label": "3,300",
+      "statedMm": 3300,
+      "mappedMm": 3298.950644964966,
+      "deviationFraction": -0.00031798637425273224
+    },
+    {
+      "label": "2,600",
+      "statedMm": 2600,
+      "mappedMm": 2599.4932100547444,
+      "deviationFraction": -0.00019491920971370646
+    },
+    {
+      "label": "2,500",
+      "statedMm": 2500,
+      "mappedMm": 2498.5780855706726,
+      "deviationFraction": -0.000568765771730928
+    },
+    {
+      "label": "2,000",
+      "statedMm": 2000,
+      "mappedMm": 1999.607519464052,
+      "deviationFraction": -0.000196240267973935
+    }
+  ],
+  "discrepancies": [
+    {
+      "code": "VD-1",
+      "classification": "drawing_error",
+      "subject": "printed dimension \"3000\"",
+      "detail": "The label states 3,000 mm; the geometry beneath it measures 3,089 mm at the sheet's scale of 1:100.01 (implied 1:97.14, -2.87 % out). Consistent with a manual text override in the CAD file. Excluded from the calibration and from the knowledge base, and not corrected — a dimension text that disagrees with its own geometry is a question for whoever holds the drawing.",
+      "resolved": false
+    },
+    {
+      "code": "VD-4",
+      "classification": "insufficient_evidence",
+      "subject": "room width is not printed",
+      "detail": "The drawing dimensions the room along its length (17,600 mm) but not across it. The width used below, 7,401 mm, is a calibrated measurement between the inner faces of the two walls (199 mm and 202 mm thick), not a printed dimension. It carries the weaker `calibrated_measurement` method wherever it is recorded, and a printed dimension would supersede it.",
+      "resolved": false
+    }
+  ],
+  "pipeline": {
+    "room": {
+      "lengthMm": 17600,
+      "widthMm": 7400.147565981584,
+      "lengthSource": "printed dimension \"17,600\"",
+      "widthSource": "calibrated measurement between wall inner faces"
+    },
+    "placements": [
+      {
+        "equipmentObjectId": "dialysis_bed",
+        "count": 10,
+        "footprint": {
+          "width": 1000,
+          "depth": 2100
+        }
+      },
+      {
+        "equipmentObjectId": "vantive_ak98",
+        "count": 10,
+        "footprint": {
+          "width": 800,
+          "depth": 800
+        }
+      }
+    ],
+    "evaluation": {
+      "red": 0,
+      "yellow": 60,
+      "green": 0,
+      "reasonCodes": [
+        "RC-110",
+        "RC-202",
+        "RC-321"
+      ]
+    },
+    "optimiser": {
+      "proposals": 3,
+      "resolvedCount": 10,
+      "emptyReason": null
+    },
+    "installationPlan": {
+      "stages": 6,
+      "blockers": 2
+    },
+    "report": {
+      "reportVersion": 2,
+      "overallVerdict": "inconclusive",
+      "pdfBytes": 164234
+    }
+  }
+}

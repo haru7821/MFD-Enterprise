@@ -33,6 +33,7 @@ function observation(
         datasetId: 'test',
         drawingId,
         path: `drawings/${drawingId}.pdf`,
+        page: 0,
         sheet: null,
         revision: null,
         sha256: null,

@@ -211,6 +211,7 @@ export function withDeliveryAllowance(millimetres: readonly number[]): Knowledge
         datasetId: 'fixture',
         drawingId: `fixture-drawing-${index}`,
         path: `fixtures/${index}.pdf`,
+        page: 0,
         sheet: null,
         revision: null,
         sha256: null,

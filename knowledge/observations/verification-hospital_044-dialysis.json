@@ -8,19 +8,20 @@
           "datasetId": "dialysis-drawings",
           "drawingId": "Hospital_044/dialysis.pdf",
           "path": "Hospital_044/dialysis.pdf",
+          "page": 0,
           "sheet": null,
           "revision": null,
           "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4"
         },
+        "method": "dimension_line",
         "observer": {
           "type": "ai",
           "name": "MFD Drawing Verification Harness",
           "version": "1.0"
         },
         "observationDate": "2026-07-31",
-        "method": "dimension_line",
         "confidence": "high",
-        "note": "Printed as \"2,000\" (베드 간격). Its geometry measures 2000 mm at the sheet's established scale, so the label and the line agree."
+        "note": "Printed as \"2,000\". Its geometry measures 2000 mm at the sheet's established scale, so the label and the line agree."
       },
       "value": {
         "kind": "common_dimension",
@@ -36,19 +37,20 @@
           "datasetId": "dialysis-drawings",
           "drawingId": "Hospital_044/dialysis.pdf",
           "path": "Hospital_044/dialysis.pdf",
+          "page": 0,
           "sheet": null,
           "revision": null,
           "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4"
         },
+        "method": "calibrated_measurement",
         "observer": {
           "type": "ai",
           "name": "MFD Drawing Verification Harness",
           "version": "1.0"
         },
         "observationDate": "2026-07-31",
-        "method": "calibrated_measurement",
         "confidence": "medium",
-        "note": "Not printed on the drawing. Measured between the inner faces of the two 200 mm and 199 mm walls on a cross-section at mid-hall, against the scale established from the sheet's own dimension lines. Good to about ±4 mm — the worst deviation any printed dimension showed against that scale, applied at this width."
+        "note": "Not printed on the drawing. Measured between the inner faces of the two 200 mm and 199 mm walls on a cross-section at mid-room, against the scale established from the sheet's own dimension lines. Good to about ±4 mm — the worst deviation any printed dimension showed against that scale, applied at this width."
       },
       "value": {
         "kind": "common_dimension",

@@ -179,14 +179,16 @@
   "discrepancies": [
     {
       "code": "VD-1",
+      "classification": "drawing_error",
       "subject": "printed dimension \"3000\"",
-      "detail": "The label states 3,000 mm; the geometry beneath it measures 3,093 mm at the sheet's scale of 1:100.02 (implied 1:97.01, -3.01 % out). Excluded from the calibration and from the knowledge base. Not corrected — a dimension text that disagrees with its own geometry is a question for whoever holds the CAD file.",
+      "detail": "The label states 3,000 mm; the geometry beneath it measures 3,093 mm at the sheet's scale of 1:100.02 (implied 1:97.01, -3.01 % out). Consistent with a manual text override in the CAD file. Excluded from the calibration and from the knowledge base, and not corrected — a dimension text that disagrees with its own geometry is a question for whoever holds the drawing.",
       "resolved": false
     },
     {
       "code": "VD-4",
-      "subject": "hall width",
-      "detail": "The drawing dimensions the hall along its length (17,600 mm) but not across it. The width used below, 7,402 mm, is a calibrated measurement between the inner faces of the two walls (200 mm and 199 mm thick), not a printed dimension. It carries the weaker `calibrated_measurement` method wherever it is recorded, and a printed dimension would supersede it.",
+      "classification": "insufficient_evidence",
+      "subject": "room width is not printed",
+      "detail": "The drawing dimensions the room along its length (17,600 mm) but not across it. The width used below, 7,402 mm, is a calibrated measurement between the inner faces of the two walls (200 mm and 199 mm thick), not a printed dimension. It carries the weaker `calibrated_measurement` method wherever it is recorded, and a printed dimension would supersede it.",
       "resolved": false
     }
   ],
@@ -237,7 +239,7 @@
     "report": {
       "reportVersion": 2,
       "overallVerdict": "inconclusive",
-      "pdfBytes": 164367
+      "pdfBytes": 164156
     }
   }
 }

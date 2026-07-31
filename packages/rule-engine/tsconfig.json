@@ -5,6 +5,12 @@
     /* No "DOM": the same engine runs in the browser for live feedback and on the
        server as the authority for a signed report (architecture decision AD-3). */
     "lib": ["ES2022"],
+    /* Node types are for the *tests* — evaluators/independence.test.ts reads the evaluator sources
+       to assert that containment, collision and clearance cannot see each other's inputs, which is
+       a promise no behavioural test can keep on its own. The shipped engine must still reach for
+       nothing outside the language: isomorphism.test.ts asserts that, so the guarantee is a test
+       rather than the absence of a type package. */
+    "types": ["node"],
     "resolveJsonModule": true
   },
   "include": ["src", "rules", "fixtures"]

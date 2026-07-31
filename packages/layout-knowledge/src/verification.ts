@@ -121,6 +121,31 @@ export const mappingCheckSchema = z.strictObject({
   deviationFraction: finite,
 });
 
+/**
+ * What kind of thing a discrepancy *is*.
+ *
+ * > Owner decision, validation programme: *"Every discrepancy must be classified as one of: drawing
+ * > error, extraction error, algorithm defect, unsupported drawing, insufficient evidence."*
+ *
+ * The classification decides who acts, and they are five different people. Sorting them by code
+ * alone would not: `VD-2`, a calibrated scale that disagrees with the printed one, is a drawing
+ * error when the sheet was replotted at a different size and an extraction error when this reader
+ * paired a label with the wrong line — the same symptom, opposite owners.
+ */
+export const DISCREPANCY_CLASSES = [
+  /** The drawing contradicts itself, or contradicts a document it cites. Ours to report, not fix. */
+  'drawing_error',
+  /** We read the drawing wrongly. The drawing is fine; the reader is not. */
+  'extraction_error',
+  /** The drawing was read correctly and one of our engines then got it wrong. */
+  'algorithm_defect',
+  /** A drawing of a kind this product cannot process at all — a scan, a photograph, a DWG. */
+  'unsupported_drawing',
+  /** The drawing simply does not carry what was needed. Nobody is at fault and nothing is broken. */
+  'insufficient_evidence',
+] as const;
+export type DiscrepancyClass = (typeof DISCREPANCY_CLASSES)[number];
+
 export const VERIFICATION_DISCREPANCY_CODES = [
   /** A printed dimension's label does not match the geometry beneath it. */
   'VD-1',
@@ -132,11 +157,22 @@ export const VERIFICATION_DISCREPANCY_CODES = [
   'VD-4',
   /** The pipeline produced something the drawing contradicts. */
   'VD-5',
+  /** The file is of a kind this product does not read at all. */
+  'VD-6',
+  /** The drawing does not carry something a later stage needed. */
+  'VD-7',
 ] as const;
 export type VerificationDiscrepancyCode = (typeof VERIFICATION_DISCREPANCY_CODES)[number];
 
 export const verificationDiscrepancySchema = z.strictObject({
   code: z.enum(VERIFICATION_DISCREPANCY_CODES),
+  /**
+   * Which of the five kinds this is — see {@link DISCREPANCY_CLASSES}.
+   *
+   * Recorded per discrepancy rather than per code, because one code can be more than one kind and
+   * only the run that found it knows which.
+   */
+  classification: z.enum(DISCREPANCY_CLASSES),
   /** What it is about — a dimension label, a field name, a stage of the pipeline. */
   subject: z.string().min(1),
   detail: z.string().min(1),
@@ -260,4 +296,75 @@ export function primaryDimensionIsSound(verification: DrawingVerification): bool
     .reduce((best, next) => (next.measuredPt > best.measuredPt ? next : best), primary);
 
   return longestConsistent.label === primary.label;
+}
+
+// ---------------------------------------------------------------------------
+// The corpus ledger
+// ---------------------------------------------------------------------------
+
+/**
+ * Every drawing in the corpus, and how far the validation programme carried it.
+ *
+ * > Owner decision, validation programme: *"Continue validating against the real drawing corpus. For
+ * > every drawing: …"* — and **for every drawing** is the part this exists for. A programme that
+ * recorded only the drawings that worked would report a corpus of six and call it coverage.
+ *
+ * So a row is written for all three hundred, whether they reached the report or stopped at import,
+ * and every stop names its stage and carries a classified discrepancy. The interesting number is not
+ * how many completed; it is which of the five classes the rest fall into, because that says whether
+ * the next engineering effort belongs in the reader, in the engines, or in asking for better
+ * drawings.
+ *
+ * Derived data only — an identifier, a hash and an outcome per drawing. No drawing content.
+ */
+export const CORPUS_VALIDATION_VERSION = 1;
+
+export const corpusRowSchema = z.strictObject({
+  drawingId: z.string().min(1),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  page: z.number().int().nonnegative(),
+  /** The last stage that completed. */
+  reached: z.string().min(1),
+  /** Where it stopped, or null when the whole programme ran. */
+  stoppedAt: z.string().min(1).nullable(),
+  discrepancies: z.array(
+    z.strictObject({
+      code: z.enum(VERIFICATION_DISCREPANCY_CODES),
+      classification: z.enum(DISCREPANCY_CLASSES),
+      subject: z.string().min(1),
+    }),
+  ),
+});
+
+const countSchema = z.strictObject({ key: z.string().min(1), count: z.number().int().nonnegative() });
+
+export const corpusValidationSchema = z.strictObject({
+  version: z.literal(CORPUS_VALIDATION_VERSION),
+  datasetId: z.string().min(1),
+  validatedAt: z.string().min(1),
+  observer: observerSchema,
+  totals: z.strictObject({
+    drawings: z.number().int().nonnegative(),
+    completed: z.number().int().nonnegative(),
+    stopped: z.number().int().nonnegative(),
+    /** Where runs stopped, most common first. Sums to `stopped`. */
+    byStage: z.array(countSchema),
+    /** What kind the discrepancies were. One run can contribute more than one. */
+    byClassification: z.array(countSchema),
+  }),
+  drawings: z.array(corpusRowSchema).min(1),
+});
+
+export type CorpusRow = z.infer<typeof corpusRowSchema>;
+export type CorpusValidation = z.infer<typeof corpusValidationSchema>;
+
+export function parseCorpusValidation(raw: unknown, fileName: string): CorpusValidation {
+  const result = corpusValidationSchema.safeParse(raw);
+  if (!result.success) {
+    throw new VerificationParseError(
+      fileName,
+      result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; '),
+    );
+  }
+  return result.data;
 }

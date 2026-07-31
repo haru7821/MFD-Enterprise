@@ -103,6 +103,20 @@ export const drawingRefSchema = z.strictObject({
   drawingId: z.string().min(1),
   /** Path within the dataset repository, for a human who wants to open it. */
   path: z.string().min(1),
+  /**
+   * Which page of the file the reading was taken from, zero-based.
+   *
+   * > Owner decision, validation programme: an observation must carry *"drawing SHA-256, drawing
+   * > identifier, page, observation type, measured value, measurement method, observer,
+   * > confidence."*
+   *
+   * Required, and zero is a real answer rather than a default. A drawing set is one file holding
+   * several sheets — the importer already takes a `pageIndex` — so "which sheet did this come from"
+   * has no answer the hash can supply: every page of a set shares one SHA-256. Without this field an
+   * observation from page 7 of a twelve-sheet set is indistinguishable from one off its cover, and
+   * nobody checking it later could find the dimension again.
+   */
+  page: z.number().int().nonnegative(),
   /** Sheet identifier printed on the drawing, e.g. "A-201". Null when the sheet is unnumbered. */
   sheet: z.string().min(1).nullable(),
   /** Revision printed on the drawing. A plan is true *at a revision*, like a clearance. */

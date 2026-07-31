@@ -357,81 +357,15 @@ record predicts, then equipment, verdict and a downloaded PDF.
 
 ---
 
-## 8 · The corpus sweep — a negative result
+## 8 · The corpus
 
-> Owner decision: *"After Hospital_044 passes, use the remaining PDF drawings to expand the
-> knowledge base automatically."*
+The one-off sweep this section used to describe has been **superseded by the standing validation
+programme** — `pnpm validate:corpus`, documented in `docs/roadmap/VALIDATION_PROGRAM.md`. One
+programme rather than two overlapping tools, driving the same pipeline this drawing went through
+over every drawing in the corpus and classifying every discrepancy.
 
-Done, as `pnpm verify:sweep` (`scripts/sweep-drawings.ts`). **It adds nothing to the knowledge base,
-and the reason it adds nothing is the result.**
-
-### Coverage
-
-| | Sheets |
-| --- | ---: |
-| Catalogued | 300 |
-| Not a PDF (DWG) | 146 |
-| Scanned — no vector content to read | 65 |
-| Vector CAD exports, attempted | 89 |
-| — fewer than two readable dimensions | 58 |
-| — too few dimensions agree to trust the scale | 16 |
-| — not a dialysis layout | 1 |
-| — width outside a plausible band | 8 |
-| **Reached a measurement** | **5** (+ Hospital_044) |
-
-Of the sheets that reached a measurement, **one** states a scale in readable text that corroborates
-the geometry. The other thirteen state none: their title blocks are plotted as geometry rather than
-as text, so the printed-scale cross-check that worked on Hospital_044 is not available at corpus
-scale. It is applied as a refusal where a scale *is* readable, never as a requirement — requiring it
-measured nothing at all.
-
-### Why the measurement does not generalise
-
-`measureRoomWidth` takes the outermost same-colour wall pair on each side of a cross-section. On
-Hospital_044 that is the treatment hall's own walls, because the hall spans the building's full
-width — and the answer checks out against the title block's area figure to 0.6 %.
-
-Where the treatment room is **one room among several across the section**, the outermost pair is the
-building's exterior wall. The same arithmetic then returns a real distance across the wrong thing:
-
-```
-Hospital_008/dialysis_typeA.pdf         12,698 mm
-Hospital_023/dialysis_typeB_30bed.pdf   14,200 mm
-Hospital_033/dialysis_rev04.pdf         12,798 mm
-Hospital_025/dialysis_typeC.pdf         11,254 mm
-Hospital_035/dialysis_typeA_16bed_2.pdf  5,305 mm
-```
-
-A median of 12.7 m for a quantity that is 7.4 m on the one sheet where it is known to be right.
-These are building widths wearing a treatment-room label. Nothing in the geometry distinguishes the
-two cases; telling them apart needs to know *which* walls bound the treatment room, and that is room
-identification — a feature this product does not have and was not asked for.
-
-So the sweep computes the figure, prints it as a diagnostic, and **writes no observation**. Four
-confident wrong numbers in a knowledge base are worse than an empty one, and the numbers would have
-been indistinguishable from the correct one once aggregated.
-
-### What the sweep does establish
-
-Two sheets in the whole corpus carry a dimension whose text disagrees with the geometry beneath it
-by a margin a draftsman's override can explain:
-
-| Sheet | Label | Sheet scale | Implied | Out by |
-| --- | --- | --- | --- | ---: |
-| `Hospital_044/ro_room.pdf` | `3000` | 1 : 100.01 | 1 : 97.14 | −2.9 % |
-| `Hospital_025/dialysis_typeA.pdf` | `1,950` | 1 : 79.22 | 1 : 80.25 | +1.3 % |
-
-The first is VD-1 arriving independently on the companion sheet, which is what makes it a fact about
-the CAD model rather than about one plot.
-
-A further six labels are reported *an order of magnitude* out. Those are not drawings disagreeing
-with themselves — they are this reader pairing a label with the wrong line, and they are counted
-separately and claimed as nothing. Reporting the two kinds together would make both useless.
-
-### Before a sweep is worth running again
-
-1. **Room identification.** Without it, no across-the-room measurement generalises past a hall that
-   happens to span its building.
-2. **The 58 sheets with fewer than two readable dimensions** are worth a look: some may be reader
-   failures rather than undimensioned drawings, and each one recovered is a sheet that becomes
-   measurable.
+Its finding about this drawing's neighbours has not changed and is worth repeating here: of 306
+drawing-pages, **two complete all nine stages — both of them Hospital_044's**. 211 stop at import
+(DWG or scans), 80 at calibration, and 8 at the room, which is the case for automatic room
+understanding stated in one number. The `3000` override recorded above as VD-1 is one of only three
+drawing errors in the whole corpus, and it appears twice: once on each plot of this plan.

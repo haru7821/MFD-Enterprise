@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 import { parseDataset } from './load';
 import {
+  DISCREPANCY_CLASSES,
+  parseCorpusValidation,
   parseDrawingVerification,
   primaryDimensionIsSound,
   type DrawingVerification,
@@ -269,5 +271,96 @@ describe('the Hospital_044 verification specifically', () => {
       verification!.discrepancies.some((discrepancy) => discrepancy.code === 'VD-4'),
       'a value that is not printed must be recorded as such',
     ).toBe(true);
+  });
+});
+
+describe('the corpus validation ledger', () => {
+  const ledger = parseCorpusValidation(
+    JSON.parse(readFileSync(join(REPO, 'knowledge', 'validation', 'corpus.json'), 'utf8')) as unknown,
+    'knowledge/validation/corpus.json',
+  );
+
+  it('has a row for every drawing the dataset catalogues, and no others', () => {
+    /*
+     * > Owner decision: *"Continue validating against the real drawing corpus. **For every
+     * > drawing** …"*
+     *
+     * The assertion that keeps the ledger a ledger. A run that skipped what it could not read would
+     * report a corpus of two and call it coverage — and the ratio of what completes to what does not
+     * is the whole finding.
+     */
+    const dataset = parseDataset(
+      JSON.parse(readFileSync(join(KNOWLEDGE, 'dataset.json'), 'utf8')) as unknown,
+    );
+    const catalogued = new Set(dataset.drawings.map((drawing) => drawing.drawingId));
+    const validated = new Set(ledger.drawings.map((row) => row.drawingId));
+
+    expect([...catalogued].filter((id) => !validated.has(id))).toEqual([]);
+    expect([...validated].filter((id) => !catalogued.has(id))).toEqual([]);
+  });
+
+  it('classifies every discrepancy it records', () => {
+    // > *"Every discrepancy must be classified as one of: drawing error, extraction error,
+    // > algorithm defect, unsupported drawing, insufficient evidence."*
+    const classes = new Set<string>(DISCREPANCY_CLASSES);
+    for (const row of ledger.drawings) {
+      for (const entry of row.discrepancies) {
+        expect(classes.has(entry.classification), `${row.drawingId} ${entry.code}`).toBe(true);
+      }
+    }
+  });
+
+  it('gives every stopped run a stage and a reason, and every completed run neither', () => {
+    /*
+     * A stop with no discrepancy is a run that gave up without saying why, which is indistinguishable
+     * in a ledger from one that had nothing to report. The converse matters as much: a run that
+     * completed the whole programme cannot also claim to have stopped somewhere.
+     */
+    for (const row of ledger.drawings) {
+      if (row.stoppedAt === null) continue;
+      expect(row.discrepancies.length, `${row.drawingId} p${row.page} stopped silently`).toBeGreaterThan(0);
+    }
+    for (const row of ledger.drawings.filter((entry) => entry.stoppedAt === null)) {
+      expect(row.reached, row.drawingId).toBe('report');
+    }
+  });
+
+  it('its totals are the rows counted, not a claim beside them', () => {
+    // Re-derived rather than trusted: a summary edited to look better stops matching its own rows.
+    expect(ledger.totals.drawings).toBe(ledger.drawings.length);
+    expect(ledger.totals.completed).toBe(
+      ledger.drawings.filter((row) => row.stoppedAt === null).length,
+    );
+    expect(ledger.totals.stopped).toBe(
+      ledger.drawings.filter((row) => row.stoppedAt !== null).length,
+    );
+    expect(ledger.totals.completed + ledger.totals.stopped).toBe(ledger.totals.drawings);
+
+    const byStage = new Map(ledger.totals.byStage.map((entry) => [entry.key, entry.count]));
+    for (const [stage, count] of byStage) {
+      expect(ledger.drawings.filter((row) => row.stoppedAt === stage).length, stage).toBe(count);
+    }
+    const byClass = new Map(ledger.totals.byClassification.map((entry) => [entry.key, entry.count]));
+    for (const [name, count] of byClass) {
+      expect(
+        ledger.drawings.flatMap((row) => row.discrepancies).filter((d) => d.classification === name)
+          .length,
+        name,
+      ).toBe(count);
+    }
+  });
+
+  it('every drawing it says completed has a full record beside it', () => {
+    // The ledger and the records are two views of the same runs. A row claiming a drawing finished
+    // with no record to show for it is a claim nothing backs.
+    const withRecords = new Set(records().map((entry) => entry.verification.drawingId));
+    for (const row of ledger.drawings.filter((entry) => entry.stoppedAt === null)) {
+      expect(withRecords.has(row.drawingId), `${row.drawingId} completed but has no record`).toBe(true);
+    }
+  });
+
+  it('was produced by a model, and says so', () => {
+    expect(ledger.observer.type).toBe('ai');
+    expect(ledger.observer.version).not.toBeNull();
   });
 });
