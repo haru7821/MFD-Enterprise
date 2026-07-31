@@ -5,6 +5,7 @@ import type { Boundary } from '@mfd/document-model';
 import {
   fixtureBoundary,
   fixtureCatalog,
+  fixtureClearanceRule,
   fixtureCollisionRule,
   fixtureEquipmentRecord,
   fixtureLShapedRoom,
@@ -116,6 +117,106 @@ describe('room containment', () => {
 
     expect(report.results[0]?.level).toBe('RED');
     expect(report.results[0]?.reason).toContain('Treatment area B');
+  });
+});
+
+describe('equipment against a wall', () => {
+  /*
+   * > Owner decision, VD-5 / A-4: *"A footprint touching the room boundary is considered contained.
+   * > Only geometry extending outside the boundary is a containment failure … Clearance evaluation
+   * > remains completely separate from containment evaluation."*
+   *
+   * Raised by the Hospital_044 verification, where equipment against a wall is not an edge case but
+   * the arrangement the drawing shows — and every such machine reported RED for extending beyond a
+   * room it was entirely inside. See docs/verification/HOSPITAL_044_VERIFICATION.md § 5.
+   */
+
+  it('passes a machine flush against a wall', () => {
+    // y = 0 puts its south edge exactly on the room's south wall.
+    const report = check([fixturePlacement(1, { x: 2_000, y: 0 })], [ROOM]);
+
+    expect(report.results[0]?.level).toBe('GREEN');
+    expect(report.counts.RED ?? 0).toBe(0);
+  });
+
+  it('passes a machine wedged into a corner, touching two walls', () => {
+    const report = check([fixturePlacement(1, { x: 0, y: 0 })], [ROOM]);
+
+    expect(report.results[0]?.level).toBe('GREEN');
+  });
+
+  it('passes a whole row of machines standing along a wall', () => {
+    // The Hospital_044 shape: five stations in a line, every one of them on the wall. This is the
+    // case that produced five REDs and a `not_acceptable` verdict for a sound layout.
+    const row = [0, 1, 2, 3, 4].map((index) =>
+      fixturePlacement(index + 1, { x: index * 2_000, y: 0 }),
+    );
+    const report = check(row, [ROOM]);
+
+    expect(report.counts.RED ?? 0).toBe(0);
+    expect(report.counts.GREEN).toBe(5);
+  });
+
+  it('still flags a machine one millimetre over the wall', () => {
+    /*
+     * The half of the decision that keeps it safe. Contact is contained; *crossing* is not, and one
+     * millimetre of crossing is still crossing. Without this, the tests above would pass equally
+     * against a containment check that had simply been switched off.
+     */
+    const report = check([fixturePlacement(1, { x: 2_000, y: -1 })], [ROOM]);
+
+    expect(report.results[0]?.level).toBe('RED');
+  });
+});
+
+describe('containment and clearance are separate questions', () => {
+  /*
+   * > Owner decision, VD-5 / A-4: *"Clearance evaluation remains completely separate from
+   * > containment evaluation."*
+   *
+   * Held structurally rather than by discipline: `evaluateClearance` is handed `{ placements,
+   * catalog }` and never the boundaries, so it *cannot* read a room outline however the containment
+   * rule is written. These assert the consequence — that changing one question's answer leaves the
+   * other's untouched — because the structural fact is invisible from outside the package and would
+   * be easy to give away in a refactor.
+   */
+  const BOTH_RULES = fixtureRuleSet([
+    fixtureCollisionRule({ ruleId: 'boundary_rule', scope: 'boundary', status: 'verified' }),
+    fixtureClearanceRule({ ruleId: 'front_clearance', status: 'verified', threshold: 1_200 }),
+  ]);
+
+  function evaluateWith(boundaries: readonly Boundary[]) {
+    // Two machines 1,000 mm apart along y — inside the clearance threshold, so the clearance rule
+    // has something to say. Both stand flush on the room's south wall.
+    return evaluate({
+      placements: [
+        fixturePlacement(1, { x: 2_000, y: 0 }),
+        fixturePlacement(2, { x: 2_000, y: 1_750 }),
+      ],
+      catalog: VERIFIED_CATALOG,
+      ruleSet: BOTH_RULES,
+      spatial: spatial(boundaries),
+    });
+  }
+
+  it('leaves every clearance finding identical whether a room is drawn or not', () => {
+    const clearanceOf = (report: ReturnType<typeof evaluateWith>) =>
+      report.results
+        .filter((result) => result.ruleId === 'front_clearance')
+        .map((result) => ({ level: result.level, code: result.reasonCode, measured: result.measured }));
+
+    expect(clearanceOf(evaluateWith([ROOM]))).toEqual(clearanceOf(evaluateWith([])));
+  });
+
+  it('answers containment without consulting the clearance threshold', () => {
+    // Both machines are on the wall and neither is outside the room. That the pair is too close to
+    // *each other* is a different finding, from a different rule, and it does not make either of
+    // them leave the room.
+    const report = evaluateWith([ROOM]);
+    const containment = report.results.filter((result) => result.ruleId === 'boundary_rule');
+
+    expect(containment).toHaveLength(2);
+    expect(containment.every((result) => result.level === 'GREEN')).toBe(true);
   });
 });
 

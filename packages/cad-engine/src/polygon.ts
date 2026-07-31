@@ -202,13 +202,87 @@ export function polygonContains(polygon: Polygon, point: Vec2): boolean {
   return inside;
 }
 
-/** Every vertex of `inner` inside `outer`, and no edge of either crossing the other. */
+/**
+ * Do two segments cross **transversally** — meeting away from every endpoint?
+ *
+ * The distinction between geometry passing *through* geometry and geometry merely *touching* it.
+ * A shared endpoint is not a crossing, collinear overlap is not a crossing, and — the case this
+ * function exists for — an endpoint landing on the interior of the other segment is not a crossing
+ * either. That last shape is a **T-junction**, and it is what a rectangle standing flush against a
+ * wall makes: two of its edges end on the wall, touching it without passing through it.
+ *
+ * Measured as a distance from each endpoint rather than as a tolerance on the parametric position,
+ * because a parametric epsilon means one thing on an 800 mm machine edge and something 20 times
+ * larger on a 17 m room wall. Contact is contact at whatever length.
+ */
+export function segmentsProperlyCross(
+  first: Segment,
+  second: Segment,
+  tolerance = GEOMETRY_EPSILON,
+): boolean {
+  const point = segmentIntersectionPoint(first, second);
+  if (!point) return false;
+
+  for (const endpoint of [first.a, first.b, second.a, second.b]) {
+    if (Math.hypot(point.x - endpoint.x, point.y - endpoint.y) <= tolerance) return false;
+  }
+  return true;
+}
+
+/**
+ * Is `inner` inside `outer`, with **contact counting as inside**?
+ *
+ * > Owner decision, VD-5 / A-4: *"A footprint touching the room boundary is considered contained.
+ * > Only geometry extending outside the boundary is a containment failure. Treat boundary contact
+ * > as topological contact, not as a crossing. Clearance evaluation remains completely separate
+ * > from containment evaluation."*
+ *
+ * ## What was wrong before
+ *
+ * This used to refuse containment whenever any two edges met at all. `polygonContains` has always
+ * counted a point on the outline as inside — its own comment says a machine flush against a wall is
+ * in the room — but the polygon-level test then contradicted it: standing a rectangle against a wall
+ * makes two T-junctions, those read as crossings, and containment was refused for equipment whose
+ * every corner was inside the room.
+ *
+ * The cost was not theoretical. Found by placing a real layout on a real hospital drawing
+ * (`docs/verification/HOSPITAL_044_VERIFICATION.md`), where equipment against a wall is not an edge
+ * case but the ordinary arrangement: **every** machine on a wall reported *"extends beyond the
+ * room"*, and a sound layout came out `not_acceptable`. It had never shown up because every test
+ * room until then was traced with clearance around its equipment.
+ *
+ * ## What it asks now
+ *
+ * Three questions, and a failure of any one is geometry outside the room:
+ *
+ * 1. **Every vertex of `inner` is inside `outer`** — on the outline included.
+ * 2. **No edge crosses another transversally.** Vertices alone are not enough: a rectangle can have
+ *    all four corners inside a C-shaped room while its middle bulges out through the opening, and
+ *    that bulge is a genuine crossing rather than a touch.
+ * 3. **No vertex of `outer` is strictly inside `inner`.** The case (1) and (2) can both miss — a
+ *    reflex corner of the room swallowed by the footprint, where the equipment covers a notch. On
+ *    the outline is not strictly inside, so a machine filling its room exactly still passes.
+ *
+ * ## What this deliberately does not decide
+ *
+ * Whether a machine flush against a wall has enough room to be *serviced* is a clearance question,
+ * answered by the clearance rules against thresholds with documents behind them. Containment answers
+ * "is it in the room". Two questions, two evaluators, two findings — and neither borrows the other's
+ * answer.
+ */
 export function polygonContainsPolygon(outer: Polygon, inner: Polygon): boolean {
   if (!isValidPolygon(outer) || !isValidPolygon(inner)) return false;
   if (!inner.every((vertex) => polygonContains(outer, vertex))) return false;
-  // Vertices alone are not enough: a rectangle can have all four corners inside a
-  // C-shaped room while its middle bulges out through the opening.
-  return !polygonsIntersect(outer, inner);
+
+  for (const edgeOuter of polygonEdges(outer)) {
+    for (const edgeInner of polygonEdges(inner)) {
+      if (segmentsProperlyCross(edgeOuter, edgeInner)) return false;
+    }
+  }
+
+  return !outer.some(
+    (vertex) => polygonContains(inner, vertex) && !isOnPolygonEdge(inner, vertex),
+  );
 }
 
 /** Do two segments properly cross? Shared endpoints and collinear overlap are not crossings. */

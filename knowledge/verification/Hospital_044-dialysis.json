@@ -188,12 +188,6 @@
       "subject": "hall width",
       "detail": "The drawing dimensions the hall along its length (17,600 mm) but not across it. The width used below, 7,402 mm, is a calibrated measurement between the inner faces of the two walls (200 mm and 199 mm thick), not a printed dimension. It carries the weaker `calibrated_measurement` method wherever it is recorded, and a printed dimension would supersede it.",
       "resolved": false
-    },
-    {
-      "code": "VD-5",
-      "subject": "rule engine — equipment flush against a room wall",
-      "detail": "10 of 60 findings report equipment as extending beyond the room outline while every corner of that equipment is inside the outline. The cause is a T-junction: an edge of the footprint ends on the interior of a room edge, and `segmentIntersectionPoint` in @mfd/cad-engine reports that touch as a proper crossing, so `polygonContainsPolygon` refuses containment. Its own documentation says shared endpoints and collinear overlap are not crossings; an endpoint touching the interior of another segment is neither of those cases and is not excluded. Equipment stood against a wall is the ordinary layout — it is what this drawing shows — so every such machine reports RED. Reported, not fixed, per the owner instruction to stop and report a discrepancy first.",
-      "resolved": false
     }
   ],
   "pipeline": {
@@ -222,13 +216,13 @@
       }
     ],
     "evaluation": {
-      "red": 10,
-      "yellow": 50,
+      "red": 0,
+      "yellow": 60,
       "green": 0,
       "reasonCodes": [
         "RC-110",
         "RC-202",
-        "RC-302"
+        "RC-321"
       ]
     },
     "optimiser": {
@@ -238,12 +232,12 @@
     },
     "installationPlan": {
       "stages": 6,
-      "blockers": 12
+      "blockers": 2
     },
     "report": {
       "reportVersion": 2,
-      "overallVerdict": "not_acceptable",
-      "pdfBytes": 162990
+      "overallVerdict": "inconclusive",
+      "pdfBytes": 164367
     }
   }
 }

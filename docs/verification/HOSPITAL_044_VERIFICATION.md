@@ -11,11 +11,16 @@
 > invent any measurement. If any discrepancy is found between the drawing, calibration, optimisation
 > and report, stop and report it before fixing it."*
 
-**Result: the seven goals are met. Three discrepancies were found, and none of them has been fixed.**
-One is in the drawing, one is a value the drawing does not carry, and one is a defect in this
-repository's own geometry code that a real layout exposes. All three are recorded in
-`knowledge/verification/Hospital_044-dialysis.json` with `resolved: false`, and §5 below is the
-report the owner asked for before anything is changed.
+**Result: the seven goals are met. Three discrepancies were found and reported before anything was
+changed.** One is in the drawing, one is a value the drawing does not carry, and one was a defect in
+this repository's own geometry code that a real layout exposed.
+
+The owner has since ruled on all three: **VD-1 and VD-4 approved exactly as implemented**, and
+**VD-5 fixed** by a decision on containment semantics — §5 carries the ruling and §5a the result of
+re-running the verification against it. The two approved discrepancies remain in
+`knowledge/verification/Hospital_044-dialysis.json` with `resolved: false`, because neither is a
+thing to fix: one is a question for whoever holds the CAD file, and the other is the drawing not
+stating something.
 
 | | |
 | --- | --- |
@@ -150,24 +155,27 @@ that separation is asserted by test.
 
 | Stage | Result |
 | --- | --- |
-| Rule engine | 10 RED · 50 YELLOW · 0 GREEN — reason codes `RC-110`, `RC-202`, `RC-302` |
+| Rule engine | **0 RED · 60 YELLOW · 0 GREEN** — reason codes `RC-110`, `RC-202`, `RC-321` |
 | Optimiser | 3 ranked proposals for 10 stations |
-| Installation planner | 6 stages, 12 blockers |
-| Report | `not_acceptable`, report version 2, 162,990 bytes of PDF |
+| Installation planner | 6 stages, 2 blockers |
+| Report | `inconclusive`, report version 2, 164,367 bytes of PDF |
 
 **0 GREEN is correct and is not a failure.** Every rule in `standards/rules/dialysis` is still
-`status: draft`, and a draft rule cannot certify a pass (AD-6a). The 50 YELLOW are 40 clearance
+`status: draft`, and a draft rule cannot certify a pass (AD-6a). The 60 YELLOW are 40 clearance
 findings that say *threshold unknown* — the AK98's service clearances are uncited, which is open
-question A-1 — and 10 collision passes downgraded for the same reason. That is the system reporting
-the state of its evidence, exactly as designed.
+question A-1 — plus 10 collision passes and 10 containment passes, all downgraded for the same
+reason. That is the system reporting the state of its evidence, exactly as designed, and
+`inconclusive` is the honest verdict for a layout no sourced rule has been able to judge.
 
-**The 10 RED are all one defect, and it is ours.** See VD-5.
+The figures above are **after** the VD-5 fix. The first run reported 10 RED, 50 YELLOW, 12 plan
+blockers and a verdict of `not_acceptable`; every one of those REDs was the containment defect. See
+§5a.
 
 ---
 
-## 5 · The three discrepancies — reported, not fixed
+## 5 · The three discrepancies — reported before anything was changed
 
-### VD-1 · The `3000` label disagrees with the line beneath it
+### VD-1 · The `3000` label disagrees with the line beneath it — **approved as implemented**
 
 The label states 3,000 mm. Its geometry measures **3,093 mm** at the sheet's own scale — 3.01 % out,
 where every other dimension on the sheet is within 0.06 %.
@@ -190,7 +198,7 @@ The calibrated and printed scales agree to 0.027 %, well inside the 1 % toleranc
 
 The title block claims A3 and the page is A3.
 
-### VD-4 · The hall's width is not on the drawing
+### VD-4 · The hall's width is not on the drawing — **approved as implemented**
 
 The pipeline needs it; the sheet does not state it. Rather than assume one, it is measured against
 the established scale and carries the weaker method wherever it appears — §4 above, and
@@ -200,38 +208,109 @@ uncertainty of about ±4 mm.
 This is the owner's *"Dimension line이 없으면 measurement unavailable 표시"* honoured in the only
 way that lets the work continue: the value is used, and it never stops saying what it is.
 
-### VD-5 · **Equipment placed flush against a wall is reported as outside the room**
+### VD-5 · Equipment flush against a wall was reported as outside the room — **fixed**
 
-**This is a defect in `@mfd/cad-engine`, found by a real layout, and it is the reason the report says
-`not_acceptable`.**
+**This was a defect in `@mfd/cad-engine`, found by a real layout, and it was the reason the first
+run's report said `not_acceptable`.**
 
-All ten RED findings say a machine *extends beyond the room outline* while **every corner of that
-machine's footprint is inside the outline**. The harness recomputes that containment itself and
-records the contradiction rather than writing a false RED into the record as an engineering result.
+All ten RED findings said a machine *extends beyond the room outline* while **every corner of that
+machine's footprint was inside the outline**. The harness recomputes that containment itself and
+recorded the contradiction rather than writing a false RED into the record as an engineering result.
 
-The cause is precise. `polygonContainsPolygon` requires that no edge of either polygon crosses the
+The cause was precise. `polygonContainsPolygon` required that no edge of either polygon met the
 other. A machine standing against a wall has two footprint edges whose **endpoints land on the
-interior of a room edge** — a T-junction. `segmentIntersectionPoint` reports that touch as a proper
-crossing, so containment is refused:
+interior of a room edge** — a T-junction. `segmentIntersectionPoint` reported that touch as a proper
+crossing, so containment was refused:
 
 ```
 room bottom (0,0)–(17600,0)  ×  machine bottom (1000,0)–(1800,0)   → null   (collinear, correct)
 room bottom (0,0)–(17600,0)  ×  machine left   (1000,800)–(1000,0) → (1000,0)   ← the false crossing
 ```
 
-Its own documentation says *"Shared endpoints and collinear overlap are not crossings."* An endpoint
-touching the **interior** of another segment is neither of those cases, and it is not excluded.
+`polygonContains` had always counted a point on the outline as inside — its own comment says a
+machine flush against a wall is in the room — so the polygon-level test contradicted the point-level
+one. It had never shown up because every test room until then was traced with clearance around its
+equipment.
 
-The consequence is not marginal. Equipment against a wall is the ordinary layout — it is what this
-drawing shows — so on a realistically traced room **every machine on a wall reports RED**, and the
-report's verdict flips to `not_acceptable` for a layout with nothing wrong with it. It has not
-appeared before because every existing test traces a room with clearance around the equipment.
+#### The owner's ruling
 
-**Not fixed, per the instruction to stop and report first.** The fix is one predicate and it needs a
-decision that is not mine to make: whether a footprint edge lying along a room boundary counts as
-contained (equipment against a wall is in the room) or whether the room outline should be traced at
-some clearance from the wall face instead. The first is what an engineer means; the second changes
-what a traced room *is*. Awaiting instruction.
+> *"A footprint touching the room boundary is considered contained. Only geometry extending outside
+> the boundary is a containment failure. Treat boundary contact as topological contact, not as a
+> crossing. Clearance evaluation remains completely separate from containment evaluation. Update
+> polygonContainsPolygon and its tests accordingly."*
+
+Implemented. `polygonContainsPolygon` now asks three questions, and geometry outside the room fails
+any one of them:
+
+1. **Every vertex of the footprint is inside the room**, on the outline included — unchanged.
+2. **No edge crosses another transversally.** The new predicate `segmentsProperlyCross` returns
+   false when the meeting point coincides with any endpoint of either segment, which covers shared
+   endpoints, collinear overlap and — the case this is for — T-junctions. Contact is measured as a
+   distance from the endpoints rather than as a tolerance on parametric position: a parametric
+   epsilon would mean one thing on an 800 mm footprint edge and something twenty times larger on a
+   17 m wall, for the same millimetre of geometry.
+3. **No vertex of the room is strictly inside the footprint.** The case the first two can both miss:
+   a notch swallowed whole, its edges leaving the footprint exactly through the footprint's own
+   corners, so every meeting is an endpoint and no crossing is transversal. On the outline is not
+   strictly inside, so a machine filling its room exactly still passes.
+
+**Clearance is untouched, and was already structurally separate:** `evaluateClearance` is handed
+`{ placements, catalog }` and never the boundaries, so it cannot read a room outline however
+containment is written. Two tests in `boundary.test.ts` now hold the consequence — that every
+clearance finding is identical whether a room is drawn or not, and that containment is answered
+without consulting a clearance threshold.
+
+Whether a machine against a wall has room to be *serviced* remains a clearance question, answered
+against thresholds with documents behind them. Containment answers "is it in the room".
+
+---
+
+## 5a · The verification re-run against the fix
+
+Re-ran `pnpm verify:drawing`. **The ten RED containment findings are gone; nothing else moved.**
+
+| | Before | After |
+| --- | --- | --- |
+| RED | 10 | **0** |
+| YELLOW | 50 | 60 |
+| GREEN | 0 | 0 |
+| Reason codes | `RC-110`, `RC-202`, `RC-302` | `RC-110`, `RC-202`, **`RC-321`** |
+| Optimiser | 3 proposals, 10 stations | *unchanged* |
+| Plan blockers | 12 | 2 |
+| Report verdict | `not_acceptable` | `inconclusive` |
+
+The ten `RC-302` *"extends beyond room"* findings became ten `RC-321` *"inside room, clears every
+obstruction"* — a pass, downgraded to YELLOW because the boundary rule is still `draft`, not because
+anything is wrong with the layout. The plan's blockers fell from 12 to 2 because ten of them were
+open RED findings that should never have existed.
+
+**Nothing about the drawing changed, and nothing was allowed to.** Verified by diff rather than
+asserted:
+
+- `knowledge/observations/hospital-044-verification.json` — **byte-identical**.
+- The record's `calibration`, `dimensions`, `crossCheck` and `mappingChecks` — **byte-identical**.
+- `pipeline.room` and `pipeline.placements` — unchanged.
+- `discrepancies` — VD-1 and VD-4 remain, unresolved. VD-5 is absent because the run no longer finds
+  it: the harness's self-check looks for findings that contradict their own geometry, and there are
+  none.
+
+#### Genuine violations still fire, on this drawing
+
+A fix that merely switched containment off would produce the same headline. Re-run against the same
+room and the same ten stations with a fault introduced:
+
+| Layout | Result |
+| --- | --- |
+| As placed | 0 RED |
+| One machine 1 mm through the wall | **1 RED — `RC-301`**, extends beyond room, with the overhang measured |
+| One machine moved onto its neighbour | **2 RED — `RC-201`** on both machines |
+
+Contact is contained; one millimetre of crossing is not. The unit suite holds the same boundary from
+the other side: a machine flush on a wall, wedged in a corner, and exactly filling its room all pass;
+a machine one millimetre over, one spanning a C-shaped room's mouth, and one swallowing a notch all
+fail. Each of those guards was verified by breaking the implementation and watching the right test
+go red — including the third check, whose first test turned out to be caught by the crossing rule
+instead, so a case that genuinely needs it was constructed.
 
 ---
 
@@ -351,10 +430,8 @@ separately and claimed as nothing. Reporting the two kinds together would make b
 
 ### Before a sweep is worth running again
 
-1. **VD-5.** A sweep that also ran the rule engine would report every wall-mounted machine as outside
-   its room. Settle A-4 first.
-2. **Room identification.** Without it, no across-the-room measurement generalises past a hall that
+1. **Room identification.** Without it, no across-the-room measurement generalises past a hall that
    happens to span its building.
-3. **The 58 sheets with fewer than two readable dimensions** are worth a look: some may be reader
+2. **The 58 sheets with fewer than two readable dimensions** are worth a look: some may be reader
    failures rather than undimensioned drawings, and each one recovered is a sheet that becomes
    measurable.

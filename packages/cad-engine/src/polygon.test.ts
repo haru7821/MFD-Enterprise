@@ -18,6 +18,7 @@ import {
   rectangleToPolygon,
   segmentIntersectionPoint,
   segmentsIntersect,
+  segmentsProperlyCross,
   simplifyPolygon,
 } from './polygon';
 import type { Vec2 } from './vec2';
@@ -153,6 +154,92 @@ describe('polygon inside polygon', () => {
     expect(polygonContainsPolygon(ROOM, outside)).toBe(false);
   });
 
+  it('accepts a machine standing flush against a wall', () => {
+    /*
+     * > Owner decision, VD-5 / A-4: *"A footprint touching the room boundary is considered
+     * > contained … Treat boundary contact as topological contact, not as a crossing."*
+     *
+     * The case that broke on a real drawing. This machine's south edge lies **along** the room's
+     * south wall, so its west and east edges each *end* on that wall — two T-junctions. Read as
+     * crossings, they refused containment for a machine every corner of which is inside the room.
+     */
+    const flush = rectangleToPolygon({ x: 1_000, y: 0, width: 900, height: 750 });
+
+    expect(flush.every((vertex) => polygonContains(ROOM, vertex))).toBe(true);
+    expect(polygonContainsPolygon(ROOM, flush)).toBe(true);
+  });
+
+  it('accepts a machine wedged into a corner, touching two walls at once', () => {
+    // Two walls and a shared vertex with the room itself — the most contact a rectangle can make
+    // without leaving. An engineer putting a machine in the corner of a room has not put it outside.
+    const corner = rectangleToPolygon({ x: 0, y: 0, width: 900, height: 750 });
+
+    expect(polygonContainsPolygon(ROOM, corner)).toBe(true);
+  });
+
+  it('accepts a machine that exactly fills its room', () => {
+    // Every edge collinear, every vertex shared. Degenerate, and still inside: there is no point of
+    // it anywhere outside the room.
+    expect(polygonContainsPolygon(ROOM, rectangleToPolygon({ x: 0, y: 0, width: 4_000, height: 3_000 }))).toBe(
+      true,
+    );
+  });
+
+  it('still rejects a machine one millimetre over the wall', () => {
+    /*
+     * The other side of the decision, and the one that makes it safe. Touching is contained;
+     * *crossing* is not, and the boundary between the two is exactly where it should be. A test
+     * that only proved the flush case would pass just as well against a function that returned true
+     * unconditionally.
+     */
+    const over = rectangleToPolygon({ x: 1_000, y: -1, width: 900, height: 750 });
+
+    expect(polygonContainsPolygon(ROOM, over)).toBe(false);
+  });
+
+  it('rejects a machine covering the reflex corner of an L-shaped room', () => {
+    // Caught by the crossing test: the footprint's top edge passes straight through the L's
+    // vertical wall. Here for completeness — a machine over a notch is out, however it is detected.
+    const overNotch = rectangleToPolygon({ x: 2_500, y: 1_500, width: 1_000, height: 1_000 });
+
+    expect(polygonContains(overNotch, { x: 3_000, y: 2_000 })).toBe(true);
+    expect(polygonContainsPolygon(L_ROOM, overNotch)).toBe(false);
+  });
+
+  it('rejects a machine that swallows a notch whole, touching it only at its own corners', () => {
+    /*
+     * The case neither of the other two checks can see, and the reason containment also asks whether
+     * the *room* has a corner strictly inside the equipment.
+     *
+     * The room's boundary dips up into a triangular notch with its apex at (500, 500). The notch's
+     * two edges leave the machine exactly through its bottom corners — so every meeting is at an
+     * endpoint, no crossing is transversal, and all four machine corners lie on or inside the room.
+     * By vertices and crossings alone this is contained. It is not: the whole notch is floor outside
+     * the room, and the machine is standing on it.
+     */
+    const notchedRoom: Vec2[] = [
+      { x: -2_000, y: 0 },
+      { x: 0, y: 0 },
+      { x: 500, y: 500 },
+      { x: 1_000, y: 0 },
+      { x: 3_000, y: 0 },
+      { x: 3_000, y: 3_000 },
+      { x: -2_000, y: 3_000 },
+    ];
+    const machine = rectangleToPolygon({ x: 0, y: 0, width: 1_000, height: 1_000 });
+
+    // Everything the first two checks look at says yes.
+    expect(machine.every((vertex) => polygonContains(notchedRoom, vertex))).toBe(true);
+    for (const roomEdge of polygonEdges(notchedRoom)) {
+      for (const machineEdge of polygonEdges(machine)) {
+        expect(segmentsProperlyCross(roomEdge, machineEdge)).toBe(false);
+      }
+    }
+    // And the notch's apex is a room corner sitting inside the machine, which is what gives it away.
+    expect(polygonContains(machine, { x: 500, y: 500 })).toBe(true);
+    expect(polygonContainsPolygon(notchedRoom, machine)).toBe(false);
+  });
+
   it('rejects a machine spanning the mouth of a C-shaped room', () => {
     // A C opening east: the notch is x ∈ [1000, 4000], y ∈ [1000, 3000].
     const cRoom: Vec2[] = [
@@ -171,6 +258,50 @@ describe('polygon inside polygon', () => {
 
     expect(spanning.every((vertex) => polygonContains(cRoom, vertex))).toBe(true);
     expect(polygonContainsPolygon(cRoom, spanning)).toBe(false);
+  });
+});
+
+describe('proper crossings', () => {
+  /*
+   * The predicate containment now rests on. Each case below is a way two edges can meet, and only
+   * one of them is geometry passing through geometry.
+   */
+  const wall = { a: { x: 0, y: 0 }, b: { x: 4_000, y: 0 } };
+
+  it('a T-junction is contact, not a crossing', () => {
+    // A machine's side edge ending on the wall it stands against. This is the whole finding.
+    const standingOn = { a: { x: 1_000, y: 750 }, b: { x: 1_000, y: 0 } };
+
+    expect(segmentIntersectionPoint(wall, standingOn)).toEqual({ x: 1_000, y: 0 });
+    expect(segmentsProperlyCross(wall, standingOn)).toBe(false);
+  });
+
+  it('an edge lying along the wall is contact, not a crossing', () => {
+    expect(segmentsProperlyCross(wall, { a: { x: 1_000, y: 0 }, b: { x: 1_900, y: 0 } })).toBe(false);
+  });
+
+  it('a shared endpoint is contact, not a crossing', () => {
+    expect(segmentsProperlyCross(wall, { a: { x: 0, y: 0 }, b: { x: 0, y: 750 } })).toBe(false);
+  });
+
+  it('an edge passing through the wall is a crossing', () => {
+    expect(segmentsProperlyCross(wall, { a: { x: 1_000, y: 750 }, b: { x: 1_000, y: -1 } })).toBe(
+      true,
+    );
+  });
+
+  it('measures contact as a distance, so it does not depend on the segments’ lengths', () => {
+    /*
+     * A parametric epsilon would call this a crossing on the 17 m wall and contact on the 800 mm
+     * one, for the same 1 mm of geometry. Two identical touches, one length apart.
+     */
+    const longWall = { a: { x: 0, y: 0 }, b: { x: 17_600, y: 0 } };
+    const shortEdge = { a: { x: 8_000, y: 800 }, b: { x: 8_000, y: 0 } };
+
+    expect(segmentsProperlyCross(longWall, shortEdge)).toBe(false);
+    expect(segmentsProperlyCross(wall, { a: { x: 1_000, y: 800 }, b: { x: 1_000, y: 0 } })).toBe(
+      false,
+    );
   });
 });
 

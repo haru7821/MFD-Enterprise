@@ -100,27 +100,26 @@ was exercised too.
 Full account in `docs/verification/HOSPITAL_044_VERIFICATION.md`; the record it rests on is
 `knowledge/verification/Hospital_044-dialysis.json` and CI re-derives its arithmetic on every push.
 
-### A-4. Is equipment against a wall inside the room? — **raised by the verification, awaiting a decision**
+### A-4. Is equipment against a wall inside the room? — **resolved**
 
-Found by placing a real layout on a real drawing. A room outline traced at the walls' inner faces
-has equipment standing **on** it, and `polygonContainsPolygon` in `@mfd/cad-engine` refuses
-containment for that case: a footprint edge whose endpoint lands on the interior of a room edge is
-reported as a proper crossing. Every machine against a wall therefore reports RED *"extends beyond
-the room"* while every corner of it is inside the room, and the report's verdict becomes
-`not_acceptable` for a layout with nothing wrong with it.
+Raised by the Hospital_044 verification: a room outline traced at the walls' inner faces has
+equipment standing *on* it, and `polygonContainsPolygon` refused containment for that case. Every
+machine against a wall reported RED *"extends beyond the room"* while every corner of it was inside
+the room, and a sound layout came out `not_acceptable`.
 
-The code is one predicate away from either behaviour, and which one is right is a product question,
-not a geometry one:
+**Owner decision:** *"A footprint touching the room boundary is considered contained. Only geometry
+extending outside the boundary is a containment failure. Treat boundary contact as topological
+contact, not as a crossing. Clearance evaluation remains completely separate from containment
+evaluation."*
 
-1. **Touching is inside.** A machine flush against a wall is in the room. Matches what an engineer
-   means and what every dialysis drawing in the corpus shows.
-2. **The room outline is traced at a clearance from the wall face**, and touching it really is a
-   violation. Changes what a traced room *is*, and every existing project's boundaries with it.
+Implemented in `@mfd/cad-engine`: `segmentsProperlyCross` distinguishes geometry passing *through*
+geometry from geometry *touching* it, and containment additionally refuses a room vertex swallowed
+by a footprint. Re-running the verification took the drawing from 10 RED to 0 with the calibration
+and the knowledge base byte-identical; a machine one millimetre over the wall still reports RED. Full
+account in `docs/verification/HOSPITAL_044_VERIFICATION.md` §5 and §5a.
 
-Nothing has been changed pending the answer — the discrepancy is recorded as VD-5 in the
-verification record with `resolved: false`. Until it is settled, a verdict on any layout with
-equipment against a wall reads RED for the wrong reason, and a corpus-wide sweep would produce
-findings nobody should act on.
+The second option — tracing room outlines at a clearance from the wall face — was not taken, so a
+traced room still means the room.
 
 ---
 
