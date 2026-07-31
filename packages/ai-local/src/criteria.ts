@@ -10,6 +10,8 @@ import { localToModel, sideNormals } from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
 import { evaluate } from '@mfd/rule-engine';
 
+import type { KnowledgeBase } from '@mfd/layout-knowledge';
+
 import { generateCandidates } from './candidates';
 import { type Bounds, boundsAround, boundsOf, routedDistance } from './routing';
 
@@ -47,6 +49,19 @@ export interface MeasureInput {
   readonly object: EquipmentObject;
   readonly planStatus: 'none' | 'calibrated' | 'uncalibrated';
   readonly pitchPadding: number;
+  /**
+   * Observed practice from real drawings — Owner decision, layout-knowledge.
+   *
+   * **Required, not optional.** A caller with no knowledge base cannot construct this input, so
+   * there is no path by which a criterion falls back to a figure written into the solver. That is
+   * the requirement — *"the optimization engine must consume this knowledge package rather than
+   * embedding layout assumptions"* — expressed as a compile error rather than a convention.
+   *
+   * It answers "what did other units do", never "what must this one do". Nothing read from it can
+   * reach a compliance verdict: hard gates are a filter on the rule set (AD-17), and this is only
+   * ever consulted for a figure the solver would otherwise have had to invent.
+   */
+  readonly knowledge: KnowledgeBase;
 }
 
 /** Every criterion, measured. The map is total, so a new criterion cannot be silently skipped. */
@@ -238,11 +253,22 @@ function footprintBoundsOf(
  * A layout can satisfy every clearance rule and still require a machine to pass through a 700 mm
  * door, which is why this is a criterion and not a corollary of compliance.
  *
- * The crate allowance is a **planning assumption**, not a manufacturer figure: 150 mm on each side
- * of the design footprint. Stated here rather than buried, because it is exactly the kind of number
- * that should carry a citation once the manual supplies one.
+ * ## The crate allowance comes from drawings, or the criterion is not measured
+ *
+ * This used to be `const CRATE_ALLOWANCE_MM = 150` — a planning assumption written into the solver,
+ * whose own comment admitted it wanted a citation. It is now read from the knowledge base, and when
+ * no drawing has been observed the criterion reports `SC-905` rather than falling back.
+ *
+ * That is a real reduction in what the optimiser can currently discriminate on, and it is the
+ * correct one: a delivery envelope decides whether a machine can physically reach its position, and
+ * a wrong one produces a layout that cannot be installed. An invented 150 mm was not more useful
+ * than no answer, it was less — it looked like a measurement.
+ *
+ * **The maximum observed allowance is used, not the median.** This is a feasibility question, so
+ * the conservative reading is the safe one: a route wide enough for the widest crate anyone drew is
+ * wide enough for all of them. Taking the median would call a machine deliverable on evidence that
+ * half the observed sites would contradict.
  */
-const CRATE_ALLOWANCE_MM = 150;
 
 function measureInstallationFeasibility(input: MeasureInput): Measurement {
   const entry = pointOfKind(input.referencePoints, 'access_entry');
@@ -252,9 +278,17 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
   const within = boundsOf(input.room);
   if (!within) return unavailable('SC-902');
 
+  /*
+   * `isPattern` as well as present: a single drawing's allowance is that site's choice, and seeding
+   * a feasibility envelope from one observation would give the confident answer this package
+   * exists to avoid. Below the support threshold the honest answer is that we do not know yet.
+   */
+  const allowance = input.knowledge.dimension('delivery_crate_allowance');
+  if (!allowance || !allowance.isPattern) return unavailable('SC-905');
+
   const crate = {
-    width: input.object.planningFootprint.width + CRATE_ALLOWANCE_MM * 2,
-    depth: input.object.planningFootprint.depth + CRATE_ALLOWANCE_MM * 2,
+    width: input.object.planningFootprint.width + allowance.maximumMm * 2,
+    depth: input.object.planningFootprint.depth + allowance.maximumMm * 2,
   };
 
   let deliverable = 0;

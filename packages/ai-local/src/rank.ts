@@ -95,6 +95,7 @@ export function rankLayouts(input: RankInput): RankResult {
       object: input.object,
       planStatus: input.planStatus,
       pitchPadding: input.pitchPadding,
+    knowledge: input.knowledge,
       scoring: input.scoring,
       stationTarget: input.stationTarget,
     }),

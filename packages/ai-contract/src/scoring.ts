@@ -218,6 +218,23 @@ export const SCORE_REASON_CODES = {
       en: '{criterion} cannot be computed: no applicable threshold exists to measure headroom above.',
     },
   },
+  /*
+   * The code that replaced an invented constant.
+   *
+   * `installation_feasibility` used a 150 mm delivery allowance written into the solver — a
+   * planning assumption with nothing behind it, whose own comment admitted it wanted a citation.
+   * The owner's layout-knowledge decision says the optimiser must consume observed knowledge rather
+   * than embed assumptions, so the allowance now comes from drawings or the criterion is not
+   * measured. Until drawings are observed, this is what an engineer sees — which is the honest
+   * report of what the dataset can currently support.
+   */
+  'SC-905': {
+    title: { ko: '관측 자료 없음', en: 'No Observed Figure' },
+    template: {
+      ko: '{criterion} 항목에 필요한 값이 도면 관측 자료에 없어 측정할 수 없습니다.',
+      en: '{criterion} cannot be measured: no figure for it has been observed in the drawing dataset.',
+    },
+  },
 } as const;
 export type ScoreReasonCode = keyof typeof SCORE_REASON_CODES;
 

@@ -2,6 +2,7 @@ import type { PlacementSummary, ReferencePointSummary } from '@mfd/ai-contract';
 import type { Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement } from '@mfd/document-model';
 import type { Catalog, EquipmentObject } from '@mfd/object-library';
+import type { KnowledgeBase } from '@mfd/layout-knowledge';
 import type { RuleSet } from '@mfd/rule-engine';
 
 import { type Candidate, generateCandidates } from './candidates';
@@ -47,6 +48,12 @@ export interface PipelineInput {
   readonly stationTarget: number | null;
   /** Extra spacing beyond the design footprint, from the equipment's own service clearance. */
   readonly pitchPadding: number;
+  /**
+   * Observed practice from real drawings, forwarded to every criterion — Owner decision,
+   * layout-knowledge. Required for the same reason it is required on {@link MeasureInput}: with no
+   * optional path, no criterion can fall back to a figure written into the solver.
+   */
+  readonly knowledge: KnowledgeBase;
   /** Existing placements that stay put — an optimisation works around them. */
   readonly existing: readonly Placement[];
   /**

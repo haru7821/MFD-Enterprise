@@ -75,12 +75,14 @@ async function selectRoom(page: Page) {
  * Put the services on the drawing, at one corner of the room.
  *
  * Not optional dressing for the optimisation specs — it is what gives the solver anything to
- * discriminate on. Every clearance figure in the shipped catalogue is null while the AK98 manual
- * is outstanding (A-1), so `compliance_margin`, `maintenance_access` and `installation_feasibility`
- * all report `unavailable`, and with no reference points either the *only* measurable criterion
- * left is future expansion — which saturates in a room this size, and rates every arrangement
- * alike. An engineer who marks where the RO loop and the panel are gets an optimiser that can tell
- * two layouts apart; one who does not gets `already_best` every time, honestly.
+ * discriminate on. Every clearance figure in the shipped catalogue is null while the installation
+ * standards are outstanding (A-1), so `compliance_margin` and `maintenance_access` report
+ * `unavailable`; and `installation_feasibility` reports `SC-905` because the delivery allowance it
+ * needs now comes from observed drawings, of which there are none yet. With no reference points
+ * either, the *only* measurable criterion left is future expansion — which saturates in a room this
+ * size and rates every arrangement alike. An engineer who marks where the RO loop and the panel are
+ * gets an optimiser that can tell two layouts apart; one who does not gets `already_best` every
+ * time, honestly.
  */
 async function placeServices(page: Page) {
   const box = await canvasBox(page);

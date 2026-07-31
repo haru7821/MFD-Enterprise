@@ -62,6 +62,9 @@ importers:
       '@mfd/document-model':
         specifier: workspace:*
         version: link:../../packages/document-model
+      '@mfd/layout-knowledge':
+        specifier: workspace:*
+        version: link:../../packages/layout-knowledge
       '@mfd/object-library':
         specifier: workspace:*
         version: link:../../packages/object-library
@@ -138,6 +141,9 @@ importers:
       '@mfd/document-model':
         specifier: workspace:*
         version: link:../document-model
+      '@mfd/layout-knowledge':
+        specifier: workspace:*
+        version: link:../layout-knowledge
       '@mfd/object-library':
         specifier: workspace:*
         version: link:../object-library
@@ -167,6 +173,12 @@ importers:
       '@mfd/object-library':
         specifier: workspace:*
         version: link:../object-library
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+
+  packages/layout-knowledge:
+    dependencies:
       zod:
         specifier: ^4.4.3
         version: 4.4.3

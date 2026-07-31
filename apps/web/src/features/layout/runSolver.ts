@@ -1,6 +1,7 @@
 import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
 import type { PipelineInput, RankedLayout } from '@mfd/ai-local';
 import { diffPlacements, optimiseLayout, rankLayouts } from '@mfd/ai-local';
+import { dialysisKnowledge } from '@mfd/layout-knowledge/base';
 import type { Level, Placement } from '@mfd/document-model';
 import { obstructionBoundaries } from '@mfd/document-model';
 import type { Catalog, EquipmentObject } from '@mfd/object-library';
@@ -208,6 +209,13 @@ function pipelineInput(
     ruleSet: request.ruleSet,
     planStatus: planStatusOf(request.level),
     pitchPadding: pitchPaddingFor(request.object),
+    /*
+     * Observed practice, from `knowledge/` — Owner decision, layout-knowledge. The shipped base is
+     * empty until drawings are observed, so criteria that would have used a figure written into the
+     * solver report `SC-905` instead. The editor passes the real base rather than a stand-in: a
+     * default assembled here would be the embedded assumption moved one file further out.
+     */
+    knowledge: dialysisKnowledge,
     referencePoints: request.level.referencePoints.map((point) => ({
       id: point.id,
       kind: point.kind,

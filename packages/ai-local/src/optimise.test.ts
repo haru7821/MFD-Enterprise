@@ -7,6 +7,7 @@ import type { Placement } from '@mfd/document-model';
 
 import {
   fixtureCatalog,
+  fixtureKnowledge,
   fixtureMachine,
   fixtureRoom,
   fixtureRoomBoundary,
@@ -67,6 +68,7 @@ function optimise(overrides: Partial<OptimiseInput> = {}) {
     ruleSet: fixtureRuleSet(),
     planStatus: 'calibrated',
     pitchPadding: 1_200,
+    knowledge: fixtureKnowledge(),
     existing: [],
     referencePoints: POINTS,
     scoring: dialysisScoringModel,

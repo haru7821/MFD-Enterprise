@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   fixtureCatalog,
+  fixtureKnowledge,
   fixtureColumn,
   fixtureMachine,
   fixtureRoom,
@@ -39,6 +40,7 @@ function pipeline(overrides: Partial<PipelineInput> = {}) {
     planStatus: 'calibrated',
     stationTarget: 6,
     pitchPadding: 1_200,
+    knowledge: fixtureKnowledge(),
     existing: [],
     referencePoints: [],
     ...overrides,

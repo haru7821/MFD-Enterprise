@@ -7,6 +7,8 @@ import type { Placement } from '@mfd/document-model';
 
 import {
   fixtureCatalog,
+  fixtureKnowledge,
+  withDeliveryAllowance,
   fixtureClearanceRule,
   fixtureCollisionRule,
   fixtureColumn,
@@ -58,6 +60,7 @@ function score(overrides: Partial<ScoreInput> = {}) {
     object: machine,
     planStatus: 'calibrated',
     pitchPadding: 1_200,
+    knowledge: fixtureKnowledge(),
     scoring: dialysisScoringModel,
     stationTarget: 2,
     ...overrides,
@@ -128,7 +131,19 @@ describe('coverage', () => {
       'SC-904',
     );
     expect(breakdown.coverage).toBeLessThan(1);
-    expect(breakdown.coverage).toBeCloseTo(0.6, 6);
+    /*
+     * 0.40, not 0.60. Two of the eight criteria are now unmeasurable rather than one: compliance
+     * margin at 40 % because no rule carries a threshold (A-1), and installation feasibility at
+     * 20 % because the delivery crate allowance used to be a constant written into the solver and
+     * now comes from observed drawings, of which there are none.
+     *
+     * That drop is the owner's layout-knowledge decision showing up in a number. The 150 mm it
+     * replaced was not evidence, and a coverage figure that counted it was overstating what this
+     * product could currently establish.
+     */
+    expect(breakdown.coverage).toBeCloseTo(0.4, 6);
+    expect(breakdown.unavailable.find((e) => e.criterion === 'installation_feasibility')?.reasonCode)
+      .toBe('SC-905');
   });
 
   it('drops to 0.20 when no reference point is placed', () => {
@@ -261,7 +276,13 @@ describe('compliance margin, where a threshold exists', () => {
   ]);
 
   it('measures a margin when there is something to compare against', () => {
-    const breakdown = score({ ruleSet: withThreshold });
+    // Full coverage needs both gaps filled: a rule with a real threshold, and a delivery allowance
+    // observed in enough drawings to count as practice. Supplying only the first would leave this
+    // test asserting 0.80 and quietly describing the knowledge gap rather than the margin.
+    const breakdown = score({
+      ruleSet: withThreshold,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+    });
     const margin = breakdown.criteria.find((entry) => entry.criterion === 'compliance_margin');
 
     expect(margin).toBeDefined();

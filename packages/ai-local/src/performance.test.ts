@@ -5,6 +5,7 @@ import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
 
 import {
   fixtureCatalog,
+  fixtureKnowledge,
   fixtureMachine,
   fixtureRoom,
   fixtureRoomBoundary,
@@ -56,6 +57,7 @@ function ward(stationTarget: number | null, obstructions: { x: number; y: number
     planStatus: 'calibrated',
     stationTarget,
     pitchPadding: 1_200,
+    knowledge: fixtureKnowledge(),
     existing: [],
     referencePoints: POINTS,
     scoring: dialysisScoringModel,

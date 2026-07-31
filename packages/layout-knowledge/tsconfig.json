@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    /* No "DOM": knowledge is read by the browser solver, by a server, and by the aggregation
+       script. Node types are for the tests and the loader, which read checked-in JSON files;
+       isomorphism.test.ts asserts the shipped query path stays free of them. */
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "resolveJsonModule": true
+  },
+  "include": ["src", "knowledge"]
+}

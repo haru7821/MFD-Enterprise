@@ -1,5 +1,6 @@
 import type { Vec2 } from '@mfd/cad-engine';
 import { type Boundary, createBoundary, createObstruction } from '@mfd/document-model';
+import { aggregate, createKnowledgeBase, type KnowledgeBase } from '@mfd/layout-knowledge';
 import { type Catalog, type EquipmentObject, createCatalog } from '@mfd/object-library';
 import { type RuleSet, createRuleSet } from '@mfd/rule-engine';
 
@@ -186,4 +187,46 @@ export function fixtureColumn(at: Vec2 = { x: 3_000, y: 2_500 }, size = 600): Bo
     ],
     'Column C4',
   );
+}
+
+/**
+ * A knowledge base for the solver fixtures.
+ *
+ * Empty by default, because that is what the shipped one is: no drawing has been observed, so
+ * `installation_feasibility` reports `SC-905` and the tests see what an engineer sees today.
+ *
+ * `withDeliveryAllowance` builds one that *can* answer, for the tests that are about the criterion
+ * rather than about its absence. Three drawings, because `PATTERN_SUPPORT_THRESHOLD` is three and a
+ * fixture that squeaked under it would make those tests pass for the wrong reason.
+ */
+export function fixtureKnowledge(): KnowledgeBase {
+  return createKnowledgeBase([]);
+}
+
+export function withDeliveryAllowance(millimetres: readonly number[]): KnowledgeBase {
+  const observations = millimetres.map((value, index) => ({
+    id: `obs-${index}`,
+    source: {
+      drawing: {
+        datasetId: 'fixture',
+        drawingId: `fixture-drawing-${index}`,
+        path: `fixtures/${index}.pdf`,
+        sheet: null,
+        revision: null,
+        sha256: null,
+      },
+      method: 'dimension_line' as const,
+      observedBy: 'Fixture Engineer',
+      observedAt: '2026-07-31',
+      note: null,
+    },
+    value: {
+      kind: 'common_dimension' as const,
+      name: 'delivery_crate_allowance' as const,
+      millimetres: value,
+      roomFunction: null,
+    },
+  }));
+
+  return createKnowledgeBase(aggregate(observations, ['fixture']));
 }

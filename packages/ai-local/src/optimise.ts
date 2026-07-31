@@ -136,6 +136,7 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
     object: input.object,
     planStatus: input.planStatus,
     pitchPadding: input.pitchPadding,
+    knowledge: input.knowledge,
     scoring: input.scoring,
     stationTarget: stationCount,
   });

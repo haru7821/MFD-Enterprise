@@ -2,7 +2,7 @@
   "name": "@mfd/web",
   "version": "0.1.0",
   "private": true,
-  "description": "MFD-E web client \u2014 medical layout designer canvas.",
+  "description": "MFD-E web client — medical layout designer canvas.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,6 +16,7 @@
     "@mfd/ai-planner": "workspace:*",
     "@mfd/cad-engine": "workspace:*",
     "@mfd/document-model": "workspace:*",
+    "@mfd/layout-knowledge": "workspace:*",
     "@mfd/object-library": "workspace:*",
     "@mfd/report-engine": "workspace:*",
     "@mfd/rule-engine": "workspace:*",

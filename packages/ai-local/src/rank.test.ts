@@ -6,6 +6,7 @@ import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
 
 import {
   fixtureCatalog,
+  fixtureKnowledge,
   fixtureMachine,
   fixtureRoom,
   fixtureRoomBoundary,
@@ -42,6 +43,7 @@ function rank(overrides: Partial<RankInput> = {}) {
     planStatus: 'calibrated',
     stationTarget: 4,
     pitchPadding: 1_200,
+    knowledge: fixtureKnowledge(),
     existing: [],
     referencePoints: POINTS,
     scoring: dialysisScoringModel,

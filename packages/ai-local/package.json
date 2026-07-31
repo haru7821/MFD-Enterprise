@@ -21,6 +21,7 @@
     "@mfd/ai-contract": "workspace:*",
     "@mfd/cad-engine": "workspace:*",
     "@mfd/document-model": "workspace:*",
+    "@mfd/layout-knowledge": "workspace:*",
     "@mfd/object-library": "workspace:*",
     "@mfd/rule-engine": "workspace:*"
   }
