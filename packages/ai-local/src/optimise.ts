@@ -232,6 +232,9 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
    */
   const currentScore = scoreLayout({
     placements: input.current,
+    // The whole drawing as geometry, the optimised kind as the measured population — the same
+    // split `rankLayouts` scores its candidates with, so the two remain comparable.
+    occupants: [...input.existing, ...input.current],
     catalog: input.catalog,
     ruleSet: input.ruleSet,
     boundaries: input.boundaries,

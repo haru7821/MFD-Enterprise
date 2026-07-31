@@ -230,23 +230,25 @@ export function LayoutPanel() {
                   Which machines, by the labels the engineer typed. A rule id and a reason code say
                   what is wrong; only these say where to go and move something.
                 */}
-                {violation.placements.length > 0 && (
-                  <span className="text-ink-faint">
-                    {' '}
-                    · {violation.placements.map((entry) => entry.label).join(' + ')}
-                  </span>
-                )}
                 {/*
-                  Owner decision: the gates judge the **whole level**, so a machine the engineer did
-                  not select can block this run. Saying so is what keeps that from reading as a bug
-                  — without it the panel names a machine that is not in the room on screen and
-                  offers no reason for mentioning it.
+                  Which machines, and — Owner decision, whole-level gating — which of them are not
+                  in the room on screen. A machine the engineer did not select can block this run,
+                  and without saying so the panel names something they cannot find.
+
+                  The flag sits against **each machine**, not against the row. A collision naming one
+                  machine in this room and one outside it rendered "A + B (not in this room)", which
+                  is true of B and false of A; a row-level flag cannot express a mixed pair, and the
+                  mixed pair is the ordinary case for a collision across a boundary.
                 */}
-                {violation.placements.some((entry) => !entry.inSelectedRoom) && (
-                  <span className="ml-1 text-ink-faint" data-testid="layout-blocking-elsewhere">
-                    (not in this room)
+                {violation.placements.map((entry, index) => (
+                  <span key={entry.id} className="text-ink-faint">
+                    {index === 0 ? ' · ' : ' + '}
+                    {entry.label}
+                    {!entry.inSelectedRoom && (
+                      <span data-testid="layout-blocking-elsewhere"> (not in this room)</span>
+                    )}
                   </span>
-                )}
+                ))}
               </li>
             ))}
           </ul>

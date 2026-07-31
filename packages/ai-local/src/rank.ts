@@ -104,6 +104,9 @@ export function rankLayouts(input: RankInput): RankResult {
        * sides exclude `existing`, so the two totals still measure the same thing.
        */
       placements: entry.placements,
+      // What is in the way: this candidate *and* everything already on the drawing. The measured
+      // population narrows to one kind; the geometry does not — see `MeasureInput.occupants`.
+      occupants: [...input.existing, ...entry.placements],
       catalog: input.catalog,
       ruleSet: input.ruleSet,
       boundaries: input.boundaries,

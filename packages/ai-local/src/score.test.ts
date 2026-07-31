@@ -49,8 +49,16 @@ const ALL_POINTS: ReferencePointSummary[] = [
 ];
 
 function score(overrides: Partial<ScoreInput> = {}) {
+  const placements = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
   return scoreLayout({
-    placements: [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)],
+    placements,
+    /*
+     * The same list by default, which is the ordinary case: a drawing holding nothing but the
+     * equipment being scored. Tests that need the two to differ — a machine of another kind in the
+     * way — override both, and `occupants` is required rather than defaulted so that a caller has
+     * to decide rather than inherit an answer.
+     */
+    occupants: placements,
     catalog: fixtureCatalog(),
     ruleSet: fixtureRuleSet(),
     boundaries: [fixtureRoomBoundary()],
@@ -66,6 +74,150 @@ function score(overrides: Partial<ScoreInput> = {}) {
     ...overrides,
   });
 }
+
+describe('what is measured, and what is merely in the way', () => {
+  /*
+   * > Owner decision: the gates judge the whole scene; the score measures only the equipment it was
+   * > written for.
+   *
+   * Two roles, and the standing review found what happens when one field plays both. Narrowing the
+   * *measured* population to one kind silently narrowed the *geometry* with it, and criteria began
+   * reporting a room as emptier than it is.
+   *
+   * Each test below breaks on its own criterion. `occupants` holds a machine standing where the
+   * measured ones are not; `placements` never mentions it.
+   */
+  const inTheWay = placement('other', 2_500, 1_000);
+
+  function withOccupant(overrides: Partial<ScoreInput> = {}) {
+    const placements = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
+    return score({ placements, occupants: [...placements, inTheWay], ...overrides });
+  }
+
+  function measurementOf(breakdown: ReturnType<typeof score>, criterion: string) {
+    return breakdown.criteria.find((entry) => entry.criterion === criterion);
+  }
+
+  it('does not offer space another machine is standing in as room to expand into', () => {
+    /*
+     * The finding, in the form it was reported. A 6 × 4 m room already holding three machines fits
+     * no more; measuring only the candidate said three more fit, and moved the total from 0.75 to
+     * 0.9375. It is the one weighted criterion measurable with today's catalogue — every AK98
+     * clearance is null, so the others report `SC-904` — so this was displayed and wrong.
+     */
+    const room = fixtureRoom(6_000, 4_000);
+    const boundaries = [fixtureRoomBoundary(6_000, 4_000)];
+    const occupied = [placement('e1', 1_500, 1_500), placement('e2', 3_000, 1_500), placement('e3', 4_500, 1_500)];
+    const candidate = [placement('c1', 1_500, 3_000), placement('c2', 3_000, 3_000), placement('c3', 4_500, 3_000)];
+
+    const blind = score({ placements: candidate, occupants: candidate, room, boundaries, stationTarget: 3 });
+    const seeing = score({
+      placements: candidate,
+      occupants: [...occupied, ...candidate],
+      room,
+      boundaries,
+      stationTarget: 3,
+    });
+
+    expect(measurementOf(blind, 'future_expansion')?.measured).toBe(3);
+    expect(measurementOf(seeing, 'future_expansion')?.measured).toBe(0);
+    // And the count it reports is still the equipment being measured, not the room's population.
+    expect(seeing.constraints[0]?.measured).toBe(candidate.length);
+  });
+
+  /*
+   * A rule with a real threshold and an observed delivery allowance. Without both,
+   * `compliance_margin` returns `SC-904` and `installation_feasibility` returns `SC-905` before
+   * reaching any geometry at all — so a test of what blocks them, written on the default fixture,
+   * would assert nothing. The first attempt at these did exactly that.
+   */
+  const measurable = {
+    ruleSet: fixtureRuleSet([
+      fixtureClearanceRule({ side: 'front', threshold: 1_200 }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]),
+    knowledge: withDeliveryAllowance([140, 150, 160]),
+  };
+
+  /** Machines sealing both service faces of `a`, and nothing else. */
+  const SEALED = [placement('front', 1_000, 2_000), placement('rear', 1_000, 0)];
+
+  it('counts a machine of another kind as blocking maintenance access', () => {
+    /*
+     * Reachable means at least one service face is clear, so blocking one is not enough — `a` is
+     * boxed front and rear, `b` is left alone, and the fraction has to fall from 1 to 0.5. An
+     * assertion of "no greater than" would have passed on a criterion that ignored `occupants`
+     * entirely, which is how the first version of this test was worthless.
+     */
+    const placements = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
+
+    expect(measurementOf(score({ placements, occupants: placements }), 'maintenance_access')?.measured).toBe(1);
+    expect(
+      measurementOf(
+        score({ placements, occupants: [...placements, ...SEALED] }),
+        'maintenance_access',
+      )?.measured,
+    ).toBe(0.5);
+  });
+
+  it('measures compliance margin against everything in the room', () => {
+    // The headroom probe walks outward from each machine until it hits something. A machine of
+    // another kind standing in that path shortens the reach, and a probe that cannot see it reports
+    // headroom the room does not have.
+    const placements = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
+
+    const clear = measurementOf(score({ ...measurable, placements, occupants: placements }), 'compliance_margin');
+    const boxed = measurementOf(
+      score({ ...measurable, placements, occupants: [...placements, ...SEALED] }),
+      'compliance_margin',
+    );
+
+    expect(clear?.measured).toBeDefined();
+    expect(boxed?.measured).toBeDefined();
+    expect(boxed?.measured).toBeLessThan(clear?.measured ?? 0);
+  });
+
+  it('routes the delivery crate around everything in the room', () => {
+    /*
+     * The crate has to get from the access point to each machine. Everything installed is in its
+     * way — including equipment of other kinds, which is installed too. A route computed against
+     * one kind is a route through the other.
+     */
+    // `a` fills the room's corner, 0–800 in both axes. Three more machines, footprints touching,
+    // close the only two sides it is not walled on. The first attempt left an 900 mm gap between
+    // them and the crate simply drove through it — which is the criterion working, and the test not.
+    const corner = [placement('a', 400, 400)];
+    const sealing = [
+      placement('w', 400, 1_200),
+      placement('x', 1_200, 400),
+      placement('y', 1_200, 1_200),
+    ];
+
+    const open = measurementOf(
+      score({ ...measurable, placements: corner, occupants: corner, stationTarget: 1 }),
+      'installation_feasibility',
+    );
+    const sealed = measurementOf(
+      score({ ...measurable, placements: corner, occupants: [...corner, ...sealing], stationTarget: 1 }),
+      'installation_feasibility',
+    );
+
+    expect(open?.measured).toBe(1);
+    expect(sealed?.measured).toBeLessThan(1);
+  });
+
+  it('keeps the measured population to the equipment being scored', () => {
+    // The other half. `occupants` is geometry; it must never become a station in the count, or the
+    // constraint reports a number the target was never about.
+    expect(withOccupant().constraints[0]).toEqual({
+      constraint: 'station_count',
+      measured: 2,
+      unit: 'count',
+      target: 2,
+    });
+  });
+});
 
 describe('the breakdown', () => {
   it('satisfies the contract schema', () => {

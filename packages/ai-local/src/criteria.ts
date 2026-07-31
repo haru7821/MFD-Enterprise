@@ -39,7 +39,32 @@ const unavailable = (reasonCode: ScoreReasonCode): Measurement => ({
 });
 
 export interface MeasureInput {
+  /**
+   * The equipment being measured and counted — one kind, the kind `object` describes.
+   *
+   * > Owner decision: the gates judge the whole scene; the score measures only the equipment it was
+   * > written for.
+   *
+   * Every criterion here is written against `object`: its planning footprint, its service
+   * clearances, the services it needs routed to it. Handing it another kind makes it apply a
+   * dialysis machine's clearances to a nurse station.
+   */
   readonly placements: readonly Placement[];
+  /**
+   * Everything physically on the drawing, including {@link placements} — what the room actually
+   * contains.
+   *
+   * **Separate from `placements` because the two are different roles**, and collapsing them is a
+   * defect in whichever direction it is done. A criterion needs to know *what it is measuring*
+   * (this equipment) and *what is in the way* (everything), and one field cannot be both.
+   *
+   * Found by the standing review after `placements` was narrowed to one kind and the geometry
+   * silently narrowed with it: `future_expansion` reported **three more stations fit** in a 6 × 4 m
+   * room that already held three machines and fits none, moving the total from 0.75 to 0.9375. It
+   * is the one weighted criterion measurable with today's catalogue — every AK98 clearance is null,
+   * so the rest report `SC-904` — which made it live, displayed, and false about the drawing.
+   */
+  readonly occupants: readonly Placement[];
   readonly catalog: Catalog;
   readonly ruleSet: RuleSet;
   readonly boundaries: readonly Boundary[];
@@ -191,7 +216,8 @@ function freeDistanceOnSide(
   // Start at the face rather than the centre.
   const reach =
     Math.abs(direction.x) > Math.abs(direction.y) ? footprint.width / 2 : footprint.depth / 2;
-  const others = footprintBoundsOf(input.placements, input.catalog, placement.id);
+  // Everything in the room blocks the probe, not only this equipment kind — see `occupants`.
+  const others = footprintBoundsOf(input.occupants, input.catalog, placement.id);
   const ceiling = required * PROBE_CEILING_MULTIPLE;
 
   for (let distance = 0; distance <= ceiling; distance += PROBE_STEP_MM) {
@@ -298,7 +324,7 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
     // problem rather than this criterion's.
     const blockers = [
       ...obstructionBounds(input.obstructions),
-      ...footprintBounds(input.placements, input.catalog, placement.id, crate),
+      ...footprintBounds(input.occupants, input.catalog, placement.id, crate),
     ];
 
     const route = routedDistance({
@@ -328,7 +354,7 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
 
   let reachable = 0;
   for (const placement of input.placements) {
-    const others = footprintBounds(input.placements, input.catalog, placement.id, footprint);
+    const others = footprintBounds(input.occupants, input.catalog, placement.id, footprint);
     const centre = placement.transform.position;
 
     const faces: Bounds[] = [];
@@ -380,13 +406,16 @@ function measureFutureExpansion(input: MeasureInput): Measurement {
    */
   if (input.placements.length === 0) return unavailable('SC-902');
 
-  const occupied = input.placements.map((placement) =>
-    boundsAround(
-      placement.transform.position,
-      input.object.planningFootprint.width,
-      input.object.planningFootprint.depth,
-    ),
-  );
+  /*
+   * Everything in the room, at **its own** footprint.
+   *
+   * Two corrections in one line. The population is `occupants` rather than `placements`, so space
+   * a machine of another kind is standing in is not offered as room to expand into. And the size
+   * comes from each placement's own catalogue entry via `footprintBounds` rather than from
+   * `object.planningFootprint` applied to all of them — which was harmless while every placement
+   * here was the same kind and is wrong the moment it is not.
+   */
+  const occupied = footprintBounds(input.occupants, input.catalog, '', input.object.planningFootprint);
 
   const blocked = [
     ...input.obstructions,

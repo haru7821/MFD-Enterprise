@@ -51,6 +51,69 @@ function rank(overrides: Partial<RankInput> = {}) {
   });
 }
 
+describe('machines already on the drawing', () => {
+  /*
+   * > Owner decision: the gates judge the whole scene; the score measures only the equipment it was
+   * > written for.
+   *
+   * The generate path is where `existing` is largest — `runSolver` passes every placement on the
+   * level — and it was the path with the weaker guard. Every other case in this file passes
+   * `existing: []`, so the split between "what is measured" and "what is in the way" was held only
+   * by a test in `optimise.test.ts`, one call away.
+   */
+  const occupant = {
+    id: 'already-here',
+    equipmentObjectId: machine.id,
+    equipmentObjectVersion: machine.version,
+    label: 'already here',
+    transform: { position: { x: 1_000, y: 1_000 }, rotation: 0, mirrored: false },
+    spaceId: null,
+  };
+
+  it('counts only the candidate, however much else is on the drawing', () => {
+    // `station_count` is the number Gate 1 enforced. A machine that was already there is not part
+    // of the candidate and must not appear in its count, or the constraint reports a figure the
+    // target was never about.
+    const result = rank({ existing: [occupant], stationTarget: 3 });
+    expect(result.layouts.length).toBeGreaterThan(0);
+
+    for (const layout of result.layouts) {
+      expect(layout.placements).toHaveLength(3);
+      expect(layout.score.constraints[0]).toEqual({
+        constraint: 'station_count',
+        measured: 3,
+        unit: 'count',
+        target: 3,
+      });
+    }
+  });
+
+  it('does not offer the space they occupy as room to expand into', () => {
+    // The other role. What the candidate is measured *against* includes them, because they are
+    // standing there — a criterion that cannot see them reports space the room does not have.
+    const withOccupants = rank({
+      existing: [
+        occupant,
+        { ...occupant, id: 'b', transform: { ...occupant.transform, position: { x: 2_600, y: 1_000 } } },
+        { ...occupant, id: 'c', transform: { ...occupant.transform, position: { x: 4_200, y: 1_000 } } },
+      ],
+      stationTarget: 3,
+    });
+    const alone = rank({ stationTarget: 3 });
+
+    const expansionOf = (result: ReturnType<typeof rank>) =>
+      result.layouts[0]?.score.criteria.find((entry) => entry.criterion === 'future_expansion')
+        ?.measured ?? 0;
+
+    expect(result0Defined(withOccupants), 'the occupied run produced no layout').toBe(true);
+    expect(expansionOf(withOccupants)).toBeLessThan(expansionOf(alone));
+  });
+});
+
+function result0Defined(result: ReturnType<typeof rankLayouts>): boolean {
+  return result.layouts[0] !== undefined;
+}
+
 describe('the ranked output', () => {
   it('returns alternatives rather than one answer', () => {
     const result = rank();

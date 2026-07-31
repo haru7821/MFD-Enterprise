@@ -171,6 +171,18 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
          * the owner's whole-level decision — and the panel has to be able to say so.
          */
         placements: (violation.detail.placementIds ?? []).map((id) => {
+          /*
+           * The lookup cannot fail. These ids come from the rule engine, run over
+           * `[...existing, ...current]`, and both of those were filtered out of
+           * `request.level.placements` in this same synchronous call — so `find` is a re-indexing
+           * of a list that has not changed, not a search that might come up empty.
+           *
+           * The fallbacks are therefore unreachable defence rather than handled cases, and are
+           * written as such: `|| id` rather than `?? id` because an *empty* label is the thing a
+           * reader would actually meet, and a row reading " · " names nothing. A missing placement
+           * would report `inSelectedRoom: false`, which would be a lie rather than a default — the
+           * reason this is worth stating instead of leaving to be discovered.
+           */
           const placement = request.level.placements.find((entry) => entry.id === id);
           return {
             id,
