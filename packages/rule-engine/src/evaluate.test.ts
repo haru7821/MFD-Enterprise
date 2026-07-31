@@ -341,7 +341,7 @@ describe('the report', () => {
       ]),
     });
 
-    expect(report.results[0]?.source.document).toBe('Fixture Manual');
+    expect(report.results[0]?.source.document).toBe('Fixture TS Installation Standard');
     expect(report.results[0]?.source.revision).toBe('Rev. 1');
   });
 });

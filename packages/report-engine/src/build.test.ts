@@ -90,7 +90,10 @@ describe('buildReport', () => {
     // versions, because a mismatch in any one of them changes what the numbers mean.
     const { provenance } = report();
 
-    expect(provenance.reportVersion).toBe(1);
+    // 2 since the owner's AK98 source clarification split the datasheet's sourced block into
+    // `specification_data` and `installation_data`. A consumer holding a version 1 report would
+    // read `manufacturer_data`, find nothing, and print an empty datasheet without saying so.
+    expect(provenance.reportVersion).toBe(2);
     // 4 since Sprint 6: `Level.referencePoints`. Written as a literal rather than imported from
     // the schema on purpose — a shape lock that read `DOCUMENT_VERSION` would follow any bump
     // silently, and the point of this line is that changing what a report says about its own
@@ -148,8 +151,8 @@ describe('the equipment schedule', () => {
       height: 1_305,
       weight: null,
     });
-    expect(row?.designFootprint.width).toBe(800);
-    expect(row?.designFootprint.depth).toBe(800);
+    expect(row?.planningFootprint.width).toBe(800);
+    expect(row?.planningFootprint.depth).toBe(800);
   });
 
   it('reports a placement whose catalogue record has gone, rather than dropping it', () => {

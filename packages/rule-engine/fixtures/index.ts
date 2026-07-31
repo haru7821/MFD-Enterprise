@@ -27,12 +27,20 @@ const DRAFT_SOURCE = {
   lastUpdated: '2026-07-29',
 } as const;
 
+/**
+ * A cited source for the **service clearance** group.
+ *
+ * A TS installation standard, not a manufacturer manual, and not by preference: after the owner's
+ * AK98 source clarification, `serviceClearance` is an installation group whose source vocabulary
+ * contains no manufacturer document at all. This fixture cited `manufacturer_manual` until that
+ * decision, and changing the schema turned it into a validation failure — which is the point.
+ */
 const VERIFIED_SOURCE = {
-  document: 'Fixture Manual',
+  document: 'Fixture TS Installation Standard',
   revision: 'Rev. 1',
   section: '1.1 Fixture clearances',
-  type: 'manufacturer_manual',
-  lastUpdated: '2026-07-29',
+  type: 'ts_installation_standard',
+  lastUpdated: '2026-07-31',
 } as const;
 
 export interface FixtureEquipmentOptions {
@@ -88,21 +96,24 @@ export function fixtureEquipmentRecord(
     // The design footprint is what every geometric check measures, so it is the one the
     // fixtures set. Manufacturer dimensions are reference data no evaluator reads, and the
     // footprint carries no verification at all — it is an owner planning property.
-    designFootprint: {
+    planningFootprint: {
       width: options.width ?? 900,
       depth: options.depth ?? 750,
       basis: 'Fixture planning allowance',
     },
     connections: {
-      power: { required: true, port: null, specification: null, verification: draftGroup() },
-      roWater: { required: true, port: null, specification: null, verification: draftGroup() },
-      drain: { required: true, port: null, specification: null, verification: draftGroup() },
+      power: { required: true, specification: null, verification: draftGroup() },
+      roWater: { required: true, specification: null, verification: draftGroup() },
+      drain: { required: true, specification: null, verification: draftGroup() },
     },
     serviceClearance: {
       ...(options.serviceClearance ?? { front: null, rear: null, left: null, right: null }),
       verification: clearanceGroup,
     },
     environmental: { specification: null, verification: draftGroup() },
+    maintenanceAccess: { front: null, rear: null, left: null, right: null, verification: draftGroup() },
+    portLocations: { power: null, roWater: null, drain: null, verification: draftGroup() },
+    installationRouting: { specification: null, verification: draftGroup() },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
   };
 }

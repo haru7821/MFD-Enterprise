@@ -207,7 +207,7 @@ function maximumSlots(input: PipelineInput): number {
   });
   if (probe.length === 0) return 0;
 
-  const footprint = input.object.designFootprint;
+  const footprint = input.object.planningFootprint;
   const width = Math.max(...input.room.map((p) => p.x)) - Math.min(...input.room.map((p) => p.x));
   const depth = Math.max(...input.room.map((p) => p.y)) - Math.min(...input.room.map((p) => p.y));
   const columns = Math.floor(width / (footprint.width + input.pitchPadding));
@@ -221,8 +221,8 @@ function occupiedPolygons(input: PipelineInput): Vec2[][] {
     const object = input.catalog.get(placement.equipmentObjectId);
     if (!object) return [];
     const half = {
-      x: object.designFootprint.width / 2,
-      y: object.designFootprint.depth / 2,
+      x: object.planningFootprint.width / 2,
+      y: object.planningFootprint.depth / 2,
     };
     const { x, y } = placement.transform.position;
     return [

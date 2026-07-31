@@ -48,15 +48,15 @@ export function fixtureMachineRecord(
       weight: null,
       verification: DRAFT_GROUP,
     },
-    designFootprint: {
+    planningFootprint: {
       width: options.width ?? 800,
       depth: options.depth ?? 800,
       basis: 'Fixture planning allowance',
     },
     connections: {
-      power: { required: true, port: null, specification: null, verification: DRAFT_GROUP },
-      roWater: { required: true, port: null, specification: null, verification: DRAFT_GROUP },
-      drain: { required: true, port: null, specification: null, verification: DRAFT_GROUP },
+      power: { required: true, specification: null, verification: DRAFT_GROUP },
+      roWater: { required: true, specification: null, verification: DRAFT_GROUP },
+      drain: { required: true, specification: null, verification: DRAFT_GROUP },
     },
     serviceClearance: {
       front: 1_200,
@@ -66,6 +66,9 @@ export function fixtureMachineRecord(
       verification: DRAFT_GROUP,
     },
     environmental: { specification: null, verification: DRAFT_GROUP },
+    maintenanceAccess: { front: null, rear: null, left: null, right: null, verification: DRAFT_GROUP },
+    portLocations: { power: null, roWater: null, drain: null, verification: DRAFT_GROUP },
+    installationRouting: { specification: null, verification: DRAFT_GROUP },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
   };
 }

@@ -129,7 +129,7 @@ describe('candidate generation', () => {
 
     expect(candidates.length).toBeGreaterThan(0);
 
-    const half = { x: machine.designFootprint.width / 2, y: machine.designFootprint.depth / 2 };
+    const half = { x: machine.planningFootprint.width / 2, y: machine.planningFootprint.depth / 2 };
     for (const candidate of candidates) {
       for (const position of candidate.positions) {
         const corners = [
@@ -183,7 +183,7 @@ describe('candidate generation', () => {
     const maxX = Math.max(...column.vertices.map((v) => v.x));
     const minY = Math.min(...column.vertices.map((v) => v.y));
     const maxY = Math.max(...column.vertices.map((v) => v.y));
-    const half = { x: machine.designFootprint.width / 2, y: machine.designFootprint.depth / 2 };
+    const half = { x: machine.planningFootprint.width / 2, y: machine.planningFootprint.depth / 2 };
 
     for (const candidate of withColumn) {
       for (const position of candidate.positions) {
@@ -278,7 +278,7 @@ describe('the pipeline', () => {
 
     for (const entry of result.feasible) {
       for (const position of entry.placements.map((p) => p.transform.position)) {
-        const half = { x: machine.designFootprint.width / 2, y: machine.designFootprint.depth / 2 };
+        const half = { x: machine.planningFootprint.width / 2, y: machine.planningFootprint.depth / 2 };
         const clear =
           position.x + half.x <= minX ||
           position.x - half.x >= maxX ||
@@ -389,7 +389,7 @@ describe('the pipeline', () => {
 
     expect(result.feasible.length).toBeGreaterThan(0);
 
-    const half = { x: machine.designFootprint.width / 2, y: machine.designFootprint.depth / 2 };
+    const half = { x: machine.planningFootprint.width / 2, y: machine.planningFootprint.depth / 2 };
     for (const entry of result.feasible) {
       for (const position of entry.placements.map((p) => p.transform.position)) {
         const clear =

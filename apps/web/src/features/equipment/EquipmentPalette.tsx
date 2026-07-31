@@ -35,11 +35,14 @@ function manufacturerSize(object: EquipmentObject): string | null {
  */
 const GROUP_CHIP_LABELS: Readonly<Record<VerifiedFieldGroup, string>> = {
   manufacturerDimensions: 'dimensions',
-  serviceClearance: 'clearance',
   power: 'power',
   roWater: 'RO water',
   drain: 'drain',
   environmental: 'environment',
+  serviceClearance: 'clearance',
+  maintenanceAccess: 'access',
+  portLocations: 'ports',
+  installationRouting: 'routing',
 };
 
 /** Why a group carries the status it does, for the chip's tooltip. */
@@ -128,7 +131,7 @@ export function EquipmentPalette() {
                     className="text-ink-muted"
                     data-testid={`footprint-${object.id}`}
                   >
-                    {object.designFootprint.width} × {object.designFootprint.depth} mm
+                    {object.planningFootprint.width} × {object.planningFootprint.depth} mm
                   </span>
                 </div>
                 {manufacturerSize(object) && (

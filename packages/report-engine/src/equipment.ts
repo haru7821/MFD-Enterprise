@@ -1,10 +1,14 @@
 import type { Placement } from '@mfd/document-model';
 import {
+  CONNECTION_KINDS,
+  FIELD_GROUP_ORIGIN,
   VERIFIED_FIELD_GROUPS,
   type Catalog,
+  type ConnectionKind,
   type EquipmentObject,
   type VerifiedFieldGroup,
   fieldVerification,
+  isSourced,
 } from '@mfd/object-library';
 
 import { groupLabelKey } from './groups';
@@ -46,7 +50,10 @@ import type {
 /** "AK 98 Operator Manual · Rev 04 · §15", or null when the group cites nothing. */
 export function citationOf(object: EquipmentObject, group: VerifiedFieldGroup): string | null {
   const { status, source } = fieldVerification(object, group);
-  if (status !== 'verified') return null;
+  // `isSourced`, not `=== 'verified'`: a datasheet-sourced group names a document, a revision and
+  // a section like any other, and dropping its citation would print a figure the report could no
+  // longer stand behind.
+  if (!isSourced(status)) return null;
 
   return [source.document, source.revision, source.section].filter(Boolean).join(' · ');
 }
@@ -122,10 +129,10 @@ export function buildEquipmentSchedule(
         catalogueVersion: object.version,
         quantity,
         manufacturerDimensions: dimensionsOf(object),
-        designFootprint: {
-          width: object.designFootprint.width,
-          depth: object.designFootprint.depth,
-          basis: object.designFootprint.basis,
+        planningFootprint: {
+          width: object.planningFootprint.width,
+          depth: object.planningFootprint.depth,
+          basis: object.planningFootprint.basis,
         },
         verification: verificationOf(object),
       }),
@@ -177,8 +184,6 @@ function fieldsFor(object: EquipmentObject, group: VerifiedFieldGroup): Datashee
   switch (group) {
     case 'manufacturerDimensions':
       return dimensionFields(object);
-    case 'serviceClearance':
-      return [{ label: 'group_serviceClearance', value: sidesOf(object) }];
     case 'power':
     case 'roWater':
     case 'drain':
@@ -190,12 +195,38 @@ function fieldsFor(object: EquipmentObject, group: VerifiedFieldGroup): Datashee
           value: formatSpecification(object.environmental.specification),
         },
       ];
+    case 'serviceClearance':
+      return [{ label: 'group_serviceClearance', value: sidesOf(object.serviceClearance) }];
+    case 'maintenanceAccess':
+      return [{ label: 'group_maintenanceAccess', value: sidesOf(object.maintenanceAccess) }];
+    case 'portLocations':
+      return [{ label: 'group_portLocations', value: portsOf(object) }];
+    case 'installationRouting':
+      return [
+        {
+          label: 'group_installationRouting',
+          value: formatSpecification(object.installationRouting.specification),
+        },
+      ];
   }
 }
 
-function sidesOf(object: EquipmentObject): string | null {
-  const { front, rear, left, right } = object.serviceClearance;
-  return sides(front, rear, left, right);
+function sidesOf(group: { front: number | null; rear: number | null; left: number | null; right: number | null }): string | null {
+  return sides(group.front, group.rear, group.left, group.right);
+}
+
+/**
+ * Where each service lands on the machine, in the object's own millimetres.
+ *
+ * Null when no port has been located, which is every record today: these are installation data,
+ * and the owner's AK98 source clarification put them beyond the reach of the equipment manual.
+ */
+function portsOf(object: EquipmentObject): string | null {
+  const entries = CONNECTION_KINDS.map((kind) => [kind, object.portLocations[kind]] as const)
+    .filter((entry): entry is readonly [ConnectionKind, { x: number; y: number }] => entry[1] !== null)
+    .map(([kind, position]) => `${kind} (${position.x}, ${position.y}) mm`);
+
+  return entries.length === 0 ? null : entries.join(' · ');
 }
 
 function specificationOf(
@@ -220,10 +251,15 @@ function formatSpecification(
 }
 
 export function buildDatasheet(object: EquipmentObject): DatasheetSection {
-  const blocks = (status: 'verified' | 'draft'): DatasheetBlock[] =>
-    VERIFIED_FIELD_GROUPS.filter(
-      (group) => fieldVerification(object, group).status === status,
-    ).map((group) => ({
+  /*
+   * Partitioned on *sourced or not*, rather than on the literal `verified`. With three statuses a
+   * `=== 'verified'` test would have quietly filed every datasheet-sourced group under "draft
+   * data", which is the opposite of what the owner's clarification says about the AK98 datasheet.
+   */
+  const blocks = (
+    include: (group: VerifiedFieldGroup) => boolean,
+  ): DatasheetBlock[] =>
+    VERIFIED_FIELD_GROUPS.filter(include).map((group) => ({
       group: groupLabelKey(group),
       citation: citationOf(object, group),
       fields: fieldsFor(object, group),
@@ -234,14 +270,23 @@ export function buildDatasheet(object: EquipmentObject): DatasheetSection {
     model: object.model,
     manufacturer: object.manufacturer,
     catalogueVersion: object.version,
-    manufacturer_data: blocks('verified'),
-    designFootprint: [
+    specification_data: blocks(
+      (group) =>
+        isSourced(fieldVerification(object, group).status) &&
+        FIELD_GROUP_ORIGIN[group] === 'specification',
+    ),
+    installation_data: blocks(
+      (group) =>
+        isSourced(fieldVerification(object, group).status) &&
+        FIELD_GROUP_ORIGIN[group] === 'installation',
+    ),
+    planningFootprint: [
       {
-        label: 'field_design_footprint',
-        value: `${object.designFootprint.width} × ${object.designFootprint.depth} mm`,
+        label: 'field_planning_footprint',
+        value: `${object.planningFootprint.width} × ${object.planningFootprint.depth} mm`,
       },
-      { label: 'field_footprint_basis', value: object.designFootprint.basis },
+      { label: 'field_footprint_basis', value: object.planningFootprint.basis },
     ],
-    draft_data: blocks('draft'),
+    draft_data: blocks((group) => !isSourced(fieldVerification(object, group).status)),
   };
 }

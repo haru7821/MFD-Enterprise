@@ -7,7 +7,12 @@ import {
   createPlacement,
   createSpace,
 } from '@mfd/document-model';
-import { type Catalog, createCatalog } from '@mfd/object-library';
+import {
+  FIELD_GROUP_ORIGIN,
+  type Catalog,
+  type VerifiedFieldGroup,
+  createCatalog,
+} from '@mfd/object-library';
 import { type RuleSet, createRuleSet } from '@mfd/rule-engine';
 
 import { type ChecklistTemplate, parseChecklistTemplate } from '../src/checklistTemplate';
@@ -41,11 +46,28 @@ const DRAFT_SOURCE = {
 } as const;
 
 const VERIFIED_SOURCE = {
-  document: 'Fixture Installation Manual',
+  document: 'Fixture Equipment Manual',
   revision: 'Rev. 2',
   section: '4.1 Dimensions',
   type: 'manufacturer_manual',
-  lastUpdated: '2026-07-30',
+  lastUpdated: '2026-07-31',
+} as const;
+
+/**
+ * A cited **installation** source.
+ *
+ * Separate from {@link VERIFIED_SOURCE} because it has to be: after the owner's AK98 source
+ * clarification an installation group cannot cite `manufacturer_manual` at all — the schema has no
+ * such member for that side. These fixtures used one verified source for every group, and the
+ * change turned that into a validation failure, which is the enforcement working on the first
+ * record it met.
+ */
+const VERIFIED_INSTALLATION_SOURCE = {
+  document: 'Fixture TS Installation Standard',
+  revision: 'Rev. 1',
+  section: '2.3 Station clearances',
+  type: 'ts_installation_standard',
+  lastUpdated: '2026-07-31',
 } as const;
 
 function draftGroup(): Record<string, unknown> {
@@ -56,6 +78,10 @@ function verifiedGroup(): Record<string, unknown> {
   return { status: 'verified', source: { ...VERIFIED_SOURCE } };
 }
 
+function verifiedInstallationGroup(): Record<string, unknown> {
+  return { status: 'verified', source: { ...VERIFIED_INSTALLATION_SOURCE } };
+}
+
 export interface FixtureEquipmentOptions {
   readonly id?: string;
   readonly model?: string;
@@ -63,14 +89,7 @@ export interface FixtureEquipmentOptions {
   readonly width?: number;
   readonly depth?: number;
   /** Which field groups are cited. Everything not listed stays draft. */
-  readonly verifiedGroups?: readonly (
-    | 'manufacturerDimensions'
-    | 'serviceClearance'
-    | 'power'
-    | 'roWater'
-    | 'drain'
-    | 'environmental'
-  )[];
+  readonly verifiedGroups?: readonly VerifiedFieldGroup[];
   readonly manufacturerDimensions?: {
     width: number | null;
     depth: number | null;
@@ -88,8 +107,18 @@ export interface FixtureEquipmentOptions {
 export function fixtureEquipmentRecord(
   options: FixtureEquipmentOptions = {},
 ): Record<string, unknown> {
-  const verified = new Set(options.verifiedGroups ?? []);
-  const group = (name: string) => (verified.has(name as never) ? verifiedGroup() : draftGroup());
+  const verified = new Set<VerifiedFieldGroup>(options.verifiedGroups ?? []);
+  /*
+   * Which citation a group gets is decided by which *side* it is on, not by the caller. A fixture
+   * that could hand a manufacturer manual to a service clearance would be modelling a record the
+   * schema now refuses, and the tests built on it would be describing a product that cannot exist.
+   */
+  const group = (name: VerifiedFieldGroup) =>
+    !verified.has(name)
+      ? draftGroup()
+      : FIELD_GROUP_ORIGIN[name] === 'installation'
+        ? verifiedInstallationGroup()
+        : verifiedGroup();
 
   return {
     id: options.id ?? 'fixture_machine',
@@ -106,7 +135,7 @@ export function fixtureEquipmentRecord(
       }),
       verification: group('manufacturerDimensions'),
     },
-    designFootprint: {
+    planningFootprint: {
       width: options.width ?? 800,
       depth: options.depth ?? 800,
       basis: 'Fixture planning allowance',
@@ -114,26 +143,38 @@ export function fixtureEquipmentRecord(
     connections: {
       power: {
         required: true,
-        port: null,
         specification: verified.has('power') ? { voltage: '230 V', phase: 1 } : null,
         verification: group('power'),
       },
       roWater: {
         required: true,
-        port: null,
         specification: null,
         verification: group('roWater'),
       },
-      drain: { required: true, port: null, specification: null, verification: group('drain') },
-    },
-    serviceClearance: {
-      ...(options.serviceClearance ?? { front: 1_200, rear: 800, left: 400, right: 400 }),
-      verification: group('serviceClearance'),
+      drain: { required: true, specification: null, verification: group('drain') },
     },
     environmental: {
       specification: verified.has('environmental') ? { temperature: '18–30 °C' } : null,
       verification: group('environmental'),
     },
+    serviceClearance: {
+      ...(options.serviceClearance ?? { front: 1_200, rear: 800, left: 400, right: 400 }),
+      verification: group('serviceClearance'),
+    },
+    maintenanceAccess: {
+      front: null,
+      rear: null,
+      left: null,
+      right: null,
+      verification: group('maintenanceAccess'),
+    },
+    portLocations: {
+      power: null,
+      roWater: null,
+      drain: null,
+      verification: group('portLocations'),
+    },
+    installationRouting: { specification: null, verification: group('installationRouting') },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
   };
 }

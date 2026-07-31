@@ -3,7 +3,7 @@
   "manufacturer": "Vantive",
   "model": "AK98",
   "category": "dialysis_machine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "manufacturerDimensions": {
     "width": 585,
     "depth": 620,
@@ -16,19 +16,18 @@
         "revision": null,
         "section": null,
         "type": "datasheet",
-        "lastUpdated": "2026-07-30"
+        "lastUpdated": "2026-07-31"
       }
     }
   },
-  "designFootprint": {
+  "planningFootprint": {
     "width": 800,
     "depth": 800,
-    "basis": null
+    "basis": "Owner decision, AK98 source clarification: planning footprint for installation review. Larger than the manufacturer dimension to carry hoses, chassis taper and the working space that belongs to the station rather than to the corridor. Does not replace the manufacturer dimension."
   },
   "connections": {
     "power": {
       "required": true,
-      "port": null,
       "specification": null,
       "verification": {
         "status": "draft",
@@ -36,14 +35,13 @@
           "document": null,
           "revision": null,
           "section": null,
-          "type": "estimate",
-          "lastUpdated": "2026-07-30"
+          "type": "datasheet",
+          "lastUpdated": "2026-07-31"
         }
       }
     },
     "roWater": {
       "required": true,
-      "port": null,
       "specification": null,
       "verification": {
         "status": "draft",
@@ -51,14 +49,13 @@
           "document": null,
           "revision": null,
           "section": null,
-          "type": "estimate",
-          "lastUpdated": "2026-07-30"
+          "type": "datasheet",
+          "lastUpdated": "2026-07-31"
         }
       }
     },
     "drain": {
       "required": true,
-      "port": null,
       "specification": null,
       "verification": {
         "status": "draft",
@@ -66,9 +63,22 @@
           "document": null,
           "revision": null,
           "section": null,
-          "type": "estimate",
-          "lastUpdated": "2026-07-30"
+          "type": "datasheet",
+          "lastUpdated": "2026-07-31"
         }
+      }
+    }
+  },
+  "environmental": {
+    "specification": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null,
+        "revision": null,
+        "section": null,
+        "type": "datasheet",
+        "lastUpdated": "2026-07-31"
       }
     }
   },
@@ -83,12 +93,43 @@
         "document": null,
         "revision": null,
         "section": null,
-        "type": "estimate",
-        "lastUpdated": "2026-07-30"
+        "type": "ts_installation_standard",
+        "lastUpdated": "2026-07-31"
       }
     }
   },
-  "environmental": {
+  "maintenanceAccess": {
+    "front": null,
+    "rear": null,
+    "left": null,
+    "right": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null,
+        "revision": null,
+        "section": null,
+        "type": "ts_installation_standard",
+        "lastUpdated": "2026-07-31"
+      }
+    }
+  },
+  "portLocations": {
+    "power": null,
+    "roWater": null,
+    "drain": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null,
+        "revision": null,
+        "section": null,
+        "type": "installation_drawing",
+        "lastUpdated": "2026-07-31"
+      }
+    }
+  },
+  "installationRouting": {
     "specification": null,
     "verification": {
       "status": "draft",
@@ -96,8 +137,8 @@
         "document": null,
         "revision": null,
         "section": null,
-        "type": "estimate",
-        "lastUpdated": "2026-07-30"
+        "type": "ts_installation_standard",
+        "lastUpdated": "2026-07-31"
       }
     }
   },

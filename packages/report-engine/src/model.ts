@@ -55,7 +55,7 @@ import type { LabelKey } from './labels';
  * contradicts its predecessor, and both are in a customer's filing system.
  */
 
-export const REPORT_VERSION = 1;
+export const REPORT_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // 1. Cover page
@@ -146,7 +146,7 @@ export interface EquipmentScheduleRow {
   readonly quantity: number;
   /** Null when the record holds no manufacturer figures at all. */
   readonly manufacturerDimensions: Dimensions | null;
-  readonly designFootprint: Footprint;
+  readonly planningFootprint: Footprint;
   /** One entry per verified field group, one per draft group. */
   readonly verification: readonly FieldGroupStatus[];
 }
@@ -434,20 +434,31 @@ export interface DatasheetField {
  * | Block | What it holds |
  * | --- | --- |
  * | `manufacturer` | Cited figures. Each group names the document it came from. |
- * | `designFootprint` | The owner's planning decision. **No citation, by design.** |
+ * | `planningFootprint` | The owner's planning decision. **No citation, by design.** |
  * | `draft` | Figures with no manual reference yet. |
  *
- * Three blocks and not two: the design footprint is neither verified nor draft. Printing
- * it under "draft" would read as a figure nobody had got round to sourcing, rather than
- * one that will never have a document behind it.
+ * Four blocks and not two.
+ *
+ * The planning footprint is neither sourced nor draft: printing it under "draft" would read as a
+ * figure nobody had got round to sourcing, rather than one that will never have a document behind
+ * it.
+ *
+ * And the sourced figures are split in two, which is the owner's AK98 source clarification made
+ * visible. A cited service clearance comes from a TS installation standard, so printing it under a
+ * heading that says "Manufacturer Data" would attribute it to a document that states no such
+ * thing — the exact confusion the decision exists to end. `specification_data` and
+ * `installation_data` carry their own headings and their own citations.
  */
 export interface DatasheetSection {
   readonly equipmentId: string;
   readonly model: string;
   readonly manufacturer: string | null;
   readonly catalogueVersion: string;
-  readonly manufacturer_data: readonly DatasheetBlock[];
-  readonly designFootprint: readonly DatasheetField[];
+  /** Sourced groups describing what the equipment *is*. Cited to the manufacturer. */
+  readonly specification_data: readonly DatasheetBlock[];
+  /** Sourced groups describing what installing it *requires*. Never cited to the manufacturer. */
+  readonly installation_data: readonly DatasheetBlock[];
+  readonly planningFootprint: readonly DatasheetField[];
   readonly draft_data: readonly DatasheetBlock[];
 }
 

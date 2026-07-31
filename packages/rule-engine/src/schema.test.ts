@@ -167,6 +167,65 @@ describe('verified rules must carry their source', () => {
   });
 });
 
+/**
+ * Owner decision — AK98 source clarification, reaching the rule set.
+ *
+ * > *"Do not populate service clearance … from the equipment manual. Those values must come from:
+ * > TS installation standards, hospital design standards, installation drawings, field validated
+ * > data."*
+ *
+ * The catalogue enforces this on a record. A threshold, though, is the number the evaluator
+ * actually compares against — so a clearance rule cited to the AK98 manual would produce exactly
+ * the verdict the decision exists to prevent, with the catalogue's clearance still honestly null.
+ */
+describe('a cited clearance rule may only come from an installation standard', () => {
+  function cited(type: string, category: 'clearance' | 'collision' = 'clearance') {
+    const record =
+      category === 'clearance'
+        ? fixtureClearanceRule({ status: 'verified' })
+        : fixtureCollisionRule({ status: 'verified' });
+    (record['source'] as Record<string, unknown>)['type'] = type;
+    return record;
+  }
+
+  it.each(['manufacturer_manual', 'datasheet', 'estimate', 'field_measurement'])(
+    'rejects a clearance rule cited to "%s"',
+    (type) => {
+      expect(issuePathsOf(cited(type))).toContain('source.type');
+    },
+  );
+
+  it.each([
+    'ts_installation_standard',
+    'hospital_design_standard',
+    'installation_drawing',
+    'field_validated',
+  ])('accepts a clearance rule cited to "%s"', (type) => {
+    // The permitted list has to work, or the rejections above would only prove that nothing is
+    // citable at all.
+    expect(() => parseRule(cited(type), 'test_rule.json')).not.toThrow();
+  });
+
+  it('leaves a draft clearance rule alone', () => {
+    /*
+     * Every clearance rule shipped today is draft with `estimate` and no document — it claims
+     * nothing, so there is nothing to constrain. Constraining it anyway would make the shipped
+     * standards unloadable and force somebody to invent a citation to get the build green, which
+     * is the precise failure this whole rule exists to prevent.
+     */
+    const record = fixtureClearanceRule({ status: 'draft' });
+    (record['source'] as Record<string, unknown>)['type'] = 'estimate';
+
+    expect(() => parseRule(record, 'test_rule.json')).not.toThrow();
+  });
+
+  it('does not constrain a collision rule, which is not a clearance figure', () => {
+    // An overlap check states no distance taken from any standard. Applying the installation-source
+    // rule to it would be cargo cult: broader is not safer when it makes a true record unwritable.
+    expect(() => parseRule(cited('manufacturer_manual', 'collision'), 'test_rule.json')).not.toThrow();
+  });
+});
+
 describe('error reporting', () => {
   it('names the file and the field', () => {
     const record = fixtureClearanceRule();

@@ -129,7 +129,7 @@ export function generateCandidates(input: GenerateInput): Candidate[] {
  * and not in a room.
  */
 function footprintOf(object: EquipmentObject): { width: number; depth: number } {
-  return { width: object.designFootprint.width, depth: object.designFootprint.depth };
+  return { width: object.planningFootprint.width, depth: object.planningFootprint.depth };
 }
 
 function slotsFor(

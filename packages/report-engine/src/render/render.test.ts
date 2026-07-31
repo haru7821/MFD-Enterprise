@@ -157,7 +157,7 @@ describe('the HTML renderer', () => {
     // planning and draft blocks are what must be present and distinct.
     expect(html).toContain('data-testid="datasheet-planning"');
     expect(html).toContain('data-testid="datasheet-draft"');
-    expect(html).toContain('설계 점유 면적 (설계 기준)');
+    expect(html).toContain('설치 검토 점유 면적 (설계 기준)');
     expect(html).toContain('미검증 자료');
   });
 

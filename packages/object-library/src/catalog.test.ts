@@ -17,18 +17,56 @@ function draftVerification() {
   };
 }
 
-/** A sourced group. */
-function verifiedVerification(section = '3.2 Installation clearances') {
+/** A sourced **specification** group. */
+function verifiedVerification(section = '2.1 Dimensions') {
   return {
     status: 'verified',
     source: {
-      document: 'AK 98 Installation Manual',
+      document: 'AK 98 Operator Manual',
       revision: 'Rev. 4',
       section,
       type: 'manufacturer_manual',
-      lastUpdated: '2026-07-29',
+      lastUpdated: '2026-07-31',
     },
   };
+}
+
+/**
+ * A sourced **installation** group.
+ *
+ * A separate citation because the schema now allows no other kind on this side: an installation
+ * group's source vocabulary contains no manufacturer document at all.
+ */
+function verifiedInstallationVerification(section = '3.2 Station clearances') {
+  return {
+    status: 'verified',
+    source: {
+      document: 'Vantive TS Installation Standard',
+      revision: 'Rev. 1',
+      section,
+      type: 'ts_installation_standard',
+      lastUpdated: '2026-07-31',
+    },
+  };
+}
+
+/** Cite every group on a raw record, each from the document its side allows. */
+function citeEveryGroup(raw: Record<string, unknown>): Record<string, unknown> {
+  for (const group of VERIFIED_FIELD_GROUPS) {
+    const cited =
+      FIELD_GROUP_ORIGIN[group] === 'installation'
+        ? verifiedInstallationVerification()
+        : verifiedVerification();
+
+    if (group === 'power' || group === 'roWater' || group === 'drain') {
+      (raw['connections'] as Record<string, Record<string, unknown>>)[group]!['verification'] =
+        cited;
+    } else {
+      const key = group === 'manufacturerDimensions' ? 'manufacturerDimensions' : group;
+      (raw[key] as Record<string, unknown>)['verification'] = cited;
+    }
+  }
+  return raw;
 }
 
 import { catalog } from '../catalog/index';
@@ -36,6 +74,7 @@ import { createCatalog } from './catalog';
 import { CatalogValidationError, DuplicateEquipmentIdError } from './errors';
 import {
   CLEARANCE_SIDES,
+  FIELD_GROUP_ORIGIN,
   VERIFIED_FIELD_GROUPS,
   fieldVerification,
   groupsWithStatus,
@@ -49,14 +88,17 @@ function record(overrides: Record<string, unknown> = {}): Record<string, unknown
     category: 'dialysis_machine',
     version: '0.1.0',
     manufacturerDimensions: { width: null, depth: null, height: null, weight: null, verification: draftVerification() },
-    designFootprint: { width: 800, depth: 700, basis: null },
+    planningFootprint: { width: 800, depth: 700, basis: null },
     connections: {
-      power: { required: true, port: null, specification: null, verification: draftVerification() },
-      roWater: { required: true, port: null, specification: null, verification: draftVerification() },
-      drain: { required: true, port: null, specification: null, verification: draftVerification() },
+      power: { required: true, specification: null, verification: draftVerification() },
+      roWater: { required: true, specification: null, verification: draftVerification() },
+      drain: { required: true, specification: null, verification: draftVerification() },
     },
     serviceClearance: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
     environmental: { specification: null, verification: draftVerification() },
+    maintenanceAccess: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+    portLocations: { power: null, roWater: null, drain: null, verification: draftVerification() },
+    installationRouting: { specification: null, verification: draftVerification() },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
     ...overrides,
   };
@@ -107,15 +149,7 @@ describe('createCatalog', () => {
   });
 
   it('lists records with any draft group separately', () => {
-    const fully = record({ id: 'verified_machine' }) as Record<string, unknown>;
-    for (const group of ['manufacturerDimensions', 'serviceClearance', 'environmental']) {
-      (fully[group] as Record<string, unknown>)['verification'] = verifiedVerification();
-    }
-    for (const kind of ['power', 'roWater', 'drain']) {
-      ((fully['connections'] as Record<string, Record<string, unknown>>)[kind] ?? {})[
-        'verification'
-      ] = verifiedVerification();
-    }
+    const fully = citeEveryGroup(record({ id: 'verified_machine' }));
 
     const built = createCatalog([
       { fileName: 'a.json', raw: record() },
@@ -168,9 +202,16 @@ describe('the shipped catalogue', () => {
     // Everything not yet taken from a manual must be null, not a plausible number.
     expect(ak98.manufacturerDimensions.weight).toBeNull();
     expect(ak98.environmental.specification).toBeNull();
-    // The footprint is an owner decision with no manual behind it, so its basis is
-    // written as an explicit null rather than a sentence invented to fill the field.
-    expect(ak98.designFootprint.basis).toBeNull();
+    /*
+     * The footprint's basis names the decision behind it, and that is not invented engineering
+     * data — it is an account of an owner decision, which is what `basis` is for. What would be an
+     * invention is a *number* nobody supplied, and the assertions around this one cover those.
+     *
+     * It was null until the owner's AK98 source clarification supplied both the figure and the
+     * reasoning; the sentence must name that decision rather than reading as a general remark.
+     */
+    expect(ak98.planningFootprint.basis).toContain('Owner decision');
+    expect(ak98.planningFootprint.basis).toContain('Does not replace the manufacturer dimension');
     // Every side null, which is what makes every clearance finding read "threshold
     // unknown". Asserted side by side rather than by comparing the whole group, which
     // also carries a verification block checked separately.

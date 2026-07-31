@@ -41,14 +41,27 @@ function machine(overrides: Record<string, unknown> = {}): EquipmentObject {
       category: 'dialysis_machine',
       version: '0.1.0',
         manufacturerDimensions: { width: 585, depth: 620, height: 1_305, weight: null, verification: draftVerification() },
-      designFootprint: { width: 900, depth: 750, basis: null },
+      planningFootprint: { width: 900, depth: 750, basis: null },
       connections: {
-        power: { required: true, port: { x: 100, y: 0 }, specification: null, verification: draftVerification() },
-        roWater: { required: true, port: null, specification: null, verification: draftVerification() },
-        drain: { required: true, port: null, specification: null, verification: draftVerification() },
+        power: { required: true, specification: null, verification: draftVerification() },
+        roWater: { required: true, specification: null, verification: draftVerification() },
+        drain: { required: true, specification: null, verification: draftVerification() },
       },
       serviceClearance: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
       environmental: { specification: null, verification: draftVerification() },
+      maintenanceAccess: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+      /*
+       * One port located and two not, which is the case the tests below are about. The location
+       * lives here rather than on `connections.power` since the owner's AK98 source clarification:
+       * where a service lands is installation data, and no manufacturer document may supply it.
+       */
+      portLocations: {
+        power: { x: 100, y: 0 },
+        roWater: null,
+        drain: null,
+        verification: draftVerification(),
+      },
+      installationRouting: { specification: null, verification: draftVerification() },
       symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
       ...overrides,
     },
@@ -70,7 +83,7 @@ describe('local footprint', () => {
     // work must never overwrite the measurement of the machine that arrives on site.
     const object = machine();
     expect(object.manufacturerDimensions.width).toBe(585);
-    expect(object.designFootprint.width).toBe(900);
+    expect(object.planningFootprint.width).toBe(900);
 
     expect(localFootprintRect(object).width).toBe(900);
     expect(localFootprintRect(object).height).toBe(750);
@@ -86,7 +99,7 @@ describe('local footprint', () => {
     // not an exception.
     const bed = machine({
       manufacturerDimensions: { width: null, depth: null, height: null, weight: null, verification: draftVerification() },
-      designFootprint: { width: 1_000, depth: 2_100, basis: null },
+      planningFootprint: { width: 1_000, depth: 2_100, basis: null },
     });
 
     expect(localFootprintRect(bed)).toEqual({ x: 0, y: 0, width: 1_000, height: 2_100 });
@@ -103,6 +116,9 @@ describe('local footprint', () => {
 
   it('centres the rectangle for a centre origin', () => {
     const object = machine({
+      maintenanceAccess: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+      portLocations: { power: null, roWater: null, drain: null, verification: draftVerification() },
+      installationRouting: { specification: null, verification: draftVerification() },
       symbol: { origin: 'centre', outline: 'rectangle', frontEdge: 'south' },
     });
 
@@ -244,6 +260,9 @@ describe('side normals', () => {
 
   it('turns the whole set with the front edge', () => {
     const eastFacing = machine({
+      maintenanceAccess: { front: null, rear: null, left: null, right: null, verification: draftVerification() },
+      portLocations: { power: null, roWater: null, drain: null, verification: draftVerification() },
+      installationRouting: { specification: null, verification: draftVerification() },
       symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'east' },
     });
 

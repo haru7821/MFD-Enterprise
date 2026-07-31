@@ -27,11 +27,35 @@ export const RULE_CATEGORIES = ['clearance', 'collision'] as const;
 export const RULE_STATUSES = ['draft', 'verified'] as const;
 export const RESULT_LEVELS = ['GREEN', 'YELLOW', 'RED'] as const;
 export const CLEARANCE_SIDES = ['front', 'rear', 'left', 'right'] as const;
+/**
+ * Where a rule's threshold may be cited from.
+ *
+ * > Owner decision, AK98 source clarification: *"Do not populate service clearance … from the
+ * > equipment manual. Those values must come from: TS installation standards, hospital design
+ * > standards, installation drawings, field validated data."*
+ *
+ * The equipment catalogue enforces that on a *record*. This list is the same decision reaching the
+ * other place a clearance figure can live — a **rule**, which is the number the evaluator actually
+ * compares against. Restricting one and not the other would leave the requirement satisfiable in
+ * form while a manual-derived 1,200 mm still produced the verdict.
+ *
+ * The manufacturer types stay available because not every rule is an installation requirement;
+ * {@link INSTALLATION_SOURCE_TYPES} is the subset a clearance rule is held to, enforced in
+ * {@link requireInstallationSourceForClearance}.
+ */
+export const INSTALLATION_SOURCE_TYPES = [
+  'ts_installation_standard',
+  'hospital_design_standard',
+  'installation_drawing',
+  'field_validated',
+] as const;
+
 export const SOURCE_TYPES = [
   'manufacturer_manual',
   'datasheet',
   'field_measurement',
   'estimate',
+  ...INSTALLATION_SOURCE_TYPES,
 ] as const;
 
 /**
@@ -148,9 +172,37 @@ function requireSourceWhenVerified(
   }
 }
 
+/**
+ * A **cited** clearance rule may only cite an installation standard.
+ *
+ * Applied to sourced rules only. A `draft` rule carries `estimate` and no document, which is the
+ * honest state of every clearance rule shipped today — it claims nothing, so there is nothing to
+ * constrain. The moment somebody writes a real threshold and cites it, this decides which documents
+ * are admissible, and the AK98 manual is not among them.
+ */
+function requireInstallationSourceForClearance(
+  rule: { category: RuleCategory; status: RuleStatus; source: z.infer<typeof ruleSourceSchema> },
+  ctx: z.RefinementCtx,
+): void {
+  if (rule.category !== 'clearance' || rule.status !== 'verified') return;
+
+  if (!INSTALLATION_SOURCE_TYPES.some((type) => type === rule.source.type)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['source', 'type'],
+      message:
+        `a cited clearance rule must come from an installation standard, not "${rule.source.type}"; ` +
+        `allowed: ${INSTALLATION_SOURCE_TYPES.join(', ')}`,
+    });
+  }
+}
+
 export const ruleSchema = z
   .discriminatedUnion('category', [clearanceRuleSchema, collisionRuleSchema])
-  .superRefine(requireSourceWhenVerified);
+  .superRefine((rule, ctx) => {
+    requireSourceWhenVerified(rule, ctx);
+    requireInstallationSourceForClearance(rule, ctx);
+  });
 
 export type ClearanceRule = z.infer<typeof clearanceRuleSchema>;
 export type CollisionRule = z.infer<typeof collisionRuleSchema>;

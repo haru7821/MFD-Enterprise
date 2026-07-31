@@ -72,7 +72,7 @@ export function sideNormals(object: EquipmentObject): Record<ClearanceSide, Vec2
  * report quotes and no engine computes with.
  */
 export function localFootprintRect(object: EquipmentObject): Rect {
-  const { width, depth } = object.designFootprint;
+  const { width, depth } = object.planningFootprint;
 
   return object.symbol.origin === 'centre'
     ? rect(-width / 2, -depth / 2, width, depth)
@@ -226,6 +226,14 @@ export interface PortPoint {
  * Connections whose port position is unknown are omitted: we know the machine needs
  * a drain, but not yet where on the chassis it connects, and guessing a position
  * would put a marker on a drawing an engineer might measure from.
+ *
+ * ## Two records, read together
+ *
+ * Whether a service is *required* comes from `connections` — a specification, stated by the
+ * manufacturer. *Where it lands* comes from `portLocations` — an installation requirement, which
+ * the owner's AK98 source clarification put beyond the reach of any manufacturer document. This is
+ * the one place the two sides meet, and they meet as a read rather than as a merge: neither record
+ * can supply the other's field.
  */
 export function portPoints(
   object: EquipmentObject,
@@ -234,13 +242,13 @@ export function portPoints(
   const points: PortPoint[] = [];
 
   for (const kind of CONNECTION_KINDS) {
-    const connection = object.connections[kind];
-    if (connection.port === null) continue;
+    const position = object.portLocations[kind];
+    if (position === null) continue;
 
     points.push({
       kind,
-      position: localToModel(connection.port, transform),
-      required: connection.required,
+      position: localToModel(position, transform),
+      required: object.connections[kind].required,
     });
   }
 

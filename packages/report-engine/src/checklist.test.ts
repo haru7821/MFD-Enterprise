@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { VERIFIED_FIELD_GROUPS } from '@mfd/object-library';
 import { evaluate } from '@mfd/rule-engine';
 
 import { buildChecklist } from './checklist';
@@ -110,8 +111,10 @@ describe('the installation checklist', () => {
       .categories.flatMap((category) => category.items)
       .filter((item) => item.origin === 'data_gap');
 
-    // Six groups on the fixture record, all draft.
-    expect(items).toHaveLength(6);
+    // One per field group on the fixture record, all draft. Counted from the package's own list
+    // rather than hard-coded: the owner's AK98 source clarification added three installation
+    // groups, and a literal 6 here would have gone from "one item per gap" to "six of the nine".
+    expect(items).toHaveLength(VERIFIED_FIELD_GROUPS.length);
     for (const item of items) {
       expect(item.action).toBe('action_obtain_manual');
       expect(item.text?.ko).toMatch(/[가-힣]/);
@@ -120,8 +123,8 @@ describe('the installation checklist', () => {
   });
 
   it('never drops a derived item whose category the template lacks', () => {
-    // A template is customer-editable data and need not carry all six categories. Before
-    // this was handled, a three-category template silently lost two of the six data-gap
+    // A template is customer-editable data and need not carry a category per group. Before
+    // this was handled, a three-category template silently lost several of the data-gap
     // items — "obtain the drain specification" vanishing because a site's template has no
     // Drain heading, with nothing anywhere saying so.
     const single = parseChecklistTemplate('one.json', {
@@ -139,8 +142,10 @@ describe('the installation checklist', () => {
     });
 
     const items = built.categories.flatMap((category) => category.items);
-    // Six draft groups plus one calibration item, all reachable.
-    expect(items.filter((item) => item.origin === 'data_gap')).toHaveLength(6);
+    // One item per draft group plus one calibration item, all reachable.
+    expect(items.filter((item) => item.origin === 'data_gap')).toHaveLength(
+      VERIFIED_FIELD_GROUPS.length,
+    );
     expect(items.filter((item) => item.origin === 'calibration')).toHaveLength(1);
   });
 

@@ -170,7 +170,7 @@ function freeDistanceOnSide(
   const tip = localToModel(normal, transform);
   const direction = { x: tip.x - origin.x, y: tip.y - origin.y };
 
-  const footprint = input.catalog.get(placement.equipmentObjectId)?.designFootprint;
+  const footprint = input.catalog.get(placement.equipmentObjectId)?.planningFootprint;
   if (!footprint) return null;
 
   // Start at the face rather than the centre.
@@ -218,8 +218,8 @@ function footprintBoundsOf(
       return [
         boundsAround(
           placement.transform.position,
-          object.designFootprint.width,
-          object.designFootprint.depth,
+          object.planningFootprint.width,
+          object.planningFootprint.depth,
         ),
       ];
     });
@@ -253,8 +253,8 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
   if (!within) return unavailable('SC-902');
 
   const crate = {
-    width: input.object.designFootprint.width + CRATE_ALLOWANCE_MM * 2,
-    depth: input.object.designFootprint.depth + CRATE_ALLOWANCE_MM * 2,
+    width: input.object.planningFootprint.width + CRATE_ALLOWANCE_MM * 2,
+    depth: input.object.planningFootprint.depth + CRATE_ALLOWANCE_MM * 2,
   };
 
   let deliverable = 0;
@@ -290,7 +290,7 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
   if (input.placements.length === 0) return unavailable('SC-902');
 
   const clearance = input.object.serviceClearance;
-  const footprint = input.object.designFootprint;
+  const footprint = input.object.planningFootprint;
 
   let reachable = 0;
   for (const placement of input.placements) {
@@ -349,8 +349,8 @@ function measureFutureExpansion(input: MeasureInput): Measurement {
   const occupied = input.placements.map((placement) =>
     boundsAround(
       placement.transform.position,
-      input.object.designFootprint.width,
-      input.object.designFootprint.depth,
+      input.object.planningFootprint.width,
+      input.object.planningFootprint.depth,
     ),
   );
 
@@ -441,8 +441,8 @@ function footprintBounds(
     .filter((placement) => placement.id !== exceptId)
     .map((placement) => {
       const object = catalog.get(placement.equipmentObjectId);
-      const width = object?.designFootprint.width ?? size.width;
-      const depth = object?.designFootprint.depth ?? size.depth;
+      const width = object?.planningFootprint.width ?? size.width;
+      const depth = object?.planningFootprint.depth ?? size.depth;
       return boundsAround(placement.transform.position, width, depth);
     });
 }

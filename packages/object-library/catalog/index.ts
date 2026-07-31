@@ -29,7 +29,7 @@ import vantiveAk98 from './vantive_ak98.json';
  * than "estimate" was — but until the manual reference exists nothing computed from this
  * record can reach GREEN, and the service clearances are still null.
  *
- * `designFootprint.basis` is also null, which the schema separately requires for
+ * `planningFootprint.basis` is also null, which the schema separately requires for
  * `verified`: an 800 × 800 planning area needs one sentence saying why.
  *
  * ## On the dialysis bed

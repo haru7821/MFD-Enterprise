@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildDatasheet } from './equipment';
+import {
+  INSTALLATION_FIELD_GROUPS,
+  SPECIFICATION_FIELD_GROUPS,
+  VERIFIED_FIELD_GROUPS,
+} from '@mfd/object-library';
+import { buildDatasheet, buildEquipmentSchedule } from './equipment';
 import { fixtureCatalog, fixtureEquipmentRecord } from '../fixtures/index';
 
 /**
@@ -24,15 +29,26 @@ describe('the equipment datasheet', () => {
       objectWith({ verifiedGroups: ['manufacturerDimensions', 'power'] }),
     );
 
-    expect(sheet.manufacturer_data.map((block) => block.group)).toEqual([
+    expect(sheet.specification_data.map((block) => block.group)).toEqual([
       'group_manufacturerDimensions',
       'group_power',
     ]);
+    // Nothing on the installation side is cited, so that block is empty rather than absorbing them.
+    expect(sheet.installation_data).toEqual([]);
+    /*
+     * Specification groups first, then the four installation groups — the order
+     * `VERIFIED_FIELD_GROUPS` declares, which is now specification before installation. Every
+     * installation group is draft and will stay that way until a TS installation standard is
+     * supplied: that, not a missing AK98 manual, is what A-1 now names.
+     */
     expect(sheet.draft_data.map((block) => block.group)).toEqual([
-      'group_serviceClearance',
       'group_roWater',
       'group_drain',
       'group_environmental',
+      'group_serviceClearance',
+      'group_maintenanceAccess',
+      'group_portLocations',
+      'group_installationRouting',
     ]);
   });
 
@@ -41,8 +57,8 @@ describe('the equipment datasheet', () => {
 
     // Per block, because two groups can come from different documents — a datasheet for the
     // dimensions and the installation manual for the clearances is the ordinary case.
-    expect(sheet.manufacturer_data[0]?.citation).toBe(
-      'Fixture Installation Manual · Rev. 2 · 4.1 Dimensions',
+    expect(sheet.specification_data[0]?.citation).toBe(
+      'Fixture Equipment Manual · Rev. 2 · 4.1 Dimensions',
     );
     for (const block of sheet.draft_data) {
       expect(block.citation, block.group).toBeNull();
@@ -55,13 +71,17 @@ describe('the equipment datasheet', () => {
     // sourcing, and under "manufacturer data" it would be a false citation.
     const sheet = buildDatasheet(objectWith({ verifiedGroups: ['manufacturerDimensions'] }));
 
-    const inBlocks = [...sheet.manufacturer_data, ...sheet.draft_data].flatMap(
+    const inBlocks = [
+      ...sheet.specification_data,
+      ...sheet.installation_data,
+      ...sheet.draft_data,
+    ].flatMap(
       (block) => block.fields,
     );
-    expect(inBlocks.some((field) => field.label === 'field_design_footprint')).toBe(false);
+    expect(inBlocks.some((field) => field.label === 'field_planning_footprint')).toBe(false);
 
-    expect(sheet.designFootprint).toEqual([
-      { label: 'field_design_footprint', value: '800 × 800 mm' },
+    expect(sheet.planningFootprint).toEqual([
+      { label: 'field_planning_footprint', value: '800 × 800 mm' },
       { label: 'field_footprint_basis', value: 'Fixture planning allowance' },
     ]);
   });
@@ -70,33 +90,28 @@ describe('the equipment datasheet', () => {
     // An empty heading reads as a section somebody forgot to fill in.
     const sheet = buildDatasheet(
       objectWith({
-        verifiedGroups: [
-          'manufacturerDimensions',
-          'serviceClearance',
-          'power',
-          'roWater',
-          'drain',
-          'environmental',
-        ],
+        verifiedGroups: [...VERIFIED_FIELD_GROUPS],
       }),
     );
 
     expect(sheet.draft_data).toEqual([]);
-    expect(sheet.manufacturer_data).toHaveLength(6);
+    expect(sheet.specification_data).toHaveLength(SPECIFICATION_FIELD_GROUPS.length);
+    expect(sheet.installation_data).toHaveLength(INSTALLATION_FIELD_GROUPS.length);
   });
 
   it('emits no verified block when nothing is cited — the shipped state', () => {
     const sheet = buildDatasheet(objectWith({}));
 
-    expect(sheet.manufacturer_data).toEqual([]);
-    expect(sheet.draft_data).toHaveLength(6);
+    expect(sheet.specification_data).toEqual([]);
+    expect(sheet.installation_data).toEqual([]);
+    expect(sheet.draft_data).toHaveLength(VERIFIED_FIELD_GROUPS.length);
   });
 
   it('names each clearance side rather than printing one number', () => {
     const sheet = buildDatasheet(
       objectWith({ verifiedGroups: ['serviceClearance'] }),
     );
-    const clearance = sheet.manufacturer_data.find(
+    const clearance = sheet.installation_data.find(
       (block) => block.group === 'group_serviceClearance',
     );
 
@@ -126,10 +141,69 @@ describe('the equipment datasheet', () => {
 
     expect(sheet.manufacturer).toBeNull();
     // The footprint still stands on its own — a bed is a footprint, not a product.
-    expect(sheet.designFootprint[0]?.value).toBe('1000 × 2100 mm');
+    expect(sheet.planningFootprint[0]?.value).toBe('1000 × 2100 mm');
     const dimensions = sheet.draft_data.find(
       (block) => block.group === 'group_manufacturerDimensions',
     );
     expect(dimensions?.fields.every((field) => field.value === null)).toBe(true);
+  });
+});
+
+/**
+ * Owner decision — AK98 source clarification, at the page an engineer reads.
+ *
+ * > *"AK98 datasheet provides: dimensions, weight, electrical requirements, water consumption,
+ * > operating conditions. Status: datasheet_verified."*
+ *
+ * A status the schema accepts but the report files under "draft data" would be worse than no
+ * status at all: the engineer would go chasing a citation that already exists.
+ */
+describe('a datasheet-verified group reads as sourced', () => {
+  function datasheetVerified(group: 'manufacturerDimensions') {
+    const raw = fixtureEquipmentRecord();
+    (raw[group] as Record<string, unknown>)['verification'] = {
+      status: 'datasheet_verified',
+      source: {
+        document: 'AK 98 Product Datasheet',
+        revision: 'Rev. 3',
+        section: '2 Technical data',
+        type: 'datasheet',
+        lastUpdated: '2026-07-31',
+      },
+    };
+    return fixtureCatalog([raw]).require('fixture_machine');
+  }
+
+  it('appears in the sourced block, not the draft block', () => {
+    const sheet = buildDatasheet(datasheetVerified('manufacturerDimensions'));
+
+    expect(sheet.specification_data.map((block) => block.group)).toContain(
+      'group_manufacturerDimensions',
+    );
+    expect(sheet.draft_data.map((block) => block.group)).not.toContain(
+      'group_manufacturerDimensions',
+    );
+  });
+
+  it('prints its citation', () => {
+    // The point of the status. "Datasheet verified" with no document behind it would be a claim.
+    const sheet = buildDatasheet(datasheetVerified('manufacturerDimensions'));
+    const block = sheet.specification_data.find(
+      (entry) => entry.group === 'group_manufacturerDimensions',
+    );
+
+    expect(block?.citation).toBe('AK 98 Product Datasheet · Rev. 3 · 2 Technical data');
+  });
+
+  it('carries the status through to the schedule row', () => {
+    // The schedule counts sourced groups per model. A datasheet-verified group must count.
+    const [row] = buildEquipmentSchedule(
+      [{ object: datasheetVerified('manufacturerDimensions'), quantity: 1 }],
+      [],
+    ).rows;
+
+    expect(
+      row?.verification.find((entry) => entry.group === 'group_manufacturerDimensions')?.status,
+    ).toBe('datasheet_verified');
   });
 });

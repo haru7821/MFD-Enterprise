@@ -772,7 +772,7 @@ function drawSchedule(context: Context, model: ReportModel): void {
     { header: 'field_model', width: 0.12 },
     { header: 'field_quantity', width: 0.06, align: 'right' },
     { header: 'field_manufacturer_dimensions', width: 0.18, align: 'right' },
-    { header: 'field_design_footprint', width: 0.14, align: 'right' },
+    { header: 'field_planning_footprint', width: 0.14, align: 'right' },
     { header: 'field_verification_status', width: 0.24 },
   ];
 
@@ -792,7 +792,7 @@ function drawSchedule(context: Context, model: ReportModel): void {
       { text: `${row.model} (${row.catalogueVersion})` },
       { text: String(row.quantity) },
       { text: size },
-      { text: `${row.designFootprint.width} × ${row.designFootprint.depth} mm` },
+      { text: `${row.planningFootprint.width} × ${row.planningFootprint.depth} mm` },
       { text: status, colour: verified === row.verification.length ? GREEN : AMBER },
     ];
   });
@@ -1343,20 +1343,30 @@ function drawDatasheets(context: Context, model: ReportModel): void {
     );
     advance(context, leading(TYPE.subHeading) + 2);
 
-    // Three blocks, never merged: manufacturer data, the planning footprint, draft data.
-    if (sheet.manufacturer_data.length > 0) {
-      blockHeading(context, 'block_manufacturer_data', GREEN);
-      datasheetBlocks(context, sheet.manufacturer_data);
+    /*
+     * Four blocks, never merged: equipment specification, installation requirements, the planning
+     * footprint, and everything still unsourced. The first two are separate because their
+     * citations come from different authorities and merging them would attribute a clearance to a
+     * manufacturer document.
+     */
+    if (sheet.specification_data.length > 0) {
+      blockHeading(context, 'block_specification_data', GREEN);
+      datasheetBlocks(context, sheet.specification_data);
     }
 
-    blockHeading(context, 'block_design_footprint', PLAN_EQUIPMENT);
+    if (sheet.installation_data.length > 0) {
+      blockHeading(context, 'block_installation_data', GREEN);
+      datasheetBlocks(context, sheet.installation_data);
+    }
+
+    blockHeading(context, 'block_planning_footprint', PLAN_EQUIPMENT);
     reserve(context, leading(TYPE.small));
     draw(context, inlineLabel(context, 'planning_decision'), MARGINS.left + 8, TYPE.small, {
       colour: MUTED,
       context: 'planning note',
     });
     advance(context, leading(TYPE.small));
-    for (const field of sheet.designFootprint) {
+    for (const field of sheet.planningFootprint) {
       keyValueIndented(context, field.label, field.value);
     }
 

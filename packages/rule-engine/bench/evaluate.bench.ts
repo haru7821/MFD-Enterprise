@@ -31,6 +31,10 @@ const DRAFT_SOURCE = {
   lastUpdated: '2026-07-29',
 } as const;
 
+function draftGroup(): Record<string, unknown> {
+  return { status: 'draft', source: { ...DRAFT_SOURCE } };
+}
+
 function equipmentRecord(): Record<string, unknown> {
   return {
     id: 'bench_machine',
@@ -38,19 +42,39 @@ function equipmentRecord(): Record<string, unknown> {
     model: 'BX1',
     category: 'dialysis_machine',
     version: '0.1.0',
-    dataStatus: 'draft',
-    manufacturerDimensions: { width: null, depth: null, height: null, weight: null },
-    designFootprint: { width: 900, depth: 750, basis: 'Bench planning allowance' },
-    connections: {
-      power: { required: true, port: null, specification: null },
-      roWater: { required: true, port: null, specification: null },
-      drain: { required: true, port: null, specification: null },
+    manufacturerDimensions: {
+      width: null,
+      depth: null,
+      height: null,
+      weight: null,
+      verification: draftGroup(),
     },
+    planningFootprint: { width: 900, depth: 750, basis: 'Bench planning allowance' },
+    connections: {
+      power: { required: true, specification: null, verification: draftGroup() },
+      roWater: { required: true, specification: null, verification: draftGroup() },
+      drain: { required: true, specification: null, verification: draftGroup() },
+    },
+    environmental: { specification: null, verification: draftGroup() },
     // Real figures, so the clearance evaluators do actual work rather than
     // returning "threshold unknown" early. The shipped rule set has nulls; a
     // benchmark of the early-exit path would measure nothing.
-    serviceClearance: { front: 1_200, rear: 600, left: 400, right: 400 },
-    source: { ...DRAFT_SOURCE },
+    serviceClearance: {
+      front: 1_200,
+      rear: 600,
+      left: 400,
+      right: 400,
+      verification: draftGroup(),
+    },
+    maintenanceAccess: {
+      front: null,
+      rear: null,
+      left: null,
+      right: null,
+      verification: draftGroup(),
+    },
+    portLocations: { power: null, roWater: null, drain: null, verification: draftGroup() },
+    installationRouting: { specification: null, verification: draftGroup() },
     symbol: { origin: 'front-left', outline: 'rectangle', frontEdge: 'south' },
   };
 }

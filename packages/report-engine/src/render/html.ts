@@ -312,7 +312,7 @@ ${
       <th>${inline('field_model')}</th>
       <th>${inline('field_quantity')}</th>
       <th>${inline('field_manufacturer_dimensions')}</th>
-      <th>${inline('field_design_footprint')}</th>
+      <th>${inline('field_planning_footprint')}</th>
       <th>${inline('field_verification_status')}</th>
     </tr></thead>
     <tbody>
@@ -332,7 +332,7 @@ ${
                   : ` × ${mm(row.manufacturerDimensions.height)}`
               } mm`
         }</td>
-        <td class="numeric">${mm(row.designFootprint.width)} × ${mm(row.designFootprint.depth)} mm</td>
+        <td class="numeric">${mm(row.planningFootprint.width)} × ${mm(row.planningFootprint.depth)} mm</td>
         <td>${row.verification
           .map(
             (v) =>
@@ -615,14 +615,19 @@ ${validation
       (sheet) => `<div class="datasheet" data-equipment="${escape(sheet.equipmentId)}">
     <h3>${escape(sheet.model)} <span class="alt">${text(sheet.manufacturer)} · ${escape(sheet.catalogueVersion)}</span></h3>
     ${
-      sheet.manufacturer_data.length > 0
-        ? `<div class="section-verified" data-testid="datasheet-manufacturer">${heading('block_manufacturer_data', 3)}${sheet.manufacturer_data.map(datasheetBlock).join('')}</div>`
+      sheet.specification_data.length > 0
+        ? `<div class="section-verified" data-testid="datasheet-specification">${heading('block_specification_data', 3)}${sheet.specification_data.map(datasheetBlock).join('')}</div>`
+        : ''
+    }
+    ${
+      sheet.installation_data.length > 0
+        ? `<div class="section-verified" data-testid="datasheet-installation">${heading('block_installation_data', 3)}${sheet.installation_data.map(datasheetBlock).join('')}</div>`
         : ''
     }
     <div class="section-planning" data-testid="datasheet-planning">
-      ${heading('block_design_footprint', 3)}
+      ${heading('block_planning_footprint', 3)}
       <p class="note">${inline('planning_decision')}</p>
-      <dl>${sheet.designFootprint.map((f) => field(f.label, text(f.value))).join('')}</dl>
+      <dl>${sheet.planningFootprint.map((f) => field(f.label, text(f.value))).join('')}</dl>
     </div>
     ${
       sheet.draft_data.length > 0

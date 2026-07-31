@@ -3,7 +3,7 @@
   "manufacturer": null,
   "model": "Dialysis Bed",
   "category": "treatment_bed",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "manufacturerDimensions": {
     "width": null,
     "depth": null,
@@ -16,19 +16,18 @@
         "revision": null,
         "section": null,
         "type": "estimate",
-        "lastUpdated": "2026-07-30"
+        "lastUpdated": "2026-07-31"
       }
     }
   },
-  "designFootprint": {
+  "planningFootprint": {
     "width": 1000,
     "depth": 2100,
-    "basis": null
+    "basis": "Owner decision, AK98 source clarification: bed footprint 1,000 x 2,100 mm. A generic planning object with no manufacturer, so this is the only size it has — there is no manufacturer dimension for it to differ from."
   },
   "connections": {
     "power": {
       "required": false,
-      "port": null,
       "specification": null,
       "verification": {
         "status": "draft",
@@ -37,13 +36,12 @@
           "revision": null,
           "section": null,
           "type": "estimate",
-          "lastUpdated": "2026-07-30"
+          "lastUpdated": "2026-07-31"
         }
       }
     },
     "roWater": {
       "required": false,
-      "port": null,
       "specification": null,
       "verification": {
         "status": "draft",
@@ -52,13 +50,12 @@
           "revision": null,
           "section": null,
           "type": "estimate",
-          "lastUpdated": "2026-07-30"
+          "lastUpdated": "2026-07-31"
         }
       }
     },
     "drain": {
       "required": false,
-      "port": null,
       "specification": null,
       "verification": {
         "status": "draft",
@@ -67,8 +64,21 @@
           "revision": null,
           "section": null,
           "type": "estimate",
-          "lastUpdated": "2026-07-30"
+          "lastUpdated": "2026-07-31"
         }
+      }
+    }
+  },
+  "environmental": {
+    "specification": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null,
+        "revision": null,
+        "section": null,
+        "type": "estimate",
+        "lastUpdated": "2026-07-31"
       }
     }
   },
@@ -83,12 +93,43 @@
         "document": null,
         "revision": null,
         "section": null,
-        "type": "estimate",
-        "lastUpdated": "2026-07-30"
+        "type": "hospital_design_standard",
+        "lastUpdated": "2026-07-31"
       }
     }
   },
-  "environmental": {
+  "maintenanceAccess": {
+    "front": null,
+    "rear": null,
+    "left": null,
+    "right": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null,
+        "revision": null,
+        "section": null,
+        "type": "hospital_design_standard",
+        "lastUpdated": "2026-07-31"
+      }
+    }
+  },
+  "portLocations": {
+    "power": null,
+    "roWater": null,
+    "drain": null,
+    "verification": {
+      "status": "draft",
+      "source": {
+        "document": null,
+        "revision": null,
+        "section": null,
+        "type": "installation_drawing",
+        "lastUpdated": "2026-07-31"
+      }
+    }
+  },
+  "installationRouting": {
     "specification": null,
     "verification": {
       "status": "draft",
@@ -96,8 +137,8 @@
         "document": null,
         "revision": null,
         "section": null,
-        "type": "estimate",
-        "lastUpdated": "2026-07-30"
+        "type": "hospital_design_standard",
+        "lastUpdated": "2026-07-31"
       }
     }
   },
