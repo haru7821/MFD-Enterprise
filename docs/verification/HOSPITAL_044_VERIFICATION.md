@@ -250,8 +250,7 @@ equipment.
 > crossing. Clearance evaluation remains completely separate from containment evaluation. Update
 > polygonContainsPolygon and its tests accordingly."*
 
-Implemented. `polygonContainsPolygon` now asks three questions, and geometry outside the room fails
-any one of them:
+Implemented as three questions, and geometry outside the room failed any one of them:
 
 1. **Every vertex of the footprint is inside the room**, on the outline included — unchanged.
 2. **No edge crosses another transversally.** The new predicate `segmentsProperlyCross` returns
@@ -264,6 +263,11 @@ any one of them:
    a notch swallowed whole, its edges leaving the footprint exactly through the footprint's own
    corners, so every meeting is an endpoint and no crossing is transversal. On the outline is not
    strictly inside, so a machine filling its room exactly still passes.
+
+**All three are gone.** The standing review found that together they still passed a footprint with
+0.64 m² outside the room, and the replacement — one test, on the outline — subsumes all three.
+§5b is that story, and it is left standing rather than rewritten away, because the three checks above
+each looked sufficient at the time and the reason they were not is the useful part.
 
 **Clearance is untouched, and was already structurally separate:** `evaluateClearance` is handed
 `{ placements, catalog }` and never the boundaries, so it cannot read a room outline however
@@ -322,6 +326,107 @@ a machine one millimetre over, one spanning a C-shaped room's mouth, and one swa
 fail. Each of those guards was verified by breaking the implementation and watching the right test
 go red — including the third check, whose first test turned out to be caught by the crossing rule
 instead, so a case that genuinely needs it was constructed.
+
+---
+
+## 5b · The false GREEN the three checks still let through
+
+The standing review (`.claude/agents/cto.md`) went looking for something this project believes and
+is wrong about, and found it here. **A footprint whose entire area lies outside the room returned
+`polygonContainsPolygon === true`.**
+
+The shape is an **alcove filler**. Where a room's wall steps inward — a service duct, a stair core,
+a column bay — the recess it leaves is not room. Stand a rectangle in that recess, filling it:
+
+| Check | What it sees | Verdict |
+| --- | --- | --- |
+| 1 · every footprint vertex inside the room | all four corners lie **on** the outline, and on the outline is inside | passes |
+| 2 · no transversal crossing | three edges collinear with room edges, the fourth meeting them only at endpoints | passes |
+| 3 · no room vertex strictly inside the footprint | the room's corners lie on the footprint's outline, not inside it | passes |
+
+Reproduced on an 800 × 800 mm recess: every filler vertex reported inside, the centre (3,600, 1,400)
+reported **outside**, and containment reported `true`. **0.64 m² of equipment outside the room,
+GREEN on a signed report.**
+
+The cause is that checks 1–3 examine only *vertices* and *crossings*. Neither ever asks where the
+footprint's **area** is, and a shape can place all its corners on a boundary without placing any of
+its interior inside.
+
+The tests below assert each of the three checks passing on this shape, so the record of *why* they
+were insufficient cannot rot: `packages/cad-engine/src/polygon.test.ts`, "rejects a machine filling
+an alcove outside the room".
+
+#### The first fix was wrong, and the review caught that too
+
+The first attempt added a **fourth check**: at least one point strictly interior to the footprint
+must be inside the room. The argument for it was that check 2 makes a single point sufficient — if no
+two edges cross transversally the boundaries do not interleave, so the footprint's interior is
+homogeneously inside or homogeneously outside, and one point decides it.
+
+**That argument is false, and it fails on a one-line variation of the shape above.** Slide the filler
+west so two thirds of it is genuinely in the room:
+
+```
+footprint x ∈ [2000, 4000], y ∈ [1000, 1800]   against the same recessed room
+```
+
+Every corner inside or on the outline. No transversal crossing. No swallowed vertex. And the
+centroid (3,000, 1,400) **is** in the room, because most of the footprint is. Four checks out of
+four, and 0.64 m² still outside — reproduced and confirmed before accepting the finding.
+
+The premise was wrong because `segmentsProperlyCross` deliberately excludes T-junctions and returns
+null on collinear overlap. That exclusion *is* VD-5 — contact is not a crossing — and it is exactly
+how these two outlines interleave. **Absence of crossings is not absence of escape**, so no sample of
+the interior can decide an area.
+
+#### The fix: subdivide the outline
+
+`polygonContainsPolygon` now asks **one** question: is every part of the footprint's outline inside
+the room?
+
+Each edge is cut wherever the room's outline meets it — crossings, T-junctions, and the ends of any
+collinear run — and the midpoint of each resulting piece is tested. Between two consecutive meetings
+a piece touches the room's outline nowhere, so it is wholly inside or wholly outside and its midpoint
+says which. *That* is a homogeneity argument that holds, because the cuts are placed at every meeting
+rather than assumed absent.
+
+The outline decides the area by the Jordan curve theorem: if the whole outline were inside and some
+interior point `p` were not, `p` would lie in a bounded component of the room's exterior — and a
+simple polygon's exterior has exactly one component, unbounded.
+
+Cutting at a meeting rather than at a crossing is what catches both fillers. The straddling one is
+caught by its east edge, which spans the mouth of the recess from (4,000, 1,000) to (4,000, 1,800);
+that piece's midpoint sits 400 mm outside the wall.
+
+#### Three checks became one
+
+Checks 1, 2 and 3 are **removed, not kept as insurance**. Each was deleted in turn and the suite
+still passed — including the swallowed-notch case, which the outline test catches on the edge running
+across the notch's mouth. A check no test can make fail is not insurance; it is the thing this
+project keeps having to find later. `segmentsProperlyCross` survives as a predicate the *tests* use,
+to assert that a footprint outside the room has no transversal crossing anywhere.
+
+#### What it cost
+
+Nothing measured moved. Re-ran both Hospital_044 sheets and the whole corpus afterwards:
+
+| | Result | What it proves |
+| --- | --- | --- |
+| `knowledge/verification/Hospital_044-dialysis.json` | **byte-identical** | Real: containment runs on this sheet, RC-321 on all ten stations |
+| `knowledge/verification/Hospital_044-ro_room.json` | **byte-identical** | Real, same reason |
+| Evaluation on Hospital_044 | RED 0 · YELLOW 60 · GREEN 0 — unchanged | Real |
+| `knowledge/validation/corpus.json` | **byte-identical** | **Weak** — all 306 pages stop before containment, so this would hold for *any* change to this function. Recorded as a regression check, not as evidence |
+| Unit suite | 1,069 → 1,071 tests, all passing | |
+
+The two sheet records are the evidence that this is a fix and not a change of verdict: Hospital_044's
+room is a plain rectangle with no recess, so nothing this platform has ever reported was affected.
+The defect was waiting for the first drawing that had one.
+
+#### Verified by breaking it
+
+Replacing the outline test with `return true` fails **exactly three tests**: both alcove fillers and
+the machine spanning the mouth of a C-shaped room. Every other test in the package passes, which is
+the finding — nothing that existed before could see these. Restored, all 88 pass.
 
 ---
 

@@ -214,6 +214,12 @@ export function polygonContains(polygon: Polygon, point: Vec2): boolean {
  * Measured as a distance from each endpoint rather than as a tolerance on the parametric position,
  * because a parametric epsilon means one thing on an 800 mm machine edge and something 20 times
  * larger on a 17 m room wall. Contact is contact at whatever length.
+ *
+ * **{@link polygonContainsPolygon} no longer uses this**, and the reason is worth stating here
+ * rather than only there: two outlines can interleave entirely through contact, changing which side
+ * of each other they are on without a single transversal crossing. Absence of crossings is not
+ * absence of escape. What this predicate is still good for is *saying so* — the containment tests
+ * assert it returns false everywhere on a footprint that is nonetheless outside the room.
  */
 export function segmentsProperlyCross(
   first: Segment,
@@ -225,6 +231,81 @@ export function segmentsProperlyCross(
 
   for (const endpoint of [first.a, first.b, second.a, second.b]) {
     if (Math.hypot(point.x - endpoint.x, point.y - endpoint.y) <= tolerance) return false;
+  }
+  return true;
+}
+
+/**
+ * The positions along `edge`, as fractions of its length, where `boundary` meets it.
+ *
+ * Always includes both ends. Everything between them is a place the edge passes through, touches,
+ * or stops running alongside the other outline — the three ways a boundary can change which side of
+ * `boundary` the edge is on.
+ *
+ * The last of those is why the endpoints of `boundary`'s own edges are projected here and not only
+ * the crossing points: {@link segmentIntersectionPoint} returns null for collinear segments, by
+ * design, because an overlap has no single intersection point. An edge running along a wall and
+ * then leaving it has its departure recorded nowhere else.
+ */
+function boundaryCrossingPositions(edge: Segment, boundary: Polygon): number[] {
+  const dx = edge.b.x - edge.a.x;
+  const dy = edge.b.y - edge.a.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared < GEOMETRY_EPSILON * GEOMETRY_EPSILON) return [];
+
+  const positions = [0, 1];
+  const record = (point: Vec2): void => {
+    const t = ((point.x - edge.a.x) * dx + (point.y - edge.a.y) * dy) / lengthSquared;
+    if (t <= 0 || t >= 1) return;
+    // The projection only means something if the point is actually on this edge rather than
+    // somewhere off to the side of it.
+    const projected = { x: edge.a.x + t * dx, y: edge.a.y + t * dy };
+    if (Math.hypot(point.x - projected.x, point.y - projected.y) <= GEOMETRY_EPSILON) {
+      positions.push(t);
+    }
+  };
+
+  for (const other of polygonEdges(boundary)) {
+    const crossing = segmentIntersectionPoint(edge, other);
+    if (crossing) record(crossing);
+    record(other.a);
+    record(other.b);
+  }
+
+  return positions.sort((a, b) => a - b);
+}
+
+/**
+ * Does the whole of `inner`'s outline lie inside `outer`, contact included?
+ *
+ * Cut every edge of `inner` at each point where `outer`'s outline meets it, then test the midpoint
+ * of each piece. Between two consecutive cuts the piece meets `outer`'s outline nowhere, so it is
+ * wholly inside or wholly outside and its midpoint says which. That is a homogeneity argument that
+ * holds, unlike testing a whole edge whose ends happen to be inside.
+ *
+ * Pieces shorter than {@link GEOMETRY_EPSILON} are skipped. Measured as a length in millimetres
+ * rather than as a fraction of the edge, for the reason given on {@link segmentsProperlyCross}: a
+ * parametric epsilon means one thing on an 800 mm footprint edge and twenty times more on a 17 m
+ * wall.
+ */
+function polygonOutlineWithin(outer: Polygon, inner: Polygon): boolean {
+  for (const edge of polygonEdges(inner)) {
+    const length = Math.hypot(edge.b.x - edge.a.x, edge.b.y - edge.a.y);
+    const positions = boundaryCrossingPositions(edge, outer);
+
+    for (let i = 1; i < positions.length; i += 1) {
+      const from = positions[i - 1];
+      const to = positions[i];
+      if (from === undefined || to === undefined) continue;
+      if ((to - from) * length < GEOMETRY_EPSILON) continue;
+
+      const t = (from + to) / 2;
+      const midpoint = {
+        x: edge.a.x + t * (edge.b.x - edge.a.x),
+        y: edge.a.y + t * (edge.b.y - edge.a.y),
+      };
+      if (!polygonContains(outer, midpoint)) return false;
+    }
   }
   return true;
 }
@@ -251,17 +332,46 @@ export function segmentsProperlyCross(
  * room"*, and a sound layout came out `not_acceptable`. It had never shown up because every test
  * room until then was traced with clearance around its equipment.
  *
- * ## What it asks now
+ * ## What it asks now — one question
  *
- * Three questions, and a failure of any one is geometry outside the room:
+ * **Is every part of `inner`'s outline inside `outer`?** {@link polygonOutlineWithin} cuts each edge
+ * of `inner` wherever `outer`'s outline meets it and tests each piece on its own.
  *
- * 1. **Every vertex of `inner` is inside `outer`** — on the outline included.
- * 2. **No edge crosses another transversally.** Vertices alone are not enough: a rectangle can have
- *    all four corners inside a C-shaped room while its middle bulges out through the opening, and
- *    that bulge is a genuine crossing rather than a touch.
- * 3. **No vertex of `outer` is strictly inside `inner`.** The case (1) and (2) can both miss — a
- *    reflex corner of the room swallowed by the footprint, where the equipment covers a notch. On
- *    the outline is not strictly inside, so a machine filling its room exactly still passes.
+ * That is the whole test. It used to be three — every vertex inside, no transversal crossing, no
+ * room vertex swallowed by the footprint — and the three of them together let a **false GREEN reach
+ * a signed report**. The shape that did it is worth keeping.
+ *
+ * Where a room's wall steps inward — a duct, a stair core, a column bay — the recess is not room.
+ * Stand a footprint so part of it is in the room and part fills that recess. Every corner is inside
+ * or on the outline, so the vertex test passes. No two edges cross *transversally*, because the
+ * footprint meets the outline only at T-junctions and along collinear runs, and VD-5 says contact is
+ * not a crossing — so the crossing test passes. No reflex vertex is swallowed. And an *interior
+ * sample* of it, its centroid, is in the room, because most of it is. Every one of those says
+ * contained, and 0.64 m² is outside.
+ *
+ * What defeats them all is that the two outlines **interleave through contact**: they change sides
+ * without ever crossing. So this does not ask whether an edge crosses; it cuts the edge wherever the
+ * outlines meet at all and asks about each piece, and a piece between two consecutive meetings
+ * cannot change sides part-way along. The footprint above is caught by the edge spanning the mouth
+ * of the recess, whose midpoint is in the recess and not in the room.
+ *
+ * ## Why the outline settles the area
+ *
+ * The outline says nothing directly about `inner`'s *interior*, and yet it decides it. Suppose the
+ * whole of `inner`'s outline is inside `outer` and some interior point `p` of `inner` is not. Then
+ * `p` lies in a component of the region outside `outer`; a path from `p` to infinity stays in that
+ * region, so it never touches `outer`'s closed area, so it never touches `inner`'s outline either —
+ * yet it must cross that outline to leave `inner`. So the component is bounded. A simple polygon's
+ * exterior has exactly one component and it is unbounded. There is no such `p`.
+ *
+ * That argument is why the other two checks are **gone rather than kept as insurance**. Both were
+ * removed and the suite still passed — including the swallowed-notch case, which the outline test
+ * catches on the edge that runs across the notch's mouth. A check no test can make fail is not
+ * insurance, it is the thing this project keeps having to find later.
+ *
+ * It assumes what the conventions at the top of this file already state: `outer` is a **simple**
+ * ring. A self-intersecting one has no well-defined inside for `polygonContains` to report either,
+ * so this is not a new precondition.
  *
  * ## What this deliberately does not decide
  *
@@ -272,17 +382,7 @@ export function segmentsProperlyCross(
  */
 export function polygonContainsPolygon(outer: Polygon, inner: Polygon): boolean {
   if (!isValidPolygon(outer) || !isValidPolygon(inner)) return false;
-  if (!inner.every((vertex) => polygonContains(outer, vertex))) return false;
-
-  for (const edgeOuter of polygonEdges(outer)) {
-    for (const edgeInner of polygonEdges(inner)) {
-      if (segmentsProperlyCross(edgeOuter, edgeInner)) return false;
-    }
-  }
-
-  return !outer.some(
-    (vertex) => polygonContains(inner, vertex) && !isOnPolygonEdge(inner, vertex),
-  );
+  return polygonOutlineWithin(outer, inner);
 }
 
 /** Do two segments properly cross? Shared endpoints and collinear overlap are not crossings. */

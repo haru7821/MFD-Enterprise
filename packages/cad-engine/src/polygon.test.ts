@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   closestPointOnSegment,
   distanceToPolygonEdge,
+  isOnPolygonEdge,
   isValidPolygon,
   polygonArea,
   polygonBounds,
@@ -238,6 +239,102 @@ describe('polygon inside polygon', () => {
     // And the notch's apex is a room corner sitting inside the machine, which is what gives it away.
     expect(polygonContains(machine, { x: 500, y: 500 })).toBe(true);
     expect(polygonContainsPolygon(notchedRoom, machine)).toBe(false);
+  });
+
+  it('rejects a machine filling an alcove outside the room, every corner on the outline', () => {
+    /*
+     * The false GREEN. Found by the standing review; the reason containment also asks where
+     * `inner`'s **interior** is rather than only where its corners and crossings are.
+     *
+     * The room's east wall steps west for 800 mm, leaving a recess that is *not* room — the way a
+     * plan draws a service duct or a stair core biting into a floor. Stand a machine in that recess,
+     * exactly filling it:
+     *
+     *   - all four of its corners lie on the room's outline, so check 1 passes;
+     *   - three of its edges are collinear with room edges and the fourth meets them only at their
+     *     endpoints, so no meeting is transversal and check 2 passes;
+     *   - the room's own corners sit on the machine's outline, never strictly inside, so check 3
+     *     passes.
+     *
+     * Every one of the checks that existed said contained. The machine's entire 0.64 m² is outside
+     * the room, and the report said GREEN.
+     */
+    const recessedRoom: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 4_000, y: 0 },
+      { x: 4_000, y: 1_000 },
+      { x: 3_200, y: 1_000 },
+      { x: 3_200, y: 1_800 },
+      { x: 4_000, y: 1_800 },
+      { x: 4_000, y: 3_000 },
+      { x: 0, y: 3_000 },
+    ];
+    const filler = rectangleToPolygon({ x: 3_200, y: 1_000, width: 800, height: 800 });
+
+    // Everything the first three checks look at says yes.
+    expect(filler.every((vertex) => polygonContains(recessedRoom, vertex))).toBe(true);
+    for (const roomEdge of polygonEdges(recessedRoom)) {
+      for (const fillerEdge of polygonEdges(filler)) {
+        expect(segmentsProperlyCross(roomEdge, fillerEdge)).toBe(false);
+      }
+    }
+    expect(
+      recessedRoom.some(
+        (vertex) => polygonContains(filler, vertex) && !isOnPolygonEdge(filler, vertex),
+      ),
+    ).toBe(false);
+
+    // And not one point of it is in the room — its centre least of all.
+    expect(polygonContains(recessedRoom, { x: 3_600, y: 1_400 })).toBe(false);
+    expect(polygonContainsPolygon(recessedRoom, filler)).toBe(false);
+  });
+
+  it('rejects a machine half in the room and half in the alcove, whose centre is in the room', () => {
+    /*
+     * The counterexample that killed the first attempt at fixing the case above, and the reason
+     * containment subdivides an edge instead of sampling a point.
+     *
+     * Slide the filler west until two thirds of it is genuinely in the room. Now:
+     *
+     *   - every corner is inside the room or on its outline;
+     *   - no two edges cross transversally, still — the meetings are T-junctions and collinear runs;
+     *   - no reflex vertex is swallowed;
+     *   - **and the footprint's centroid, (3000, 1400), is in the room**, because most of it is.
+     *
+     * So a fourth check asking "is an interior point of the footprint in the room" answers yes, and
+     * 0.64 m² is outside anyway. Sampling the interior cannot decide an area; only the outline can.
+     *
+     * What catches it is the east edge, which spans the mouth of the recess from (4000, 1000) to
+     * (4000, 1800). Its midpoint (4000, 1400) is 400 mm outside the wall.
+     */
+    const recessedRoom: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 4_000, y: 0 },
+      { x: 4_000, y: 1_000 },
+      { x: 3_200, y: 1_000 },
+      { x: 3_200, y: 1_800 },
+      { x: 4_000, y: 1_800 },
+      { x: 4_000, y: 3_000 },
+      { x: 0, y: 3_000 },
+    ];
+    const straddling = rectangleToPolygon({ x: 2_000, y: 1_000, width: 2_000, height: 800 });
+
+    expect(straddling.every((vertex) => polygonContains(recessedRoom, vertex))).toBe(true);
+    for (const roomEdge of polygonEdges(recessedRoom)) {
+      for (const machineEdge of polygonEdges(straddling)) {
+        expect(segmentsProperlyCross(roomEdge, machineEdge)).toBe(false);
+      }
+    }
+    expect(
+      recessedRoom.some(
+        (vertex) => polygonContains(straddling, vertex) && !isOnPolygonEdge(straddling, vertex),
+      ),
+    ).toBe(false);
+    // The interior sample says yes. The outline says no, and the outline is right.
+    expect(polygonContains(recessedRoom, { x: 3_000, y: 1_400 })).toBe(true);
+    expect(polygonContains(recessedRoom, { x: 4_000, y: 1_400 })).toBe(false);
+
+    expect(polygonContainsPolygon(recessedRoom, straddling)).toBe(false);
   });
 
   it('rejects a machine spanning the mouth of a C-shaped room', () => {
