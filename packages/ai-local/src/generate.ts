@@ -175,8 +175,12 @@ function gateAt(input: PipelineInput, count: number, derived: boolean): Pipeline
       count,
     );
 
-    if (gates.rejection) {
-      rejected.push({ candidateId: candidate.id, rejection: gates.rejection });
+    const rejection = gates.violations[0];
+    if (rejection) {
+      // The first is enough here: a candidate that breaks one mandatory rule is discarded whether
+      // it breaks one or five, and this loop runs thousands of times. The layout an engineer drew
+      // is the case that needs the whole list — see `optimiseLayout`.
+      rejected.push({ candidateId: candidate.id, rejection });
       continue;
     }
 

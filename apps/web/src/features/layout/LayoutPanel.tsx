@@ -66,6 +66,8 @@ const EMPTY_MESSAGES = {
     'Nothing improves on what you have drawn. Of the arrangements the solver can construct at this station count, yours scores highest.',
   no_feasible_arrangement:
     'No compliant arrangement exists at this station count. Every candidate broke a rule — including, in effect, the one on the drawing.',
+  current_layout_blocked:
+    'The layout on the drawing breaks the rules below. Optimising is available once they are resolved — until then there is nothing sound to improve on, and a ranking against it would not mean anything.',
 } as const;
 
 export function LayoutPanel() {
@@ -197,6 +199,36 @@ export function LayoutPanel() {
       >
         Optimise this layout
       </button>
+
+      {/*
+        Owner decision D1: *"Display blocking rule violations first."*
+
+        Above the explanation and not inside it, because the order is the message. What an engineer
+        does next is fix these; the sentence about why the optimiser has nothing to say is context
+        for that, not the other way round.
+      */}
+      {results && results.blocking.length > 0 && (
+        <div
+          className="mt-2 rounded border border-red-400/60 bg-red-500/15 p-2"
+          data-testid="layout-blocking"
+        >
+          <p className="text-[10px] font-medium text-red-300">
+            {results.blocking.length} blocking rule violation
+            {results.blocking.length === 1 ? '' : 's'} in the layout as drawn
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {results.blocking.map((violation) => (
+              <li
+                key={`${violation.ruleId}:${violation.reasonCode}`}
+                className="text-[10px] text-ink-muted"
+                data-testid="layout-blocking-rule"
+              >
+                {violation.ruleId} · {violation.reasonCode}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {results && results.proposals.length === 0 && results.emptyReason && (
         <p className="mt-2 text-[10px] leading-snug text-ink-muted" data-testid="layout-empty">

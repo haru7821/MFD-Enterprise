@@ -74,26 +74,26 @@ describe('Gate 1 — exactly the requested station count', () => {
     // Gate 2 as well. The reported code must be the count one: gates run in the owner's order,
     // and evaluating rules for a candidate already rejected is work whose answer cannot matter.
     const outcome = gate([placement('a', 1_000, 1_000), placement('b', 1_000, 1_000)], 5);
-    expect(outcome.rejection?.code).toBe('GX-101');
+    expect(outcome.violations[0]?.code).toBe('GX-101');
   });
 });
 
 describe('Gate 2 — no mandatory violation', () => {
   it('passes a compliant layout', () => {
     const outcome = gate([placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)], 2);
-    expect(outcome.rejection).toBeNull();
+    expect(outcome.violations).toEqual([]);
   });
 
   it('rejects a layout whose machines overlap', () => {
     const outcome = gate([placement('a', 1_000, 1_000), placement('b', 1_200, 1_000)], 2);
-    expect(outcome.rejection?.code).toBe('GX-201');
-    expect(outcome.rejection?.detail.ruleId).toBe('fixture_overlap');
+    expect(outcome.violations[0]?.code).toBe('GX-201');
+    expect(outcome.violations[0]?.detail.ruleId).toBe('fixture_overlap');
   });
 
   it('rejects a layout standing on a column', () => {
     // The boundary rule, so an obstruction is as disqualifying as another machine.
     const outcome = gate([placement('a', 3_300, 2_800)], 1);
-    expect(outcome.rejection?.code).toBe('GX-201');
+    expect(outcome.violations[0]?.code).toBe('GX-201');
   });
 
   it('does not reject a layout merely for being unverifiable', () => {
@@ -121,15 +121,38 @@ describe('Gate 2 — no mandatory violation', () => {
       2,
     );
 
-    expect(outcome.rejection).toBeNull();
+    expect(outcome.violations).toEqual([]);
     expect(outcome.reviewCount).toBeGreaterThan(0);
+  });
+
+  it('reports every violation and not only the first', () => {
+    /*
+     * > Owner decision, D1: *"Display blocking rule violations first."*
+     *
+     * The solver only needs to know a candidate is dead. The layout an engineer **drew** is the
+     * other caller, and there the whole list is the work: telling them about one rule, then about
+     * the next after they fix it, is the same conversation held once per violation.
+     *
+     * Three machines stacked on one another and standing on the column: more than one mandatory
+     * rule broken, by more than one placement.
+     */
+    const outcome = gate(
+      [placement('a', 3_300, 2_800), placement('b', 3_350, 2_800), placement('c', 3_400, 2_800)],
+      3,
+    );
+
+    expect(outcome.violations.length).toBeGreaterThan(1);
+    for (const violation of outcome.violations) {
+      expect(violation.code).toBe('GX-201');
+      expect(violation.detail.ruleId).toBeTruthy();
+    }
   });
 
   it('reports how much of the compliance it actually established', () => {
     // A candidate with no RED and a page of YELLOWs has passed the gate and had almost nothing
     // verified. Carrying the counts is what lets a proposal say so rather than read as cleared.
     const outcome = gate([placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)], 2);
-    expect(outcome.rejection).toBeNull();
+    expect(outcome.violations).toEqual([]);
     expect(outcome.reviewCount).toBeGreaterThan(0);
   });
 });

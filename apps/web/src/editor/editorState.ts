@@ -63,6 +63,19 @@ export interface LayoutProposalSet {
    * until the number it improves on is on screen next to it.
    */
   readonly currentScore: ScoreBreakdown | null;
+  /**
+   * The mandatory rules the drawing breaks, when `emptyReason` is `current_layout_blocked`.
+   *
+   * Shown **before** anything else the panel has to say, and shown in full: they are the engineer's
+   * work before the optimiser will speak to them again. Empty in every other case.
+   */
+  readonly blocking: readonly BlockingViolation[];
+}
+
+/** One mandatory rule the drawn layout breaks, as the solver reported it. */
+export interface BlockingViolation {
+  readonly ruleId: string;
+  readonly reasonCode: string;
 }
 
 /**
@@ -94,6 +107,13 @@ export const LAYOUT_EMPTY_REASONS = [
   'already_best',
   /** Optimisation could not construct any compliant arrangement at the count already placed. */
   'no_feasible_arrangement',
+  /**
+   * The layout on the drawing breaks a mandatory rule, so there is nothing to optimise *from*.
+   *
+   * > Owner decision, D1: *"Optimisation is available only after the current layout satisfies all
+   * > mandatory gates."*
+   */
+  'current_layout_blocked',
 ] as const;
 export type LayoutEmptyReason = (typeof LAYOUT_EMPTY_REASONS)[number];
 

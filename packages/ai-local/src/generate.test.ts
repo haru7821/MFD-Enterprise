@@ -249,7 +249,7 @@ describe('the pipeline', () => {
     expect(result.feasible.length).toBeGreaterThan(0);
     for (const entry of result.feasible) {
       expect(entry.placements).toHaveLength(result.resolvedStationCount);
-      expect(entry.gates.rejection).toBeNull();
+      expect(entry.gates.violations).toEqual([]);
     }
   });
 
@@ -335,7 +335,7 @@ describe('the pipeline', () => {
     expect(result.resolvedStationCount).toBeGreaterThan(0);
     for (const entry of result.feasible) {
       expect(entry.placements).toHaveLength(result.resolvedStationCount);
-      expect(entry.gates.rejection).toBeNull();
+      expect(entry.gates.violations).toEqual([]);
     }
   });
 

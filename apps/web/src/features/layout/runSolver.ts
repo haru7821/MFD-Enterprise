@@ -100,6 +100,7 @@ export function runSolver(request: SolverRequest): LayoutProposalSet {
     countWasDerived: result.countWasDerived,
     emptyReason: null,
     currentScore: null,
+    blocking: [],
     /*
      * `[]` and not the level's placements: a generation adds machines, it does not move any. Diffed
      * against what is already there, every new machine would be reported as the nearest existing
@@ -155,7 +156,16 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
   if (result.outcome !== 'improved') {
     return {
       ...emptyOptimisation(request, OPTIMISATION_REASONS[result.outcome], result.stationCount),
+      /*
+       * Null when the outcome is `blocked`, and the solver is what makes it null — Owner decision
+       * D1, *"no baseline comparison"*. Passed through rather than blanked here, so there is one
+       * place that decides whether a score exists and not two that can disagree.
+       */
       currentScore: result.current,
+      blocking: result.blocking.map((violation) => ({
+        ruleId: violation.detail.ruleId ?? '',
+        reasonCode: violation.detail.reasonCode ?? '',
+      })),
     };
   }
 
@@ -169,6 +179,7 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
     countWasDerived: false,
     emptyReason: null,
     currentScore: result.current,
+    blocking: [],
     proposals: result.proposals.map((proposal) => ({
       id: proposal.candidateId,
       rank: proposal.rank,
@@ -193,6 +204,7 @@ const OPTIMISATION_REASONS = {
   no_feasible_candidate: 'no_feasible_arrangement',
   not_optimisable: 'nothing_to_optimise',
   movement_not_permitted: 'movement_not_permitted',
+  blocked: 'current_layout_blocked',
 } as const satisfies Record<string, LayoutEmptyReason>;
 
 /** The fields both operations assemble the same way. */
@@ -251,6 +263,7 @@ function empty(
     proposals: [],
     emptyReason: reason,
     currentScore: null,
+    blocking: [],
   };
 }
 
@@ -269,6 +282,7 @@ function emptyOptimisation(
     proposals: [],
     emptyReason: reason,
     currentScore: null,
+    blocking: [],
   };
 }
 

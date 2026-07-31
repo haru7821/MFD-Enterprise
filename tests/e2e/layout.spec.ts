@@ -389,6 +389,69 @@ test('says how much of the model it could measure before saying nothing improves
   await expect(page.getByTestId('layout-empty-coverage')).toContainText('AK98 manual');
 });
 
+test('refuses to optimise a layout that breaks a rule, and says which rules', async ({ page }) => {
+  /*
+   * > Owner decision, D1: *"When the current layout fails a gate, do NOT generate an optimized
+   * > recommendation. Return an explicit blocked state: no ranked proposals, no baseline
+   * > comparison, no 'best candidate'. Display blocking rule violations first."*
+   *
+   * Two machines dropped on the same square collide, which the dialysis rule set calls RED. Before
+   * this, the drawn layout was scored anyway and that score became the bar every candidate had to
+   * clear — so an unacceptable arrangement could out-score compliant ones and the engineer was told
+   * their drawing was the best available.
+   *
+   * From the outside the whole decision is three absences and one presence: no results list, no
+   * current-layout score, no proposal card, and the rules that block it on screen.
+   */
+  await traceRoom(page);
+  await placeServices(page);
+  // The colliding machine goes on last, so a single undo is what removes it.
+  await placeByHand(page, [
+    [0.4, 0.5],
+    [0.6, 0.55],
+    [0.6, 0.55],
+  ]);
+  await selectRoom(page);
+
+  await optimise(page);
+
+  await expect(page.getByTestId('layout-blocking')).toBeVisible();
+  await expect(page.getByTestId('layout-blocking')).toContainText('blocking rule violation');
+  expect(await page.getByTestId('layout-blocking-rule').count()).toBeGreaterThan(0);
+
+  await expect(page.getByTestId('layout-results')).toHaveCount(0);
+  await expect(page.getByTestId('layout-current-score')).toHaveCount(0);
+  await expect(page.getByTestId('layout-empty')).toContainText('breaks the rules below');
+});
+
+test('optimises again once the blocking violation is removed', async ({ page }) => {
+  /*
+   * The other half, and the one that makes the first mean something. A test that only saw the
+   * blocked state would pass equally against an optimiser that had stopped working.
+   *
+   * Same drawing, one machine deleted so nothing collides — and the optimiser has proposals again.
+   */
+  await traceRoom(page);
+  await placeServices(page);
+  // The colliding machine goes on last, so a single undo is what removes it.
+  await placeByHand(page, [
+    [0.4, 0.5],
+    [0.6, 0.55],
+    [0.6, 0.55],
+  ]);
+  await selectRoom(page);
+  await optimise(page);
+  await expect(page.getByTestId('layout-blocking')).toBeVisible();
+
+  // Undo the last placement — the machine standing on top of another one.
+  await page.keyboard.press('Control+z');
+  await selectRoom(page);
+  await optimise(page);
+
+  await expect(page.getByTestId('layout-blocking')).toHaveCount(0);
+  await expect(page.getByTestId('layout-results')).toBeVisible();
+});
+
 test('says so plainly when there is nothing of that kind to rearrange', async ({ page }) => {
   // An empty room is not a layout with a low score. Owner constraint 2 of Step 5, from the outside.
   await traceRoom(page);

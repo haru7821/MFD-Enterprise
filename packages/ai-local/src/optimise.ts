@@ -1,6 +1,7 @@
 import type { ProposedCommand, ScoreBreakdown, ScoringCriterion } from '@mfd/ai-contract';
 import type { Placement } from '@mfd/document-model';
 
+import { type Rejection, applyGates } from './gates';
 import { type RankInput, type RankedLayout, rankLayouts } from './rank';
 import { scoreLayout } from './score';
 
@@ -93,15 +94,37 @@ export const OPTIMISATION_OUTCOMES = [
   'no_feasible_candidate',
   'not_optimisable',
   'movement_not_permitted',
+  /**
+   * The layout on the drawing breaks a mandatory rule. Nothing is proposed and nothing is scored.
+   *
+   * > Owner decision, D1: *"When the current layout fails a gate, do NOT generate an optimized
+   * > recommendation. Return an explicit blocked state: no ranked proposals, no baseline
+   * > comparison, no 'best candidate'. Display blocking rule violations first. Optimisation is
+   * > available only after the current layout satisfies all mandatory gates."*
+   */
+  'blocked',
 ] as const;
 export type OptimisationOutcome = (typeof OPTIMISATION_OUTCOMES)[number];
 
 export interface OptimiseResult {
   readonly outcome: OptimisationOutcome;
-  /** The layout as it stands, scored on the same model — so a comparison is like for like. */
+  /**
+   * The layout as it stands, scored on the same model — so a comparison is like for like.
+   *
+   * **Null when `outcome` is `blocked`**, and that is the point of D1 rather than an omission: a
+   * layout that breaks a mandatory rule has no score worth showing, and putting one on screen
+   * invites the comparison the decision exists to prevent.
+   */
   readonly current: ScoreBreakdown | null;
   readonly proposals: readonly OptimisationProposal[];
   readonly stationCount: number;
+  /**
+   * The mandatory rules the drawn layout breaks. Empty unless `outcome` is `blocked`.
+   *
+   * Every one of them, because they are all the engineer's work before optimisation is available
+   * to them again.
+   */
+  readonly blocking: readonly Rejection[];
 }
 
 export function optimiseLayout(input: OptimiseInput): OptimiseResult {
@@ -112,7 +135,13 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
    * prevent.
    */
   if (input.current.length === 0) {
-    return { outcome: 'not_optimisable', current: null, proposals: [], stationCount: 0 };
+    return {
+      outcome: 'not_optimisable',
+      current: null,
+      proposals: [],
+      stationCount: 0,
+      blocking: [],
+    };
   }
 
   const stationCount = input.current.length;
@@ -122,7 +151,52 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
    * cannot even be shown a proposal to be tempted by.
    */
   if (!input.allowMovingExisting) {
-    return { outcome: 'movement_not_permitted', current: null, proposals: [], stationCount };
+    return {
+      outcome: 'movement_not_permitted',
+      current: null,
+      proposals: [],
+      stationCount,
+      blocking: [],
+    };
+  }
+
+  /*
+   * Owner decision D1, and the reason it is here rather than further down.
+   *
+   * Candidates have always gone through both gates — `rankLayouts` sees only layouts that pass
+   * them. The layout on the *drawing* did not. It was scored directly and used as the number every
+   * proposal had to beat, so a layout breaking a mandatory rule could score 0.94 and suppress
+   * candidates that broke none: the optimiser reported "nothing improves on what you have drawn"
+   * about an arrangement the rule engine had already called unacceptable.
+   *
+   * That is a comparison between a filtered set and an unfiltered incumbent, and no ordering of it
+   * is meaningful. So there is no ordering: the run stops, and what comes back is the list of rules
+   * to fix.
+   *
+   * Gated on `input.current` alone, and not on `input.existing` too, because that is exactly the
+   * population `rankLayouts` gates its candidates on (`existing: []`, below). Judging the incumbent
+   * against a wider one would block it for violations no candidate is ever checked for.
+   */
+  const gates = applyGates(
+    {
+      placements: input.current,
+      catalog: input.catalog,
+      ruleSet: input.ruleSet,
+      boundaries: input.boundaries,
+      planStatus: input.planStatus,
+    },
+    stationCount,
+    stationCount,
+  );
+
+  if (gates.violations.length > 0) {
+    return {
+      outcome: 'blocked',
+      current: null,
+      proposals: [],
+      stationCount,
+      blocking: gates.violations,
+    };
   }
 
   const currentScore = scoreLayout({
@@ -162,6 +236,7 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
       current: currentScore,
       proposals: [],
       stationCount,
+      blocking: [],
     };
   }
 
@@ -173,7 +248,13 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
      * best-of-a-worse-bunch would make every run produce a suggestion, and an engineer who accepts
      * one of those has been talked into a worse layout by a tool that had nothing to offer.
      */
-    return { outcome: 'already_best', current: currentScore, proposals: [], stationCount };
+    return {
+      outcome: 'already_best',
+      current: currentScore,
+      proposals: [],
+      stationCount,
+      blocking: [],
+    };
   }
 
   const proposals = better.map((layout, index) => {
@@ -192,7 +273,7 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
     };
   });
 
-  return { outcome: 'improved', current: currentScore, proposals, stationCount };
+  return { outcome: 'improved', current: currentScore, proposals, stationCount, blocking: [] };
 }
 
 /**

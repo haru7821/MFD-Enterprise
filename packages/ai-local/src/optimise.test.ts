@@ -319,6 +319,73 @@ describe('constraint 5 — best among feasible, not best mathematically', () => 
   });
 });
 
+describe('D1 — a layout that fails a gate is not optimised, it is blocked', () => {
+  /*
+   * > Owner decision, D1: *"When the current layout fails a gate, do NOT generate an optimized
+   * > recommendation. Return an explicit blocked state: no ranked proposals, no baseline
+   * > comparison, no 'best candidate'. Display blocking rule violations first. Optimisation is
+   * > available only after the current layout satisfies all mandatory gates."*
+   *
+   * Two machines 200 mm apart overlap, which the fixture rule set calls RED. Candidates have always
+   * been gated on exactly this; the layout on the drawing never was.
+   */
+  const OVERLAPPING = [
+    placement('s1', 3_000, 3_000),
+    placement('s2', 3_200, 3_000),
+    placement('s3', 5_000, 5_000),
+    placement('s4', 7_000, 3_000),
+  ];
+
+  it('blocks instead of proposing', () => {
+    const result = optimise({ current: OVERLAPPING });
+    expect(result.outcome).toBe('blocked');
+  });
+
+  it('offers no ranked proposals and no baseline to compare against', () => {
+    // The whole of the decision in three assertions. A score on screen next to a blocked verdict
+    // is the comparison D1 exists to remove, and `#1` on a card is the recommendation it forbids.
+    const result = optimise({ current: OVERLAPPING });
+
+    expect(result.proposals).toEqual([]);
+    expect(result.current).toBeNull();
+  });
+
+  it('names every rule that blocks it, not just the first', () => {
+    const result = optimise({ current: OVERLAPPING });
+
+    expect(result.blocking.length).toBeGreaterThan(0);
+    for (const violation of result.blocking) {
+      expect(violation.code).toBe('GX-201');
+      expect(violation.detail.ruleId).toBeTruthy();
+    }
+  });
+
+  it('was suppressing compliant candidates before this, which is why it matters', () => {
+    /*
+     * The failure in one test. Without the gate the incumbent is scored anyway, and that score is
+     * the bar every candidate has to clear — so a layout the rule engine has called unacceptable
+     * can beat arrangements that break nothing, and the engineer is told the drawing is fine.
+     *
+     * Asserted from the other side, because the defect is no longer reachable through the public
+     * function: the same room and the same count *do* yield compliant candidates, so what the old
+     * code was ranking them against was a RED layout.
+     */
+    const compliant = optimise({ current: AWKWARD });
+    expect(compliant.outcome).toBe('improved');
+    expect(compliant.proposals.length).toBeGreaterThan(0);
+
+    const blocked = optimise({ current: OVERLAPPING });
+    expect(blocked.outcome).toBe('blocked');
+    expect(blocked.stationCount).toBe(OVERLAPPING.length);
+  });
+
+  it('is checked before the layout is scored at all', () => {
+    // Not "scored and then withheld". `current` is null because nothing was measured, which is
+    // what makes it impossible for a later change to leak the number back onto the screen.
+    expect(optimise({ current: OVERLAPPING }).current).toBeNull();
+  });
+});
+
 describe('what an engineer is told', () => {
   it('shows what improved and what it cost, per criterion', () => {
     const result = optimise();

@@ -104,25 +104,18 @@ export function passesStationCountGate(
  * built entirely from unevaluable rules is a proposal whose compliance nobody has actually
  * checked, and the panel says so rather than presenting it as cleared.
  */
-export function passesComplianceGate(input: GateInput): Rejection | null {
-  const report = evaluate({
-    placements: input.placements,
-    catalog: input.catalog,
-    ruleSet: input.ruleSet,
-    spatial: { boundaries: input.boundaries, planStatus: input.planStatus },
-  });
-
-  const violation = report.results.find((result) => result.level === 'RED');
-  if (!violation) return null;
-
-  return {
-    code: 'GX-201',
-    detail: { ruleId: violation.ruleId, reasonCode: violation.reasonCode },
-  };
-}
-
 export interface GateOutcome {
-  readonly rejection: Rejection | null;
+  /**
+   * Every mandatory violation, in the order the rule engine reported them. Empty means the gates
+   * passed.
+   *
+   * **All of them, not the first.** A candidate is dead at the first one and the solver reads no
+   * further — but the same gates are also asked about the layout an engineer has *drawn*
+   * ({@link optimiseLayout}), and there the list is the work: they have to fix every one before
+   * optimisation is available to them, and being told about them one run at a time is a worse
+   * version of the same conversation held four times.
+   */
+  readonly violations: readonly Rejection[];
   /**
    * Findings that survived, so a caller can say what was *not* checked.
    *
@@ -143,7 +136,7 @@ export function applyGates(
   if (countRejection) {
     // Short-circuit: evaluating rules for a candidate that already fails Gate 1 is work whose
     // answer cannot change the outcome, and the solver runs this thousands of times.
-    return { rejection: countRejection, unevaluableCount: 0, reviewCount: 0 };
+    return { violations: [countRejection], unevaluableCount: 0, reviewCount: 0 };
   }
 
   const report = evaluate({
@@ -153,12 +146,13 @@ export function applyGates(
     spatial: { boundaries: input.boundaries, planStatus: input.planStatus },
   });
 
-  const violation = report.results.find((result) => result.level === 'RED');
-
   return {
-    rejection: violation
-      ? { code: 'GX-201', detail: { ruleId: violation.ruleId, reasonCode: violation.reasonCode } }
-      : null,
+    violations: report.results
+      .filter((result) => result.level === 'RED')
+      .map((result) => ({
+        code: 'GX-201' as const,
+        detail: { ruleId: result.ruleId, reasonCode: result.reasonCode },
+      })),
     unevaluableCount: report.results.filter((result) => result.reasonCode.startsWith('RC-9'))
       .length,
     reviewCount: report.results.filter((result) => result.level === 'YELLOW').length,
