@@ -19,22 +19,30 @@ async function canvasBox(page: Page) {
   return box;
 }
 
-/** Trace a rectangular room, big enough for several machines. */
-async function traceRoom(page: Page) {
+/**
+ * Trace a rectangular room, big enough for several machines.
+ *
+ * The corners are a parameter because the whole-level specs need a **second** room to put a machine
+ * in — a level with one room cannot test the difference between "not in this room" and the name of
+ * the room it is in.
+ */
+async function traceRoom(page: Page, corners?: readonly [number, number][]) {
   const box = await canvasBox(page);
   await page.keyboard.press('r');
 
-  const corners: [number, number][] = [
+  const outline: readonly [number, number][] = corners ?? [
     [0.25, 0.25],
     [0.75, 0.25],
     [0.75, 0.7],
     [0.25, 0.7],
   ];
-  for (const [x, y] of corners) {
+  for (const [x, y] of outline) {
     await page.mouse.click(box.x + box.width * x, box.y + box.height * y);
   }
   // Click the first vertex again to close the outline.
-  await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.25);
+  const first = outline[0];
+  if (!first) throw new Error('an outline needs at least one corner');
+  await page.mouse.click(box.x + box.width * first[0], box.y + box.height * first[1]);
   await page.keyboard.press('v');
 }
 
@@ -497,10 +505,50 @@ test('blocks on a machine outside the selected room, and says it is elsewhere', 
   await optimise(page);
 
   await expect(page.getByTestId('layout-blocking')).toBeVisible();
-  await expect(page.getByTestId('layout-blocking-elsewhere')).toBeVisible();
-  await expect(page.getByTestId('layout-blocking-elsewhere')).toContainText('not in this room');
+  await expect(page.getByTestId('layout-blocking-elsewhere').first()).toBeVisible();
+  // In circulation, in no room at all — kept distinct from naming a room, because it is a
+  // different fact and it is the more common way for a drawing to end up blocked.
+  await expect(page.getByTestId('layout-blocking-elsewhere').first()).toContainText(
+    'not in any room',
+  );
   await expect(page.getByTestId('layout-results')).toHaveCount(0);
   await expect(page.getByTestId('layout-empty-coverage')).toHaveCount(0);
+});
+
+test('names the room a blocking machine is actually in', async ({ page }) => {
+  /*
+   * > Owner decision: the row names the room, rather than only saying the machine is elsewhere.
+   *
+   * "Not in this room" is true and leaves an engineer to search a level that has no bound on how
+   * many rooms it holds. This is the case that decision is for, and it needs a second room to
+   * exist at all: two machines dropped on one another **in the room next door** block the room
+   * being optimised, because the gates judge the whole level.
+   */
+  await traceRoom(page);
+  await placeServices(page);
+  await placeByHand(page, AWKWARD);
+
+  // A second room, well below the first, with a collision inside it.
+  await traceRoom(page, [
+    [0.25, 0.78],
+    [0.75, 0.78],
+    [0.75, 0.95],
+    [0.25, 0.95],
+  ]);
+  await placeByHand(page, [
+    [0.5, 0.86],
+    [0.5, 0.86],
+  ]);
+
+  await selectRoom(page);
+  await optimise(page);
+
+  await expect(page.getByTestId('layout-blocking')).toBeVisible();
+  const elsewhere = page.getByTestId('layout-blocking-elsewhere').first();
+  await expect(elsewhere).toContainText('(in ');
+  // The name of a room, not the fallback for a machine standing in circulation.
+  await expect(elsewhere).not.toContainText('not in any room');
+  await expect(page.getByTestId('layout-results')).toHaveCount(0);
 });
 
 test('says so plainly when there is nothing of that kind to rearrange', async ({ page }) => {

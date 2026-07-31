@@ -189,6 +189,7 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
             label: placement?.label || id,
             inSelectedRoom:
               placement !== undefined && withinRoom(placement, room.vertices, request.catalog),
+            roomName: placement ? roomNameOf(request.level, placement, request.catalog) : null,
           };
         }),
       })),
@@ -310,6 +311,28 @@ function emptyOptimisation(
     currentScore: null,
     blocking: [],
   };
+}
+
+/**
+ * The name of the room a machine is standing in, or null when it is in none.
+ *
+ * > Owner decision: a blocking row names the room the machine is actually in.
+ *
+ * The same `withinRoom` the partition uses, asked of every space rather than only the selected one
+ * — so the answer here and the answer that decided `inSelectedRoom` cannot disagree.
+ *
+ * **The first match wins.** Two overlapping outlines would both contain the machine, and there is
+ * no fact of the matter about which room it is in: the drawing is ambiguous, and picking one is
+ * better than naming both in a row a few centimetres wide. Null is not a failure to find a room, it
+ * is the machine being in circulation — which is the ordinary way a drawing gets blocked, since a
+ * machine outside every outline breaks the boundary rule.
+ */
+function roomNameOf(level: Level, placement: Placement, catalog: Catalog): string | null {
+  for (const space of level.spaces) {
+    const boundary = level.boundaries.find((entry) => entry.id === space.boundaryId);
+    if (boundary && withinRoom(placement, boundary.vertices, catalog)) return space.name;
+  }
+  return null;
 }
 
 /** The selected room's outline, or null when nothing usable is selected. */

@@ -105,6 +105,18 @@ export interface BlockingPlacement {
   /** The label the engineer typed, or the id when the placement has none. */
   readonly label: string;
   readonly inSelectedRoom: boolean;
+  /**
+   * The room it is actually in, when it is not in the selected one. Null when it is in no room.
+   *
+   * > Owner decision: name the room, rather than only saying the machine is elsewhere.
+   *
+   * "Not in this room" is true and leaves an engineer to search a level by label; a level has no
+   * bound on how many rooms it holds. A name is the smallest thing that makes the row somewhere to
+   * go. Null is kept distinct from a name rather than rendered as one: a machine standing in
+   * circulation, in no room at all, is a different fact from a machine in the room next door, and
+   * it is also the more common way for a drawing to end up blocked.
+   */
+  readonly roomName: string | null;
 }
 
 /**

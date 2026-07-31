@@ -239,13 +239,22 @@ export function LayoutPanel() {
                   machine in this room and one outside it rendered "A + B (not in this room)", which
                   is true of B and false of A; a row-level flag cannot express a mixed pair, and the
                   mixed pair is the ordinary case for a collision across a boundary.
+
+                  Owner decision: it names the room rather than only saying "elsewhere" — a level has
+                  no bound on how many rooms it holds, and "not in this room" leaves an engineer
+                  searching all of them. "Not in any room" is kept distinct from a name: a machine
+                  standing in circulation is a different fact from one in the room next door, and is
+                  the more common way for a drawing to end up blocked.
                 */}
                 {violation.placements.map((entry, index) => (
                   <span key={entry.id} className="text-ink-faint">
                     {index === 0 ? ' · ' : ' + '}
                     {entry.label}
                     {!entry.inSelectedRoom && (
-                      <span data-testid="layout-blocking-elsewhere"> (not in this room)</span>
+                      <span data-testid="layout-blocking-elsewhere">
+                        {' '}
+                        {entry.roomName === null ? '(not in any room)' : `(in ${entry.roomName})`}
+                      </span>
                     )}
                   </span>
                 ))}
