@@ -179,6 +179,10 @@ describe('v2 → v3 migration', () => {
     const current = JSON.parse(JSON.stringify(populated())) as Record<string, unknown>;
     const project = current['project'] as Record<string, unknown>;
     delete project['settings'];
+    // Reference points arrive in version 4, so a genuine v2 file has none. See v1Document().
+    for (const level of project['levels'] as Record<string, unknown>[]) {
+      delete level['referencePoints'];
+    }
     return { ...current, documentVersion: 2 };
   }
 
@@ -327,10 +331,12 @@ describe('v1 → v2 migration', () => {
         { id: 'space-1', name: 'Treatment area', function: 'hemodialysis_treatment', boundaryId: 'b1' },
       ];
     }
-    // Version 1 had no project settings — those arrive in version 3 — so a realistic v1 file
-    // does not carry them. Leaving them in would make the test pass through a shape no v1
-    // file ever had.
+    // Version 1 had no project settings — those arrive in version 3 — and no reference points,
+    // which arrive in version 4. A realistic v1 file carries neither. Leaving them in would make
+    // the test pass through a shape no v1 file ever had, and since the migrations refuse to
+    // overwrite an occupied field it would not even reach the assertions.
     delete (project as unknown as Record<string, unknown>)['settings'];
+    for (const level of project.levels) delete level['referencePoints'];
     return { ...current, documentVersion: 1 };
   }
 
@@ -376,6 +382,16 @@ describe('v1 → v2 migration', () => {
     const project = bare['project'] as { levels: Record<string, unknown>[] };
     const level = project.levels[0];
     if (level) level['boundaries'] = [];
+    /*
+     * Stripped down to a shape version 1 actually wrote. It was not, and the "no silent repair"
+     * guard caught it: a "v1 document" still carrying `project.settings` is a file no v1 build
+     * could have produced, and the v2 → v3 migration now refuses to overwrite settings rather than
+     * replacing a chosen render mode with the default. A fixture that keeps fields from three
+     * versions later tests a conversion nobody will ever perform.
+     */
+    delete (project as unknown as Record<string, unknown>)['settings'];
+    for (const entry of project.levels) delete entry['referencePoints'];
+
     expect(() => parseDocument({ ...bare, documentVersion: 1 })).not.toThrow();
   });
 

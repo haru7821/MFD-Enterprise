@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 import {
+  DocumentMigrationError,
   DocumentValidationError,
   UnsupportedDocumentVersionError,
   loadDocument,
@@ -62,12 +63,23 @@ export function TopBar({ onOpenReport }: { readonly onOpenReport: () => void }) 
       setError(null);
       dispatch({ type: 'document/load', document: loadDocument(await file.text()) });
     } catch (cause) {
+      /*
+       * Three failures, three different things to tell the engineer — Hardening priority 2:
+       * *"If migration cannot safely convert: show explicit migration error."*
+       *
+       * A migration failure is **not** an invalid project. The file is a real project of an older
+       * version that this build declined to convert because converting would have destroyed
+       * something in it. Reporting that as "not a valid MFD-E project" would send an engineer
+       * looking for corruption in a file that is fine, and might persuade them to discard it.
+       */
       setError(
         cause instanceof UnsupportedDocumentVersionError
           ? cause.message
-          : cause instanceof DocumentValidationError
-            ? `${file.name} is not a valid MFD-E project.`
-            : `Could not read ${file.name}.`,
+          : cause instanceof DocumentMigrationError
+            ? cause.message
+            : cause instanceof DocumentValidationError
+              ? `${file.name} is not a valid MFD-E project.`
+              : `Could not read ${file.name}.`,
       );
     } finally {
       if (fileRef.current) fileRef.current.value = '';

@@ -5,7 +5,12 @@
     /* No "DOM": the document is loaded by the browser editor, by the server that
        signs a report, and by the test runner. A document model that could only be
        parsed in a tab would make the server the odd one out. */
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    /* Node types are for the *tests* — migration.test.ts reads a checked-in v3 project file,
+       because a fixture built from today's schema cannot prove an old file still opens. The
+       shipped code must still reach for nothing outside the language: isomorphism.test.ts
+       asserts that, so the guarantee is a test rather than the absence of a type package. */
+    "types": ["node"]
   },
   "include": ["src", "fixtures"]
 }

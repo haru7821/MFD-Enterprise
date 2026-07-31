@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { DocumentValidationError, UnsupportedDocumentVersionError } from './errors';
+import {
+  DocumentMigrationError,
+  DocumentValidationError,
+  type DocumentIssue,
+  UnsupportedDocumentVersionError,
+} from './errors';
 import {
   DEFAULT_PROJECT_SETTINGS,
   DOCUMENT_VERSION,
@@ -33,6 +38,27 @@ import {
  * no longer has. That is not sloppiness to tidy up later: a migration's whole job is to
  * handle a shape the current code does not model, and the validation that follows is
  * what makes the result safe.
+ *
+ * ## No silent repair
+ *
+ * > Owner decision, Hardening priority 2: *"Migration must remain deterministic. No silent repair.
+ * > If migration cannot safely convert: show explicit migration error."*
+ *
+ * Every migration below adds a field. Each one therefore checks first whether that field is
+ * **already occupied**, and throws {@link DocumentMigrationError} rather than overwriting it. A
+ * file claiming version 3 whose levels already hold reference points is not something a migration
+ * can convert: it cannot tell a mislabelled version 4 file from a hand-edited version 3 one, and
+ * writing `[]` over the points would destroy them behind a document that then validated cleanly.
+ *
+ * A *structural* mismatch — no `project`, `levels` not an array — is left to the schema instead.
+ * That is not an unsafe conversion, it is a file that is not a document, and `documentSchema` names
+ * the offending path far better than a migration could.
+ *
+ * ## Deterministic
+ *
+ * Nothing here reads a clock, generates an id, or branches on anything but the file's own content.
+ * Migrating the same bytes twice produces the same bytes, which is what lets a migrated project be
+ * diffed against the original.
  */
 
 /** A migration from `from` to `from + 1`. Input is unvalidated JSON, by necessity. */
@@ -59,6 +85,20 @@ export const MIGRATIONS: readonly Migration[] = [
     migrate(document) {
       const project = document['project'];
       if (!isRecord(project) || !Array.isArray(project['levels'])) return document;
+
+      const occupied: DocumentIssue[] = [];
+      project['levels'].forEach((level, levelIndex) => {
+        if (!isRecord(level) || !Array.isArray(level['boundaries'])) return;
+        level['boundaries'].forEach((boundary, index) => {
+          if (isRecord(boundary) && carriesData(boundary['obstructionType'])) {
+            occupied.push({
+              path: `project.levels.${levelIndex}.boundaries.${index}.obstructionType`,
+              message: 'a version 1 boundary cannot carry an obstruction type',
+            });
+          }
+        });
+      });
+      refuseIfOccupied(1, 2, occupied);
 
       const levels = project['levels'].map((level) => {
         if (!isRecord(level) || !Array.isArray(level['boundaries'])) return level;
@@ -93,6 +133,21 @@ export const MIGRATIONS: readonly Migration[] = [
       const project = document['project'];
       if (!isRecord(project)) return document;
 
+      refuseIfOccupied(
+        2,
+        3,
+        carriesData(project['settings'])
+          ? [
+              {
+                path: 'project.settings',
+                message:
+                  'a version 2 project cannot carry settings; converting would replace the ' +
+                  'chosen render mode with the default',
+              },
+            ]
+          : [],
+      );
+
       return {
         ...document,
         project: { ...project, settings: { ...DEFAULT_PROJECT_SETTINGS } },
@@ -124,6 +179,24 @@ export const MIGRATIONS: readonly Migration[] = [
       const project = document['project'];
       if (!isRecord(project) || !Array.isArray(project['levels'])) return document;
 
+      /*
+       * The overwrite this guards against is the worst of the three, which is why it is worth
+       * stating: `{...level, referencePoints: []}` on a level that already had points would delete
+       * every one of them, the document would then validate cleanly, and the next save would put
+       * the loss on disk. Nothing anywhere would say it had happened.
+       */
+      const occupied: DocumentIssue[] = [];
+      project['levels'].forEach((level, index) => {
+        if (isRecord(level) && carriesData(level['referencePoints'])) {
+          occupied.push({
+            path: `project.levels.${index}.referencePoints`,
+            message:
+              'a version 3 level cannot carry reference points; converting would delete them',
+          });
+        }
+      });
+      refuseIfOccupied(3, 4, occupied);
+
       const levels = project['levels'].map((level) =>
         isRecord(level) ? { ...level, referencePoints: [] } : level,
       );
@@ -135,6 +208,40 @@ export const MIGRATIONS: readonly Migration[] = [
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Does this value hold something a migration would destroy by overwriting it?
+ *
+ * `undefined` and `null` hold nothing. An empty array and an empty object hold nothing either —
+ * which matters, because a file written by a build that had already added the key but nothing to
+ * put in it is an ordinary file, not a corrupt one, and refusing it would be pedantry that costs an
+ * engineer their project.
+ *
+ * Anything else is data somebody put there, and a migration that replaced it would be a silent
+ * repair — the thing the owner's decision forbids by name.
+ */
+function carriesData(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (isRecord(value)) return Object.keys(value).length > 0;
+  return true;
+}
+
+/**
+ * Refuse rather than overwrite.
+ *
+ * Called by each migration before it creates a field, with the places that field would land. If any
+ * of them already holds something, the conversion stops and says which — because the migration
+ * cannot tell a mislabelled newer file from a hand-edited older one, and both of its other options
+ * lose data.
+ */
+function refuseIfOccupied(
+  from: number,
+  to: number,
+  occupied: readonly DocumentIssue[],
+): void {
+  if (occupied.length > 0) throw new DocumentMigrationError(from, to, occupied);
 }
 
 const versionProbeSchema = z.looseObject({

@@ -166,16 +166,25 @@ test('states verification per field group, not per record', async ({ page }) => 
   // the panel has to say which is which. A single record-level badge cannot, and that is
   // what this replaces.
   const chips = page.getByTestId('data-status-vantive_ak98').locator('[data-status]');
-  await expect(chips).toHaveCount(6);
+  await expect(chips).toHaveCount(9);
 
-  // Every group is named, so no group can be silently missing from the readout.
+  /*
+   * Every group is named, so no group can be silently missing from the readout. Nine since the
+   * owner's AK98 source clarification: five specification groups the manufacturer answers for, and
+   * four installation groups no manufacturer document may answer for. The four are listed here by
+   * name rather than counted, because "the palette shows the installation gaps" is the thing worth
+   * asserting — they are what A-1 now consists of.
+   */
   for (const group of [
     'manufacturerDimensions',
-    'serviceClearance',
     'power',
     'roWater',
     'drain',
     'environmental',
+    'serviceClearance',
+    'maintenanceAccess',
+    'portLocations',
+    'installationRouting',
   ]) {
     await expect(page.getByTestId(`data-status-vantive_ak98-${group}`)).toBeVisible();
   }
