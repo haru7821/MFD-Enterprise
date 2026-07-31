@@ -422,6 +422,58 @@ describe('D1 — a layout that fails a gate is not optimised, it is blocked', ()
     expect(blocked.stationCount).toBe(OVERLAPPING.length);
   });
 
+  it('blocks on equipment that is not being rearranged', () => {
+    /*
+     * > Owner decision, following the standing review: **the whole scene**.
+     *
+     * The defect this replaced. `existing` holds everything on the level that is not being
+     * optimised — the other equipment kinds, which stay exactly where they are. Gating only the
+     * machines being moved meant a dialysis station standing on one of them was invisible: the run
+     * returned `improved`, an empty blocking list, and three proposals, about a drawing the rule
+     * engine called twice RED.
+     */
+    const current = [
+      placement('s1', 3_000, 3_000),
+      placement('s2', 5_000, 5_000),
+      placement('s3', 7_000, 3_000),
+    ];
+    const other = [placement('other', 3_100, 3_000)];
+
+    // Nothing wrong with the machines being rearranged, taken by themselves.
+    expect(violationsOf(current)).toEqual([]);
+    // And two REDs once the machine that is staying put is counted.
+    expect(violationsOf([...other, ...current]).length).toBe(2);
+
+    const result = optimise({ current, existing: other });
+
+    expect(result.outcome).toBe('blocked');
+    expect(result.proposals).toEqual([]);
+    expect(result.current).toBeNull();
+    expect(result.blocking).toHaveLength(1);
+    expect(result.blocking[0]?.detail.placementIds).toEqual(
+      expect.arrayContaining(['other', 's1']),
+    );
+  });
+
+  it('never proposes a layout that collides with what is staying put', () => {
+    /*
+     * The other half of the same decision, and the one that makes the block worth having. Widening
+     * the incumbent's gate without widening the candidates' would swap one asymmetry for another:
+     * the drawing judged against the whole scene, the proposals against a fraction of it.
+     *
+     * `existing` here sits clear of everything, so the run proceeds — and every proposal has to be
+     * clear of it too.
+     */
+    const other = [placement('other', 1_200, 1_200)];
+    const result = optimise({ existing: other });
+
+    expect(result.outcome).toBe('improved');
+    expect(result.proposals.length).toBeGreaterThan(0);
+    for (const proposal of result.proposals) {
+      expect(violationsOf([...other, ...proposal.placements])).toEqual([]);
+    }
+  });
+
   it('is checked before the layout is scored at all', () => {
     // Not "scored and then withheld". `current` is null because nothing was measured, which is
     // what makes it impossible for a later change to leak the number back onto the screen.

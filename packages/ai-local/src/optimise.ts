@@ -173,13 +173,29 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
    * is meaningful. So there is no ordering: the run stops, and what comes back is the list of rules
    * to fix.
    *
-   * Gated on `input.current` alone, and not on `input.existing` too, because that is exactly the
-   * population `rankLayouts` gates its candidates on (`existing: []`, below). Judging the incumbent
-   * against a wider one would block it for violations no candidate is ever checked for.
+   * ## Which layout is "the current layout"
+   *
+   * > Owner decision, following the standing review: **the whole scene**, not only the equipment
+   * > being rearranged.
+   *
+   * The first implementation gated `input.current` alone and argued that this matched what
+   * `rankLayouts` gated its candidates on. It did match — because both were wrong. With a machine
+   * of another kind standing on a dialysis station, the drawn layout returned `improved` and an
+   * empty blocking list while the rule engine called the scene twice RED, and every proposal
+   * returned collided with the machine that was staying put.
+   *
+   * So both populations widened together, and they have to stay together: the incumbent is judged
+   * on `existing + current`, and candidates are judged on `existing + candidate` (`rankLayouts`
+   * below is no longer handed `existing: []`). Gating one and not the other is what produced a
+   * verdict about a drawing that ignored equipment on the drawing.
+   *
+   * The cost is real and was accepted: a room whose other equipment leaves no compliant
+   * arrangement now reports `no_feasible_candidate` instead of proposing one that overlaps it.
+   * That is the honest answer to the question actually asked.
    */
   const gates = applyGates(
     {
-      placements: input.current,
+      placements: [...input.existing, ...input.current],
       catalog: input.catalog,
       ruleSet: input.ruleSet,
       boundaries: input.boundaries,
@@ -201,8 +217,14 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
     };
   }
 
+  /*
+   * Scored on the whole scene, for the same reason it is *gated* on the whole scene: `rankLayouts`
+   * scores every candidate as `[...existing, ...candidate]` (rank.ts:88), so scoring the incumbent
+   * on `current` alone would compare a number measured over part of the drawing against numbers
+   * measured over all of it. The two populations move together or the comparison is meaningless.
+   */
   const currentScore = scoreLayout({
-    placements: input.current,
+    placements: [...input.existing, ...input.current],
     catalog: input.catalog,
     ruleSet: input.ruleSet,
     boundaries: input.boundaries,
@@ -221,13 +243,15 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
    * Owner constraint 5. Candidates come through `rankLayouts`, which runs both gates first — so
    * what is being maximised is a score **over feasible layouts**, never a score in the abstract.
    *
-   * `existing: []` and not `input.current`: the machines being rearranged cannot also be
-   * obstructions to themselves, or Gate 2 would reject every candidate for colliding with the
-   * layout it is replacing.
+   * `input.existing` is passed through rather than blanked. It holds everything on the level that
+   * is *not* being rearranged — the other equipment kinds — so it cannot contain the machines this
+   * run is moving, and a candidate is therefore never rejected for colliding with the layout it
+   * replaces. The earlier `existing: []` was guarding against that, and threw away the rest of the
+   * drawing to do it: proposals were ranked without ever being checked against the equipment they
+   * would have to sit beside.
    */
   const ranked = rankLayouts({
     ...input,
-    existing: [],
     stationTarget: stationCount,
     limit: input.limit ?? 3,
   });
