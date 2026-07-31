@@ -352,9 +352,9 @@ describe('§ 9 — the bill of materials', () => {
       equipment: [
         fixtureEquipment({
           connections: [
-            { service: 'power', required: true, specification: null, status: 'draft' },
-            { service: 'ro_water', required: false, specification: null, status: 'draft' },
-            { service: 'drain', required: false, specification: null, status: 'draft' },
+            { service: 'power', required: true, specified: false, status: 'draft' },
+            { service: 'ro_water', required: false, specified: false, status: 'draft' },
+            { service: 'drain', required: false, specified: false, status: 'draft' },
           ],
         }),
       ],

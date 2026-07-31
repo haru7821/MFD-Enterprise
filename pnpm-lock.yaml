@@ -53,6 +53,9 @@ importers:
       '@mfd/ai-local':
         specifier: workspace:*
         version: link:../../packages/ai-local
+      '@mfd/ai-planner':
+        specifier: workspace:*
+        version: link:../../packages/ai-planner
       '@mfd/cad-engine':
         specifier: workspace:*
         version: link:../../packages/cad-engine

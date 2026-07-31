@@ -1,5 +1,6 @@
 import { EquipmentPalette } from '@/features/equipment/EquipmentPalette';
 import { LayoutPanel } from '@/features/layout/LayoutPanel';
+import { InstallationPanel } from '@/features/planning/InstallationPanel';
 import { LevelPanel } from '@/features/level/LevelPanel';
 import { PlanPanel } from '@/features/plan/PlanPanel';
 import { ProjectDetailsPanel } from '@/features/project/ProjectDetailsPanel';
@@ -16,6 +17,7 @@ import { SpaceInspector } from '@/features/space/SpaceInspector';
  *   4. trace the rooms and the things in the way
  *   5. mark where the services enter and the staff work from
  *   6. place the machines — by hand, or by generating a layout and approving one
+ *   7. plan the installation of the layout that was approved
  *
  * The equipment list takes the remaining height and scrolls, because it is the part an
  * engineer returns to repeatedly; everything above it is set up once and then mostly
@@ -39,6 +41,12 @@ export function ProjectSidebar() {
       <ObstructionInspector />
       <ReferencePointPanel />
       <LayoutPanel />
+      {/*
+        After the layout panel, because a plan is made from an approved layout: the sidebar reads
+        top to bottom in the order the work happens. Still above `EquipmentPalette` for the reason
+        the comment above gives — anything below a `flex-1` panel competes with it for height.
+      */}
+      <InstallationPanel />
       <EquipmentPalette />
     </aside>
   );

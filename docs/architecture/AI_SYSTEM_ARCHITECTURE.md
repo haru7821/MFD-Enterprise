@@ -291,6 +291,70 @@ estimate a duration.
 
 ---
 
+## C-3a. Duration and manpower — AD-19 as amended
+
+> Owner decision, Sprint 6 § 3: the planner outputs **Required Manpower** and **Estimated
+> Installation Duration**.
+> Owner decision, Sprint 6 §§ 4–5: *"Never generate uncited engineering values. Unknown values
+> remain 'Unknown'"*, and every recommendation states whether it is Verified, Draft, Planning or
+> Calculated.
+
+§ C-3 above said a plan carries no durations, and `InstallationStage` enforced it with
+`durationDays?: never`. The owner's decision asks for both figures **and supplies the rule that
+makes them safe**, so the refusal moves rather than lifting:
+
+| | Before | Now |
+| --- | --- | --- |
+| A duration may be stated | Never | When a rate in the sequence set supports it |
+| A duration may be **invented** | Never | **Never** |
+| Nothing supplies a rate | The field could not exist | The field says `unknown`, naming the file that would answer it |
+
+The mechanics are in `packages/ai-planner/src/effort.ts`. A stage's duration is
+`hoursFixed + hoursPerStation × stationCount`, `calculated`, with those rate ids and
+`measurement:placement_count` named as its inputs. `standards/sequences/dialysis.json` supplies
+**no rate and no crew size** — see its `rateAuthority` block, and B-7 — so every figure the product
+ships with today is `unknown`. That is the same answer AD-19 gave, reached by a mechanism that can
+produce a real one when somebody supplies a rate with a source instead of by a type that forbids it
+forever.
+
+**Totals refuse partial knowledge.** A duration summed over the stages that happened to have rates
+is smaller than the truth, looks complete, and is the one somebody quotes; so a total with any
+unknown part is itself `unknown`, and the per-stage rows show which. The same rule governs a
+connection plan's total length.
+
+---
+
+## C-3b. The planner boundary — two interfaces, not one
+
+> Owner decision, Sprint 6 § 7: *"Introduce AiPlanner API only as an abstraction layer. The
+> deterministic planner is the default implementation. Future LLM implementations may summarize
+> planner output but must never replace planning logic."*
+
+```
+  PlanInput ──► AiPlanner.plan() ──► InstallationPlan ──► PlanSummariser.summarise() ──► prose
+              deterministic, offline                       optional, may be a model
+```
+
+`AiPlanner.plan` produces a plan. `PlanSummariser.summarise` **accepts** a finished plan and returns
+text. A model can implement the second and cannot implement the first — not by policy, by signature.
+One interface with a single `plan()` method would have made "an LLM planner" a legal implementation
+and left *"must never replace planning logic"* as a comment.
+
+Two further properties are held by types rather than by discipline:
+
+| Owner requirement | How |
+| --- | --- |
+| § 1 — *"receives only validated layouts, never plan directly from raw user drawings"* | `PlanInput.evaluation` is a **required** field. A caller holding an unevaluated drawing cannot construct the argument |
+| § 6 — *"must work completely offline"* | `AiPlanner.requiresNetwork` is the **literal type `false`**. An implementation needing a network could not satisfy the interface |
+
+The offline claim is also tested where it is actually made: `tests/e2e/planning.spec.ts` runs the
+whole acceptance path — Draw → Generate → Optimize → Approve → Plan → Export PDF — with every
+outbound request aborted *and recorded*, and asserts nothing was requested. Aborting alone would not
+be a test: a denied request to a CDN would very likely leave the application working, and the run
+would pass while the product had acquired a dependency that fails on an air-gapped laptop.
+
+---
+
 ## C-4. The weighted scoring engine
 
 > Owner decision: replace the station-count objective with a **weighted scoring engine** over rule
@@ -734,4 +798,5 @@ rather than a habit — see AI_SERVICE_API.md § D.
 | AD-16 | **Retrieval precedes reasoning.** The LLM stage takes retrieved passages as a required, non-empty argument; a request that retrieves nothing is answered "not in the indexed corpus" with no model call. The model never answers from memory. |
 | AD-17 | **Hard compliance is a filter, never a weight.** A candidate breaching a rule is discarded, not scored lower. Only compliance *margin* is scored, so no arrangement of other criteria can purchase a violation. |
 | AD-18 | **A measurement that was not taken is reported unavailable, never zero.** Routing criteria without a reference point, retrieval with nothing indexed, a duration with no labour data. |
-| AD-19 | **Sequence is derived; duration is not invented.** The installation plan orders stages from a dependency graph in `standards/sequences/` and carries no durations or dates. |
+| AD-19 | **Sequence is derived; duration is not invented.** The installation plan orders stages from a dependency graph in `standards/sequences/`. A duration or crew size is **calculated from a rate in that file, with the rate id and the machine count named as its inputs, or reported `unknown`** — never chosen. Amended in Sprint 6; see § C-3a. |
+| AD-20 | **A planner value is a number, a status and a source.** `verified` / `draft` / `planning` / `calculated` / `unknown`, with five invariants making an uncited figure unrepresentable — `evidence.ts`, EV-1…EV-5. |

@@ -249,7 +249,38 @@ request with a perfectly good answer.
 
 **And one thing worth the owner's attention** — see § F.
 
-### Step 6 — `packages/ai-planner` (≈3 days)
+### Step 6 — `packages/ai-planner`, the Engineering Planning Engine (≈3 days) ✅ **Done**
+
+> Owner decision, Sprint 6: *"Sprint 6 is NOT an 'AI generation' sprint. It is an Engineering
+> Planning Engine. The deterministic solver remains the source of truth."*
+
+Delivered wider than originally planned, because the owner's ten requirements asked for more than
+sequence and blockers: connection plans per service, a bill of materials, tools, risks, manpower and
+duration, an `AiPlanner` abstraction, an editor panel and a report section.
+
+| Files | |
+| --- | --- |
+| `standards/sequences/dialysis.json` | Eight stages, dependencies, applicability, tools, risks. **Data.** Every rate `null` |
+| `ai-contract/src/evidence.ts` | `EvidenceStatus`, `SourcedNumber`, five `EV-` invariants (AD-20) |
+| `ai-contract/src/planner.ts` | `AiPlanner`, `PlanSummariser`, `PlanInput` with a **required** evaluation |
+| `ai-planner/src/{stages,order,connections,materials,effort,blockers,plan}.ts` | The engine |
+| `report-engine/src/installation.ts` | The plan as report sections; HTML and PDF renderers |
+| `apps/web/src/features/planning/` | `runPlanner`, `InstallationPanel` |
+| `tests/e2e/planning.spec.ts` | Eight specs, including the whole acceptance path with the network blocked |
+
+**Done, and each guard verified by breaking it:** the same validated layout produces a byte-identical
+plan; a cycle throws rather than emitting a plausible order; ties break on the sequence file, so an
+engineer reorders by editing it; an excluded stage rewires its dependents **and** reports what was
+missing; every checklist id resolves to the report's own checklist, and every checklist item is
+allocated to exactly one stage; duration and manpower are `unknown` on the shipped data and
+`calculated` with named inputs when a rate exists; a total with any unknown part is unknown.
+
+Two owner requirements are held by types rather than by discipline — `PlanInput.evaluation` being
+required (§ 1) and `AiPlanner.requiresNetwork` being the literal `false` (§ 6). See § C-3b of the
+architecture. The amendment this step required is AD-19; see § C-3a, and B-7.
+
+#### Step 6, as originally planned
+
 
 | Files | |
 | --- | --- |

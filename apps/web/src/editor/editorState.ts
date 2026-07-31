@@ -5,7 +5,12 @@ import {
   type Viewport,
   createViewport,
 } from '@mfd/cad-engine';
-import type { RationaleCode, RationaleParams, ScoreBreakdown } from '@mfd/ai-contract';
+import type {
+  InstallationPlan,
+  RationaleCode,
+  RationaleParams,
+  ScoreBreakdown,
+} from '@mfd/ai-contract';
 import type { ComplianceSummary, PlacementDiffEntry } from '@mfd/ai-local';
 import {
   type Boundary,
@@ -59,6 +64,19 @@ export interface LayoutProposalSet {
    */
   readonly currentScore: ScoreBreakdown | null;
 }
+
+/**
+ * Why a plan could not be produced.
+ *
+ * > Owner decision, Sprint 6 § 1: *"AI Planner receives only validated layouts. Never plan directly
+ * > from raw user drawings."*
+ *
+ * The contract holds that with a required field, so these are the cases the *editor* has to catch
+ * before it can even build the input — an empty drawing has nothing to install, and a layout the
+ * engineer has not approved is not the thing they mean to plan.
+ */
+export const PLANNING_REFUSALS = ['nothing_placed', 'proposals_pending'] as const;
+export type PlanningRefusal = (typeof PLANNING_REFUSALS)[number];
 
 /** Generating a layout from nothing, or improving the one the engineer drew. */
 export const LAYOUT_OPERATIONS = ['generate', 'optimise'] as const;
@@ -195,6 +213,18 @@ export interface EditorState {
   readonly layoutProposals: LayoutProposalSet | null;
   /** Which proposal is being previewed. Null means the current layout is shown as it is. */
   readonly previewedProposalId: string | null;
+  /**
+   * The installation plan, once an engineer has asked for one.
+   *
+   * **Session state, not document state**, and deliberately: a plan is derived from a layout *and*
+   * from the evaluation of that layout, so a plan saved into the project would be stale the moment
+   * somebody nudged a machine — and it would be stale invisibly, inside a file somebody later
+   * exported a report from. Regenerating is cheap; a plan that quietly describes an older drawing
+   * is not.
+   */
+  readonly installationPlan: InstallationPlan | null;
+  /** Why the last planning attempt produced nothing. Null when a plan exists or none was asked for. */
+  readonly planningRefusal: PlanningRefusal | null;
   readonly selectedPlacementId: string | null;
   readonly selectedSpaceId: string | null;
   /**
@@ -257,6 +287,8 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   selectedReferencePointId: null,
   layoutProposals: null,
   previewedProposalId: null,
+  installationPlan: null,
+  planningRefusal: null,
   selectedPlacementId: null,
   selectedSpaceId: null,
   selectedBoundaryId: null,

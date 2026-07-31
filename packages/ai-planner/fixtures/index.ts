@@ -36,9 +36,9 @@ export function fixtureEquipment(overrides: Partial<PlanEquipment> = {}): PlanEq
     model: 'AK98',
     dataStatus: 'draft',
     connections: [
-      { service: 'power', required: true, specification: null, status: 'draft' },
-      { service: 'ro_water', required: true, specification: null, status: 'draft' },
-      { service: 'drain', required: true, specification: null, status: 'draft' },
+      { service: 'power', required: true, specified: false, status: 'draft' },
+      { service: 'ro_water', required: true, specified: false, status: 'draft' },
+      { service: 'drain', required: true, specified: false, status: 'draft' },
     ],
     ...overrides,
   };

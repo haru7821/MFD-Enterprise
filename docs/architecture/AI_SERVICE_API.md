@@ -585,7 +585,7 @@ export interface InstallationStage {
   readonly placementIds: readonly string[];
   /** Commissioning items, in the report engine's own checklist vocabulary. */
   readonly checklistItemIds: readonly string[];
-  /** Declared and always absent. Duration is not ours to state — see AD-19. */
+  /** Calculated from a rate in the sequence set, or `unknown`. Never chosen — AD-19 as amended. */
   readonly durationDays?: never;
 }
 ```

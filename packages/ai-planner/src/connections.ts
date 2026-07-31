@@ -5,6 +5,7 @@ import type {
   PlanService,
   ReferencePointSummary,
   SourcedNumber,
+  SourcedText,
 } from '@mfd/ai-contract';
 import { PLAN_SERVICES, measuredNumber, unknownNumber, unknownText } from '@mfd/ai-contract';
 
@@ -67,15 +68,40 @@ function planFor(service: PlanService, input: PlanInput): ConnectionPlan {
         ? measuredNumber(measured.millimetres, 'mm', `route:${service}:${placement.placementId}`)
         : unknownNumber('mm', `route:${service}:${placement.placementId}`),
       /*
-       * What fitting, at what rating. The catalogue declares the connection is *required* and
-       * leaves `specification: null` — the AK98 manual has not been supplied (A-1) — so this is
-       * `unknown` on every project today, and it says which record would answer it.
+       * What fitting, at what rating.
+       *
+       * `unknown` when the catalogue states nothing — which is every record today, because the AK98
+       * manual has not been supplied (A-1) — naming the field group that would answer it.
+       *
+       * When the catalogue *does* state one, this points at the datasheet rather than repeating the
+       * figures. That is a cross-reference, not an engineering claim: the loose specification record
+       * is printed properly in the report's datasheet section, and a second rendering here would be
+       * the one an engineer on site happened to be holding.
        */
-      requirement: unknownText(`catalogue_field:${placement.equipmentObjectId}.connections.${service}`),
+      requirement: requirementFor(service, placement.equipmentObjectId, input),
     };
   });
 
   return { service, originPointId: origin.id, runs, totalLength: sumLengths(runs, service) };
+}
+
+/** Where to find the connection specification, or `unknown` when there is none to find. */
+function requirementFor(service: PlanService, equipmentId: string, input: PlanInput): SourcedText {
+  const ref = `catalogue_field:${equipmentId}.connections.${service}`;
+  const declared = input.equipment
+    .find((entry) => entry.id === equipmentId)
+    ?.connections.find((entry) => entry.service === service);
+
+  if (!declared?.specified) return unknownText(ref);
+
+  return {
+    value: {
+      ko: '장비 데이터시트의 접속 사양을 따릅니다.',
+      en: 'Per the connection specification in the equipment datasheet.',
+    },
+    status: declared.status === 'verified' ? 'verified' : 'draft',
+    source: { kind: 'catalogue_field', ref, inputs: [] },
+  };
 }
 
 /**

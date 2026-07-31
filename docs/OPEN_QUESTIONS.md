@@ -211,6 +211,30 @@ Worth an engineer's eye because a reference can distort a weight: a criterion wh
 too generously scores near 1.0 for every layout and stops discriminating, which makes its weight
 decorative regardless of the number in the table.
 
+### B-7. Labour rates and crew sizes — before any duration is printed
+
+**The planner ships with none, and reports every duration and every manpower figure as `unknown`.**
+That is deliberate rather than unfinished: the owner's Sprint 6 §§ 4–5 require a figure to be cited
+or Unknown, and this project holds no labour data of any kind — no crew size, no hours per station,
+no site productivity factor.
+
+What would close it, per stage in `standards/sequences/dialysis.json`:
+
+| Field | What it means |
+| --- | --- |
+| `manpower.persons` | How many people this stage needs at once |
+| `rate.hoursFixed` | Setup and overhead independent of the station count |
+| `rate.hoursPerStation` | Marginal hours per dialysis station |
+
+Supplying any of them is a **reviewed change and needs a source** — whose figures, from which
+projects, on what kind of site. A number typed in without one produces a `calculated` duration that
+looks identical to a sourced one on the page, which is the exact failure AD-19 was written to
+prevent and the reason `EvidenceSource` has no way to express "somebody reckoned".
+
+Until then the mechanism is built and idle, which is the right state for it: the moment a figure
+arrives with a source, the plan, the panel and the PDF all start reporting real hours with the
+arithmetic shown.
+
 ### B-6. Digital twin scope — Version 4
 
 Data sources (BMS, equipment telemetry, RTLS, maintenance system) and protocols. Is the

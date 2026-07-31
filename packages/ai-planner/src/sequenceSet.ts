@@ -22,7 +22,7 @@ import { z } from 'zod';
  *
  * A duration or a crew size with a number in it, unless somebody supplies a source for it. The
  * shipped file has `null` throughout and says so in a `rateAuthority` block, so every figure the
- * planner reports today is `unknown`. See AD-19 as amended, and B-6.
+ * planner reports today is `unknown`. See AD-19 as amended, and B-7.
  */
 
 const bilingualSchema = z.object({ ko: z.string().min(1), en: z.string().min(1) });

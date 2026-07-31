@@ -29,6 +29,14 @@ import { useEditor } from '@/editor/useEditor';
 export function useReportModel(generatedAt: string): ReportModel {
   const { state } = useEditor();
   const document = state.doc.document;
+  /*
+   * The installation plan, when the engineer has generated one.
+   *
+   * Passed in rather than built here, and that is the owner's § 1: a plan is made from a layout
+   * somebody approved. Building one at export time would plan whatever happened to be on the
+   * drawing when the button was pressed.
+   */
+  const installationPlan = state.installationPlan;
 
   return useMemo(
     () =>
@@ -39,7 +47,8 @@ export function useReportModel(generatedAt: string): ReportModel {
         checklistTemplate: dialysisChecklistTemplate,
         generatedAt,
         mfdVersion: APP_VERSION,
+        installationPlan,
       }),
-    [document, generatedAt],
+    [document, generatedAt, installationPlan],
   );
 }

@@ -135,8 +135,18 @@ export interface PlanEquipment {
 export interface PlanEquipmentConnection {
   readonly service: 'power' | 'ro_water' | 'drain';
   readonly required: boolean;
-  /** The fitting or rating the catalogue states. Null on every record today (A-1). */
-  readonly specification: string | null;
+  /**
+   * Whether the catalogue states a specification for this connection at all.
+   *
+   * A boolean rather than the specification itself, and that is the "one source, two views" rule
+   * again. The catalogue's `specification` is a deliberately loose record — voltage and phase for
+   * power, pressure for water, diameter for drain — and the report's datasheet section already
+   * prints it properly. A planner that re-rendered it would produce a second, worse formatting of
+   * the same figures, and an engineer on site would follow whichever one was in front of them.
+   *
+   * False on every record today: A-1, the AK98 manual has not been supplied.
+   */
+  readonly specified: boolean;
   /** The field group's own verification state, carried so a figure taken from it inherits it. */
   readonly status: 'verified' | 'draft';
 }

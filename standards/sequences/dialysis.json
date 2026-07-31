@@ -13,10 +13,10 @@
     "decidedBy": "developer",
     "status": "planning",
     "note": "Stage names, order and dependencies are ordinary construction sequencing: a loop is pressure tested before anything is connected to it, power is energised before commissioning, and the floor is finished before anything is anchored to it. They are stated here as data so a customer whose site sequences differently edits a file rather than the solver. NONE of it is a manufacturer instruction, and nothing here is verified: every entry carries status 'planning' and the planner passes that through. Labour rates and crew sizes are null because nobody has supplied any; see notes on each stage.",
-    "openQuestion": "B-6"
+    "openQuestion": "B-7"
   },
   "rateAuthority": {
-    "note": "Every 'manpower' and 'rate' below is null, deliberately. A duration is an engineering commitment somebody resources against, and this project holds no labour data of any kind: no crew size, no hours per station, no site productivity factor. The planner therefore reports duration and manpower as Unknown, naming this file as what would answer them. Supplying a figure here is a reviewed change and must come with a source — see docs/OPEN_QUESTIONS.md B-6.",
+    "note": "Every 'manpower' and 'rate' below is null, deliberately. A duration is an engineering commitment somebody resources against, and this project holds no labour data of any kind: no crew size, no hours per station, no site productivity factor. The planner therefore reports duration and manpower as Unknown, naming this file as what would answer them. Supplying a figure here is a reviewed change and must come with a source — see docs/OPEN_QUESTIONS.md B-7.",
     "supplies": [
       "manpower.persons",
       "rate.hoursFixed",

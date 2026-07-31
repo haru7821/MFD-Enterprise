@@ -71,7 +71,9 @@ import {
   defaultSpaceName,
   emptyDocument,
 } from './editorState';
-import type { LayoutProposal, LayoutProposalSet } from './editorState';
+import type { InstallationPlan } from '@mfd/ai-contract';
+
+import type { LayoutProposal, LayoutProposalSet, PlanningRefusal } from './editorState';
 import type { ToolId } from './tools';
 
 /**
@@ -129,6 +131,9 @@ export type EditorAction =
   /** The engineer's explicit approval — the only action that touches the document. */
   | { readonly type: 'layout/approve'; readonly proposalId: string; readonly at: number }
   | { readonly type: 'layout/discard' }
+  | { readonly type: 'installation/generate'; readonly plan: InstallationPlan }
+  | { readonly type: 'installation/refuse'; readonly reason: PlanningRefusal }
+  | { readonly type: 'installation/clear' }
   | {
       readonly type: 'placement/add';
       readonly object: EquipmentObject;
@@ -505,6 +510,25 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'layout/discard':
       return { ...state, layoutProposals: null, previewedProposalId: null };
+
+    case 'installation/generate':
+      return { ...state, installationPlan: action.plan, planningRefusal: null };
+
+    case 'installation/refuse':
+      // The refusal replaces any previous plan. A stale plan left on screen beside a message
+      // saying one could not be made is the worst of both.
+      return { ...state, installationPlan: null, planningRefusal: action.reason };
+
+    /*
+     * `installation/`, not `plan/`.
+     *
+     * `plan` already means the **imported floor plan drawing** everywhere in this reducer —
+     * `plan/import`, `plan/clear`, `plan/setMapping`. A second meaning would have collided
+     * silently in the switch, and did: the lint rule caught a duplicate `plan/clear` label whose
+     * first branch would have won and cleared the drawing instead.
+     */
+    case 'installation/clear':
+      return { ...state, installationPlan: null, planningRefusal: null };
 
     case 'placement/add': {
       const number = state.nextEntityNumber;
