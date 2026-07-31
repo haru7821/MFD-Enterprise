@@ -52,6 +52,44 @@ That is a constraint on the AI as much as on the drawing tools: the assistant pr
 retrieves and summarises. The rule engine judges, the report states, and a person decides. See
 docs/architecture/AI_SYSTEM_ARCHITECTURE.md.
 
+# Review and Direction
+
+The product owner has delegated two of their duties to a standing reviewer, defined in
+`.claude/agents/cto.md` and invoked as the `cto` agent.
+
+## The loop
+
+```
+lead developer builds  →  cto verifies  →  findings applied  →  cto directs  →  next piece
+```
+
+**Before committing any substantive change**, the lead developer invokes the `cto` agent on the
+work. It reads the diff and the artefacts, checks the claims against what the code actually
+produces, breaks at least one load-bearing guard to confirm it fails, and returns:
+
+- a **verdict** — approve, approve with conditions, or reject;
+- **findings**, each with a severity and what to do about it;
+- a **direction** — the next instruction, in the owner's voice.
+
+`blocking` findings are fixed before the commit. `should-fix` findings are fixed or answered in the
+commit message. The direction is what the next piece of work starts from.
+
+## What the reviewer is for
+
+Not lint, types and tests — those already run on every change, and a reviewer that only checked them
+would add nothing. It is for what a test suite cannot see: a number that is right on one drawing and
+meaningless on the rest, a guard that cannot fire, a document that claims more than its evidence
+supports, a second implementation of something that already exists.
+
+Every failure in `.claude/agents/cto.md`'s hunting list is one this project actually shipped.
+
+## What it cannot do
+
+It stands in for the owner; it is not the owner. It may **decide on their behalf and say so**, and
+they may overrule it. Anything that changes the product's direction, its scope, or a standing
+decision is theirs — the reviewer's job there is to put the question in front of them, clearly, with
+what it hangs on.
+
 # Development Principles
 
 1. Always design scalable architecture.

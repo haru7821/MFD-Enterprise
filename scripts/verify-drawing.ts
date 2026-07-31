@@ -58,6 +58,12 @@ const outcome = await validateDrawing({
    * could not be repeated to check it, and the diff of a re-run would be noise.
    */
   now: argument('now', '2026-07-31T00:00:00.000Z'),
+  /*
+   * `--room "<how it was confirmed>"`. Without it the run stops at the room stage, because nothing
+   * here can establish which rectangle is the treatment room. Supplying it is a person saying they
+   * looked; the string is stored in the record so a later reader can judge whether they were right.
+   */
+  ...(argument('room', '') === '' ? {} : { roomCorroboration: argument('room', '') }),
 });
 
 console.log(`${outcome.drawingId}  page ${outcome.page}  sha256 ${outcome.sha256.slice(0, 12)}…`);

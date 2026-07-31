@@ -1262,35 +1262,6 @@
       }
     },
     {
-      "id": "common_dimension:station_pitch:hemodialysis_treatment",
-      "kind": "common_dimension",
-      "subject": "station_pitch",
-      "roomFunction": "hemodialysis_treatment",
-      "distribution": {
-        "minimum": 2000,
-        "median": 2000,
-        "maximum": 2000,
-        "unit": "mm"
-      },
-      "frequencies": [],
-      "support": {
-        "drawings": 1,
-        "observations": 1,
-        "strongestMethod": "dimension_line",
-        "sources": [
-          {
-            "datasetId": "dialysis-drawings",
-            "drawingId": "Hospital_044/dialysis.pdf",
-            "path": "Hospital_044/dialysis.pdf",
-            "page": 0,
-            "sheet": null,
-            "revision": null,
-            "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4"
-          }
-        ]
-      }
-    },
-    {
       "id": "common_dimension:station_row_spacing",
       "kind": "common_dimension",
       "subject": "station_row_spacing",

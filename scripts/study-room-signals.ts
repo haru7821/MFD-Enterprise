@@ -124,6 +124,7 @@ function wallPairCount(segments: readonly Segment[], mmPerPt: number): number {
 
 const summary = {
   attempted: 0,
+  noReference: 0,
   wallPairsUsable: 0,
   fillWithinTolerance: 0,
   erosionWithinTolerance: 0,
@@ -145,10 +146,22 @@ for (const drawing of dataset.drawings) {
   const readable = agreement.consistent.length + agreement.inconsistent.length;
   if (agreement.consistent.length < 4 || agreement.inconsistent.length / readable > 0.2) continue;
 
+  /*
+   * Every sheet with a trustworthy scale, not only those the cross-section already measured.
+   *
+   * The first version additionally required `measureRoomWidth` to have succeeded inside a plausible
+   * band, which quietly excluded the sheets that stop at the `room` stage — precisely the population
+   * this milestone exists for. They are the interesting cases and they were the ones being dropped.
+   *
+   * Those sheets have **no reference to score against**, and that is reported rather than worked
+   * around: a signal cannot be said to have found a room on a drawing where nothing yet says where
+   * the room is.
+   */
   const measured = measureRoomWidth(page.segments, agreement.primary, agreement.scale);
-  if (!measured) continue;
-  const widthMm = measured.widthMm;
-  if (widthMm < 2_500 || widthMm > 15_000) continue;
+  const widthMm = measured?.widthMm ?? null;
+  const hasReference =
+    measured !== null && widthMm !== null && widthMm >= 2_500 && widthMm <= 15_000;
+  if (!hasReference) summary.noReference += 1;
 
   summary.attempted += 1;
   const mmPerPt = (agreement.scale * 25.4) / 72;
@@ -177,10 +190,14 @@ for (const drawing of dataset.drawings) {
     }
   }
 
-  const seed = {
-    x: (measured.from.x + measured.to.x) / 2,
-    y: (measured.from.y + measured.to.y) / 2,
-  };
+  /*
+   * The seed. Where the cross-section produced a reference, its midpoint is a point inside the room;
+   * where it did not, the sheet's geometric centre is the only starting point available, and the
+   * fill's answer from there is exactly as trustworthy as that assumption.
+   */
+  const seed = measured
+    ? { x: (measured.from.x + measured.to.x) / 2, y: (measured.from.y + measured.to.y) / 2 }
+    : { x: page.widthPt / 2, y: page.heightPt / 2 };
   const start = Math.floor(seed.y / cell) * width + Math.floor(seed.x / cell);
 
   const dx = agreement.primary.to.x - agreement.primary.from.x;
@@ -247,10 +264,12 @@ for (const drawing of dataset.drawings) {
     return current;
   }
 
-  const close = (value: number, target: number) => Math.abs(value / target - 1) <= TOLERANCE;
+  const close = (value: number, target: number | null) =>
+    target !== null && Math.abs(value / target - 1) <= TOLERANCE;
 
   const plain = extentOf(free);
-  const fillFound = plain !== null && close(plain.along, lengthMm) && close(plain.across, widthMm);
+  const fillFound =
+    hasReference && plain !== null && close(plain.along, lengthMm) && close(plain.across, widthMm);
   if (fillFound) summary.fillWithinTolerance += 1;
 
   let bestErosion: { mm: number; along: number; across: number } | null = null;
@@ -261,7 +280,7 @@ for (const drawing of dataset.drawings) {
     // Erosion shrinks the region, so the extent is compared *after* adding back what was eroded.
     const along = extent.along + 2 * millimetres;
     const across = extent.across + 2 * millimetres;
-    if (close(along, lengthMm) && close(across, widthMm)) {
+    if (hasReference && close(along, lengthMm) && close(across, widthMm)) {
       bestErosion = { mm: millimetres, along, across };
       break;
     }
@@ -275,7 +294,7 @@ for (const drawing of dataset.drawings) {
   if (labels > 0) summary.labelled += 1;
 
   console.log(
-    `${drawing.drawingId.padEnd(42)} room ${(lengthMm / 1000).toFixed(1)}×${(widthMm / 1000).toFixed(1)} m  ` +
+    `${drawing.drawingId.padEnd(42)} ref ${hasReference && widthMm !== null ? `${(lengthMm / 1000).toFixed(1)}×${(widthMm / 1000).toFixed(1)} m` : 'none        '}  ` +
       `pairs ${String(pairs).padStart(4)}${pairsUsable ? ' ' : '!'}  ` +
       `fill ${plain ? `${(plain.along / 1000).toFixed(1)}×${(plain.across / 1000).toFixed(1)}` : 'seed blocked'}${fillFound ? ' ✓' : ''}  ` +
       `erosion ${bestErosion ? `${bestErosion.mm} mm ✓` : 'none'}  ` +
@@ -284,6 +303,7 @@ for (const drawing of dataset.drawings) {
 }
 
 console.log(`\nsheets attempted: ${summary.attempted}`);
+console.log(`  of which no reference to score against          ${summary.noReference}`);
 console.log(`  wall-pair count small enough to be a room's walls  ${summary.wallPairsUsable}`);
 console.log(`  free-space fill lands within 10 % of the room      ${summary.fillWithinTolerance}`);
 console.log(`  some erosion radius lands within 10 % of the room  ${summary.erosionWithinTolerance}`);

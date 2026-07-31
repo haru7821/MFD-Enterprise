@@ -9,8 +9,8 @@
   },
   "totals": {
     "drawings": 306,
-    "completed": 2,
-    "stopped": 304,
+    "completed": 0,
+    "stopped": 306,
     "byStage": [
       {
         "key": "import",
@@ -22,11 +22,7 @@
       },
       {
         "key": "room",
-        "count": 8
-      },
-      {
-        "key": "place",
-        "count": 5
+        "count": 15
       }
     ],
     "byClassification": [
@@ -36,7 +32,7 @@
       },
       {
         "key": "insufficient_evidence",
-        "count": 86
+        "count": 81
       },
       {
         "key": "extraction_error",
@@ -417,18 +413,13 @@
       "drawingId": "Hospital_008/dialysis_typeA.pdf",
       "sha256": "97e753a83b43c1b6e6b2f123e6a03fc7c00652d87217954b16585f0ab5b5900d",
       "page": 0,
-      "reached": "room",
-      "stoppedAt": "place",
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
-        },
-        {
-          "code": "VD-7",
-          "classification": "insufficient_evidence",
-          "subject": "station pitch is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },
@@ -2261,18 +2252,13 @@
       "drawingId": "Hospital_023/dialysis_typeB_30bed.pdf",
       "sha256": "1f25e7f4fa062870ef39c27f5e7fec5786fdf177a760f9a6a5251b6f6f1967a6",
       "page": 0,
-      "reached": "room",
-      "stoppedAt": "place",
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
-        },
-        {
-          "code": "VD-7",
-          "classification": "insufficient_evidence",
-          "subject": "station pitch is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },
@@ -2467,18 +2453,13 @@
       "drawingId": "Hospital_025/dialysis_typeC.pdf",
       "sha256": "0bc248abd59badff69c2f8e3f4d135f9902d62f2e61961068cafafde9f2bd986",
       "page": 0,
-      "reached": "room",
-      "stoppedAt": "place",
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
-        },
-        {
-          "code": "VD-7",
-          "classification": "insufficient_evidence",
-          "subject": "station pitch is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },
@@ -3285,8 +3266,8 @@
       "drawingId": "Hospital_033/dialysis_rev04.pdf",
       "sha256": "0218fff94142f31b42b38c51b44ce8bbe047f616b445d272ef4ec5da8e00f18c",
       "page": 0,
-      "reached": "room",
-      "stoppedAt": "place",
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3296,12 +3277,7 @@
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
-        },
-        {
-          "code": "VD-7",
-          "classification": "insufficient_evidence",
-          "subject": "station pitch is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },
@@ -3351,8 +3327,8 @@
       "drawingId": "Hospital_035/dialysis_typeA_16bed_2.pdf",
       "sha256": "ff70b30b90bc0df1b014e8c7575544b9a55296239ecfe155072c26542e279498",
       "page": 0,
-      "reached": "room",
-      "stoppedAt": "place",
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3362,12 +3338,7 @@
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
-        },
-        {
-          "code": "VD-7",
-          "classification": "insufficient_evidence",
-          "subject": "station pitch is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },
@@ -4019,8 +3990,8 @@
       "drawingId": "Hospital_044/dialysis.pdf",
       "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4",
       "page": 0,
-      "reached": "report",
-      "stoppedAt": null,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-1",
@@ -4030,7 +4001,7 @@
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },
@@ -4038,8 +4009,8 @@
       "drawingId": "Hospital_044/ro_room.pdf",
       "sha256": "538d8c3de53eee0425001acecce1438aae7d9a7d066daab70b5d2a3b8b9a1a58",
       "page": 0,
-      "reached": "report",
-      "stoppedAt": null,
+      "reached": "verify_mapping",
+      "stoppedAt": "room",
       "discrepancies": [
         {
           "code": "VD-1",
@@ -4049,7 +4020,7 @@
         {
           "code": "VD-4",
           "classification": "insufficient_evidence",
-          "subject": "room width is not printed"
+          "subject": "the treatment room’s extent is not established"
         }
       ]
     },

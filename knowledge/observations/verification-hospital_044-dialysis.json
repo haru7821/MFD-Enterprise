@@ -2,35 +2,6 @@
   "datasetId": "dialysis-drawings",
   "observations": [
     {
-      "id": "Hospital_044/dialysis.pdf#station_pitch",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_044/dialysis.pdf",
-          "path": "Hospital_044/dialysis.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Drawing Verification Harness",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Printed as \"2,000\". Its geometry measures 2000 mm at the sheet's established scale, so the label and the line agree."
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 2000,
-        "roomFunction": "hemodialysis_treatment"
-      }
-    },
-    {
       "id": "Hospital_044/dialysis.pdf#treatment_room_width",
       "source": {
         "drawing": {

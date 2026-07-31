@@ -196,6 +196,20 @@ export const verificationPipelineSchema = z.strictObject({
     /** How each of the two came to be known — a printed dimension, or a calibrated measurement. */
     lengthSource: z.string().min(1),
     widthSource: z.string().min(1),
+    /**
+     * How a person confirmed this rectangle is the room, and not something else on the sheet.
+     *
+     * Required, and it cannot be produced automatically — that is the whole point of it. No drawing
+     * in the corpus states its treatment room's extent, and nothing in the pipeline can derive it:
+     * the length is the sheet's longest printed dimension and the width is the outermost wall pair
+     * on a cross-section, and on five sheets in six one or both of those is a dimension of the
+     * building rather than the room.
+     *
+     * So the run measures and a person accepts. Until room understanding exists, a validation that
+     * reached the engines without anyone confirming what it was measuring would be arithmetic on a
+     * rectangle nobody chose.
+     */
+    corroboration: z.string().min(1),
   }),
   placements: z.array(
     z.strictObject({

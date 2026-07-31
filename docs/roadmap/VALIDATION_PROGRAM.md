@@ -66,39 +66,58 @@ alone.
 
 | | Pages |
 | --- | ---: |
-| **Completed all nine stages** | **2** |
+| **Completed all nine stages** | **0** |
 | Stopped at `import` | 211 |
 | Stopped at `calibrate` | 80 |
-| Stopped at `room` | 8 |
-| Stopped at `place` | 5 |
+| Stopped at `room` | 15 |
 
 By classification — a run can raise more than one:
 
 | Class | Count |
 | --- | ---: |
 | `unsupported_drawing` | 211 |
-| `insufficient_evidence` | 86 |
+| `insufficient_evidence` | 81 |
 | `extraction_error` | 20 |
 | `drawing_error` | 3 |
 | `algorithm_defect` | 0 |
 
-### Reading that honestly
+### Zero is the honest number, and it went from two to zero on purpose
+
+The batch run completes on nothing, because **it cannot establish a room and no longer pretends to**.
+
+An earlier version completed on two, then on six once an unrelated filter was removed — over rooms of
+4.1 × 5.3 m and 15.6 × 14.2 m that no drawing states. The room rectangle was the sheet's longest
+printed dimension by the outermost wall pair across it, and both of those are dimensions of the
+*building* on most sheets. The standing review caught it; §5 of
+`ROOM_UNDERSTANDING_FEASIBILITY.md` has the measurements.
+
+So the `room` stage now requires a person to confirm the rectangle, and the batch supplies no such
+confirmation. `pnpm verify:drawing --room "<how it was confirmed>"` does, one drawing at a time —
+which is why `knowledge/verification/` holds two full records while the ledger says nothing
+completed. The measurement stays automatic; the acceptance is a person's, because there is no
+evidence here yet and evidence beats automation.
+
+**The two verified drawings are both Hospital_044's**, corroborated against the title block's own
+stated area: 199.8 m² computed against 201.1 m² printed, 0.6 % apart on a plan that is not a true
+rectangle.
+
+### Reading the rest honestly
 
 **The 211 are not a defect.** 146 are DWG, which this product refuses by name — a different product
 decision, not a missing feature — and 65 are scans with no vector content to read. Two thirds of the
 corpus is out of scope before any code runs, and that is worth knowing precisely.
 
-**The 80 at `calibrate` are the real ceiling.** Of the 89 vector CAD exports, most carry fewer than
-two readable dimensions, or carry dimensions that do not agree on one scale. A sheet with a plan at
-1:100 beside a detail at 1:20 produces two internally consistent groups, and a reconciler that took
-the larger would measure the whole sheet against the detail. So the run requires four agreeing
-dimensions and under a fifth disagreeing, and refuses otherwise. Fourteen of these are classified
-`extraction_error` rather than `insufficient_evidence`, because their outliers are an *order of
-magnitude* out — that is this reader pairing labels with the wrong lines, not a drawing disagreeing
-with itself, and it would be dishonest to file it against the drawing.
+**The 80 at `calibrate`.** Of the 89 vector CAD exports, most carry fewer than two readable
+dimensions, or carry dimensions that do not agree on one scale. A sheet with a plan at 1:100 beside a
+detail at 1:20 produces two internally consistent groups, and a reconciler that took the larger would
+measure the whole sheet against the detail. So the run requires four agreeing dimensions and under a
+fifth disagreeing, and refuses otherwise. Fourteen of these are classified `extraction_error` rather
+than `insufficient_evidence`, because their outliers are an *order of magnitude* out — that is this
+reader pairing labels with the wrong lines, not a drawing disagreeing with itself, and it would be
+dishonest to file it against the drawing.
 
-**The 8 at `room` are the next milestone in one number.** The scale is established, the mapping
-verified, and the run still cannot say which walls bound the treatment room. See §4.
+**The 15 at `room` are the next milestone in one number.** The scale is established, the mapping
+verified, and nothing can say which walls bound the treatment room.
 
 **Three drawing errors in the whole corpus**, all dimension text disagreeing with the geometry
 beneath it by an override-sized margin:
@@ -112,10 +131,16 @@ beneath it by an override-sized margin:
 The first two are the same override seen on two plots of one plan by different software, which is
 what makes it a fact about the CAD model rather than about a plot.
 
-**Zero algorithm defects**, on this run. The containment defect found by the first Hospital_044
-verification (VD-5, A-4) is fixed, and the self-check that caught it still runs on every drawing:
-any finding claiming equipment extends beyond a room whose every corner is inside that room is
-recorded as `algorithm_defect` rather than transcribed.
+**Zero algorithm defects — and that is an absent key, not a measurement.** The containment defect
+found by the first Hospital_044 verification (VD-5, A-4) is fixed, and the self-check that caught it
+still runs: any finding claiming equipment extends beyond a room whose every corner is inside that
+room is recorded as `algorithm_defect` rather than transcribed.
+
+But it sits at the `rules` stage, which **no batch page now reaches**. A class with no entries here
+means nothing got that far, not that the engines were exercised and found sound. The same is true of
+every stage past `room`: the optimiser, the planner and the report have been run on the two
+hand-corroborated drawings and nothing else. This row is a very small sample reported as a total, and
+it should be read that way.
 
 ---
 

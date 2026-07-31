@@ -336,18 +336,33 @@ describe('the corpus validation ledger', () => {
     );
     expect(ledger.totals.completed + ledger.totals.stopped).toBe(ledger.totals.drawings);
 
-    const byStage = new Map(ledger.totals.byStage.map((entry) => [entry.key, entry.count]));
-    for (const [stage, count] of byStage) {
-      expect(ledger.drawings.filter((row) => row.stoppedAt === stage).length, stage).toBe(count);
-    }
-    const byClass = new Map(ledger.totals.byClassification.map((entry) => [entry.key, entry.count]));
-    for (const [name, count] of byClass) {
-      expect(
-        ledger.drawings.flatMap((row) => row.discrepancies).filter((d) => d.classification === name)
-          .length,
-        name,
-      ).toBe(count);
-    }
+    /*
+     * Both directions, and the second one is the one that matters.
+     *
+     * Iterating the summary only checks the entries that are *there*: deleting `calibrate: 80` and
+     * `extraction_error: 20` from the file left every test passing, which is exactly the edit this
+     * test says it prevents. So the tallies are rebuilt from the rows and compared whole — a
+     * summary that is missing a line now fails the same way one that overstates a line does.
+     */
+    const tally = (values: readonly string[]) => {
+      const counts = new Map<string, number>();
+      for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+      return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    };
+
+    expect(
+      [...ledger.totals.byStage]
+        .map((entry) => [entry.key, entry.count] as const)
+        .sort((a, b) => a[0].localeCompare(b[0])),
+    ).toEqual(tally(ledger.drawings.flatMap((row) => (row.stoppedAt ? [row.stoppedAt] : []))));
+
+    expect(
+      [...ledger.totals.byClassification]
+        .map((entry) => [entry.key, entry.count] as const)
+        .sort((a, b) => a[0].localeCompare(b[0])),
+    ).toEqual(
+      tally(ledger.drawings.flatMap((row) => row.discrepancies.map((d) => d.classification))),
+    );
   });
 
   it('every drawing it says completed has a full record beside it', () => {

@@ -208,6 +208,13 @@
     {
       "code": "VD-4",
       "classification": "insufficient_evidence",
+      "subject": "the room’s extent is inferred, not stated",
+      "detail": "Neither the room's length nor its width is printed as such. The length used below, 17,600 mm, is the sheet's **longest printed dimension taken as the room's extent** — true of the reference drawing, where that dimension's extension lines do bound the hall, and unverified on any other sheet. Establishing it needs to know which walls end the room, which is the room-understanding milestone. Recorded so that no reader takes the rectangle below for something the drawing states.",
+      "resolved": false
+    },
+    {
+      "code": "VD-4",
+      "classification": "insufficient_evidence",
       "subject": "room width is not printed",
       "detail": "The drawing dimensions the room along its length (17,600 mm) but not across it. The width used below, 7,401 mm, is a calibrated measurement between the inner faces of the two walls (199 mm and 202 mm thick), not a printed dimension. It carries the weaker `calibrated_measurement` method wherever it is recorded, and a printed dimension would supersede it.",
       "resolved": false
@@ -217,8 +224,9 @@
     "room": {
       "lengthMm": 17600,
       "widthMm": 7400.147565981584,
-      "lengthSource": "printed dimension \"17,600\"",
-      "widthSource": "calibrated measurement between wall inner faces"
+      "lengthSource": "longest printed dimension \"17,600\", taken as the room's extent (inferred)",
+      "widthSource": "calibrated measurement between wall inner faces",
+      "corroboration": "The same hall as Hospital_044/dialysis.pdf, corroborated the same way against the same title block area figure."
     },
     "placements": [
       {
@@ -260,7 +268,7 @@
     "report": {
       "reportVersion": 2,
       "overallVerdict": "inconclusive",
-      "pdfBytes": 164234
+      "pdfBytes": 164159
     }
   }
 }
