@@ -292,6 +292,69 @@ function millimetres(text: string): number {
   return Number(match[1].replaceAll(',', ''));
 }
 
+test('says which level a plan is for, and when it is not the one on screen', async ({ page }) => {
+  /*
+   * A plan belongs to one level. Switching levels to look at something else should not destroy it —
+   * but the panel then shows a plan for a floor the engineer is not looking at, and nothing said so.
+   */
+  await traceRoom(page);
+  await placeServices(page);
+  await selectRoom(page);
+  await page.getByTestId('layout-count').fill('3');
+  await page.getByTestId('layout-generate').click();
+  await page.getByTestId('layout-apply-1').click();
+  await page.getByTestId('plan-generate').click();
+
+  await expect(page.getByTestId('plan-provenance')).toContainText('Level 1');
+  await expect(page.getByTestId('plan-provenance')).toContainText('3 stations');
+  await expect(page.getByTestId('plan-provenance')).not.toContainText('not the level');
+
+  // Add a second level and switch to it. The plan survives, and says it is not this floor's.
+  await page.getByTestId('add-level').click();
+  await expect(page.getByTestId('plan-results')).toBeVisible();
+  await expect(page.getByTestId('plan-provenance')).toContainText('not the level you are viewing');
+});
+
+test('does not carry a plan across into a new project', async ({ page }) => {
+  /*
+   * A plan is made from one project's layout and its evaluation. Carrying it into another is not a
+   * cosmetic leak: `useReportModel` passes whatever plan is in state into the report, so the next
+   * PDF an engineer exported would carry the previous project's stages, connection lengths and
+   * bill of materials — under the new project's name, on its cover page.
+   *
+   * Found while hardening, by reading what `document/new` and `document/load` reset and noticing
+   * that the four planning fields were not among them.
+   */
+  await traceRoom(page);
+  await placeServices(page);
+  await selectRoom(page);
+  await page.getByTestId('layout-count').fill('3');
+  await page.getByTestId('layout-generate').click();
+  await page.getByTestId('layout-apply-1').click();
+  await page.getByTestId('plan-generate').click();
+  await expect(page.getByTestId('plan-results')).toBeVisible();
+
+  await page.getByRole('button', { name: 'New' }).click();
+
+  await expect(page.getByTestId('field-placed')).toHaveText('0');
+  await expect(page.getByTestId('plan-results')).toHaveCount(0);
+  await expect(page.getByTestId('plan-refusal')).toHaveCount(0);
+});
+
+test('does not carry layout proposals across into a new project', async ({ page }) => {
+  // The same leak, one panel over: the ghosts would draw at the old project's coordinates, and
+  // Apply would place the old project's machines into the new one.
+  await traceRoom(page);
+  await selectRoom(page);
+  await page.getByTestId('layout-count').fill('3');
+  await page.getByTestId('layout-generate').click();
+  await expect(page.getByTestId('layout-results')).toBeVisible();
+
+  await page.getByRole('button', { name: 'New' }).click();
+
+  await expect(page.getByTestId('layout-results')).toHaveCount(0);
+});
+
 test('produces the same plan twice', async ({ page }) => {
   // Determinism, at the level an engineer observes it: the same layout gives the same plan.
   await traceRoom(page);

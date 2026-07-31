@@ -61,6 +61,15 @@ export function InstallationPanel() {
     ),
   );
   const placementLabels = new Map(level.placements.map((entry) => [entry.id, entry.label]));
+  /*
+   * The name of the level the plan was made for — which may not be the active one, and may not
+   * exist any more if it was deleted since. A deleted level prints its id rather than a name: an
+   * id an engineer can search for beats a blank, and it is the honest answer to "which floor?".
+   */
+  const planLevelName = plan
+    ? (state.doc.document.project.levels.find((entry) => entry.id === plan.provenance.levelId)
+        ?.name ?? plan.provenance.levelId)
+    : '';
 
   function generate() {
     if (level.placements.length === 0) {
@@ -114,6 +123,19 @@ export function InstallationPanel() {
 
       {plan && (
         <div className="mt-2" data-testid="plan-results">
+          {/*
+            Which drawing this plan is of.
+            
+            A plan belongs to one level, and switching levels to look at something else does not and
+            should not destroy it — so the panel can be showing a plan for a floor the engineer is
+            not currently looking at. Saying which one is cheaper than guessing, and it is the same
+            provenance the report prints.
+          */}
+          <p className="mb-1.5 text-[10px] text-ink-faint" data-testid="plan-provenance">
+            {planLevelName} · {plan.provenance.placementCount} station
+            {plan.provenance.placementCount === 1 ? '' : 's'}
+            {plan.provenance.levelId !== level.id && ' · not the level you are viewing'}
+          </p>
           {/*
             Owner decision B-7: *"The report must explicitly state 'Planning rate data not
             available.' instead of displaying calculated numbers."* The panel says the same thing

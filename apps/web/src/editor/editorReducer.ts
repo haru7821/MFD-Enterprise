@@ -971,6 +971,20 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         selectedVertex: null,
         draftRoomVertices: [],
         pick: null,
+        /*
+         * **Everything derived from the old project goes.**
+         *
+         * Proposals and an installation plan are session state beside the document, so nothing
+         * drops them automatically — and both are *about* a project. Left in place across a file
+         * open they are worse than stale: the ghosts draw at the old drawing's coordinates, Apply
+         * would place the old project's machines into the new one, and `useReportModel` hands
+         * whatever plan is in state to the report — so the next PDF would carry the previous
+         * project's stages, connection lengths and bill of materials under this project's name.
+         *
+         * Found while hardening, by reading what this case resets and noticing these were not in
+         * the list. `derivedReset` is shared with `document/new` so the two cannot drift.
+         */
+        ...derivedReset,
         // Ids in a loaded document were numbered in another session. Restarting the
         // counter past the largest number already present avoids colliding with them.
         nextEntityNumber: nextFreeNumber(action.document),
@@ -1003,9 +1017,25 @@ function INITIAL_EDITOR_STATE_VIEW(state: EditorState): EditorState {
     selectedVertex: null,
     draftRoomVertices: [],
     pick: null,
+    ...derivedReset,
     nextEntityNumber: 1,
   };
 }
+
+/**
+ * The state that belongs to a *project* rather than to the session.
+ *
+ * Proposals and an installation plan are derived from one document and are meaningless against
+ * another, so every path that swaps the document clears them. Shared between `document/load` and
+ * `document/new` so the two cannot drift — which is how the leak this fixes came about: the two
+ * cases each listed their own fields, and neither list was updated when planning was added.
+ */
+const derivedReset = {
+  layoutProposals: null,
+  previewedProposalId: null,
+  installationPlan: null,
+  planningRefusal: null,
+} as const satisfies Partial<EditorState>;
 
 /** One past the largest `-<n>` suffix in the document, so new ids cannot collide. */
 function nextFreeNumber(document: MfdDocument): number {
