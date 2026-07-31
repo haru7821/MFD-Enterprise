@@ -14,6 +14,7 @@ import {
   calibrateFromTwoPoints,
   clearPlanImage,
   planTransformOf,
+  paperSizeDisagrees,
   recommendCalibration,
   setCoordinateMapping,
   setMappingOrigin,
@@ -299,5 +300,112 @@ describe('the printed-scale route produces a real mapping', () => {
         ratio,
       ).toBeNull();
     }
+  });
+});
+
+/**
+ * Owner decision — the calibration safety rule.
+ *
+ * > *"If a title block specifies a paper size, compare it against the actual PDF page size. If they
+ * > do not match, the printed-scale calibration path must be rejected automatically and the
+ * > application should recommend dimension-line calibration instead."*
+ *
+ * The case is real and measured: three of the six sheets in the hospital dataset whose title block
+ * names a paper size name one the file is not. `Hospital_026` prints `A3 : 1/200` on A4 pages.
+ */
+describe('a title block that disagrees with the page', () => {
+  function image(renderDpi: number | null): PlanImage {
+    return { ...fixturePlanImage(), renderDpi };
+  }
+
+  it('refuses the printed scale outright, rather than warning about it', () => {
+    /*
+     * Calibrating Hospital_026 from its stated 1/200 would make every measurement ~41 % too large,
+     * and nothing on the drawing contradicts it: the plan looks right and a clearance that is
+     * really 850 mm reads as 1,200. A warning gets dismissed by the third drawing; a refusal does
+     * not.
+     */
+    const advice = recommendCalibration({
+      planImage: image(150),
+      hasDimensionLine: false,
+      claimedSheetSize: 'A3',
+      actualSheetSize: 'A4',
+    });
+
+    expect(advice.available).not.toContain('stated-ratio');
+    expect(advice.available).toEqual([]);
+    expect(advice.recommended).toBeNull();
+    expect(advice.code).toBe('paper_size_mismatch');
+  });
+
+  it('still recommends measuring a dimension when the drawing has one', () => {
+    // The owner's instruction exactly: reject the printed scale, recommend dimension-line instead.
+    // A mismatched title block says nothing about the dimension lines, which measure the file as it
+    // actually is and are unaffected by any rescaling in its history.
+    const advice = recommendCalibration({
+      planImage: image(150),
+      hasDimensionLine: true,
+      claimedSheetSize: 'A3',
+      actualSheetSize: 'A4',
+    });
+
+    expect(advice.recommended).toBe('two-point');
+    expect(advice.available).toEqual(['two-point']);
+    // Reported even though two-point was going to win anyway — an engineer who learns this sheet's
+    // printed scale is wrong knows something they would otherwise discover by trusting it.
+    expect(advice.code).toBe('paper_size_mismatch');
+  });
+
+  it('leaves an agreeing title block alone', () => {
+    // Hospital_044: claims A3, is A3. Both routes stay available and can be cross-checked, which is
+    // exactly why it was chosen as the first verification drawing.
+    const advice = recommendCalibration({
+      planImage: image(150),
+      hasDimensionLine: true,
+      claimedSheetSize: 'A3',
+      actualSheetSize: 'A3',
+    });
+
+    expect(advice.available).toEqual(['two-point', 'stated-ratio']);
+    expect(advice.code).toBe('prefer_two_point');
+  });
+
+  it('treats silence as silence, not as disagreement', () => {
+    /*
+     * 212 of the 229 analysed sheets state no scale or paper size at all. If an absent claim
+     * counted as a mismatch, the rule would refuse the printed-scale route on nearly every drawing
+     * in the dataset — including the ones it was built to serve.
+     */
+    expect(paperSizeDisagrees(null, 'A4')).toBe(false);
+    expect(paperSizeDisagrees('A3', null)).toBe(false);
+    expect(paperSizeDisagrees(null, null)).toBe(false);
+
+    const advice = recommendCalibration({
+      planImage: image(150),
+      hasDimensionLine: false,
+      claimedSheetSize: null,
+      actualSheetSize: 'A4',
+    });
+    expect(advice.recommended).toBe('stated-ratio');
+  });
+
+  it('compares sizes as written, ignoring case and padding', () => {
+    // The claim is typed by a person reading a title block; "a3 " and "A3" are the same sheet.
+    expect(paperSizeDisagrees(' a3 ', 'A3')).toBe(false);
+    expect(paperSizeDisagrees('A3', 'A4')).toBe(true);
+  });
+
+  it('applies before the resolution check, so a scan with a bad title block says why', () => {
+    // Two independent reasons the ratio is unusable. The mismatch is the more specific one and is
+    // the one worth telling the engineer, because it is a fact about their drawing rather than
+    // about our importer.
+    const advice = recommendCalibration({
+      planImage: image(null),
+      hasDimensionLine: false,
+      claimedSheetSize: 'A3',
+      actualSheetSize: 'A4',
+    });
+
+    expect(advice.code).toBe('paper_size_mismatch');
   });
 });

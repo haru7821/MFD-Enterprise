@@ -216,8 +216,9 @@ export function withDeliveryAllowance(millimetres: readonly number[]): Knowledge
         sha256: null,
       },
       method: 'dimension_line' as const,
-      observedBy: 'Fixture Engineer',
-      observedAt: '2026-07-31',
+      observer: { type: 'human' as const, name: 'Fixture Engineer', version: null },
+      observationDate: '2026-07-31',
+      confidence: 'high' as const,
       note: null,
     },
     value: {

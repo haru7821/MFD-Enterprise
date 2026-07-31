@@ -10,6 +10,7 @@ import {
   calibrateFromTwoPoints,
   recommendCalibration,
   type CalibrationAdviceCode,
+  type PlanImage,
 } from '@mfd/document-model';
 
 import { PlanImportError, importPlanFile } from './planImport';
@@ -80,7 +81,41 @@ const CALIBRATION_ADVICE_TEXT: Readonly<Record<CalibrationAdviceCode, string>> =
   awaiting_dimension_line_answer:
     'Answer above and the stronger method will be offered first.',
   no_plan_image: 'Import a drawing first.',
+  paper_size_mismatch:
+    'This drawing’s title block names a paper size the file is not, so its printed scale describes a different sheet. The printed-scale route is refused; measure a printed dimension instead.',
 };
+
+/**
+ * The nearest ISO sheet the imported page actually is, or null for a non-standard size.
+ *
+ * Derived from the stored pixel dimensions and the resolution they were rendered at — which is why
+ * it is only knowable for a PDF we rasterised. Mirrors `sheetSizeOf` in `@mfd/layout-knowledge`,
+ * which computes the same thing from PDF points during dataset ingestion.
+ */
+const SHEET_SIZES: readonly (readonly [string, number, number])[] = [
+  ['A0', 841, 1189],
+  ['A1', 594, 841],
+  ['A2', 420, 594],
+  ['A3', 297, 420],
+  ['A4', 210, 297],
+];
+
+function sheetSizeOf(planImage: PlanImage | null): string | null {
+  if (!planImage?.renderDpi) return null;
+
+  const widthMm = (planImage.pixelWidth / planImage.renderDpi) * 25.4;
+  const heightMm = (planImage.pixelHeight / planImage.renderDpi) * 25.4;
+  const shortSide = Math.min(widthMm, heightMm);
+  const longSide = Math.max(widthMm, heightMm);
+
+  for (const [name, short, long] of SHEET_SIZES) {
+    // 5 % tolerance: real sheets carry trim margins and are rarely exact.
+    if (Math.abs(shortSide - short) / short < 0.05 && Math.abs(longSide - long) / long < 0.05) {
+      return name;
+    }
+  }
+  return null;
+}
 
 export function PlanPanel() {
   const { state, dispatch } = useEditor();
@@ -99,12 +134,23 @@ export function PlanPanel() {
    * from `false` because "nobody has looked" and "there is none" lead to different advice.
    */
   const [hasDimensionLine, setHasDimensionLine] = useState<boolean | null>(null);
+  /**
+   * The paper size the title block claims, as the engineer reads it off the sheet.
+   *
+   * Session state, and null until they say. The application cannot read a title block — it never
+   * looks at the vector content — so this is the other half of the calibration safety rule: the
+   * *claim* comes from a person, the *actual* page size is measured, and the comparison is
+   * mechanical.
+   */
+  const [claimedSheetSize, setClaimedSheetSize] = useState<string | null>(null);
 
   const picked = state.pick?.kind === 'calibrate' ? state.pick.points : [];
   const readyToCalibrate = picked.length === 2;
   const advice = recommendCalibration({
     planImage: level.planImage,
     hasDimensionLine,
+    claimedSheetSize,
+    actualSheetSize: sheetSizeOf(level.planImage),
   });
 
   async function onFile(file: File | undefined) {
@@ -116,7 +162,15 @@ export function PlanPanel() {
       dispatch({ type: 'plan/import', planImage });
     } catch (cause) {
       setError(
-        cause instanceof PlanImportError ? cause.message : `Could not import ${file.name}`,
+        cause instanceof PlanImportError
+          ? cause.message
+          : /*
+             * The underlying message, not just "could not import". A pdf.js failure reads like
+             * `getOrInsertComputed is not a function`, which means nothing to an engineer but is
+             * the only thing that identifies the fault — and the generic wrapper hid exactly that
+             * bug until a real PDF was fed through this input.
+             */
+            `Could not import ${file.name}: ${String((cause as Error)?.message ?? cause)}`,
       );
     } finally {
       setBusy(false);
@@ -263,7 +317,39 @@ export function PlanPanel() {
                   </button>
                 ))}
               </div>
-              <p className="mt-1 text-[10px] text-ink-faint" data-testid="calibration-advice-text">
+              <div className="mt-1.5">
+                <p className="text-[10px] text-ink-faint">
+                  Does the title block state a paper size?
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  {(['A0', 'A1', 'A2', 'A3', 'A4'] as const).map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      data-testid={`claimed-sheet-${size}`}
+                      className={`rounded border px-1.5 py-0.5 text-[10px] ${
+                        claimedSheetSize === size
+                          ? 'border-accent bg-accent/15 text-ink'
+                          : 'border-edge text-ink-muted hover:border-accent hover:text-ink'
+                      }`}
+                      onClick={() => setClaimedSheetSize(claimedSheetSize === size ? null : size)}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                  <span className="font-mono text-[10px] text-ink-faint" data-testid="actual-sheet">
+                    file: {sheetSizeOf(level.planImage) ?? 'non-standard'}
+                  </span>
+                </div>
+              </div>
+              <p
+                className={`mt-1 text-[10px] ${
+                  advice.code === 'paper_size_mismatch'
+                    ? 'rounded border border-amber-500/50 bg-amber-500/10 px-1.5 py-1 text-amber-200'
+                    : 'text-ink-faint'
+                }`}
+                data-testid="calibration-advice-text"
+              >
                 {CALIBRATION_ADVICE_TEXT[advice.code]}
               </p>
             </div>

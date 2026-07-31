@@ -66,13 +66,26 @@ function loadImage(dataUrl: string): Promise<HTMLImageElement> {
  * pdf.js is imported dynamically so its several hundred kilobytes are fetched the
  * first time an engineer opens a PDF rather than on every application start. Most
  * sessions on a PNG site plan never load it at all.
+ *
+ * ## The **legacy** build, and it is not optional
+ *
+ * `pdfjs-dist/legacy/build/pdf.mjs`, not `pdfjs-dist`. The modern build of pdf.js 6 calls
+ * `Map.prototype.getOrInsertComputed`, a proposal method that Chrome 151 does not implement, and
+ * every PDF import failed with `getOrInsertComputed is not a function`.
+ *
+ * **That bug shipped and no test caught it**, because until the hospital dataset arrived no browser
+ * test had ever imported a PDF — the specs all use PNG fixtures, which take a different code path
+ * entirely. It surfaced the first time a real PDF was fed through the file input.
+ *
+ * The legacy build targets older runtimes and is what `scripts/ingest-dataset.ts` already uses in
+ * Node. `plan.spec.ts` now imports a real PDF in the browser so this cannot regress silently again.
  */
 async function rasterisePdf(
   file: File,
   pageIndex: number,
 ): Promise<{ dataUrl: string; width: number; height: number; dpi: number }> {
-  const pdfjs = await import('pdfjs-dist');
-  const workerSource = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const workerSource = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url');
   pdfjs.GlobalWorkerOptions.workerSrc = workerSource.default;
 
   const data = await file.arrayBuffer();

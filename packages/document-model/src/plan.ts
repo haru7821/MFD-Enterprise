@@ -276,6 +276,13 @@ export const CALIBRATION_ADVICE_CODES = [
   'awaiting_dimension_line_answer',
   /** There is no drawing to calibrate. */
   'no_plan_image',
+  /**
+   * The title block names a paper size the file is not — Owner decision, calibration safety rule.
+   *
+   * The printed-scale route is refused outright, not merely ranked second. See
+   * {@link paperSizeDisagrees}.
+   */
+  'paper_size_mismatch',
 ] as const;
 
 export type CalibrationAdviceCode = (typeof CALIBRATION_ADVICE_CODES)[number];
@@ -288,6 +295,37 @@ export interface CalibrationAdvice {
   readonly code: CalibrationAdviceCode;
 }
 
+/**
+ * Does the title block claim a paper size the file is not?
+ *
+ * > Owner decision: *"If a title block specifies a paper size, compare it against the actual PDF
+ * > page size. If they do not match, the printed-scale calibration path must be rejected
+ * > automatically and the application should recommend dimension-line calibration instead."*
+ *
+ * ## Why this is a refusal and not a warning
+ *
+ * Found by measuring the hospital dataset: of the six sheets whose title block names a paper size,
+ * **three name one the file is not.** `Hospital_026`'s drawings print `A3 : 1/200` and are A4 —
+ * plotted down to about 71 % of their stated size at some point in their history.
+ *
+ * Calibrating those from `1/200` produces every measurement roughly **41 % too large**, and nothing
+ * on the drawing contradicts it: the plan looks right, the scale bar looks right, and a clearance
+ * that is actually 850 mm reads as 1,200. A warning would be dismissed by the third drawing. The
+ * conversion is arithmetic on a premise the file has already disproved, so it is refused.
+ *
+ * Both arguments are what the *drawing* and the *file* say. Neither is inferred: the claim comes
+ * from a title block a person read, and the actual size from the page itself.
+ */
+export function paperSizeDisagrees(
+  claimedSheetSize: string | null,
+  actualSheetSize: string | null,
+): boolean {
+  // No claim, or a page that matches no standard size, is not a disagreement — it is silence, and
+  // silence is the ordinary case on 212 of the 229 analysed sheets.
+  if (claimedSheetSize === null || actualSheetSize === null) return false;
+  return claimedSheetSize.trim().toUpperCase() !== actualSheetSize.trim().toUpperCase();
+}
+
 export interface CalibrationAdviceInput {
   readonly planImage: PlanImage | null;
   /**
@@ -297,6 +335,20 @@ export interface CalibrationAdviceInput {
    * PDF is never read, and guessing would decide the calibration route on no evidence.
    */
   readonly hasDimensionLine: boolean | null;
+  /**
+   * The paper size the title block claims, when it names one — e.g. `"A3"`.
+   *
+   * Read off the drawing by whoever imported it. Null when the title block is silent, which it is
+   * on the overwhelming majority of real sheets.
+   */
+  readonly claimedSheetSize?: string | null;
+  /**
+   * The paper size the file actually is, from its page dimensions.
+   *
+   * Null when the page matches no standard size within tolerance — trimmed, custom or a fold-out.
+   * Null is not a mismatch: an unrecognised page size is unknown, not contradictory.
+   */
+  readonly actualSheetSize?: string | null;
 }
 
 export function recommendCalibration(input: CalibrationAdviceInput): CalibrationAdvice {
@@ -304,19 +356,38 @@ export function recommendCalibration(input: CalibrationAdviceInput): Calibration
     return { recommended: null, available: [], code: 'no_plan_image' };
   }
 
-  // The printed ratio is convertible only when we know what resolution the image is stored at,
-  // which is true for a PDF we rendered and false for anything imported as pixels.
-  const ratioConvertible = input.planImage.renderDpi !== null;
+  /*
+   * Two independent reasons the printed ratio may be unusable, and both are hard refusals.
+   *
+   * 1. We do not know the resolution the image is stored at, so the ratio cannot be converted.
+   * 2. The title block claims a paper size the file is not, so the ratio describes a different
+   *    sheet from the one in front of us. See `paperSizeDisagrees`.
+   */
+  const mismatch = paperSizeDisagrees(
+    input.claimedSheetSize ?? null,
+    input.actualSheetSize ?? null,
+  );
+  const ratioConvertible = input.planImage.renderDpi !== null && !mismatch;
 
   if (input.hasDimensionLine === true) {
     return {
       recommended: 'two-point',
       available: ratioConvertible ? ['two-point', 'stated-ratio'] : ['two-point'],
-      code: 'prefer_two_point',
+      /*
+       * The mismatch is reported even though two-point was going to be recommended anyway. An
+       * engineer who can see that this sheet's printed scale is wrong knows something about the
+       * drawing they would otherwise find out by trusting it somewhere else.
+       */
+      code: mismatch ? 'paper_size_mismatch' : 'prefer_two_point',
     };
   }
 
   if (input.hasDimensionLine === false) {
+    if (mismatch) {
+      // No dimension to measure, and the printed scale is disproved by the page it is printed on.
+      // Nothing here can produce a true scale, and saying so beats offering a wrong one.
+      return { recommended: null, available: [], code: 'paper_size_mismatch' };
+    }
     return ratioConvertible
       ? { recommended: 'stated-ratio', available: ['stated-ratio'], code: 'fallback_stated_ratio' }
       : { recommended: null, available: [], code: 'no_method_available' };
@@ -331,6 +402,6 @@ export function recommendCalibration(input: CalibrationAdviceInput): Calibration
   return {
     recommended: 'two-point',
     available: ratioConvertible ? ['two-point', 'stated-ratio'] : ['two-point'],
-    code: 'awaiting_dimension_line_answer',
+    code: mismatch ? 'paper_size_mismatch' : 'awaiting_dimension_line_answer',
   };
 }

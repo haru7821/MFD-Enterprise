@@ -114,20 +114,81 @@ export const drawingRefSchema = z.strictObject({
 export type DrawingRef = z.infer<typeof drawingRefSchema>;
 
 /**
- * Who read it, from which drawing, and how.
+ * What kind of thing read the drawing.
  *
- * `observedBy` is a person. Not a model, not a tool, not "automatic" — the owner's instruction is
- * *"Do not start AI inference yet"*, and a named human is what makes an observation answerable. When
- * automated extraction arrives it will produce observations through this same shape and will have
- * to say what it is; that is a later decision, and the field is here so it cannot be skipped.
+ * > Owner decision: *"Do not assume a human observer. Replace the current observer model with
+ * > explicit provenance … This allows both engineers and AI-generated observations to coexist
+ * > transparently. Do not hide AI-generated observations by storing them as human data."*
+ *
+ * This replaced a single `observedBy: string` that the field documentation promised was *"a person.
+ * Not a model, not a tool"*. The dataset then arrived carrying 229 analysed drawings whose author
+ * is not stated anywhere, and the honest options were to stop or to change the model. Writing a
+ * possibly-machine reading into a field that promises a human would have been the third option, and
+ * it is the one this decision forbids by name.
+ *
+ * `hybrid` is not a hedge for "we are not sure". It is for a reading a tool proposed and a person
+ * checked — genuinely different evidence from either alone, and common enough that collapsing it
+ * into one of the others would lose the distinction that matters most.
  */
+export const OBSERVER_TYPES = ['human', 'ai', 'hybrid'] as const;
+
+export type ObserverType = (typeof OBSERVER_TYPES)[number];
+
+/**
+ * How sure the observer was.
+ *
+ * Three levels, not a number between 0 and 1. A float would imply a calibration nobody performed:
+ * "0.82 confident" is a claim about a distribution, and no observer here — human or model — has one.
+ * The dataset's own `legibility` field uses exactly these three, so a reading imported from it keeps
+ * its own word rather than being mapped onto a scale invented at the boundary.
+ */
+export const CONFIDENCE_LEVELS = ['high', 'medium', 'low'] as const;
+
+export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number];
+
+/**
+ * Who or what produced a reading.
+ *
+ * `version` is **required for a model and forbidden for a person**, enforced below rather than
+ * documented. A model's output is only reproducible against a stated version — "GPT read it" is not
+ * provenance — while a person does not have one, and allowing a null there would let an AI
+ * observation omit the field by claiming to be human.
+ */
+export const observerSchema = z
+  .strictObject({
+    type: z.enum(OBSERVER_TYPES),
+    /** The engineer's name, or the tool's. Never "automatic", never blank. */
+    name: z.string().min(1),
+    /** Model or tool version. Required when a model was involved. */
+    version: z.string().min(1).nullable(),
+  })
+  .superRefine((observer, ctx) => {
+    if (observer.type !== 'human' && observer.version === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['version'],
+        message: `an observer of type "${observer.type}" must state its version`,
+      });
+    }
+    if (observer.type === 'human' && observer.version !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['version'],
+        message: 'a human observer has no version; use null',
+      });
+    }
+  });
+
+export type Observer = z.infer<typeof observerSchema>;
+
+/** Who read it, from which drawing, how, when, and how sure they were. */
 export const observationSourceSchema = z.strictObject({
   drawing: drawingRefSchema,
   method: z.enum(OBSERVATION_METHODS),
-  /** The engineer who read the drawing. */
-  observedBy: z.string().min(1),
+  observer: observerSchema,
   /** ISO date. Supplied, never taken from a clock — this package reads none (AD-3). */
-  observedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YYYY-MM-DD)'),
+  observationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YYYY-MM-DD)'),
+  confidence: z.enum(CONFIDENCE_LEVELS),
   /** Anything a later reader needs in order to trust or discount this reading. */
   note: z.string().min(1).nullable(),
 });
