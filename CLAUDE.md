@@ -64,8 +64,8 @@ lead developer builds  →  cto verifies  →  findings applied  →  ┬→  en
                                                                └→  owner decides  →  next piece
 ```
 
-**Before committing any substantive change**, the lead developer invokes the `cto` agent on the
-work. It reads the diff and the artefacts, checks the claims against what the code actually
+**Before reporting any substantive change as done**, the lead developer invokes the `cto` agent on
+the work. It reads the diff and the artefacts, checks the claims against what the code actually
 produces, breaks at least one load-bearing guard to confirm it fails, and returns:
 
 - a **verdict** — approve, approve with conditions, or reject;
@@ -74,8 +74,29 @@ produces, breaks at least one load-bearing guard to confirm it fails, and return
 - **decisions required** — the choices the work has forced that are the owner's, each with its
   options, the evidence for each, and what is blocked until it is answered.
 
-`blocking` findings are fixed before the commit. `should-fix` findings are fixed or answered in the
-commit message.
+`blocking` findings are fixed before the work is reported as done. `should-fix` findings are fixed
+or answered in a commit message.
+
+### Why the gate is "done" and not "committed"
+
+It was "before committing" until a stop hook and this rule pulled in opposite directions, and the
+hook won by default. That was worth resolving properly rather than living with, and the resolution
+is that the two were never really in conflict.
+
+**Commit and push immediately, always.** This project runs in an ephemeral container: it is
+reclaimed after a period of inactivity, and anything not pushed is gone — a dirty working tree and
+an unpushed local commit are equally lost. Holding a commit for a review that takes minutes puts the
+work at risk of vanishing entirely, to protect a branch nobody has merged.
+
+What the review actually protects is not the branch. It is the owner's belief that something is
+finished. A defect in an unmerged commit costs a follow-up commit; a defect the owner has been told
+is fixed costs whatever gets built on top of it. So the review gates the sentence *"this is done"*,
+and a fix that follows a rejection is a visible commit rather than an amended history.
+
+The evidence is in this repository. The first fix for the containment false GREEN was committed
+under no such pressure and reviewed before it was reported — the review destroyed it with a
+counterexample, and the wrong fix never reached the owner as a result. The one that skipped the
+review reached the owner as "done" while still unverified. Committing was never the failure.
 
 ## What the reviewer is for
 
