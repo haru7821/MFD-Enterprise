@@ -12,7 +12,13 @@ import {
   fixtureRoomBoundary,
   fixtureRuleSet,
 } from '../fixtures/index';
-import { type OptimiseInput, assertNoDeletions, commandsFor, optimiseLayout } from './optimise';
+import {
+  type OptimiseInput,
+  assertNoDeletions,
+  commandsFor,
+  diffPlacements,
+  optimiseLayout,
+} from './optimise';
 
 /**
  * Optimisation, against the owner's five Step 5 constraints.
@@ -64,6 +70,7 @@ function optimise(overrides: Partial<OptimiseInput> = {}) {
     existing: [],
     referencePoints: POINTS,
     scoring: dialysisScoringModel,
+    allowMovingExisting: true,
     ...overrides,
   });
 }
@@ -115,6 +122,105 @@ describe('constraint 1 — the station count is immutable', () => {
     for (const proposal of optimise().proposals) {
       for (const command of proposal.commands) {
         expect(ids.has((command.payload as { placementId: string }).placementId)).toBe(true);
+      }
+    }
+  });
+});
+
+describe('Step 6B — existing placements are immutable without explicit permission', () => {
+  it('refuses to propose anything until the engineer opts in', () => {
+    /*
+     * Optimisation *is* moving existing machines, so this is a precondition rather than a mode.
+     * Structural rather than a disabled button: a UI can forget to disable something, and this
+     * cannot.
+     */
+    const result = optimise({ allowMovingExisting: false });
+
+    expect(result.outcome).toBe('movement_not_permitted');
+    expect(result.proposals).toEqual([]);
+    expect(result.current).toBeNull();
+    // The count is still reported — an engineer needs to know what would be optimised.
+    expect(result.stationCount).toBe(AWKWARD.length);
+  });
+
+  it('proposes once permission is given', () => {
+    expect(optimise({ allowMovingExisting: true }).outcome).toBe('improved');
+  });
+});
+
+describe('the visual diff', () => {
+  it('marks every machine of a generated layout as added', () => {
+    // Generation has nothing to move from.
+    const entries = diffPlacements([], AWKWARD);
+    expect(entries.map((entry) => entry.change)).toEqual(['added', 'added', 'added', 'added']);
+    expect(entries.every((entry) => entry.source === null)).toBe(true);
+  });
+
+  it('distinguishes moved from unchanged', () => {
+    /*
+     * The assertion that makes the highlight worth having. A ghosted layout shows where machines
+     * *would* be; it does not show which of them are changing, and approving a change you have not
+     * located is not much of an approval.
+     */
+    const proposed = [
+      placement('x', 7_000, 5_000), // exactly where s1 stands
+      placement('y', 1_000, 1_000), // the far corner, which nothing is near
+      placement('z', 5_000, 5_000), // exactly where s3 stands
+      placement('w', 5_000, 3_000), // exactly where s4 stands
+    ];
+
+    /*
+     * Three of the four targets sit on an existing machine, and yet two machines move — because the
+     * assignment is greedy and not minimum-total-distance. s2 (7000, 3000) is nearer to w than s4
+     * is, takes it, and leaves s4 to make the long trip to y. That is the documented behaviour of
+     * `commandsFor`: stable and individually sensible, not globally optimal.
+     */
+    const changes = diffPlacements(AWKWARD, proposed);
+    expect(changes.map((entry) => entry.change)).toEqual([
+      'unchanged', // x ← s1
+      'moved', //     y ← s4, all the way across
+      'unchanged', // z ← s3
+      'moved', //     w ← s2, two metres
+    ]);
+    expect(changes[1]?.source?.id).toBe('s4');
+    expect(changes[3]?.source?.id).toBe('s2');
+  });
+
+  it('agrees with the commands about which machine went where', () => {
+    /*
+     * The invariant the highlight rests on. Asserting only that the counts match would pass on a
+     * diff that paired the machines up differently — an engineer would then see a ghost highlighted
+     * as "moved from here" while the command stack moved a different machine into it.
+     *
+     * So each `moved` entry is traced back: the machine standing at its `from` must be the one the
+     * commands send to its position, and an `unchanged` entry's machine must not be moved at all.
+     */
+    const result = optimise();
+    const proposal = result.proposals[0];
+    if (!proposal) throw new Error('expected a proposal');
+
+    const changes = diffPlacements(AWKWARD, proposal.placements);
+    const movedById = new Map(
+      proposal.commands
+        .filter((command) => command.type === 'placement.move')
+        .map((command) => {
+          const payload = command.payload as {
+            placementId: string;
+            position: { x: number; y: number };
+          };
+          return [payload.placementId, payload.position];
+        }),
+    );
+    expect(movedById.size).toBeGreaterThan(0);
+
+    for (const entry of changes) {
+      const source = entry.source;
+      if (!source) throw new Error('every proposed placement should be assigned an existing one');
+
+      if (entry.change === 'moved') {
+        expect(movedById.get(source.id)).toEqual(entry.placement.transform.position);
+      } else {
+        expect(movedById.has(source.id)).toBe(false);
       }
     }
   });

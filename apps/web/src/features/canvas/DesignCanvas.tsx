@@ -47,10 +47,10 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
    * proposal set are both editor state, and a third copy of the placements could go stale against
    * either of them.
    */
-  const previewedPlacements =
+  const previewedDiff =
     state.layoutProposals?.proposals.find(
       (proposal) => proposal.id === state.previewedProposalId,
-    )?.placements ?? [];
+    )?.diff ?? [];
 
   const cursor = state.isPanning
     ? 'cursor-grabbing'
@@ -115,9 +115,9 @@ export function DesignCanvas({ report }: { readonly report: EvaluationReport }) 
               Above the placed equipment so a proposal is visible over what it would replace, and
               below the findings, which are what stop an installation.
             */}
-            {previewedPlacements.length > 0 && (
+            {previewedDiff.length > 0 && (
               <ProposalGhostLayer
-                placements={previewedPlacements}
+                diff={previewedDiff}
                 catalog={catalog}
                 viewport={state.viewport}
               />

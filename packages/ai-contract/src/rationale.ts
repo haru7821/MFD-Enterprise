@@ -1,4 +1,4 @@
-import type { Bilingual } from '@mfd/rule-engine';
+import type { Bilingual, Language } from '@mfd/rule-engine';
 
 /**
  * Rationale codes — why a proposal is what it is.
@@ -56,6 +56,13 @@ export const RATIONALE_CODES = {
       en: 'Placed near the {kind} reference point, shortening the run to {measured} mm.',
     },
   },
+  'AR-104': {
+    title: { ko: '배치 방식', en: 'Arrangement' },
+    template: {
+      ko: '{strategy} 방식으로 {count}대를 배치했습니다.',
+      en: 'Arranged {count} stations {strategy}.',
+    },
+  },
   'AR-201': {
     title: { ko: '정비 공간 확보를 위한 이동', en: 'Moved To Satisfy Clearance' },
     template: {
@@ -111,4 +118,43 @@ export type RationaleCode = keyof typeof RATIONALE_CODES;
 
 export function isRationaleCode(value: string): value is RationaleCode {
   return Object.prototype.hasOwnProperty.call(RATIONALE_CODES, value);
+}
+
+/** What a rationale's placeholders may be filled with. Bilingual, so a criterion name translates. */
+export type RationaleParamValue = string | number | Bilingual;
+export type RationaleParams = Readonly<Record<string, RationaleParamValue>>;
+
+const NUMBER_FORMATS: Readonly<Record<Language, Intl.NumberFormat>> = {
+  ko: new Intl.NumberFormat('ko-KR'),
+  en: new Intl.NumberFormat('en-US'),
+};
+
+/**
+ * Compose one rationale in one language.
+ *
+ * Deliberately identical in behaviour to the rule engine's `renderReason`, including the part that
+ * looks like a bug: **a placeholder with no parameter is left visible** as `{name}` rather than
+ * blanked. "Arranged 12 stations " reads as clumsy prose somebody explains away; `{strategy}` reads
+ * as the defect it is.
+ */
+export function renderRationale(
+  language: Language,
+  code: RationaleCode,
+  params: RationaleParams,
+): string {
+  return RATIONALE_CODES[code].template[language].replace(
+    /\{(\w+)\}/g,
+    (whole, key: string) => {
+      const value = params[key];
+      if (value === undefined) return whole;
+      if (typeof value === 'number') return NUMBER_FORMATS[language].format(value);
+      if (typeof value === 'string') return value;
+      return value[language];
+    },
+  );
+}
+
+/** The rationale's short title, for a heading too narrow for the sentence. */
+export function rationaleTitle(code: RationaleCode): Bilingual {
+  return RATIONALE_CODES[code].title;
 }

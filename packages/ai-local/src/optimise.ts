@@ -52,6 +52,17 @@ export interface OptimiseInput extends Omit<RankInput, 'stationTarget'> {
    * `stationTarget`, because a target is a request and this is a fact about what is on the drawing.
    */
   readonly current: readonly Placement[];
+  /**
+   * The engineer's explicit permission for existing machines to move.
+   *
+   * > Owner decision, Step 6B: *"Existing placements are immutable unless the engineer explicitly
+   * > allows movement."*
+   *
+   * Optimisation *is* moving existing machines — that is the whole operation — so this is not a
+   * mode, it is a precondition. Structural rather than a disabled button: a UI can forget to
+   * disable something, and `optimiseLayout` returning `movement_not_permitted` cannot.
+   */
+  readonly allowMovingExisting: boolean;
 }
 
 export interface OptimisationProposal {
@@ -63,6 +74,8 @@ export interface OptimisationProposal {
   readonly commands: readonly ProposedCommand[];
   /** What it gains and what it costs, per criterion, against the current layout. */
   readonly deltas: readonly CriterionDelta[];
+  /** What the rule engine established about it, separately from what the model scored. */
+  readonly compliance: RankedLayout['compliance'];
   readonly explanation: RankedLayout['explanation'];
 }
 
@@ -79,6 +92,7 @@ export const OPTIMISATION_OUTCOMES = [
   'already_best',
   'no_feasible_candidate',
   'not_optimisable',
+  'movement_not_permitted',
 ] as const;
 export type OptimisationOutcome = (typeof OPTIMISATION_OUTCOMES)[number];
 
@@ -102,6 +116,14 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
   }
 
   const stationCount = input.current.length;
+
+  /*
+   * Owner constraint, Step 6B. Checked before any work is done, so an engineer who has not opted in
+   * cannot even be shown a proposal to be tempted by.
+   */
+  if (!input.allowMovingExisting) {
+    return { outcome: 'movement_not_permitted', current: null, proposals: [], stationCount };
+  }
 
   const currentScore = scoreLayout({
     placements: input.current,
@@ -164,6 +186,7 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
       score: layout.score,
       commands,
       deltas: deltasBetween(currentScore, layout.score),
+      compliance: layout.compliance,
       explanation: layout.explanation,
     };
   });
@@ -188,18 +211,68 @@ export function commandsFor(
   current: readonly Placement[],
   target: readonly Placement[],
 ): ProposedCommand[] {
-  const ordered = [...current].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  const unclaimed = [...target];
   const commands: ProposedCommand[] = [];
 
-  for (const placement of ordered) {
+  for (const { source, target: claimed, distance } of assignNearest(current, target)) {
+    // A machine already in the right place needs no command. An optimisation that emitted a move
+    // for every machine would show as twelve changes when it made two.
+    if (distance > 0) {
+      commands.push({
+        type: 'placement.move',
+        payload: { placementId: source.id, position: claimed.transform.position },
+      });
+    }
+    if (claimed.transform.rotation !== source.transform.rotation) {
+      commands.push({
+        type: 'placement.rotate',
+        payload: { placementId: source.id, rotation: claimed.transform.rotation },
+      });
+    }
+  }
+
+  return commands;
+}
+
+interface Assignment {
+  /** Where a machine is now. */
+  readonly source: Placement;
+  /** Where the proposal would put it. */
+  readonly target: Placement;
+  /** Its index in the proposal, so a caller can report in proposal order. */
+  readonly targetIndex: number;
+  /** Manhattan distance between the two, in mm. Zero means it does not move. */
+  readonly distance: number;
+}
+
+/**
+ * Which existing machine becomes which proposed one.
+ *
+ * The single answer to that question, shared by {@link commandsFor} and {@link diffPlacements}.
+ * They used to walk it separately — and in opposite directions, existing→proposed against
+ * proposed→existing, which a greedy assignment does not promise to answer the same way. The
+ * highlight and the commands disagreeing about which machine went where is the one thing neither
+ * is allowed to do, so there is now only one walk to disagree with.
+ *
+ * Deterministic: existing placements are considered in id order and each takes the nearest
+ * unclaimed target. Greedy, not minimum-total-distance, and deliberately so — it needs to be
+ * stable and to produce short, individually sensible moves, not to solve an assignment problem.
+ */
+function assignNearest(
+  current: readonly Placement[],
+  target: readonly Placement[],
+): Assignment[] {
+  const ordered = [...current].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const unclaimed = target.map((placement, index) => ({ placement, index }));
+  const assignments: Assignment[] = [];
+
+  for (const source of ordered) {
     let bestIndex = 0;
     let bestDistance = Number.POSITIVE_INFINITY;
 
     for (const [index, candidate] of unclaimed.entries()) {
       const distance =
-        Math.abs(candidate.transform.position.x - placement.transform.position.x) +
-        Math.abs(candidate.transform.position.y - placement.transform.position.y);
+        Math.abs(candidate.placement.transform.position.x - source.transform.position.x) +
+        Math.abs(candidate.placement.transform.position.y - source.transform.position.y);
       if (distance < bestDistance) {
         bestDistance = distance;
         bestIndex = index;
@@ -207,25 +280,17 @@ export function commandsFor(
     }
 
     const [claimed] = unclaimed.splice(bestIndex, 1);
-    if (!claimed) continue;
+    if (!claimed) break;
 
-    // A machine already in the right place needs no command. An optimisation that emitted a move
-    // for every machine would show as twelve changes when it made two.
-    if (bestDistance > 0) {
-      commands.push({
-        type: 'placement.move',
-        payload: { placementId: placement.id, position: claimed.transform.position },
-      });
-    }
-    if (claimed.transform.rotation !== placement.transform.rotation) {
-      commands.push({
-        type: 'placement.rotate',
-        payload: { placementId: placement.id, rotation: claimed.transform.rotation },
-      });
-    }
+    assignments.push({
+      source,
+      target: claimed.placement,
+      targetIndex: claimed.index,
+      distance: bestDistance,
+    });
   }
 
-  return commands;
+  return assignments;
 }
 
 /**
@@ -272,4 +337,62 @@ function deltasBetween(before: ScoreBreakdown, after: ScoreBreakdown): Criterion
 
 function round(value: number): number {
   return Math.round(value * 1e9) / 1e9;
+}
+
+
+/**
+ * What changes if a proposal is applied, per machine.
+ *
+ * > Owner decision, Step 6B: *"Highlight added, moved and unchanged placements before Apply."*
+ *
+ * A ghosted layout shows where machines *would* be; it does not show which of them are actually
+ * changing. On a twelve-station room where an optimisation moves two, an engineer looking at twelve
+ * ghosts has to work out which two by eye — and approving a change you have not located is not much
+ * of an approval.
+ *
+ * Computed from the same nearest-first assignment `commandsFor` uses, so the highlight and the
+ * commands cannot disagree about which machine went where.
+ */
+export const PLACEMENT_CHANGES = ['added', 'moved', 'unchanged'] as const;
+export type PlacementChange = (typeof PLACEMENT_CHANGES)[number];
+
+export interface PlacementDiffEntry {
+  /** The proposed placement. */
+  readonly placement: Placement;
+  readonly change: PlacementChange;
+  /**
+   * The machine on the drawing that becomes this one. Null for `added`.
+   *
+   * The whole placement rather than just its position, because this is what a caller needs to turn
+   * the diff into commands: a move names an **existing id**, and an id is the one thing a position
+   * cannot be turned back into. So the highlight and the edit are read off the same assignment
+   * instead of each deriving their own — see {@link assignNearest}.
+   */
+  readonly source: Placement | null;
+}
+
+export function diffPlacements(
+  current: readonly Placement[],
+  proposed: readonly Placement[],
+): PlacementDiffEntry[] {
+  /*
+   * `added` covers generation, where there is nothing to move from; `moved` and `unchanged` cover
+   * optimisation, where the count is immutable. One function for both, because the panel and the
+   * canvas should not need to know which operation produced the proposal they are showing.
+   */
+  const byTarget = new Map(
+    assignNearest(current, proposed).map((assignment) => [assignment.targetIndex, assignment]),
+  );
+
+  return proposed.map((placement, index) => {
+    const assignment = byTarget.get(index);
+    // Nothing was assigned to it, so nothing is moving into it: a machine that was not there before.
+    if (!assignment) return { placement, change: 'added', source: null };
+
+    return {
+      placement,
+      change: assignment.distance === 0 ? 'unchanged' : 'moved',
+      source: assignment.source,
+    };
+  });
 }

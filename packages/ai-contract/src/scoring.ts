@@ -1,3 +1,5 @@
+import type { Bilingual } from '@mfd/rule-engine';
+
 import type { RefWithVersion } from './context';
 
 /**
@@ -74,6 +76,25 @@ export type ScoringCriterion = (typeof SCORING_CRITERIA)[number];
  */
 export const SCORING_CONSTRAINTS = ['station_count'] as const;
 export type ScoringConstraint = (typeof SCORING_CONSTRAINTS)[number];
+
+/**
+ * What to call a criterion in front of an engineer.
+ *
+ * Beside the criterion list rather than in the web app, because a criterion is named in the panel,
+ * in an `AR-` rationale and in the report, and three copies of "maintenance access" drift. A
+ * `Record` over the union, so adding a criterion fails to compile until it has a name in both
+ * languages.
+ */
+export const CRITERION_LABELS: Readonly<Record<ScoringCriterion, Bilingual>> = {
+  compliance_margin: { ko: '규정 여유', en: 'compliance margin' },
+  installation_feasibility: { ko: '설치 용이성', en: 'installation feasibility' },
+  maintenance_access: { ko: '정비 접근성', en: 'maintenance access' },
+  ro_piping_length: { ko: 'RO 배관 길이', en: 'RO piping' },
+  electrical_routing: { ko: '전기 배선', en: 'electrical routing' },
+  future_expansion: { ko: '증설 여유', en: 'future expansion' },
+  walking_distance: { ko: '동선 효율', en: 'walking distance' },
+  drain_routing: { ko: '배수 경로', en: 'drain routing' },
+};
 
 export const CRITERION_DIRECTIONS = ['maximise', 'minimise'] as const;
 export type CriterionDirection = (typeof CRITERION_DIRECTIONS)[number];

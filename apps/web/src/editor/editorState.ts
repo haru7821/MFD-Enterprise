@@ -5,7 +5,8 @@ import {
   type Viewport,
   createViewport,
 } from '@mfd/cad-engine';
-import type { ScoreBreakdown } from '@mfd/ai-contract';
+import type { RationaleCode, RationaleParams, ScoreBreakdown } from '@mfd/ai-contract';
+import type { ComplianceSummary, PlacementDiffEntry } from '@mfd/ai-local';
 import {
   type Boundary,
   type DocumentState,
@@ -29,8 +30,19 @@ import type { ToolId } from './tools';
  * The request is kept beside the results so the panel can say *"three layouts for 12 stations in
  * Treatment Area A"* rather than showing scores detached from the question they answer — and so a
  * stale result set is recognisable when the room selection changes underneath it.
+ *
+ * ## One shape for both operations
+ *
+ * Generating a layout and optimising one produce the same thing to decide about: ranked
+ * alternatives, each scored, each with a per-machine diff against what is on the drawing. They
+ * differ in *what the diff contains* — all `added` for a generation, `moved` and `unchanged` for an
+ * optimisation — and that difference is data rather than a second state shape.
+ *
+ * Two parallel shapes would have meant two preview paths, two apply paths and two ghost layers, and
+ * the third of those to fall out of step would have been the one nobody was looking at.
  */
 export interface LayoutProposalSet {
+  readonly operation: LayoutOperation;
   readonly spaceId: string;
   readonly equipmentObjectId: string;
   readonly requestedCount: number | null;
@@ -39,12 +51,31 @@ export interface LayoutProposalSet {
   readonly proposals: readonly LayoutProposal[];
   /** Why nothing came back, when nothing did. An empty list is not self-explanatory. */
   readonly emptyReason: LayoutEmptyReason | null;
+  /**
+   * The drawing as it stands, scored on the same model. Null for a generation.
+   *
+   * Present so an optimisation's totals mean something: 0.68 is not an improvement on anything
+   * until the number it improves on is on screen next to it.
+   */
+  readonly currentScore: ScoreBreakdown | null;
 }
+
+/** Generating a layout from nothing, or improving the one the engineer drew. */
+export const LAYOUT_OPERATIONS = ['generate', 'optimise'] as const;
+export type LayoutOperation = (typeof LAYOUT_OPERATIONS)[number];
 
 export const LAYOUT_EMPTY_REASONS = [
   'no_room_selected',
   'no_position_satisfies_rules',
   'room_too_small',
+  /** Optimisation, asked of a room with nothing in it. */
+  'nothing_to_optimise',
+  /** Optimisation, without the engineer's opt-in to move what is already placed. */
+  'movement_not_permitted',
+  /** Optimisation found nothing better — a real answer, and not the same as finding nothing. */
+  'already_best',
+  /** Optimisation could not construct any compliant arrangement at the count already placed. */
+  'no_feasible_arrangement',
 ] as const;
 export type LayoutEmptyReason = (typeof LAYOUT_EMPTY_REASONS)[number];
 
@@ -53,7 +84,18 @@ export interface LayoutProposal {
   readonly rank: number;
   readonly placements: readonly Placement[];
   readonly score: ScoreBreakdown;
-  readonly explanation: readonly { readonly code: string; readonly params: Readonly<Record<string, string | number>> }[];
+  /** What the rule engine established, separately from what the model scored. */
+  readonly compliance: ComplianceSummary;
+  /** Why it ranks where it does, in codes the panel renders in both languages. */
+  readonly explanation: readonly { readonly code: RationaleCode; readonly params: RationaleParams }[];
+  /**
+   * Per machine: added, moved, or unchanged — and which existing machine each one is.
+   *
+   * Both the highlight *and* the edit come from here, which is the point. Approving a proposal
+   * applies exactly the changes the canvas drew, because there is one list rather than a rendering
+   * of one thing and an application of another.
+   */
+  readonly diff: readonly PlacementDiffEntry[];
 }
 
 /**

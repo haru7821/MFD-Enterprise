@@ -165,7 +165,7 @@ moving the sprint counter to 6 would have enabled a button that does nothing —
 the registry's own docstring warns about, arriving through a number nobody re-checked. The field is
 now `number | null`, and `measure` is `null`: wanted, not scheduled.
 
-### Step 3 — the solver's geometry and candidates (≈3 days)
+### Step 3 — the solver's geometry and candidates (≈3 days) ✅ **Done**
 
 | Files | |
 | --- | --- |
@@ -178,7 +178,7 @@ now `number | null`, and `measure` is `null`: wanted, not scheduled.
 *absent* rather than ranked low, and a room too small produces "no position satisfies the rules" naming
 the binding constraint.
 
-### Step 4 — the weighted scoring engine (≈3 days)
+### Step 4 — the weighted scoring engine (≈3 days) ✅ **Done**
 
 | Files | |
 | --- | --- |
@@ -198,7 +198,7 @@ That last check is the one worth the effort. It is the failure the owner's decis
 produce by accident: a weighted sum is exactly the kind of arithmetic in which a missing input silently
 becomes an advantage.
 
-### Step 5 — room layout and optimisation, ranked by score (≈3 days)
+### Step 5 — room layout and optimisation, ranked by score (≈3 days) ✅ **Done**
 
 | Files | |
 | --- | --- |
@@ -214,6 +214,40 @@ evaluation is of the finished arrangement.
 interface must not quietly reorder them by count because that looks more impressive. **Done when** a
 fixture exists in which a thirteen-station layout outranks a fourteen-station one, and the breakdown
 shows why.
+
+### Step 5a — the solver in the editor (≈3 days) ✅ **Done**
+
+> Owner priority change, twice: *"Do not start AI Planner yet. Proceed with Solver → Editor
+> Integration first"*, then *"Complete the editor integration first by exposing `optimiseLayout()`
+> to the UI … only after this workflow is complete should Sprint 6 AI Planner begin."*
+
+Inserted between steps 5 and 6 rather than renumbering, because every other step in this document is
+referred to by number elsewhere. Delivered in two parts.
+
+| | Files | |
+| --- | --- | --- |
+| **6A** | `apps/web/src/features/layout/runSolver.ts` | The editor's only call into the solver |
+| | `LayoutPanel.tsx`, `ProposalGhostLayer.tsx` | The form, the ranked results, the ghosts |
+| | `editorState.ts`, `editorReducer.ts` | Proposals as state beside the document; `layout/*` actions |
+| **6B** | `runSolver.ts` → `runOptimiser` | Optimise the drawing, behind an explicit opt-in |
+| | `ai-local/src/optimise.ts` | `allowMovingExisting`, `diffPlacements`, `ComplianceSummary` |
+| | `ai-contract/src/rationale.ts` | `renderRationale`, `AR-104`, `CRITERION_LABELS` |
+| | `tests/e2e/layout.spec.ts` | 17 browser specs, six of them Step 6B's |
+
+**Done, and verified by breaking each guard:** proposals never touch the document before **Apply**;
+optimisation refuses without the engineer's opt-in; the station count is immutable in both
+directions; every candidate shows total, coverage, rule compliance, per-criterion breakdown and its
+`AR-` ranking reason; the ghost layer colours **added / moved / unchanged** and draws a line back
+from a moved machine; one `groupCommand` means one undo press. Performance at the design target of
+fifty stations is ~260 ms, measured in `packages/ai-local/src/performance.test.ts`.
+
+**What integration found that the unit fixtures could not**, which is the argument for having done it
+before step 6: the generator was never told about the machines already in the room, so Gate 2
+rejected every candidate at every count; and *"as many as fit"* resolved against the generator alone,
+picking a density the gates then refused. Both produced *"no layout satisfies the rules"* on a
+request with a perfectly good answer.
+
+**And one thing worth the owner's attention** — see § F.
 
 ### Step 6 — `packages/ai-planner` (≈3 days)
 
@@ -379,6 +413,32 @@ growing a second commissioning list that can disagree with the signed report.
 | **Prompt drift** | Versioned prompt files, citation-stability tests, a review checklist with objective questions. |
 | **Scope creep into agentic editing** | Explicitly out. One reviewable proposal at a time; a sequence of self-directed edits is not auditable. |
 | **An engineer trusts the assistant's prose over the findings** | The facts render first and stay if the explanation never arrives. Model suggestions are visually separated from findings. |
+
+### The one A-1 consequence that step 5a made concrete
+
+Every clearance figure in the shipped catalogue is `null` while the AK98 manual is outstanding. Step 4
+predicted what that costs the scoring model; step 5a showed what it costs the **optimiser**, and the
+answer is sharper than expected:
+
+| Criterion | Weight | On a document with no reference points |
+| --- | --- | --- |
+| Compliance margin | 40 % | `SC-904` — no threshold to measure headroom above |
+| Installation feasibility | 20 % | `SC-901` — no `access_entry` point |
+| Maintenance access | 15 % | `SC-904` — **no declared clearance to test a face against** |
+| RO piping · electrical · walking distance | 20 % | `SC-901` — no points |
+| Future expansion | 5 % | Measurable — and **saturates** in any room with space to spare |
+
+So on a blank-but-for-machines drawing the *only* live criterion is future expansion, at its ceiling
+for every arrangement. `optimiseLayout` correctly answers `already_best` to everything, and it is
+right to: it has nothing to discriminate with. **This is honest rather than broken** — the alternative
+is an optimiser that invents a preference — but it means the feature does not visibly work until an
+engineer places reference points. The browser specs place five, which is what makes them able to fail.
+
+Two things follow. The panel now says *why* it has nothing to offer rather than only that it has
+nothing: an empty optimisation result carries the current layout's coverage, and a result measured
+over part of the model says so — `already_best` on its own reads as praise for the drawing when it
+may be a statement about missing data. And **A-1 is now blocking a feature an engineer can see**,
+not just a number in a report.
 
 ---
 

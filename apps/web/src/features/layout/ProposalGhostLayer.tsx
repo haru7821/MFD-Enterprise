@@ -1,12 +1,12 @@
 import { Fragment } from 'react';
 import { Line, Text } from 'react-konva';
 
+import type { PlacementChange, PlacementDiffEntry } from '@mfd/ai-local';
 import { type Viewport, worldToScreen } from '@mfd/cad-engine';
-import type { Placement } from '@mfd/document-model';
 import { type Catalog, footprintCorners } from '@mfd/object-library';
 
 interface ProposalGhostLayerProps {
-  readonly placements: readonly Placement[];
+  readonly diff: readonly PlacementDiffEntry[];
   readonly catalog: Catalog;
   readonly viewport: Viewport;
 }
@@ -23,15 +23,42 @@ interface ProposalGhostLayerProps {
  * So the previewed proposal is drawn where it would go, and **only drawn** — nothing here writes to
  * the document. Dashed and half-transparent, so it cannot be mistaken for what is actually placed:
  * an engineer glancing at the canvas has to be able to tell a proposal from a decision.
+ *
+ * ## Three colours, because "where they would go" is not the question
+ *
+ * Owner requirement 5. On a twelve-station room where an optimisation moves two, twelve identical
+ * ghosts leave an engineer to find the two by eye — and approving a change you have not located is
+ * not much of an approval. So each ghost is drawn as what it *is*: green for a machine being added,
+ * amber for one being moved, and a faint grey outline for one staying exactly where it is.
+ *
+ * A moved machine also gets a line back to where it came from. The colour says *that* it moves; the
+ * line says *from where*, which is the half of the question a legend cannot answer.
  */
-export function ProposalGhostLayer({ placements, catalog, viewport }: ProposalGhostLayerProps) {
+
+/**
+ * One colour per change, and none of them is the palette's ordinary equipment colour.
+ *
+ * `unchanged` is deliberately the quietest: it is the category an engineer does not need to look
+ * at, and drawing it as loudly as the others would bury the two ghosts that matter in ten that do
+ * not. It is drawn at all so the proposal reads as a whole layout rather than as two loose machines.
+ */
+const CHANGE_STYLES: Readonly<
+  Record<PlacementChange, { stroke: string; fill: string; label: string }>
+> = {
+  added: { stroke: '#34d399', fill: 'rgba(52, 211, 153, 0.14)', label: '#047857' },
+  moved: { stroke: '#f59e0b', fill: 'rgba(245, 158, 11, 0.14)', label: '#b45309' },
+  unchanged: { stroke: '#94a3b8', fill: 'rgba(148, 163, 184, 0.06)', label: '#64748b' },
+};
+
+export function ProposalGhostLayer({ diff, catalog, viewport }: ProposalGhostLayerProps) {
   return (
     <>
-      {placements.map((placement, index) => {
-        const object = catalog.get(placement.equipmentObjectId);
+      {diff.map((entry, index) => {
+        const object = catalog.get(entry.placement.equipmentObjectId);
         if (!object) return null;
 
-        const corners = footprintCorners(object, placement.transform).map((corner) =>
+        const style = CHANGE_STYLES[entry.change];
+        const corners = footprintCorners(object, entry.placement.transform).map((corner) =>
           worldToScreen(viewport, corner),
         );
         const centre = corners.reduce(
@@ -43,14 +70,28 @@ export function ProposalGhostLayer({ placements, catalog, viewport }: ProposalGh
         );
 
         return (
-          <Fragment key={placement.id}>
+          <Fragment key={entry.placement.id}>
+            {entry.change === 'moved' && entry.source && (
+              <Line
+                points={[
+                  ...vec(worldToScreen(viewport, entry.source.transform.position)),
+                  ...vec(centre),
+                ]}
+                stroke={style.stroke}
+                strokeWidth={1}
+                dash={[2, 3]}
+                opacity={0.7}
+                listening={false}
+                perfectDrawEnabled={false}
+              />
+            )}
             <Line
               points={corners.flatMap((corner) => [corner.x, corner.y])}
               closed
-              stroke="#f59e0b"
-              strokeWidth={1.5}
+              stroke={style.stroke}
+              strokeWidth={entry.change === 'unchanged' ? 1 : 1.5}
               dash={[6, 4]}
-              fill="rgba(245, 158, 11, 0.12)"
+              fill={style.fill}
               listening={false}
               perfectDrawEnabled={false}
             />
@@ -64,7 +105,7 @@ export function ProposalGhostLayer({ placements, catalog, viewport }: ProposalGh
               text={String(index + 1)}
               fontSize={12}
               fontStyle="bold"
-              fill="#b45309"
+              fill={style.label}
               listening={false}
               perfectDrawEnabled={false}
             />
@@ -73,4 +114,8 @@ export function ProposalGhostLayer({ placements, catalog, viewport }: ProposalGh
       })}
     </>
   );
+}
+
+function vec(point: { x: number; y: number }): [number, number] {
+  return [point.x, point.y];
 }

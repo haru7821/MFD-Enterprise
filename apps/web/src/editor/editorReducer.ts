@@ -441,17 +441,56 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
        * An engineer who accepts twelve stations and changes their mind should not have to press
        * undo twelve times. The group's inverse un-does the steps in reverse, which is the only
        * order they are valid in — see `groupCommand`.
+       *
+       * ## One loop for both operations
+       *
+       * The commands come off the proposal's **diff**, which is the same list the ghost layer drew.
+       * So an approval applies exactly what was highlighted: an `added` ghost becomes a create, a
+       * `moved` ghost becomes a move of the machine the arrow came from, and an `unchanged` one
+       * becomes nothing at all.
+       *
+       * There is no branch on the operation here, and there should not be. A generation whose diff
+       * is all-`added` and an optimisation whose diff is `moved`/`unchanged` differ in their data,
+       * not in what approving them means.
+       *
+       * **Never a delete.** `diffPlacements` has no third case to produce one from, and the solver
+       * asserts the same thing about its own commands — the owner's *"never delete placements
+       * automatically"*, held at both ends.
        */
-      const commands = proposal.placements.map((placement) =>
-        createPlacementCommand(levelId, placement),
-      );
+      const commands = proposal.diff.flatMap((entry) => {
+        if (entry.change === 'added') return [createPlacementCommand(levelId, entry.placement)];
+        if (entry.change === 'unchanged' || entry.source === null) return [];
+
+        const source = entry.source;
+        const moved = [
+          movePlacementCommand(levelId, source.id, entry.placement.transform.position),
+        ];
+        if (entry.placement.transform.rotation !== source.transform.rotation) {
+          moved.push(
+            rotatePlacementCommand(levelId, source.id, entry.placement.transform.rotation),
+          );
+        }
+        return moved;
+      });
+
+      // Nothing to do — an "optimisation" in which every machine stayed put. Not reachable through
+      // the panel, which only offers proposals that beat the current layout, and `groupCommand`
+      // throws on an empty group rather than pushing an undo step that undoes nothing.
+      if (commands.length === 0) {
+        return { ...state, layoutProposals: null, previewedProposalId: null };
+      }
+
+      const added = proposal.diff.filter((entry) => entry.change === 'added').length;
+      const changed = proposal.diff.filter((entry) => entry.change === 'moved').length;
 
       return {
         ...state,
         doc: execute(
           state.doc,
           groupCommand(
-            `Apply layout — ${proposal.placements.length} × ${equipmentModel(proposal)}`,
+            added > 0
+              ? `Apply layout — ${added} × ${equipmentModel(proposal)}`
+              : `Optimise layout — ${changed} × ${equipmentModel(proposal)} moved`,
             commands,
           ),
           action.at,
@@ -460,7 +499,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         // would place the same machines again.
         layoutProposals: null,
         previewedProposalId: null,
-        nextEntityNumber: state.nextEntityNumber + proposal.placements.length,
+        nextEntityNumber: state.nextEntityNumber + added,
       };
     }
 
