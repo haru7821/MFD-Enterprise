@@ -319,7 +319,33 @@ function planStatusOf(level: Level): 'none' | 'calibrated' | 'uncalibrated' {
  * positions the rule engine then judges, and padding a grid by a number nobody supplied would be
  * inventing one.
  */
+/**
+ * How much space to leave between machines when generating candidate layouts.
+ *
+ * Two sources, in a strict order, and the order is the architecture:
+ *
+ * 1. **The equipment record's service clearance.** A requirement — what the machine needs. Null on
+ *    every record today (A-1), which is why the second source matters.
+ * 2. **Observed station pitch from real drawings.** Not a requirement: what 117 hospitals actually
+ *    did. Used only as a *starting* spacing for candidate generation, never as a threshold — the
+ *    rule engine still judges every candidate, and a layout that violates a clearance is rejected
+ *    by Gate 2 whatever spacing produced it (AD-17).
+ *
+ * A requirement always wins where one exists. Observed practice fills the silence, and it is
+ * exactly the advisory use the knowledge layer was built for: it changes which layouts get
+ * *proposed*, and nothing about which are *acceptable*.
+ *
+ * The padding is the pitch minus the footprint, because pitch is centre-to-centre and the generator
+ * spaces on top of the footprint. Clamped at zero: an observed pitch narrower than the planning
+ * footprint means those hospitals used a smaller machine, not that ours should overlap.
+ */
 function pitchPaddingFor(object: EquipmentObject): number {
   const { front, rear } = object.serviceClearance;
-  return Math.max(front ?? 0, rear ?? 0);
+  const required = Math.max(front ?? 0, rear ?? 0);
+  if (required > 0) return required;
+
+  const observed = dialysisKnowledge.dimension('station_pitch');
+  if (!observed?.isPattern) return 0;
+
+  return Math.max(0, observed.medianMm - object.planningFootprint.width);
 }

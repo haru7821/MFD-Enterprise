@@ -3,17 +3,17 @@
   "manufacturer": "Vantive",
   "model": "AK98",
   "category": "dialysis_machine",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "manufacturerDimensions": {
-    "width": 585,
-    "depth": 620,
+    "width": 345,
+    "depth": 600,
     "height": 1305,
-    "weight": null,
+    "weight": 70,
     "verification": {
       "status": "verified",
       "source": {
         "document": "MFD-E Vantive AK98 Object Specification",
-        "revision": "0.1",
+        "revision": "0.2",
         "section": "Addendum — current record state",
         "type": "approved_specification",
         "lastUpdated": "2026-07-31"

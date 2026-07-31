@@ -459,19 +459,45 @@ test('goes current again when the change is undone', async ({ page }) => {
   await expect(page.getByTestId('plan-stale')).toHaveCount(0);
 });
 
-test('a moved machine marks the plan outdated, not only an added one', async ({ page }) => {
-  // The layout revision covers position, not just count — a machine dragged 300 mm is a different
-  // installation, and the connection lengths in the plan are no longer the ones it printed.
+test('changing a machine’s transform marks the plan outdated, not only adding one', async ({
+  page,
+}) => {
+  /*
+   * The layout revision covers each machine's **transform**, not just how many there are: a station
+   * turned or moved is a different installation, and the connection runs in the plan are no longer
+   * the ones it printed.
+   *
+   * Exercised with a keyboard rotation rather than a pointer drag. The drag version grabbed a
+   * solver-placed machine at a fixed canvas coordinate, which worked only for as long as the solver
+   * put one there — it stopped when candidate spacing began coming from the observed station pitch.
+   * A browser test whose setup depends on where the optimiser happens to place things breaks every
+   * time the optimiser improves. Which *fields* the revision covers, position included, is asserted
+   * directly in `fingerprint.test.ts`; what this test is for is that the editor wires it up at all.
+   */
+  /*
+   * The machine to drag is placed **by hand at a known point**, then the plan is generated around
+   * it. Grabbing "the first machine the solver placed" at a fixed canvas coordinate worked until the
+   * solver started spacing candidates from the observed station pitch — at which point the grab
+   * point had no machine under it and the drag moved nothing. A test that depends on where the
+   * optimiser happens to put things breaks every time the optimiser gets better.
+   */
   await planAThreeStationWard(page);
   await expect(page.getByTestId('plan-stale')).toHaveCount(0);
 
+  // Place one more machine and re-plan, so the machine about to be turned is one this test put
+  // there rather than one the solver chose a position for.
+  await page.getByTestId('catalog-item-vantive_ak98').click();
   const box = await canvasBox(page);
-  await page.keyboard.press('v');
-  // Drag the first machine the layout placed.
-  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.3);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.5, { steps: 8 });
-  await page.mouse.up();
+  await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.6);
+  await selectRoom(page);
+  await page.getByTestId('plan-generate').click();
+  await expect(page.getByTestId('plan-results')).toBeVisible();
+  await expect(page.getByTestId('plan-stale')).toHaveCount(0);
+
+  // Placing selects, so the machine is still the selection — turn it a quarter turn.
+  await page.getByTestId('catalog-item-vantive_ak98').click();
+  await page.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.6);
+  await page.keyboard.press(']');
 
   await expect(page.getByTestId('plan-stale')).toContainText('outdated');
 });

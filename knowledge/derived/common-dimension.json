@@ -1,6 +1,1437 @@
 {
   "kind": "common_dimension",
   "knowledgeVersion": 1,
-  "generatedFrom": [],
-  "entries": []
+  "generatedFrom": [
+    "knowledge/observations/hospital-dataset-analyzer.json"
+  ],
+  "entries": [
+    {
+      "id": "common_dimension:corridor_width",
+      "kind": "common_dimension",
+      "subject": "corridor_width",
+      "roomFunction": null,
+      "distribution": {
+        "minimum": 2000,
+        "median": 2700,
+        "maximum": 2700,
+        "unit": "mm"
+      },
+      "frequencies": [],
+      "support": {
+        "drawings": 18,
+        "observations": 18,
+        "strongestMethod": "dimension_line",
+        "sources": [
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "_reference/30대_sample.pdf",
+            "path": "_reference/30대_sample.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6639cf3822b175887c5e14b5186b7d6de016734b1e2affe3f4ddf82d6460bfa6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_020/dialysis_typeA.pdf",
+            "path": "Hospital_020/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "270654f86b0a9a2e2d8a0e5fa6ec85e51920b6bf3e08196680f23b4e693d5251"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_020/dialysis_typeB.pdf",
+            "path": "Hospital_020/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a786b0332f75921eb49b73fc1d6f79058d0eb124066c45daa2ce65d28f7cd6fd"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_020/dialysis_typeC.pdf",
+            "path": "Hospital_020/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e9feaff397fc1b59f6f234093a5f6030a0f68d879b8c71372f6962284fc58fbb"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_24bed.dwg",
+            "path": "Hospital_023/dialysis_24bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "8be17863bd01f63575cfbd074ea60e6ee23752fdcb811d0299edcc269eb63683"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_24bed.pdf",
+            "path": "Hospital_023/dialysis_24bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6c4b94fe533273160f9ab32b544643c998eeede9434e15172c81fc1624b0ea90"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed_2.dwg",
+            "path": "Hospital_023/dialysis_25bed_2.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4a1496292a9ac56deadc1bc50c1ed89d3b4e259c18521b8a236cb573e29d96b0"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed_2.pdf",
+            "path": "Hospital_023/dialysis_25bed_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "f2589f285ae63314f44d0ae66d76cabf2ce060c341ed4000ce08eacbf7472d83"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed.dwg",
+            "path": "Hospital_023/dialysis_25bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed.pdf",
+            "path": "Hospital_023/dialysis_25bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_27bed.dwg",
+            "path": "Hospital_023/dialysis_27bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4c5e6f66279b8546954960e9b1c3a9209e984b847e6deb522a10b93087ee7c70"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_27bed.pdf",
+            "path": "Hospital_023/dialysis_27bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "ebcd0df55c4e6220430c0bdbbd2c01b23e4122374627ddf54ca42be0ffec78bb"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_28bed.dwg",
+            "path": "Hospital_023/dialysis_28bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b687b0b45b03f39905871685d619604ff518308c68f3be29fc6f2093c59437dd"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_28bed.pdf",
+            "path": "Hospital_023/dialysis_28bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "434a9539d095eb482f9f2eeac2a660fcc283720cb6342a95e2509918addfbf24"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeC.dwg",
+            "path": "Hospital_040/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b52c3792dab9491cb9064b866a1c69b1a8035d4289277cbe433e7e7ad8ef82b6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeC.pdf",
+            "path": "Hospital_040/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2bfd8d53fa48ea6a54c3da80b41dd9d64939e83c142f097bb2ef986dedb661cf"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeAa.pdf",
+            "path": "Hospital_045/dialysis_typeAa.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "065c56680938d2fa16d6667bfa6ae9f574488c78172958880de25edd579203a6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeBb.pdf",
+            "path": "Hospital_045/dialysis_typeBb.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "90d8e47d25fa9b75776ae74bf621d456837482928997b38fc93352cafb38d0ce"
+          }
+        ]
+      }
+    },
+    {
+      "id": "common_dimension:station_pitch",
+      "kind": "common_dimension",
+      "subject": "station_pitch",
+      "roomFunction": null,
+      "distribution": {
+        "minimum": 1200,
+        "median": 1700,
+        "maximum": 2000,
+        "unit": "mm"
+      },
+      "frequencies": [],
+      "support": {
+        "drawings": 117,
+        "observations": 121,
+        "strongestMethod": "dimension_line",
+        "sources": [
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_001/dialysis_3.dwg",
+            "path": "Hospital_001/dialysis_3.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a9bccc98bb9f4097cef67af07a7293bab718668a6e20100a1d760187e9a1f30e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_001/dialysis_3.pdf",
+            "path": "Hospital_001/dialysis_3.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "40129d72842a707357263294b9225c14c7935439d765a07f2dbad1ed35b7fd5d"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_001/dialysis_5.pdf",
+            "path": "Hospital_001/dialysis_5.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "256fd3683476b227fa1272653b5003d09a5e01c1de594366613de712128af131"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_001/dialysis.dwg",
+            "path": "Hospital_001/dialysis.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "844249497a30f178c0f44d65466180d8330f8b00a294ca81c1a5eed3b3b84779"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_001/dialysis.pdf",
+            "path": "Hospital_001/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "dd7551368b1b309782d1db486664467e91fd2336f1c56d8a4602575d8ddc411b"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_006/dialysis_typeA.dwg",
+            "path": "Hospital_006/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e0320e67ed49f280c88e923a2be3a351851b244ee2c494ff65dd810498ae7964"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_006/dialysis_typeA.pdf",
+            "path": "Hospital_006/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "fd5eae23101d9c950653fd9529d9d1d1c68f0568a67a34d224fb6677ced87b52"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_007/dialysis_typeA.dwg",
+            "path": "Hospital_007/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "83bd7ea8fff169fb0686a34d13db2d46dd605daee52fd515baacd8d320d84498"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_007/dialysis_typeA.pdf",
+            "path": "Hospital_007/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "239e5c8076d0e5501fff061bd927050ca94505a3aed2da99b9af42387b97b3a6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_010/dialysis_typeA.dwg",
+            "path": "Hospital_010/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2ad6c60b9b8cf295973b6473cc1bcf7593fbb3d54c65fbf4752b80565a879a01"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_010/dialysis_typeA.pdf",
+            "path": "Hospital_010/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6999d8e0df11f714e67342e3792f4503b3a5783b71287f4fc37dbb6c0cfb5e7c"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeC.pdf",
+            "path": "Hospital_012/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "7e9ba41a715c6c29a0179ede33e7c7f7484a551fc8b3d244faf1a89943e86194"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeD.dwg",
+            "path": "Hospital_012/dialysis_typeD.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "fd61f180261026e31bbe361884af837f14917ecb8135ac3bfc4948764b10fe18"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeD.pdf",
+            "path": "Hospital_012/dialysis_typeD.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "763debcb24f097f4fcd95b71a9dd95109b883fd5c951cb01f887dc88c8d5332c"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeE.dwg",
+            "path": "Hospital_012/dialysis_typeE.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "02d1e006e421a87a3bccf0296d3420b854cf6916f87044eb5c8c7a1fe7680990"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeE.pdf",
+            "path": "Hospital_012/dialysis_typeE.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "3901ddc9e113298bbaa540657a1b318c0f3f07ea809a6f7301efbb382a650196"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeF.dwg",
+            "path": "Hospital_012/dialysis_typeF.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a76ec8f6b1349e7af641b9ec94ec6adeaab7d5027698471a54ff3c4b15c1892b"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeF.pdf",
+            "path": "Hospital_012/dialysis_typeF.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4988e8e0172f5691f8bdcc85c859ef77d9ddd96f4093967c6f4531baa86cdb77"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeG.dwg",
+            "path": "Hospital_012/dialysis_typeG.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d84626f050b12958832cfed390a1936dfb970b6a312e2b9a693c34dcee895060"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeG.pdf",
+            "path": "Hospital_012/dialysis_typeG.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "0c4d59b47edda13a2c8bfee3c38d46c9b737a7270903d7eaee511c893bf7af9e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeH.dwg",
+            "path": "Hospital_012/dialysis_typeH.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "f4644e6bf921883a27551f8ae549408d8f4b07fb8e61f6447165e85e9aba02d4"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeH.pdf",
+            "path": "Hospital_012/dialysis_typeH.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "20a9ffe603a2774c899742d9aaba7049d072b919afda20901d8c22804bb9a465"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis.dwg",
+            "path": "Hospital_012/dialysis.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis.pdf",
+            "path": "Hospital_012/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_014/dialysis_typeB.dwg",
+            "path": "Hospital_014/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "904f14362b86ddffe87e7d90d7bca1063b0b0f85f0c5ab2c2e72121f83da0dfe"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_014/dialysis_typeB.pdf",
+            "path": "Hospital_014/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "3a82c443a1b6c3ded856a47237c2300a64234206630a019f77ec9c8b21d36adb"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis_2.pdf",
+            "path": "Hospital_015/dialysis_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis_typeA.dwg",
+            "path": "Hospital_015/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d9f2a9be483167a243e6276f17bae3e744afc08068000221d42919933deb18a8"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis_typeA.pdf",
+            "path": "Hospital_015/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "039472f410799fdf1ccb3f71c106f6fcfae1e9ed7f07ab79b25a1b443b77e2d6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis.dwg",
+            "path": "Hospital_015/dialysis.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "aea3259fc6a10c8e0c135b85041f640f6261cda47cc8edc752ab5aedc345f7f6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis.pdf",
+            "path": "Hospital_015/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "589e0ae12c694a09ae3de6eb41067cd7f478d786bc2f473d839f31a19015ea6b"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_017/dialysis.dwg",
+            "path": "Hospital_017/dialysis.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "7cd48374d7b284b36c43e9c8ecbd2e8677637a4f851002f21497951bf7343cde"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_017/dialysis.pdf",
+            "path": "Hospital_017/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4f10efe20feacf975202e52ac177927c0fa2c5aa011666b3a4724c2423ab7b96"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_018/dialysis_typeA_26bed.pdf",
+            "path": "Hospital_018/dialysis_typeA_26bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4fe4a7c2cd35079129c4376c1ce0ccd71720b83ab3f0fe7a3db6ef38246bf843"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_018/dialysis_typeA.pdf",
+            "path": "Hospital_018/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "1e02288a633becc05bd70ae4dba246bd6176fbd71dc54452e2f8f5b2ba817535"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_020/dialysis_typeA.pdf",
+            "path": "Hospital_020/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "270654f86b0a9a2e2d8a0e5fa6ec85e51920b6bf3e08196680f23b4e693d5251"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_020/dialysis_typeB.pdf",
+            "path": "Hospital_020/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a786b0332f75921eb49b73fc1d6f79058d0eb124066c45daa2ce65d28f7cd6fd"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_020/dialysis_typeC.pdf",
+            "path": "Hospital_020/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e9feaff397fc1b59f6f234093a5f6030a0f68d879b8c71372f6962284fc58fbb"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeA.dwg",
+            "path": "Hospital_021/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "45c73e3190f46d2867c0fd557fcdebbb28624aafc7568232d1b73d2160b58a8f"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeA.pdf",
+            "path": "Hospital_021/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "36583b5399692580012b41e9a1520f47548d51ee68e43f6aa409182c13b4914e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeAa.pdf",
+            "path": "Hospital_021/dialysis_typeAa.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "5a0aa21762bf00461227acc8a88dbb969ed388707bf54168b17d7ca637090a63"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
+            "path": "Hospital_021/dialysis_typeB_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeB.dwg",
+            "path": "Hospital_021/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a37a7772b6a4af0dfa504a30e872627da0c8915ec79477484efd3970c9f0be21"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeB.pdf",
+            "path": "Hospital_021/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "f2dd8b8545c4ad19d7e461fc45f4e387e70516cf975f8738a6f3245eb3c242d3"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeC.dwg",
+            "path": "Hospital_021/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "995a68f7c868d92b6ce69d22230729520b05706b6120cb081d7628d2cb18a641"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeC.pdf",
+            "path": "Hospital_021/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6b7e8716c2dff4fa3c99d364695976fdcdb4e56c4f22df4bbb3ecbcba5ab43bf"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeD.dwg",
+            "path": "Hospital_021/dialysis_typeD.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a2212a60801221d4c059b5b88ebc03949ba56be75e6da7457373391485fb0b4e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeD.pdf",
+            "path": "Hospital_021/dialysis_typeD.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "7c3e7c1a4232dfefbf4bceb92d39a0358a3f1e740812207ab85eb433be1f2988"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeE.dwg",
+            "path": "Hospital_021/dialysis_typeE.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2cc2bd602ae440844b99e860c1329f8c1dad3c5ad90791520d058997c9ec8df7"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeE.pdf",
+            "path": "Hospital_021/dialysis_typeE.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e2a42ed99ddc6dd5bceccd23bc96c0ae71b7ee0afe44d72465962b8747cff6c3"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_022/dialysis.pdf",
+            "path": "Hospital_022/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "281e9b21790fcd2ab348354df2ffd46e1a9c85e12667e08e916191c39a5490e4"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_23bed.dwg",
+            "path": "Hospital_023/dialysis_23bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d987537d3f9c364a8986daf1975ad973503ac633c8c6635683ecc6f268b9c7ec"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_23bed.pdf",
+            "path": "Hospital_023/dialysis_23bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d4ee106ffecf9eb16f797ed7a0d66f66c9f2a1c835e8f74cc2a001ec9f391f13"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_24bed.dwg",
+            "path": "Hospital_023/dialysis_24bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "8be17863bd01f63575cfbd074ea60e6ee23752fdcb811d0299edcc269eb63683"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_24bed.pdf",
+            "path": "Hospital_023/dialysis_24bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6c4b94fe533273160f9ab32b544643c998eeede9434e15172c81fc1624b0ea90"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed_2.dwg",
+            "path": "Hospital_023/dialysis_25bed_2.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4a1496292a9ac56deadc1bc50c1ed89d3b4e259c18521b8a236cb573e29d96b0"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed_2.pdf",
+            "path": "Hospital_023/dialysis_25bed_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "f2589f285ae63314f44d0ae66d76cabf2ce060c341ed4000ce08eacbf7472d83"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed.dwg",
+            "path": "Hospital_023/dialysis_25bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_25bed.pdf",
+            "path": "Hospital_023/dialysis_25bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_26bed.dwg",
+            "path": "Hospital_023/dialysis_26bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "396e6883a2b65a42bce738c88afda2594e4a4c189d3d53000a371ce2e17deb05"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_26bed.pdf",
+            "path": "Hospital_023/dialysis_26bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b5cbda90b90f36455019bb21ec1e85de2550bde10ffcd7279afd985b8896ec2c"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_27bed.dwg",
+            "path": "Hospital_023/dialysis_27bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4c5e6f66279b8546954960e9b1c3a9209e984b847e6deb522a10b93087ee7c70"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_27bed.pdf",
+            "path": "Hospital_023/dialysis_27bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "ebcd0df55c4e6220430c0bdbbd2c01b23e4122374627ddf54ca42be0ffec78bb"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_28bed.dwg",
+            "path": "Hospital_023/dialysis_28bed.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b687b0b45b03f39905871685d619604ff518308c68f3be29fc6f2093c59437dd"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_28bed.pdf",
+            "path": "Hospital_023/dialysis_28bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "434a9539d095eb482f9f2eeac2a660fcc283720cb6342a95e2509918addfbf24"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_typeA_30bed.pdf",
+            "path": "Hospital_023/dialysis_typeA_30bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "fda380866ea1d6cc7ebb9f6eb16723a3d01036ed9b19c1c159947454d715737a"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_023/dialysis_typeB_30bed.pdf",
+            "path": "Hospital_023/dialysis_typeB_30bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "1f25e7f4fa062870ef39c27f5e7fec5786fdf177a760f9a6a5251b6f6f1967a6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_024/dialysis_typeB.dwg",
+            "path": "Hospital_024/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "75c117aedad9a5ef78436c4609305bb9ad7f37fb0df3e096a84ddac533516c42"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_024/dialysis_typeB.pdf",
+            "path": "Hospital_024/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "93110f48bda345a46fb6d9dc69212a51f85dfc29e33f652d18ce18d52ae09ba7"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_024/dialysis_typeC.dwg",
+            "path": "Hospital_024/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "8f79e772912586b6fb55e586c2f4c07d0046405fb9284c4624bd929c94906c07"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_024/dialysis_typeC.pdf",
+            "path": "Hospital_024/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "1a75816c37713a032b1cdb4377f1dac36a6401c40ade0b5a513446aa501d1c4d"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeA_2.dwg",
+            "path": "Hospital_029/dialysis_typeA_2.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e1ab926df9f0bc569e7d9eb4daba55bfc2f52a770ee5f201f2fcde47f27563a6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeA_2.pdf",
+            "path": "Hospital_029/dialysis_typeA_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "511bd3b7afcbbb0d7760284fe349a2f42e7f68f36724e4f0e433724bc7b721bd"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeA.dwg",
+            "path": "Hospital_029/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2afe0e5523d9a86a0a9b0b1359fb84f5da52fcbd5283012117f393a4c3ea7157"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeA.pdf",
+            "path": "Hospital_029/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e723081bbd652c9a43cf21096fcb3acf20b51eeb56ab2cf91f341b6f0580f639"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeB.dwg",
+            "path": "Hospital_029/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "219a402cbfb27d3e383b56adc72bdf9cf14392ed6097765662f2408cf466fa97"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeB.pdf",
+            "path": "Hospital_029/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "1518818517bc4dbbb87f4618894dc0949c931c563aa777ba539b2d1215b1442a"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeC.dwg",
+            "path": "Hospital_029/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b73148725935ffe439153901087df8cdfe5a47241d88daefab884dfce7c9af2a"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeC.pdf",
+            "path": "Hospital_029/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "dd597ab47f95ad1e7bdabcdcda249350f41975517074e123262000a8017be8a0"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_030/dialysis_typeA_22bed.pdf",
+            "path": "Hospital_030/dialysis_typeA_22bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "24214d0422dc2fae3cfc5aca05e6d065924ffb0e946f0dc536455e3ec0f4414d"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeA_2.dwg",
+            "path": "Hospital_031/dialysis_typeA_2.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "687215f6dbddf328e6d822f490da1e4145f7566d5134b959d428520b730ba791"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeA_2.pdf",
+            "path": "Hospital_031/dialysis_typeA_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d6b38b1a69ff898f56503f5deda034263baa61f8aeee9c7b3868c576bd9ca3bf"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeA.dwg",
+            "path": "Hospital_031/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "8fdc11f965c4ce4bef6a41aaa9036123cee856eb1c47d2a38443b778123e3971"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeA.pdf",
+            "path": "Hospital_031/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "37b60a0131cf19be91085382d4104a4414b4e7122e2f914d087829f1813c9c55"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeB.dwg",
+            "path": "Hospital_031/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a53ae1a650ae56958b7de1a29e648350fd1aa954895706e0027f47bc1ea5d2b2"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeB.pdf",
+            "path": "Hospital_031/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a79cc702c2969d4cdd40911ee95b6aa520b160c6a8eb62b1b3380b20d9d342af"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeC.dwg",
+            "path": "Hospital_031/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d04d2e736e1b1f3774567e17bf9c8b96f79c29e910f43d95c3c056822a11e755"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeC.pdf",
+            "path": "Hospital_031/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e4e2848a487ab9d188d4be598faed6bb3a6703d49525f9c7aed64b3e83c6dd0d"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeD.dwg",
+            "path": "Hospital_031/dialysis_typeD.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4931b7993fd584b0f9468b66e1d5ba7a4cb6d2b2b0528b707a4d2b146806dd25"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeD.pdf",
+            "path": "Hospital_031/dialysis_typeD.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "adde7e1a30e6f6cd5b244a84628f750f7c3c09bb6c8f00d2487799bfb47f7b40"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeE.dwg",
+            "path": "Hospital_031/dialysis_typeE.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "ff3471ded623d63247b6000e38d68d08ff8f13b65d823460f52040c5a91cc567"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_031/dialysis_typeE.pdf",
+            "path": "Hospital_031/dialysis_typeE.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4c09b0f19167302c78bdab59cc46e1f9b1adc2a3cd76d1ef427260ead268d813"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_033/dialysis_rev01.dwg",
+            "path": "Hospital_033/dialysis_rev01.dwg",
+            "sheet": null,
+            "revision": "Rev.01",
+            "sha256": "1901447bb4b1acda420e1ef90454b75bcecc1fb65d51a662ddddca129eff8175"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_033/dialysis_rev01.pdf",
+            "path": "Hospital_033/dialysis_rev01.pdf",
+            "sheet": null,
+            "revision": "Rev.01",
+            "sha256": "438f6adb8b868fa9f312ede8c95e7abd011427a5df1a62d3031916aac3cc49b3"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_034/dialysis.pdf",
+            "path": "Hospital_034/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e8a1d1126b7e9a7e31ea6773721d61f3963bd42c4e0396368c6b1bbb14c2f27d"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_039/dialysis_18bed_rev01.pdf",
+            "path": "Hospital_039/dialysis_18bed_rev01.pdf",
+            "sheet": null,
+            "revision": "Rev.01",
+            "sha256": "032ed5cbfb211ca9d53742001abb3d2ebb59c282f9cf208610bda333b6d6f983"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeC.dwg",
+            "path": "Hospital_040/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b52c3792dab9491cb9064b866a1c69b1a8035d4289277cbe433e7e7ad8ef82b6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeC.pdf",
+            "path": "Hospital_040/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2bfd8d53fa48ea6a54c3da80b41dd9d64939e83c142f097bb2ef986dedb661cf"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeD.dwg",
+            "path": "Hospital_040/dialysis_typeD.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "929060cc128775f7a7b9789b0637872776b9d4d6fd8acf9f1c26a97995d42ee8"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeD.pdf",
+            "path": "Hospital_040/dialysis_typeD.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2043bd77393e9ce90346c70075337643b8d28e50300c659ab0ccf1fa35912253"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeE.dwg",
+            "path": "Hospital_040/dialysis_typeE.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e838922f01befc1a47506ac44bb1d43bb6f177390195fb6d7058a1200635d303"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeE.pdf",
+            "path": "Hospital_040/dialysis_typeE.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "8095e399e648f83dd7914ad0e934ada51262faf6f23c5920c9c4f37df45471e5"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_041/dialysis_2.pdf",
+            "path": "Hospital_041/dialysis_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4f9411a5ee3a1c24276a21874117641e3dffb49d137b1bc393f9df40dc3a2cff"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_041/dialysis.pdf",
+            "path": "Hospital_041/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a450fed93cfc9aec8ca287d420900bb526fbb0a35e7ba08db618eacd03eb705a"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_044/dialysis.pdf",
+            "path": "Hospital_044/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_044/ro_room.pdf",
+            "path": "Hospital_044/ro_room.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "538d8c3de53eee0425001acecce1438aae7d9a7d066daab70b5d2a3b8b9a1a58"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeA_2.pdf",
+            "path": "Hospital_045/dialysis_typeA_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "196a4a3fc804f6829fb6f48cf52dcd3e4094bb884b39e5d12fbfe26e67a85cad"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeA.dwg",
+            "path": "Hospital_045/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2a072289867558d032f9126df117eea80f1a0d84cb0fd2ca7369d39cae1101f5"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeA.pdf",
+            "path": "Hospital_045/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4503b9d344eae117f4e29d67d6969a1f34908e7b36bdafa26ff32282bc089f57"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeAa.pdf",
+            "path": "Hospital_045/dialysis_typeAa.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "065c56680938d2fa16d6667bfa6ae9f574488c78172958880de25edd579203a6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeB_2.pdf",
+            "path": "Hospital_045/dialysis_typeB_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "52bc080db90be26bcffb2c4d655337c352803a53b3c2e6ba2f7cb2e8fb9f25f2"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeB.dwg",
+            "path": "Hospital_045/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "3f8713446f9a34c319bfa47eebee345ede03714cc01f673efd115ce97174bb75"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeB.pdf",
+            "path": "Hospital_045/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a91c11d53ff72daa77081cee7b6d570e4c206ebb8cbf4655be29a47c66fa7700"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeBb.pdf",
+            "path": "Hospital_045/dialysis_typeBb.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "90d8e47d25fa9b75776ae74bf621d456837482928997b38fc93352cafb38d0ce"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeC_2.pdf",
+            "path": "Hospital_045/dialysis_typeC_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "33b20000e3329619cc0b138bce80e0732d11ca36f9ebc3b61a197f062e96e511"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeC.dwg",
+            "path": "Hospital_045/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "dc7039b17e8c313a1caffd7b0d8fa8878ae712b0d86dff4b9e867a366afbbc55"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_045/dialysis_typeC.pdf",
+            "path": "Hospital_045/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "5ce0cebdaa10041eaf093a450ed20c44c571d240a73477042de3cec9e968b2b8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "common_dimension:station_row_spacing",
+      "kind": "common_dimension",
+      "subject": "station_row_spacing",
+      "roomFunction": null,
+      "distribution": {
+        "minimum": 1200,
+        "median": 1500,
+        "maximum": 2100,
+        "unit": "mm"
+      },
+      "frequencies": [],
+      "support": {
+        "drawings": 36,
+        "observations": 43,
+        "strongestMethod": "dimension_line",
+        "sources": [
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_007/dialysis_typeA.dwg",
+            "path": "Hospital_007/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "83bd7ea8fff169fb0686a34d13db2d46dd605daee52fd515baacd8d320d84498"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_007/dialysis_typeA.pdf",
+            "path": "Hospital_007/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "239e5c8076d0e5501fff061bd927050ca94505a3aed2da99b9af42387b97b3a6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeB.pdf",
+            "path": "Hospital_012/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6bdef745c6a047487af66e1a9cea327424a9c4b8759ff14dc94c15e0770af771"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeG.dwg",
+            "path": "Hospital_012/dialysis_typeG.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "d84626f050b12958832cfed390a1936dfb970b6a312e2b9a693c34dcee895060"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis_typeG.pdf",
+            "path": "Hospital_012/dialysis_typeG.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "0c4d59b47edda13a2c8bfee3c38d46c9b737a7270903d7eaee511c893bf7af9e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis.dwg",
+            "path": "Hospital_012/dialysis.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_012/dialysis.pdf",
+            "path": "Hospital_012/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_014/dialysis_typeB.dwg",
+            "path": "Hospital_014/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "904f14362b86ddffe87e7d90d7bca1063b0b0f85f0c5ab2c2e72121f83da0dfe"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_014/dialysis_typeB.pdf",
+            "path": "Hospital_014/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "3a82c443a1b6c3ded856a47237c2300a64234206630a019f77ec9c8b21d36adb"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis_2.pdf",
+            "path": "Hospital_015/dialysis_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis.dwg",
+            "path": "Hospital_015/dialysis.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "aea3259fc6a10c8e0c135b85041f640f6261cda47cc8edc752ab5aedc345f7f6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_015/dialysis.pdf",
+            "path": "Hospital_015/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "589e0ae12c694a09ae3de6eb41067cd7f478d786bc2f473d839f31a19015ea6b"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
+            "path": "Hospital_021/dialysis_typeB_2.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeB.dwg",
+            "path": "Hospital_021/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a37a7772b6a4af0dfa504a30e872627da0c8915ec79477484efd3970c9f0be21"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeB.pdf",
+            "path": "Hospital_021/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "f2dd8b8545c4ad19d7e461fc45f4e387e70516cf975f8738a6f3245eb3c242d3"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeC.dwg",
+            "path": "Hospital_021/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "995a68f7c868d92b6ce69d22230729520b05706b6120cb081d7628d2cb18a641"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeC.pdf",
+            "path": "Hospital_021/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "6b7e8716c2dff4fa3c99d364695976fdcdb4e56c4f22df4bbb3ecbcba5ab43bf"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeD.dwg",
+            "path": "Hospital_021/dialysis_typeD.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "a2212a60801221d4c059b5b88ebc03949ba56be75e6da7457373391485fb0b4e"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeD.pdf",
+            "path": "Hospital_021/dialysis_typeD.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "7c3e7c1a4232dfefbf4bceb92d39a0358a3f1e740812207ab85eb433be1f2988"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeE.dwg",
+            "path": "Hospital_021/dialysis_typeE.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2cc2bd602ae440844b99e860c1329f8c1dad3c5ad90791520d058997c9ec8df7"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_021/dialysis_typeE.pdf",
+            "path": "Hospital_021/dialysis_typeE.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e2a42ed99ddc6dd5bceccd23bc96c0ae71b7ee0afe44d72465962b8747cff6c3"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_022/dialysis_36bed.pdf",
+            "path": "Hospital_022/dialysis_36bed.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "cc84968629da085be60b03ac5d19c1323994db268d8859e6c66944b90dd65815"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_022/dialysis_typeB.pdf",
+            "path": "Hospital_022/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "c9869a0329f7f46ea589b6f6f91c5ede159be2e45f7315f7ed1a5d7fd8d10d34"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeA.dwg",
+            "path": "Hospital_029/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2afe0e5523d9a86a0a9b0b1359fb84f5da52fcbd5283012117f393a4c3ea7157"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeA.pdf",
+            "path": "Hospital_029/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e723081bbd652c9a43cf21096fcb3acf20b51eeb56ab2cf91f341b6f0580f639"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeB.dwg",
+            "path": "Hospital_029/dialysis_typeB.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "219a402cbfb27d3e383b56adc72bdf9cf14392ed6097765662f2408cf466fa97"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_029/dialysis_typeB.pdf",
+            "path": "Hospital_029/dialysis_typeB.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "1518818517bc4dbbb87f4618894dc0949c931c563aa777ba539b2d1215b1442a"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_034/dialysis.pdf",
+            "path": "Hospital_034/dialysis.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e8a1d1126b7e9a7e31ea6773721d61f3963bd42c4e0396368c6b1bbb14c2f27d"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeA.dwg",
+            "path": "Hospital_040/dialysis_typeA.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "4295f4b85784cbdab26eeac25ee3d480c2e1640c7da45bf03eb06e28f16cbe0a"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeA.pdf",
+            "path": "Hospital_040/dialysis_typeA.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b76bf80418fe13499bd6e35b30415480de5004bf829c5aa877425b5a078167f1"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeC.dwg",
+            "path": "Hospital_040/dialysis_typeC.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "b52c3792dab9491cb9064b866a1c69b1a8035d4289277cbe433e7e7ad8ef82b6"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeC.pdf",
+            "path": "Hospital_040/dialysis_typeC.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2bfd8d53fa48ea6a54c3da80b41dd9d64939e83c142f097bb2ef986dedb661cf"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeD.dwg",
+            "path": "Hospital_040/dialysis_typeD.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "929060cc128775f7a7b9789b0637872776b9d4d6fd8acf9f1c26a97995d42ee8"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeD.pdf",
+            "path": "Hospital_040/dialysis_typeD.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "2043bd77393e9ce90346c70075337643b8d28e50300c659ab0ccf1fa35912253"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeE.dwg",
+            "path": "Hospital_040/dialysis_typeE.dwg",
+            "sheet": null,
+            "revision": null,
+            "sha256": "e838922f01befc1a47506ac44bb1d43bb6f177390195fb6d7058a1200635d303"
+          },
+          {
+            "datasetId": "dialysis-drawings",
+            "drawingId": "Hospital_040/dialysis_typeE.pdf",
+            "path": "Hospital_040/dialysis_typeE.pdf",
+            "sheet": null,
+            "revision": null,
+            "sha256": "8095e399e648f83dd7914ad0e934ada51262faf6f23c5920c9c4f37df45471e5"
+          }
+        ]
+      }
+    }
+  ]
 }

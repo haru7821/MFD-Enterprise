@@ -215,7 +215,7 @@ describe('the shipped catalogue', () => {
 
     expect(source.type).toBe('approved_specification');
     expect(source.document).toBe('MFD-E Vantive AK98 Object Specification');
-    expect(source.revision).toBe('0.1');
+    expect(source.revision).toBe('0.2');
   });
 
   it('leaves every installation group draft, whatever the specification says', () => {
@@ -234,9 +234,13 @@ describe('the shipped catalogue', () => {
   it('invents no engineering data', () => {
     const ak98 = catalog.require('vantive_ak98');
 
-    // Everything not yet supplied must be null, not a plausible number. The dimensions are now
-    // cited, but the weight was never given and is still absent from the specification.
-    expect(ak98.manufacturerDimensions.weight).toBeNull();
+    /*
+     * The weight arrived at revision 0.2 — 70 kg — so this now asserts the figure rather than its
+     * absence. Everything still *not* supplied stays null below.
+     */
+    expect(ak98.manufacturerDimensions.weight).toBe(70);
+    expect(ak98.manufacturerDimensions.width).toBe(345);
+    expect(ak98.manufacturerDimensions.depth).toBe(600);
     expect(ak98.environmental.specification).toBeNull();
     /*
      * The footprint's basis names the decision behind it, and that is not invented engineering
@@ -272,5 +276,41 @@ describe('the shipped catalogue', () => {
     expect(ak98.connections.power.required).toBe(true);
     expect(ak98.connections.roWater.required).toBe(true);
     expect(ak98.connections.drain.required).toBe(true);
+  });
+});
+
+describe('the planning footprint is not derived from the manufacturer dimensions', () => {
+  it('stays 800 × 800 after the manufacturer width changed by 240 mm', () => {
+    /*
+     * > Owner decision: *"Keep these as separate fields. Manufacturer data must never be overwritten
+     * > by planning values."*
+     *
+     * Revision 0.2 of the specification changed the AK98's width from 585 mm to 345 mm. If the
+     * planning footprint had ever been computed from the manufacturer figure — footprint = width +
+     * allowance, say — it would have moved with it, and every layout in every saved project would
+     * have shifted because a datasheet was corrected.
+     *
+     * It did not move, because it is a separate owner decision about how much floor a station
+     * occupies. This test exists to keep the two independent in fact and not only in the schema.
+     */
+    const ak98 = catalog.require('vantive_ak98');
+
+    expect(ak98.manufacturerDimensions.width).toBe(345);
+    expect(ak98.planningFootprint.width).toBe(800);
+    expect(ak98.planningFootprint.depth).toBe(800);
+    // And the footprint still carries no verification block at all — it is a decision, not a
+    // measurement, and nothing about it is citable.
+    expect(ak98.planningFootprint).not.toHaveProperty('verification');
+  });
+
+  it('leaves the bed at the owner’s 1000 × 2100, with no manufacturer figures at all', () => {
+    // A generic planning object: a footprint and no product behind it. The contrast with the AK98
+    // is the point — one has both kinds of number, the other only ever has one.
+    const bed = catalog.require('dialysis_bed');
+
+    expect(bed.planningFootprint.width).toBe(1_000);
+    expect(bed.planningFootprint.depth).toBe(2_100);
+    expect(bed.manufacturerDimensions.width).toBeNull();
+    expect(bed.manufacturer).toBeNull();
   });
 });

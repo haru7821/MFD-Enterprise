@@ -14,7 +14,7 @@ import { type Page, expect, test } from '@playwright/test';
  * The AK98's **design footprint** — the planning area, and the only size anything
  * geometric measures.
  *
- * Its manufacturer dimensions are 585 × 620 × 1305 mm, deliberately different. That
+ * Its manufacturer dimensions are 345 × 600 × 1305 mm, deliberately different. That
  * separation is the point: a drawing reserves the planning area, and confusing the two is
  * how a footprint rounded up to make a layout work erases the measurement of the machine
  * that arrives on site.
@@ -22,7 +22,7 @@ import { type Page, expect, test } from '@playwright/test';
 const FOOTPRINT_WIDTH_MM = 800;
 const FOOTPRINT_DEPTH_MM = 800;
 
-const MANUFACTURER_SIZE = '585 × 620 × 1305 mm';
+const MANUFACTURER_SIZE = '345 × 600 × 1305 mm';
 
 /**
  * Measure the drawn footprint from canvas pixels.

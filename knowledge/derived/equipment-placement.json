@@ -1,6 +1,8 @@
 {
   "kind": "equipment_placement",
   "knowledgeVersion": 1,
-  "generatedFrom": [],
+  "generatedFrom": [
+    "knowledge/observations/hospital-dataset-analyzer.json"
+  ],
   "entries": []
 }

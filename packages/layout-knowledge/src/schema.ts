@@ -102,6 +102,15 @@ export const DIMENSION_NAMES = [
   'station_clear_gap',
   /** Clear width of the aisle serving a run of stations. */
   'aisle_width',
+  /**
+   * Between two rows of stations, as the drawings annotate it (`베드 열 간격`).
+   *
+   * Added when the hospital dataset was read: 43 drawings dimension it and no existing name meant
+   * it. Not `aisle_width` — the drawings distinguish the two, and a row-to-row figure includes the
+   * depth the stations themselves occupy where an aisle width does not. Collapsing them would
+   * produce a single range describing neither.
+   */
+  'station_row_spacing',
   /** Clear width of a circulation corridor. */
   'corridor_width',
   /** Clear opening of the door equipment is delivered through. */

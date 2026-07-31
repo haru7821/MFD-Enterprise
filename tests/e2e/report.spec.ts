@@ -109,12 +109,12 @@ test('R7 — the schedule keeps manufacturer size and design footprint apart', a
   await openReport(page);
 
   const schedule = page.getByTestId('report-schedule');
-  // 585 × 620 × 1305 mm is the machine; 800 × 800 mm is what the plan reserves. A report
+  // 345 × 600 × 1305 mm is the machine; 800 × 800 mm is what the plan reserves. A report
   // printing one figure without saying which recreates the confusion the split ended.
   // Without thousands separators — 1305, not 1,305. Engineering drawings and the palette both
   // write it that way, and the datasheet already did; a browser spec caught the schedule
   // printing the same figure differently in the same document.
-  await expect(schedule).toContainText('585 × 620 × 1305 mm');
+  await expect(schedule).toContainText('345 × 600 × 1305 mm');
   await expect(schedule).toContainText('800 × 800 mm');
 });
 

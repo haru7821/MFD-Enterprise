@@ -3,7 +3,7 @@
 
 Version:
 
-0.1
+0.2
 
 
 # Purpose
@@ -195,11 +195,29 @@ The 900 × 750 mm in *Physical Dimension* was marked **Example** and was never a
 measurement. The catalogue carried it as its only footprint until Phase 4.5, when the
 product owner supplied real figures and separated two things that had been one.
 
+> **Revision 0.2 — 2026-07-31.** The product owner supplied the AK98 technical specification as the
+> authoritative equipment source and, with it, corrected manufacturer figures. The width changed
+> substantially: **585 mm → 345 mm**, and a weight arrived for the first time. The superseded
+> figures are kept below rather than overwritten, because a report issued against 585 mm exists and
+> a reader has to be able to find out what it was based on.
+>
+> | Field | Revision 0.1 | **Revision 0.2** |
+> | --- | --- | --- |
+> | Width | 585 mm | **345 mm** |
+> | Depth | 620 mm | **600 mm** |
+> | Height | 1,305 mm | 1,305 mm |
+> | Weight | not supplied | **70 kg** |
+>
+> The planning footprint is unchanged at 800 × 800 mm and is **not** derived from these figures —
+> see below. The gap between a 345 mm machine and an 800 mm planning square is now much larger,
+> which is a question for the owner rather than a reason to adjust either number.
+
 | | Value | Status |
 | --- | --- | --- |
-| **Manufacturer dimensions** | 585 × 620 × 1305 mm | Owner-supplied. **No document, revision or section yet.** |
+| **Manufacturer dimensions** | **345 × 600 × 1305 mm, 70 kg** | Owner-supplied from the AK98 technical specification, revision 0.2 of this document. **Cited — the catalogue records this group as `verified`.** |
+| ~~Manufacturer dimensions (0.1)~~ | ~~585 × 620 × 1305 mm~~ | Superseded 2026-07-31. Kept so a report issued against it can be understood. |
 | **Design footprint** | 800 × 800 mm | Owner decision. Carries no citation, by design. |
-| Weight | null | Not supplied |
+| ~~Weight~~ | **70 kg** | Supplied at revision 0.2 |
 | Service clearance, all four sides | null | **Not supplied — this is the remaining blocker** |
 | Power · RO water · drain specification | null | Not supplied |
 | Environmental specification | null | Not supplied |
