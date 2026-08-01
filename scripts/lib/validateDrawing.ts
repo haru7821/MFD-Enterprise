@@ -946,7 +946,8 @@ export async function validateDrawing(input: ValidationInput): Promise<Validatio
    *
    * `station_pitch` was dropped because it was circular: the run accepted a drawing only if it
    * printed 2,000 mm, then recorded 2,000 mm as what it had observed. A reading that could not have
-   * come out otherwise is not evidence. The corpus already holds the pitch from 117 drawings whose
+   * come out otherwise is not evidence. The corpus already holds the pitch from 117 drawing files —
+   * 24 facilities, which is the number that counts since owner decision D6 — whose
    * dimensions are *annotated* as a bed spacing — geometry alone cannot tell a pitch from any other
    * 2,000 mm dimension, and that naming is what makes those readings mean something.
    */

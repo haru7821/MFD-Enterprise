@@ -13,12 +13,13 @@
       "roomFunction": null,
       "distribution": {
         "minimum": 2000,
-        "median": 2700,
+        "median": 2040,
         "maximum": 2700,
         "unit": "mm"
       },
       "frequencies": [],
       "support": {
+        "facilities": 5,
         "drawings": 18,
         "observations": 18,
         "strongestMethod": "dimension_line",
@@ -201,6 +202,7 @@
       },
       "frequencies": [],
       "support": {
+        "facilities": 24,
         "drawings": 117,
         "observations": 121,
         "strongestMethod": "dimension_line",
@@ -1274,6 +1276,7 @@
       },
       "frequencies": [],
       "support": {
+        "facilities": 9,
         "drawings": 36,
         "observations": 43,
         "strongestMethod": "dimension_line",
@@ -1618,6 +1621,7 @@
       },
       "frequencies": [],
       "support": {
+        "facilities": 1,
         "drawings": 1,
         "observations": 1,
         "strongestMethod": "calibrated_measurement",

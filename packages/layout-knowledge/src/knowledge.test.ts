@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { dialysisKnowledge } from '@mfd/layout-knowledge/base';
+
 import { aggregate, entriesFor } from './aggregate';
 import { KnowledgeValidationError, parseKnowledgeFile, parseObservationFile } from './load';
-import { PATTERN_SUPPORT_THRESHOLD, isPattern, strongestMethod } from './provenance';
+import { PATTERN_SUPPORT_THRESHOLD, type Support, isPattern, strongestMethod } from './provenance';
 import { createKnowledgeBase } from './query';
 import {
   KNOWLEDGE_KINDS,
@@ -302,5 +304,98 @@ describe('the files it will load', () => {
       expect((error as KnowledgeValidationError).fileName).toBe('bad.json');
       expect((error as Error).message).toContain('kind');
     }
+  });
+});
+
+/**
+ * Owner decision D6: *"Support is counted per independent facility, not per file and not per
+ * drawing. Multiple PDFs/DWGs of the same facility are corroboration, not independent evidence."*
+ *
+ * The shipped numbers, pinned. The audit found `station_pitch` claiming 117 — file paths, where the
+ * dataset ships most plans as both a `.dwg` and a `.pdf` — against 24 real facilities, and the
+ * double counting had moved a figure the solver reads: `corridor_width`'s median shipped as
+ * 2,700 mm where collapsing the twins gives 2,040 mm, 32 % out.
+ *
+ * These assert the corrected values against the built base, so regenerating it with the old rule
+ * fails here rather than shipping quietly.
+ */
+describe('D6 — support counts facilities, and the twins are collapsed', () => {
+  function entryFor(name: Parameters<typeof dialysisKnowledge.dimension>[0]) {
+    const found = dialysisKnowledge.dimension(name);
+    if (!found) throw new Error(`no dimension entry for ${name}`);
+    return found;
+  }
+
+  it('counts facilities, not files', () => {
+    // 117 files, 24 sites. The gap is the whole reason the decision exists.
+    expect(entryFor('station_pitch').support.facilities).toBe(24);
+    expect(entryFor('station_pitch').support.drawings).toBe(117);
+    expect(entryFor('corridor_width').support.facilities).toBe(5);
+    expect(entryFor('station_row_spacing').support.facilities).toBe(9);
+  });
+
+  it('refuses to call two sites a pattern however many files they ship', () => {
+    /*
+     * The discriminating case, and it needs constructing: every entry in the shipped base clears the
+     * threshold on both counts, so asserting against real data cannot tell the two rules apart.
+     * Found by mutation — reverting `isPattern` to `support.drawings` left all 106 tests green.
+     *
+     * Ten files from two hospitals is exactly the shape owner decision D6 exists to reject: one firm
+     * reusing a template, delivered as `.dwg` and `.pdf`, looking like a consensus.
+     */
+    const twoSites: Support = {
+      facilities: 2,
+      drawings: 10,
+      observations: 10,
+      strongestMethod: 'dimension_line',
+      sources: [
+        {
+          datasetId: 'test',
+          drawingId: 'Hospital_A/plan.dwg',
+          path: 'Hospital_A/plan.dwg',
+          page: 0,
+          sheet: null,
+          revision: null,
+          sha256: 'a'.repeat(64),
+        },
+      ],
+    };
+
+    expect(isPattern(twoSites)).toBe(false);
+    expect(isPattern({ ...twoSites, facilities: 3 })).toBe(true);
+  });
+
+  it('gates isPattern on facilities', () => {
+    // Threshold unchanged at 3; what is counted changed. `treatment_room_width` rests on one site
+    // and must not be described as observed practice however many files carry it.
+    expect(entryFor('station_pitch').isPattern).toBe(true);
+
+    // Read off the entries rather than `dimension()`, which resolves by room function; this one is
+    // scoped to `hemodialysis_treatment` and the point here is the support behind it, not the lookup.
+    const roomWidth = dialysisKnowledge.entries.find(
+      (entry) => entry.kind === 'common_dimension' && entry.subject === 'treatment_room_width',
+    );
+    expect(roomWidth?.support.facilities).toBe(1);
+    expect(isPattern(roomWidth!.support)).toBe(false);
+  });
+
+  it('collapses the .dwg/.pdf twins out of the distribution', () => {
+    /*
+     * The figure that was wrong, and the one the solver reads. Counting each file put one hospital's
+     * corridor into the sample twice; 2,040 is the median once a plan counts once per distinct value.
+     */
+    expect(entryFor('corridor_width').medianMm).toBe(2_040);
+  });
+
+  it('keeps two genuinely different readings from one plan', () => {
+    /*
+     * The trap in the obvious fix. `Hospital_023/dialysis_24bed` records station pitches of 2,000
+     * *and* 1,200 — two real runs on one sheet, each appearing once per file format. Collapsing to
+     * one reading per plan would have discarded the 1,200, so the key is the plan *and the value*.
+     * The surviving spread is the evidence that it was not discarded.
+     */
+    const pitch = entryFor('station_pitch');
+    expect(pitch.minimumMm).toBe(1_200);
+    expect(pitch.maximumMm).toBe(2_000);
   });
 });

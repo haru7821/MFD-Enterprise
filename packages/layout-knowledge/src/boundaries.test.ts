@@ -127,7 +127,8 @@ describe('the shipped knowledge base', () => {
     /*
      * This test used to assert the base was **empty**, and said in its own comment that it would
      * fail the moment real observations arrived and should then be replaced. They arrived: 182
-     * readings extracted from the hospital dataset's analysis of 117 drawings.
+     * readings extracted from the hospital dataset's analysis of 117 drawing *files* — 24 facilities,
+     * which is what `support.facilities` counts since owner decision D6.
      *
      * What it asserts now is the property that made the empty state defensible in the first place —
      * every figure names the drawings behind it. An entry with no support would be a number that

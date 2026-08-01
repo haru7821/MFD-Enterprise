@@ -407,7 +407,7 @@ function planStatusOf(level: Level): 'none' | 'calibrated' | 'uncalibrated' {
  *
  * 1. **The equipment record's service clearance.** A requirement — what the machine needs. Null on
  *    every record today (A-1), which is why the second source matters.
- * 2. **Observed station pitch from real drawings.** Not a requirement: what 117 hospitals actually
+ * 2. **Observed station pitch from real drawings.** Not a requirement: what **24 hospitals** actually
  *    did. Used only as a *starting* spacing for candidate generation, never as a threshold — the
  *    rule engine still judges every candidate, and a layout that violates a clearance is rejected
  *    by Gate 2 whatever spacing produced it (AD-17).

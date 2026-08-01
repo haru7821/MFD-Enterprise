@@ -222,7 +222,20 @@ export type ObservationSource = z.infer<typeof observationSourceSchema>;
  * template into a consensus.
  */
 export const supportSchema = z.strictObject({
-  /** Distinct drawings behind this entry. */
+  /**
+   * Distinct **facilities** behind this entry, and the number that decides whether it is a pattern.
+   *
+   * > Owner decision D6: *"Support is counted per independent facility, not per file and not per
+   * > drawing. Multiple PDFs/DWGs of the same facility are corroboration, not independent
+   * > evidence."*
+   *
+   * `drawings` alone was counting file paths, and the dataset ships each plan as both a `.dwg` and
+   * a `.pdf`. Measured before this was added: `station_pitch` claimed **117 drawings**, which is 71
+   * distinct sheets and **24 facilities** — 47 twinned pairs carrying byte-identical values. One
+   * hospital's template read twice is not two hospitals agreeing.
+   */
+  facilities: z.number().int().positive(),
+  /** Distinct drawing files behind it. Kept, because it says how much reading was done. */
   drawings: z.number().int().positive(),
   /** Individual readings, which may exceed `drawings`. */
   observations: z.number().int().positive(),
@@ -235,19 +248,42 @@ export const supportSchema = z.strictObject({
 export type Support = z.infer<typeof supportSchema>;
 
 /**
- * Below this many distinct drawings, an entry is a single site's choice rather than a pattern.
+ * Below this many independent **facilities**, an entry is a single site's choice, not a pattern.
  *
  * Not a filter — nothing is discarded, because one real hospital's RO room is still worth having in
  * front of an engineer. It is a **label**: {@link isPattern} decides whether an entry may be
  * described as observed practice or must be shown as an individual case. The solver uses it to
  * decide whether an entry is fit to seed a default.
  *
- * Three, because two drawings agreeing is as likely to be one firm reusing a template as it is to
- * be a convention. This is a judgement, it is written down here rather than scattered, and it is a
- * decision the owner may overrule with a number rather than an argument.
+ * Three, because two sites agreeing is as likely to be one firm reusing a template as it is to be a
+ * convention. The threshold is unchanged; what changed is **what is counted**.
+ *
+ * > Owner decision D6: *"Support is counted per independent facility, not per file and not per
+ * > drawing."*
+ *
+ * It used to read `support.drawings`, and drawings are files. The dataset ships most plans twice,
+ * once as `.dwg` and once as `.pdf`, so the same reading was counted twice toward a threshold whose
+ * entire purpose is to distinguish a template from a consensus. The audit measured the gap:
+ * `station_pitch` claimed 117 where 24 facilities exist.
  */
 export const PATTERN_SUPPORT_THRESHOLD = 3;
 
 export function isPattern(support: Support): boolean {
-  return support.drawings >= PATTERN_SUPPORT_THRESHOLD;
+  return support.facilities >= PATTERN_SUPPORT_THRESHOLD;
+}
+
+/**
+ * Which facility a drawing belongs to.
+ *
+ * The dataset's own layout: `Hospital_023/dialysis_24bed.dwg`. The leading path segment is the
+ * site, so it is read from the id rather than stored a second time — a second field would be a
+ * second thing to keep in agreement with the path, and the ingest is what writes both.
+ *
+ * A path with no separator is its own facility. That is the honest reading of an id nobody has
+ * organised, and it errs toward *fewer* facilities per entry rather than more, which is the safe
+ * direction for a threshold that gates whether something may be called a pattern.
+ */
+export function facilityOf(drawingId: string): string {
+  const separator = drawingId.indexOf('/');
+  return separator === -1 ? drawingId : drawingId.slice(0, separator);
 }

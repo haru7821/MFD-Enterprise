@@ -161,7 +161,8 @@ from sheet 7 is indistinguishable from one off the cover.
 There were two. `station_pitch` 2,000 mm was **retracted**, because the run that recorded it had also
 required the drawing to print 2,000 mm before it could proceed — so the reading could not have come
 out any other way. A number that could not have been different is not evidence of anything. The
-corpus still holds the pitch from 117 drawings whose dimensions are *annotated* as a bed spacing;
+corpus still holds the pitch from 117 drawing files — **24 facilities** (owner decision D6) — whose
+dimensions are *annotated* as a bed spacing;
 geometry alone cannot tell a pitch from any other 2,000 mm dimension, and that naming is what makes
 those readings mean something.
 

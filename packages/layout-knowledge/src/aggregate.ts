@@ -1,4 +1,4 @@
-import { strongestMethod, type DrawingRef, type ObservationMethod, type Support } from './provenance';
+import { facilityOf, strongestMethod, type DrawingRef, type ObservationMethod, type Support } from './provenance';
 import {
   KNOWLEDGE_KINDS,
   KNOWLEDGE_VERSION,
@@ -76,8 +76,17 @@ function supportOf(observations: readonly Observation[]): Support {
   if (strongest === null) throw new Error('support from no observations');
 
   return {
+    /*
+     * Owner decision D6: the number that gates `isPattern` counts **facilities**.
+     *
+     * The dataset ships most plans as both a `.dwg` and a `.pdf`, and `drawingId` is a file path,
+     * so counting drawings counted the same reading twice toward a threshold whose whole purpose is
+     * to tell a reused template from a convention.
+     */
+    facilities: new Set(sources.map((source) => facilityOf(source.drawingId))).size,
     // Distinct drawings, not observations: ten dimensions off one sheet is one hospital's practice
-    // recorded ten times, and counting it as ten would turn a template into a consensus.
+    // recorded ten times, and counting it as ten would turn a template into a consensus. Kept
+    // beside `facilities` because it still says how much reading stands behind the entry.
     drawings: sources.length,
     observations: observations.length,
     strongestMethod: strongest,
@@ -142,13 +151,58 @@ function groupBy(
 }
 
 /** Numbers a group contributes to its distribution, skipping the observations that state none. */
+/**
+ * The readings behind a group, with the **file dimension collapsed**.
+ *
+ * > Owner decision D6: *"Multiple PDFs/DWGs of the same facility are corroboration, not independent
+ * > evidence."*
+ *
+ * The dataset ships most plans twice, as a `.dwg` and a `.pdf`, and every distribution here was
+ * built by counting each file. So one hospital's corridor was in the sample twice and the median
+ * moved with it: `corridor_width` shipped **2,700 mm** where collapsing the twins gives **2,040 mm**
+ * — 32 % out, on a figure the solver reads.
+ *
+ * ## Why it is not "one reading per plan"
+ *
+ * That was the obvious rule and it silently discards real data. `Hospital_023/dialysis_24bed`
+ * records station pitches of **2,000 and 1,200** — two genuinely different runs on one sheet — and
+ * each appears once per file format, so the plan holds four rows and two facts. Keeping one row per
+ * plan would have thrown away the 1,200.
+ *
+ * So the key is the plan **and the value**: two rows that agree are the same reading seen twice,
+ * and two rows that differ are two readings. Measured: `station_pitch` keeps 73 readings under this
+ * rule against 71 under one-per-plan, and those two are exactly the sheets above.
+ */
 function measured(
   group: Group,
   valueOf: (observation: Observation) => number | null,
 ): number[] {
-  return group.observations
-    .map(valueOf)
-    .filter((value): value is number => value !== null);
+  const seen = new Set<string>();
+  const values: number[] = [];
+
+  for (const observation of group.observations) {
+    const value = valueOf(observation);
+    if (value === null) continue;
+
+    const key = `${planOf(observation.source.drawing.drawingId)}#${value}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    values.push(value);
+  }
+
+  return values;
+}
+
+/**
+ * The plan a drawing file belongs to — its id without the format extension.
+ *
+ * `Hospital_023/dialysis_24bed.dwg` and `…/dialysis_24bed.pdf` are one drawing delivered twice, and
+ * this is what makes them one. An id with no extension is its own plan.
+ */
+function planOf(drawingId: string): string {
+  const dot = drawingId.lastIndexOf('.');
+  const slash = drawingId.lastIndexOf('/');
+  return dot > slash ? drawingId.slice(0, dot) : drawingId;
 }
 
 function entry(
