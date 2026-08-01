@@ -270,11 +270,13 @@ describe('convexity', () => {
     ).toBe(false);
   });
 
-  it('rejects a zero-width inward slit — a reversal, not a genuine collinear pass-through', () => {
+  it('rejects a zero-width inward slit whose surrounding turns still fail the turning-sum check on their own', () => {
     // An 800x800 rectangle with a degenerate dart cut into the top edge: out to (400, 400) and
     // straight back to the exact point it left, (400, 800). The cross product at the tip is zero —
     // the same as a true straight-through vertex — but the two edges point in opposite directions,
-    // not the same one.
+    // not the same one. This particular shape's five genuine corners already sum to more than one
+    // full turn, so the turning-sum check alone rejects it even with the reversal branch disabled —
+    // see the next test for a slit constructed so that only the reversal branch catches it.
     expect(
       isConvexPolygon([
         { x: 0, y: 0 },
@@ -286,5 +288,59 @@ describe('convexity', () => {
         { x: 0, y: 800 },
       ]),
     ).toBe(false);
+  });
+
+  it('rejects a slit whose surrounding corners alone sum to exactly one full turn — the reversal branch is load-bearing here', () => {
+    /*
+     * The eleventh review round's finding: the previous slit test does not actually exercise the
+     * reversal branch — its five genuine corners already exceed one full turn on their own, so the
+     * turning-sum check rejects it whether or not the reversal branch fires. This shape is built so
+     * that its four genuine corners sum to *exactly* 2π: an 800x800 rectangle with a zero-width
+     * slit driven inward from the top-left corner straight down the left edge to (0, 400) and back
+     * out to (0, 800). Deleting the reversal branch (treating the tip and its return as ordinary
+     * collinear skips) leaves exactly the rectangle's own four corners — a false accept.
+     */
+    expect(
+      isConvexPolygon([
+        { x: 0, y: 0 },
+        { x: 800, y: 0 },
+        { x: 800, y: 800 },
+        { x: 0, y: 800 },
+        { x: 0, y: 400 },
+        { x: 0, y: 800 },
+      ]),
+    ).toBe(false);
+  });
+
+  it('accepts a genuinely convex rectangle with a duplicated consecutive vertex', () => {
+    // The eleventh review round's blocking finding: a duplicate point contributes a zero-length
+    // edge on both sides of it, and skipping both index positions straddling the duplicate used to
+    // drop the real corner sitting between them from the turning sum entirely — turning a genuinely
+    // convex rectangle's total short of a full turn and rejecting it. Grid snapping makes two
+    // neighbouring traced points coincide easily, so this is an ordinary shape, not a contrived one.
+    expect(
+      isConvexPolygon([
+        { x: 0, y: 0 },
+        { x: 800, y: 0 },
+        { x: 800, y: 800 },
+        { x: 800, y: 800 },
+        { x: 0, y: 800 },
+      ]),
+    ).toBe(true);
+  });
+
+  it('accepts a rectangle traced as a redundantly closed ring', () => {
+    // The eleventh review round's blocking finding, the wrap-around case: the last vertex repeats
+    // the first, so the two are adjacent in the cyclic walk even though they are not adjacent
+    // in the array — the same defect as the previous test, one step removed.
+    expect(
+      isConvexPolygon([
+        { x: 0, y: 0 },
+        { x: 800, y: 0 },
+        { x: 800, y: 800 },
+        { x: 0, y: 800 },
+        { x: 0, y: 0 },
+      ]),
+    ).toBe(true);
   });
 });

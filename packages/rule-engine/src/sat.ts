@@ -163,17 +163,41 @@ function clipHalfPlane(
  * not. A vertex whose edges point in *opposite* directions (a zero-width spike or slit) has the
  * same near-zero sine as a genuine straight-through vertex, but the opposite dot product sign; that
  * case is treated as a concavity rather than skipped; a real straight run does not reverse.
+ *
+ * **The eleventh review round found a consecutive duplicate vertex — including a redundantly
+ * closed ring, `vertices[0] === vertices[last]`, both reachable from an ordinary traced boundary
+ * (grid snapping makes two neighbouring points coincide easily) — corrupted a genuinely convex
+ * rectangle into a rejected one.** The zero-length-edge check above (`abLength === 0`) skips
+ * *both* index positions straddling the duplicate, so the real corner sitting between them was
+ * never added to `turning` and the sum landed short of a full turn. Duplicate points carry no
+ * geometry of their own, so they are collapsed out of the vertex list before the corner walk
+ * begins, rather than skipped mid-walk — the same corner is then seen exactly once, by its two
+ * genuine neighbours, whichever positions in the original array those turned out to be.
  */
 export function isConvexPolygon(polygon: readonly Vec2[]): boolean {
-  if (polygon.length < 4) return true;
+  const vertices: Vec2[] = [];
+  for (const point of polygon) {
+    const previous = vertices[vertices.length - 1];
+    if (previous && previous.x === point.x && previous.y === point.y) continue;
+    vertices.push(point);
+  }
+  while (
+    vertices.length > 1 &&
+    vertices[0]!.x === vertices[vertices.length - 1]!.x &&
+    vertices[0]!.y === vertices[vertices.length - 1]!.y
+  ) {
+    vertices.pop();
+  }
+
+  if (vertices.length < 4) return true;
 
   let sign = 0;
   let turning = 0;
 
-  for (let index = 0; index < polygon.length; index += 1) {
-    const a = polygon[index];
-    const b = polygon[(index + 1) % polygon.length];
-    const c = polygon[(index + 2) % polygon.length];
+  for (let index = 0; index < vertices.length; index += 1) {
+    const a = vertices[index];
+    const b = vertices[(index + 1) % vertices.length];
+    const c = vertices[(index + 2) % vertices.length];
     if (!a || !b || !c) continue;
 
     const abX = b.x - a.x;

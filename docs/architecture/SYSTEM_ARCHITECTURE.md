@@ -423,13 +423,34 @@ still open:
    candidate; a layout with eleven clear faces and one blocked by a non-convex obstruction reports the
    criterion unavailable, not the minimum of the eleven.
 
+An eleventh review round verified all three and found one more blocking defect and one should-fix gap
+in `isConvexPolygon` itself, both now closed:
+
+4. **Blocking, closed.** A consecutive duplicate vertex — including a redundantly closed ring
+   (`vertices[0] === vertices[last]`), both reachable from an ordinary traced boundary, since grid
+   snapping makes two neighbouring points coincide easily — corrupted a genuinely convex rectangle
+   into a rejected one. The zero-length-edge check skipped *both* index positions straddling the
+   duplicate, so the real corner between them was never added to the turning sum, and the total
+   landed short of a full turn. Consecutive duplicates (and a duplicate first/last pair) are now
+   collapsed out of the vertex list before the corner walk begins, so the same corner is seen exactly
+   once regardless of which array positions the duplicate happened to occupy.
+5. **Should-fix, closed.** The committed zero-width-slit test did not actually exercise the reversal
+   branch above (near-zero cross product, negative dot product): deleting the branch entirely still
+   left that particular shape's five genuine corners summing to more than one full turn, so the
+   turning-sum check rejected it for an unrelated reason — a guard that can fire with no test proving
+   it does. A second slit was added, built so its four genuine corners sum to *exactly* one full turn
+   on their own: deleting the reversal branch turns this one into a false accept, which is what a test
+   for that branch needs to show.
+
 Both clamps stay regardless: they cost nothing, and neither guarantee is structural — a
 non-rectangular *equipment footprint* would make a clipped placement-crossing possible again without
 an overlap, and nothing enforces that every future caller of either function arrives through a
 Gate-2-gated path. Regression coverage: `sat.test.ts` pins both the corrected (clipped) result, a
 genuine in-band crossing that still clamps, and `isConvexPolygon` itself (convex shapes wound either
-direction, a collinear-vertex rectangle, an L-shape, the staple riser, a pentagram, and a zero-width
-slit); `score.test.ts` and `evaluate.test.ts` each gained a directly-overlapping reproduction
+direction, a collinear-vertex rectangle, an L-shape, the staple riser, a pentagram, two zero-width
+slits — one exercising the turning-sum check, one exercising the reversal branch specifically — a
+duplicated-vertex rectangle, and a redundantly closed ring); `score.test.ts` and `evaluate.test.ts`
+each gained a directly-overlapping reproduction
 exercising the clamp itself, and `score.test.ts` gained permanent regressions for the staple-riser
 case (asserting `SC-907` where the defect used to report a clamped-to-zero `0`), the
 entirely-behind-the-face case (asserting no change from the no-obstruction baseline), and the mixed
