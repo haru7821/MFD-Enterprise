@@ -139,6 +139,9 @@ test('asks for a room before it will propose anything', async ({ page }) => {
 
   await expect(page.getByTestId('layout-empty')).toBeVisible();
   await expect(page.getByTestId('layout-empty')).toContainText('Select a room');
+  // Bilingual, always both — the owner's follow-up decision to bring this panel's own copy up to
+  // the rest of the app's convention (`EMPTY_MESSAGES` in `LayoutPanel.tsx`).
+  await expect(page.getByTestId('layout-empty')).toContainText('먼저 방을 선택하세요');
 });
 
 test('offers ranked alternatives, not one answer', async ({ page }) => {
@@ -173,11 +176,19 @@ test('shows the per-criterion breakdown, never a bare total', async ({ page }) =
 
   const breakdown = page.getByTestId('layout-breakdown-1');
   await expect(breakdown).toBeVisible();
-  // Named criteria, with their normalised values — the arithmetic an engineer disagrees with.
-  await expect(breakdown).toContainText('Maintenance access');
-  await expect(breakdown).toContainText('Future expansion');
-  // And the ones that could not be measured, with why rather than a blank.
-  await expect(breakdown).toContainText('no requirement to compare against');
+  /*
+   * Named criteria, with their normalised values — the arithmetic an engineer disagrees with.
+   * Bilingual, both languages always shown (`@mfd/ai-contract`'s `CRITERION_LABELS` — same
+   * convention as the ranking-reason list below, checked once here rather than at every criterion
+   * name in this file).
+   */
+  await expect(breakdown).toContainText('정비 접근성');
+  await expect(breakdown).toContainText('maintenance access');
+  await expect(breakdown).toContainText('증설 여유');
+  await expect(breakdown).toContainText('future expansion');
+  // And the ones that could not be measured, with why rather than a blank — also bilingual.
+  await expect(breakdown).toContainText('규정 기준 없음');
+  await expect(breakdown).toContainText('No Requirement To Compare');
 });
 
 test('places nothing until the engineer approves', async ({ page }) => {
@@ -328,18 +339,18 @@ test('shows what each candidate scores, and against what', async ({ page }) => {
 
   await expect(page.getByTestId('layout-coverage-1')).toContainText('Coverage');
   await expect(page.getByTestId('layout-compliance-1')).toContainText('0 violations');
-  await expect(page.getByTestId('layout-breakdown-1')).toContainText('Maintenance access');
+  await expect(page.getByTestId('layout-breakdown-1')).toContainText('maintenance access');
   /*
    * `placeServices`' own doc comment: with the delivery allowance not yet observed in any
    * drawing, `installation_feasibility` reports `SC-905` specifically, not a generic "could not
    * measure". The twelfth CTO review round found `SC-905`/`SC-906`/`SC-907` had no entry in the
    * panel's lookup table and fell through to a plain "not measurable" — this is the one existing
    * spec both scenarios (services placed, breakdown table visible) already satisfy, so it is
-   * where the fix belongs pinned.
+   * where the fix belongs pinned. Bilingual since the owner's follow-up decision: both languages,
+   * always, matching `@mfd/ai-contract`'s `SCORE_REASON_CODES['SC-905'].title`.
    */
-  await expect(page.getByTestId('layout-breakdown-1')).toContainText(
-    'no observed figure in the drawing dataset',
-  );
+  await expect(page.getByTestId('layout-breakdown-1')).toContainText('관측 자료 없음');
+  await expect(page.getByTestId('layout-breakdown-1')).toContainText('No Observed Figure');
   // Bilingual, composed from AR- codes — the solver never writes prose of its own.
   await expect(page.getByTestId('layout-reason-1')).toContainText('Arranged 3 stations');
   await expect(page.getByTestId('layout-reason-1')).toContainText('방식으로');

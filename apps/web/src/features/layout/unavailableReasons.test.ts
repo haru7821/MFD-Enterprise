@@ -4,22 +4,23 @@ import { describe, expect, it } from 'vitest';
 import { UNAVAILABLE_REASONS } from './unavailableReasons';
 
 /**
- * Every `ScoreReasonCode` the score can emit must render something an engineer can act on.
+ * Every `ScoreReasonCode` the score can emit must render something an engineer can act on, in
+ * both languages.
  *
- * `UNAVAILABLE_REASONS`'s type already makes a missing key a compile error (`Record<ScoreReasonCode,
- * string>` is total), which is the stronger guarantee — this exists as a second, independent check
- * that does not rely on nobody ever weakening that type back to `Record<string, string>`, the way it
- * read when `SC-905` through `SC-907` went missing.
+ * `UNAVAILABLE_REASONS`'s type already makes a missing key a compile error
+ * (`Record<ScoreReasonCode, Bilingual>` is total), and it is now *derived* from
+ * `SCORE_REASON_CODES` rather than hand-typed, so a missing entry is structurally impossible, not
+ * merely caught. This test is a second, independent check that does not rely on either of those —
+ * it also pins that the value is genuinely `SCORE_REASON_CODES[code].title`, so a future edit that
+ * derives from the wrong field (`template` instead of `title`, say) still fails here.
  */
 describe('layout panel unavailable reasons', () => {
-  it('has a specific fragment for every score reason code', () => {
-    for (const code of Object.keys(SCORE_REASON_CODES)) {
-      expect(UNAVAILABLE_REASONS[code as keyof typeof UNAVAILABLE_REASONS], code).toBeTypeOf(
-        'string',
-      );
-      expect(UNAVAILABLE_REASONS[code as keyof typeof UNAVAILABLE_REASONS].length, code).toBeGreaterThan(
-        0,
-      );
+  it('is exactly SCORE_REASON_CODES[code].title for every code, in both languages', () => {
+    for (const code of Object.keys(SCORE_REASON_CODES) as (keyof typeof SCORE_REASON_CODES)[]) {
+      const entry = UNAVAILABLE_REASONS[code];
+      expect(entry, code).toEqual(SCORE_REASON_CODES[code].title);
+      expect(entry.ko.length, code).toBeGreaterThan(0);
+      expect(entry.en.length, code).toBeGreaterThan(0);
     }
   });
 });

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
-import type { ScoringCriterion } from '@mfd/ai-contract';
-import { renderRationale } from '@mfd/ai-contract';
+import { CRITERION_LABELS, renderRationale } from '@mfd/ai-contract';
 import { catalog } from '@mfd/object-library/catalog';
+import type { Bilingual } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 
 import { now } from '@/editor/clock';
@@ -34,34 +34,80 @@ import { UNAVAILABLE_REASONS } from './unavailableReasons';
  * engineer is deciding about.
  */
 
-/** Short forms for the breakdown table, where a row is a few centimetres wide. */
-const CRITERION_LABELS: Record<ScoringCriterion, string> = {
-  compliance_margin: 'Compliance margin',
-  installation_feasibility: 'Installation feasibility',
-  maintenance_access: 'Maintenance access',
-  ro_piping_length: 'RO piping',
-  electrical_routing: 'Electrical',
-  future_expansion: 'Future expansion',
-  walking_distance: 'Walking distance',
-  drain_routing: 'Drain routing',
+/**
+ * Why the solver has nothing to offer, in both languages.
+ *
+ * Was English-only until the owner asked for the whole panel to follow the rest of the app's
+ * bilingual convention (Korean above English, always both, no language setting — see
+ * `ValidationPanel.tsx` and `@mfd/report-engine`'s `LABELS`, neither of which has a toggle either).
+ */
+const EMPTY_MESSAGES: Record<
+  | 'no_room_selected'
+  | 'no_position_satisfies_rules'
+  | 'room_too_small'
+  | 'nothing_to_optimise'
+  | 'movement_not_permitted'
+  | 'already_best'
+  | 'no_feasible_arrangement'
+  | 'current_layout_blocked',
+  Bilingual
+> = {
+  no_room_selected: {
+    ko: '먼저 방을 선택하세요 — 솔버가 작업할 외곽선이 필요합니다.',
+    en: 'Select a room first — the solver needs an outline to work inside.',
+  },
+  no_position_satisfies_rules: {
+    ko: '이 방에서는 그만큼의 기기를 배치할 수 있는 배열이 규정을 만족하지 못합니다. 모든 후보가 규정을 위반했습니다.',
+    en: 'No arrangement of that many machines satisfies the rules in this room. Every candidate broke one.',
+  },
+  room_too_small: {
+    ko: '이 방은 설계 풋프린트 기준으로 그만큼의 기기를 수용할 수 없습니다.',
+    en: 'This room will not hold that many machines at their design footprint.',
+  },
+  nothing_to_optimise: {
+    ko: '선택한 방에 재배치할 이 종류의 기기가 없습니다. 먼저 배치안을 생성하세요.',
+    en: 'There is nothing of this kind in the selected room to rearrange. Generate a layout first.',
+  },
+  movement_not_permitted: {
+    ko: '최적화는 이미 배치된 기기를 재배치합니다. 위에서 허용한 뒤 다시 시도하세요.',
+    en: 'Optimising rearranges machines that are already placed. Allow that above, then try again.',
+  },
+  already_best: {
+    ko: '현재 도면보다 더 나은 배치가 없습니다. 이 기기 수로 솔버가 구성할 수 있는 배치 중 현재 배치의 점수가 가장 높습니다.',
+    en: 'Nothing improves on what you have drawn. Of the arrangements the solver can construct at this station count, yours scores highest.',
+  },
+  no_feasible_arrangement: {
+    ko: '이 기기 수로는 규정을 만족하는 배치가 존재하지 않습니다. 모든 후보가 규정을 위반했으며, 사실상 도면 위의 배치도 마찬가지입니다.',
+    en: 'No compliant arrangement exists at this station count. Every candidate broke a rule — including, in effect, the one on the drawing.',
+  },
+  current_layout_blocked: {
+    ko: '도면 위의 배치가 아래 규정을 위반하고 있습니다. 이를 해결하면 최적화를 사용할 수 있습니다 — 그 전까지는 개선의 기준이 될 안정된 배치가 없으므로, 순위를 매기는 것 자체가 의미가 없습니다.',
+    en: 'The layout on the drawing breaks the rules below. Optimising is available once they are resolved — until then there is nothing sound to improve on, and a ranking against it would not mean anything.',
+  },
 };
 
-const EMPTY_MESSAGES = {
-  no_room_selected: 'Select a room first — the solver needs an outline to work inside.',
-  no_position_satisfies_rules:
-    'No arrangement of that many machines satisfies the rules in this room. Every candidate broke one.',
-  room_too_small: 'This room will not hold that many machines at their design footprint.',
-  nothing_to_optimise:
-    'There is nothing of this kind in the selected room to rearrange. Generate a layout first.',
-  movement_not_permitted:
-    'Optimising rearranges machines that are already placed. Allow that above, then try again.',
-  already_best:
-    'Nothing improves on what you have drawn. Of the arrangements the solver can construct at this station count, yours scores highest.',
-  no_feasible_arrangement:
-    'No compliant arrangement exists at this station count. Every candidate broke a rule — including, in effect, the one on the drawing.',
-  current_layout_blocked:
-    'The layout on the drawing breaks the rules below. Optimising is available once they are resolved — until then there is nothing sound to improve on, and a ranking against it would not mean anything.',
-} as const;
+/** The coverage caveat beneath an empty-state message — dynamic (the percentage), so a function rather than a static table entry. */
+function coverageCaveat(percent: number): Bilingual {
+  return {
+    ko: `채점 모델의 ${percent}%만 측정되었습니다 — 나머지는 측정할 수 없어 보이지 않는 차이가 있을 수 있습니다. 기준점을 배치하고 AK98 매뉴얼이 확보되면 이 범위가 넓어집니다.`,
+    en: `Measured over ${percent}% of the scoring model — the rest could not be measured, so there may be differences it cannot see. Placing reference points, and the AK98 manual, are what widen this.`,
+  };
+}
+
+/**
+ * Korean above English, always both, stacked as two block lines — the convention every bilingual
+ * surface in this app uses (`ValidationPanel.tsx`, this panel's own ranking-reason list, and
+ * `@mfd/report-engine`'s rendered `LABELS`).
+ */
+function BilingualText({ text, className }: { readonly text: Bilingual; readonly className?: string }) {
+  const line = className ? `block ${className}` : 'block';
+  return (
+    <>
+      <span className={line}>{text.ko}</span>
+      <span className={line}>{text.en}</span>
+    </>
+  );
+}
 
 export function LayoutPanel() {
   const { state, dispatch } = useEditor();
@@ -259,7 +305,7 @@ export function LayoutPanel() {
 
       {results && results.proposals.length === 0 && results.emptyReason && (
         <p className="mt-2 text-[10px] leading-snug text-ink-muted" data-testid="layout-empty">
-          {EMPTY_MESSAGES[results.emptyReason]}
+          <BilingualText text={EMPTY_MESSAGES[results.emptyReason]} />
           {/*
             Why it has nothing to offer, and not only that it has nothing.
 
@@ -273,9 +319,9 @@ export function LayoutPanel() {
           */}
           {results.currentScore && results.currentScore.coverage < 1 && (
             <span className="mt-1 block text-ink-faint" data-testid="layout-empty-coverage">
-              Measured over {Math.round(results.currentScore.coverage * 100)}% of the scoring model
-              — the rest could not be measured, so there may be differences it cannot see. Placing
-              reference points, and the AK98 manual, are what widen this.
+              <BilingualText
+                text={coverageCaveat(Math.round(results.currentScore.coverage * 100))}
+              />
             </span>
           )}
         </p>
@@ -411,7 +457,9 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
             <tbody>
               {proposal.score.criteria.map((entry) => (
                 <tr key={entry.criterion} className="text-ink-muted">
-                  <td className="py-px pr-1">{CRITERION_LABELS[entry.criterion]}</td>
+                  <td className="py-px pr-1">
+                    <BilingualText text={CRITERION_LABELS[entry.criterion]} />
+                  </td>
                   <td className="py-px pr-1 text-right font-mono tabular-nums">
                     {entry.normalised.toFixed(2)}
                   </td>
@@ -424,9 +472,11 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
               ))}
               {proposal.score.unavailable.map((entry) => (
                 <tr key={entry.criterion} className="text-ink-faint">
-                  <td className="py-px pr-1">{CRITERION_LABELS[entry.criterion]}</td>
+                  <td className="py-px pr-1">
+                    <BilingualText text={CRITERION_LABELS[entry.criterion]} />
+                  </td>
                   <td colSpan={2} className="py-px text-right">
-                    {UNAVAILABLE_REASONS[entry.reasonCode]}
+                    <BilingualText text={UNAVAILABLE_REASONS[entry.reasonCode]} />
                   </td>
                 </tr>
               ))}

@@ -1,24 +1,27 @@
-import type { ScoreReasonCode } from '@mfd/ai-contract';
+import { SCORE_REASON_CODES, type ScoreReasonCode } from '@mfd/ai-contract';
+import type { Bilingual } from '@mfd/rule-engine';
 
 /**
- * Why a criterion could not be measured, in a fragment short enough for a breakdown row.
+ * Why a criterion could not be measured, in both languages, in a fragment short enough for a
+ * breakdown row.
  *
- * Typed against `ScoreReasonCode` rather than `Record<string, string>`, so a code added to
- * `@mfd/ai-contract`'s `SCORE_REASON_CODES` and not added here is a compile error, not a silent
- * fallback to a generic "not measurable". Found reachable — three codes (`SC-905` through
- * `SC-907`) were missing here despite the rule engine and the score already emitting them, so the
- * specific diagnosis three separate CTO review rounds existed to produce was discarded at the very
- * last step, indistinguishable on screen from an unclassified failure.
+ * Derived from `@mfd/ai-contract`'s `SCORE_REASON_CODES.title` rather than hand-maintained here —
+ * that object already carries the canonical bilingual short label for every code, and a second,
+ * separately-typed Korean translation in the web app would be exactly the drift this codebase
+ * warns against elsewhere (`@mfd/ai-contract`'s own `CRITERION_LABELS` doc comment: "a criterion is
+ * named in the panel, in an `AR-` rationale and in the report, and three copies … drift"; this file
+ * used to be that third copy, English-only, until the twelfth CTO review round found three of its
+ * seven entries missing outright).
  *
- * Its own module rather than living in `LayoutPanel.tsx`: exporting a plain constant from a file
- * that also exports a component defeats React Fast Refresh for the whole file.
+ * Because this is *derived* from `SCORE_REASON_CODES` by iterating its own keys — not a second,
+ * manually-typed object with the same key set — a reason code added there can never be missing
+ * here: there is nothing to remember to update. The `Record<ScoreReasonCode, Bilingual>` return
+ * type still gives the exhaustiveness guarantee the twelfth round asked for (a `ScoreReasonCode`
+ * `SCORE_REASON_CODES` did not define would already fail to compile at its own declaration).
  */
-export const UNAVAILABLE_REASONS: Record<ScoreReasonCode, string> = {
-  'SC-901': 'no reference point placed',
-  'SC-902': 'nothing of that kind on this level',
-  'SC-903': 'no route avoiding the obstructions',
-  'SC-904': 'no requirement to compare against',
-  'SC-905': 'no observed figure in the drawing dataset',
-  'SC-906': 'equipment not in the catalogue',
-  'SC-907': 'blocked by non-convex obstruction geometry',
-};
+export const UNAVAILABLE_REASONS: Readonly<Record<ScoreReasonCode, Bilingual>> = Object.fromEntries(
+  (Object.keys(SCORE_REASON_CODES) as ScoreReasonCode[]).map((code) => [
+    code,
+    SCORE_REASON_CODES[code].title,
+  ]),
+) as Record<ScoreReasonCode, Bilingual>;
