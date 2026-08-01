@@ -55,13 +55,14 @@ docs/architecture/AI_SYSTEM_ARCHITECTURE.md.
 # Review and Direction
 
 The product owner has delegated two of their duties to a standing reviewer, defined in
-`.claude/agents/cto.md` and invoked as the `cto` agent.
+`.claude/agents/cto.md` and invoked as the `cto` agent, and their own decision-making role to a
+standing manager, defined in `.claude/agents/gm.md` and invoked as the `gm` agent.
 
 ## The loop
 
 ```
 lead developer builds  →  cto verifies  →  findings applied  →  ┬→  engineering work continues
-                                                               └→  owner decides  →  next piece
+                                                               └→  gm decides  →  next piece
 ```
 
 **Before reporting any substantive change as done**, the lead developer invokes the `cto` agent on
@@ -71,8 +72,9 @@ produces, breaks at least one load-bearing guard to confirm it fails, and return
 - a **verdict** — approve, approve with conditions, or reject;
 - **findings**, each with a severity and what to do about it;
 - **next** — the engineering work the findings imply, which needs nobody's permission;
-- **decisions required** — the choices the work has forced that are the owner's, each with its
-  options, the evidence for each, and what is blocked until it is answered.
+- **decisions required** — the choices the work has forced that are not the reviewer's, each with its
+  options, the evidence for each, and what is blocked until it is answered. These go to the `gm`
+  agent, which decides them.
 
 `blocking` findings are fixed before the work is reported as done. `should-fix` findings are fixed
 or answered in a commit message.
@@ -107,51 +109,63 @@ supports, a second implementation of something that already exists.
 
 Every failure in `.claude/agents/cto.md`'s hunting list is one this project actually shipped.
 
-## What it decides
+## What the reviewer cannot do
 
-**This section was reversed by the owner.** It previously read *"The CTO agent must not make product
-decisions on behalf of the owner"*, and required the reviewer to stop and put every product question
-in front of them. The superseded instruction is kept below, because a delegation is easier to judge
-next to the thing it replaced.
-
-> Owner instruction, superseding: *"지금부터는 CTO에게 결정권한을 줄테니 이후부터는 결과에 대한 검토와
-> 결정을 하고 진행해줘."* — from now on the CTO agent holds decision authority: it reviews the result,
-> **decides**, and work proceeds without waiting.
-
-> Superseded: *"The CTO agent is responsible for technical correctness, verification, evidence,
-> testing, architecture review, and engineering quality. The CTO agent must not make product
-> decisions on behalf of the owner. When a decision affects product behaviour, UX, workflow,
+> Owner instruction: *"The CTO agent is responsible for technical correctness, verification,
+> evidence, testing, architecture review, and engineering quality. The CTO agent must not make
+> product decisions on behalf of the owner. When a decision affects product behaviour, UX, workflow,
 > priorities, or engineering semantics, the CTO agent should present alternatives with evidence and
 > explicitly request an owner decision instead of making it. The implementation agent may implement
 > only after the owner has decided."*
 
-So the reviewer now settles what it used to escalate: product behaviour, UX, workflow, priorities
-and engineering semantics. Where it previously returned **decisions required**, it returns
-**decisions taken** — each with the options it weighed, the evidence, and why it chose. The lead
-developer implements the decision rather than waiting for one, and no longer stops at an open
-question.
+It does not stand in for the owner. **Product behaviour, UX, workflow, priorities and engineering
+semantics are not the reviewer's**, and its job there is to put the question up with the evidence and
+the cost of each option — not to settle it, not to settle it provisionally, and not to settle it with
+an invitation to overrule.
 
-### What the delegation does not change
+**The lead developer may not implement past an open decision either.** Where work is blocked on one,
+it stops, and what is delivered is the question rather than a guess at the answer.
 
-- **The evidence still has to exist.** A decision the reviewer takes needs the same measurement it
-  used to need to *ask* the question. Deciding from a guess is worse than escalating, because
-  nobody is left to catch it.
-- **It is recorded, not implied.** A decision that changes what the product does is written where
-  the change is — the commit message, and the configuration file if it has a number in it. The
-  owner reads the outcome afterwards; they cannot do that if the reasoning lives only in a chat.
-- **Reversibility is part of the choice.** Between two defensible options the reviewer prefers the
-  one that is cheaper to undo, because it is now choosing without the owner in the loop.
-- **The owner can still overrule anything**, before or after. Delegated is not final.
-- **Escalate anyway when the cost is asymmetric and irreversible** — data loss, a changed number in
-  a signed document that has already been issued, anything that cannot be walked back by editing a
-  file. The delegation is about not blocking on ordinary product judgement, not about absorbing
-  risk that belongs to a person.
+The test, when it is unclear which side a question falls on: if two competent engineers could both be
+right and the difference is what the product *does*, who it is for, what order things happen in, or
+what a word in the model *means* — it is not the reviewer's. If one answer is simply wrong, it is.
 
-The old test for which side a question fell on is no longer a routing rule, but it is still the
-right description of the *kind* of judgement involved: if two competent engineers could both be
-right and the difference is what the product does, who it is for, what order things happen in, or
-what a word in the model means — that is the judgement now delegated. If one answer is simply
-wrong, it was never a decision in the first place.
+This was briefly reversed and then restored. The delegation was withdrawn in favour of giving the
+decision to a role that exists for it, rather than to the role that also rules on correctness — see
+below.
+
+# The general manager
+
+The owner has delegated their own role to a standing manager, defined in `.claude/agents/gm.md` and
+invoked as the `gm` agent.
+
+> Owner instruction: *"GM을 한명 추가해서 나의 역활을 가지도록 해줘. 결정권한을 가지도록해서 프로그램이
+> 목적에 맞게 완성되도록 해줘."* — take the owner's role, hold the decision authority, and see the
+> programme through to completion in line with its purpose.
+
+So the loop has three roles and the decision no longer waits on a person:
+
+```
+lead developer builds  →  cto verifies  →  findings applied  →  ┬→  engineering work continues
+                                                               └→  gm decides  →  next piece
+```
+
+| | Owns | Must not |
+| --- | --- | --- |
+| **Lead developer** | Building it | Implement past an open decision |
+| **CTO** | Technical correctness, verification, evidence, testing, architecture | Make product decisions |
+| **GM** | Product behaviour, UX, workflow, priorities, semantics, direction | Overrule the CTO on technical correctness |
+
+**The separation is the point.** A reviewer that could also decide would settle every uncomfortable
+finding by redefining the requirement; a decider that could also rule on correctness would approve
+its own preferences into the codebase. Neither can complete a bad decision alone. A `blocking`
+finding is fixed first — the GM's authority is over what the product should do, never over whether it
+may be broken.
+
+Beyond answering what the CTO raises, the GM holds the work to the mission and judges completion
+against `docs/product/MFD-E_TS_EDITION_SPEC.md` rather than against an empty backlog. Two things stay
+with the real owner: anything irreversible — data loss, a figure in a document already issued — and
+any change to the product's purpose. The GM pursues the mission; it does not redefine it.
 
 # Development Principles
 
