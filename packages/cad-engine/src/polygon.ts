@@ -437,19 +437,85 @@ export function polygonIntersections(first: Polygon, second: Polygon): Vec2[] {
 }
 
 /**
- * Do two rings overlap at all — crossing outlines, or one wholly inside the other?
+ * Do two rings enclose any area in common — **contact excluded**?
  *
- * The containment half matters: a machine entirely inside a column's footprint has no
- * edge crossings whatsoever, and an intersection-only test calls it clear.
+ * > Owner decision, following the geometry audit: *"Use one canonical geometry definition. Touching
+ * > is NOT collision. Proper overlap is collision. Every subsystem must use exactly the same
+ * > predicate. No separate interpretations."*
+ *
+ * This is that predicate. It answers one question — do the two **interiors** intersect — and it is
+ * the question every collision rule in the product asks, whatever the two shapes happen to be.
+ *
+ * ## What was wrong before
+ *
+ * It used to be `polygonsIntersect(first, second)` plus a vertex-containment fallback, and
+ * `polygonsIntersect` is built on {@link segmentIntersectionPoint}, whose parametric test accepts
+ * `t, u ∈ [0, 1]` **inclusive**. A shared endpoint and a T-junction are therefore "intersections".
+ *
+ * So a machine standing flush against a column, or touching it at a single corner, was a collision:
+ * a 600 mm column at `[4000, 4600]²` and a 900 x 750 footprint at `(3100, 3250)` share exactly the
+ * point `(4000, 4000)` and reported `RED`, measured **0 mm** — *"overlaps Column C4 by 0 mm"*. One
+ * millimetre clear reported GREEN.
+ *
+ * That made three predicates give three answers to the same question at zero distance:
+ * equipment↔equipment GREEN ({@link polygonsOverlap} in the rule engine — *"touching exactly along
+ * an edge is not an overlap"*), equipment↔room GREEN (VD-5, {@link polygonContainsPolygon}), and
+ * equipment↔obstruction RED. It is the Hospital_044 false-RED reachable through a different
+ * boundary kind, and it would also have made the solver discard every wall-hugging candidate.
+ *
+ * ## How it decides
+ *
+ * The same homogeneity argument {@link polygonContainsPolygon} rests on, asked the other way round.
+ * Cut every edge of one ring wherever the other's outline meets it; between two consecutive
+ * meetings a piece cannot change sides, so its midpoint speaks for the whole piece. If any such
+ * midpoint is **strictly** inside the other ring — inside and not on its outline — the two
+ * interiors share area. Both directions are tested, because the overlap region's boundary may be
+ * made of either ring's edges.
+ *
+ * The two containment terms close the case the edge walk cannot see: identical rings, and one ring
+ * wholly inside the other. There, no edge piece of either is strictly interior to the other — for
+ * identical rings every piece lies *on* the outline — yet a simple polygon with positive area
+ * inside another's closed region must share interior with it, because an outline has no area.
+ *
+ * Contact alone never satisfies any of the four terms, which is the property the decision asks for.
  */
 export function polygonsOverlapAnywhere(first: Polygon, second: Polygon): boolean {
   if (!isValidPolygon(first) || !isValidPolygon(second)) return false;
-  if (polygonsIntersect(first, second)) return true;
 
-  const firstVertex = first[0];
-  const secondVertex = second[0];
-  if (firstVertex && polygonContains(second, firstVertex)) return true;
-  if (secondVertex && polygonContains(first, secondVertex)) return true;
+  if (outlineEntersInterior(first, second)) return true;
+  if (outlineEntersInterior(second, first)) return true;
+
+  // Wholly inside, or identical. Contact-inclusive containment is the right test here: a footprint
+  // sitting inside a column and touching its wall is a collision, not a near miss.
+  return polygonContainsPolygon(second, first) || polygonContainsPolygon(first, second);
+}
+
+/**
+ * Does any part of `outline`'s boundary run strictly inside `region`?
+ *
+ * Edge-by-edge, cut at every meeting with `region`'s outline — see
+ * {@link boundaryCrossingPositions} — and each piece judged by its midpoint. Strict is the whole
+ * point: a piece lying *along* `region`'s wall is contact, and contact is not overlap.
+ */
+function outlineEntersInterior(outline: Polygon, region: Polygon): boolean {
+  for (const edge of polygonEdges(outline)) {
+    const length = Math.hypot(edge.b.x - edge.a.x, edge.b.y - edge.a.y);
+    const positions = boundaryCrossingPositions(edge, region);
+
+    for (let i = 1; i < positions.length; i += 1) {
+      const from = positions[i - 1];
+      const to = positions[i];
+      if (from === undefined || to === undefined) continue;
+      if ((to - from) * length < GEOMETRY_EPSILON) continue;
+
+      const t = (from + to) / 2;
+      const midpoint = {
+        x: edge.a.x + t * (edge.b.x - edge.a.x),
+        y: edge.a.y + t * (edge.b.y - edge.a.y),
+      };
+      if (polygonContains(region, midpoint) && !isOnPolygonEdge(region, midpoint)) return true;
+    }
+  }
   return false;
 }
 

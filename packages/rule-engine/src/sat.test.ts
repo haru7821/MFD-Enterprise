@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Vec2 } from '@mfd/cad-engine';
+import { polygonsOverlapAnywhere } from '@mfd/cad-engine';
 
 import { edgeNormals, gapAlongNormal, isConvexPolygon, polygonsOverlap, projectOnto } from './sat';
 
@@ -343,4 +344,35 @@ describe('convexity', () => {
       ]),
     ).toBe(true);
   });
+});
+
+/**
+ * The owner's *"every subsystem must use exactly the same predicate"*, enforced rather than stated.
+ *
+ * Three subsystems decide whether two footprints collide: `polygonsOverlap` here (equipment against
+ * equipment, SAT, convex only), `polygonsOverlapAnywhere` in `@mfd/cad-engine` (equipment against an
+ * obstruction, any simple ring), and `polygonContainsPolygon` (equipment against the room, VD-5).
+ * The geometry audit found them giving three different answers at exactly zero distance.
+ *
+ * They cannot be one function — SAT needs convexity and returns a penetration depth the others have
+ * no use for — so this pins them to one *answer* on the domain where both are defined. A future
+ * edit that reintroduces an inclusive test on either side fails here rather than in a hospital.
+ */
+describe('one canonical collision definition', () => {
+  const cases: [string, Vec2[], Vec2[]][] = [
+    ['disjoint', box(0, 0, 800, 800), box(2_000, 0, 800, 800)],
+    ['vertex-only contact', box(0, 0, 800, 800), box(800, 800, 800, 800)],
+    ['edge-flush contact', box(0, 0, 800, 800), box(800, 0, 800, 800)],
+    ['edge-flush, partly offset', box(0, 0, 800, 800), box(800, 400, 800, 800)],
+    ['one millimetre of penetration', box(0, 0, 800, 800), box(799, 0, 800, 800)],
+    ['half overlapped', box(0, 0, 800, 800), box(400, 400, 800, 800)],
+    ['identical', box(0, 0, 800, 800), box(0, 0, 800, 800)],
+    ['wholly enclosed', box(0, 0, 4_000, 4_000), box(1_000, 1_000, 800, 800)],
+  ];
+
+  for (const [name, a, b] of cases) {
+    it(`agrees with polygonsOverlapAnywhere: ${name}`, () => {
+      expect(polygonsOverlapAnywhere(a, b)).toBe(polygonsOverlap(a, b).overlapping);
+    });
+  }
 });

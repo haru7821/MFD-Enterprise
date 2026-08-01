@@ -478,6 +478,90 @@ describe('polygon intersection', () => {
   });
 });
 
+/**
+ * Owner decision: *"Touching is NOT collision. Proper overlap is collision. Every subsystem must
+ * use exactly the same predicate."*
+ *
+ * The cases below are the geometry audit's counterexamples. Every one of them reported an overlap
+ * before — the parametric test inside {@link segmentIntersectionPoint} accepts `t, u ∈ [0, 1]`
+ * inclusive, so a shared point counted as a crossing — and the rule engine turned that into
+ * *"overlaps Column C4 by 0 mm"*.
+ */
+describe('contact is not overlap', () => {
+  /** The reviewed case: a 600 mm column and a footprint sharing exactly one corner. */
+  const column = [
+    { x: 4_000, y: 4_000 },
+    { x: 4_600, y: 4_000 },
+    { x: 4_600, y: 4_600 },
+    { x: 4_000, y: 4_600 },
+  ];
+
+  function rect(x: number, y: number, width: number, height: number) {
+    return [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height },
+    ];
+  }
+
+  it('vertex-only contact is not an overlap', () => {
+    // 900 x 750 at (3100, 3250): its top-right corner is exactly the column's bottom-left.
+    expect(polygonsOverlapAnywhere(rect(3_100, 3_250, 900, 750), column)).toBe(false);
+  });
+
+  it('edge-flush contact is not an overlap', () => {
+    // Pushed up against the column's west face, sharing a length of edge.
+    expect(polygonsOverlapAnywhere(rect(3_100, 4_000, 900, 600), column)).toBe(false);
+  });
+
+  it('one millimetre of penetration is an overlap', () => {
+    // The discriminating pair: contact says no, penetration says yes.
+    expect(polygonsOverlapAnywhere(rect(3_101, 4_000, 900, 600), column)).toBe(true);
+  });
+
+  it('is symmetric, and still catches partial overlap in both directions', () => {
+    const straddling = rect(4_300, 4_300, 900, 600);
+    expect(polygonsOverlapAnywhere(straddling, column)).toBe(true);
+    expect(polygonsOverlapAnywhere(column, straddling)).toBe(true);
+  });
+
+  it('calls two identical footprints an overlap', () => {
+    /*
+     * The case the edge walk alone cannot see: every edge piece of each lies *on* the other's
+     * outline, so nothing is strictly interior. Two machines at the same coordinates are the most
+     * complete collision there is, and a predicate that reported "no overlap" for it would be worse
+     * than the one being replaced.
+     */
+    expect(polygonsOverlapAnywhere(column, [...column])).toBe(true);
+  });
+
+  it('two rooms sharing a party wall do not overlap', () => {
+    // The ordinary drawing this protects: adjacent rooms traced to the same wall line.
+    expect(polygonsOverlapAnywhere(rect(0, 0, 5_000, 4_000), rect(5_000, 0, 5_000, 4_000))).toBe(
+      false,
+    );
+  });
+
+  it('a concave obstruction is judged by where its arms actually are', () => {
+    /*
+     * An L-shaped riser. A footprint parked in the notch touches both arms and enters neither —
+     * the case a bounding-box or convex-hull test gets wrong in the unsafe direction.
+     */
+    const lShaped = [
+      { x: 0, y: 0 },
+      { x: 3_000, y: 0 },
+      { x: 3_000, y: 1_000 },
+      { x: 1_000, y: 1_000 },
+      { x: 1_000, y: 3_000 },
+      { x: 0, y: 3_000 },
+    ];
+    expect(polygonsOverlapAnywhere(rect(1_000, 1_000, 2_000, 2_000), lShaped)).toBe(false);
+    // ...and a footprint that does reach into an arm is caught.
+    expect(polygonsOverlapAnywhere(rect(900, 1_000, 2_000, 2_000), lShaped)).toBe(true);
+  });
+});
+
 describe('simplify', () => {
   it('drops repeated vertices', () => {
     const traced = [
