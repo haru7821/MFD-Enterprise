@@ -1,8 +1,8 @@
 import { pixelToModel, polygonArea } from '@mfd/cad-engine';
-import type { Level } from '@mfd/document-model';
+import type { Level, Placement } from '@mfd/document-model';
 import { findSpace, obstructionBoundaries, planTransformOf, spaceArea } from '@mfd/document-model';
-import type { Catalog } from '@mfd/object-library';
-import { footprintCorners } from '@mfd/object-library';
+import type { Catalog, EquipmentObject } from '@mfd/object-library';
+import { footprintCentre, footprintCorners } from '@mfd/object-library';
 
 import type { LabelKey } from './labels';
 import type {
@@ -166,6 +166,21 @@ export function placementNumbers(level: Level): Map<string, number> {
   return new Map(level.placements.map((placement, index) => [placement.id, index + 1]));
 }
 
+/**
+ * The schedule's position column — the footprint's true centre, rounded, or the raw
+ * `transform.position` when the catalogue has nothing for this placement, since a schedule row
+ * still needs a number even for equipment the catalogue does not describe.
+ *
+ * > Owner decision, AD-21 routing/report anchor follow-up.
+ */
+function scheduledPosition(
+  placement: Placement,
+  object: EquipmentObject | undefined,
+): { readonly x: number; readonly y: number } {
+  const point = object ? footprintCentre(object, placement.transform) : placement.transform.position;
+  return { x: Math.round(point.x), y: Math.round(point.y) };
+}
+
 export function buildFloorPlan(level: Level, catalog: Catalog): FloorPlanSection {
   const numbers = placementNumbers(level);
 
@@ -180,7 +195,7 @@ export function buildFloorPlan(level: Level, catalog: Catalog): FloorPlanSection
       // The id rather than a blank: a placement whose record has gone is a data problem
       // the schedule also names, and hiding it here would make the tables disagree.
       model: object?.model ?? placement.equipmentObjectId,
-      position: { x: Math.round(placement.transform.position.x), y: Math.round(placement.transform.position.y) },
+      position: scheduledPosition(placement, object),
       rotationDegrees: degrees(placement.transform.rotation),
       mirrored: placement.transform.mirrored,
       room: space?.name ?? null,

@@ -5,10 +5,16 @@ import type {
 } from '@mfd/ai-contract';
 import type { Rect, Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement, ReferencePointKind } from '@mfd/document-model';
-import type { ClearanceSide, Catalog, EquipmentObject } from '@mfd/object-library';
-import { clearanceZones, faceProbe, footprintBounds as objectFootprintBounds } from '@mfd/object-library';
+import type { ClearanceSide, Catalog, EquipmentObject, Face } from '@mfd/object-library';
+import {
+  clearanceZones,
+  faceGeometry,
+  footprintBounds as objectFootprintBounds,
+  footprintCentre,
+  footprintCorners,
+} from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
-import { evaluate } from '@mfd/rule-engine';
+import { evaluate, gapAlongNormal } from '@mfd/rule-engine';
 
 import type { KnowledgeBase } from '@mfd/layout-knowledge';
 
@@ -134,16 +140,14 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
     spatial: { boundaries: input.boundaries, planStatus: input.planStatus },
   });
 
-  const obstacles = obstructionBounds(input.obstructions);
   const roomBounds = boundsOf(input.room);
   const ratios: number[] = [];
   /*
-   * Hoisted out of the probe so the criterion can refuse rather than silently probing past an
-   * occupant it has no size for. One `null` here means the room holds equipment the catalogue does
-   * not describe, and there is no honest headroom figure to report — see `occupantBounds`.
+   * Checked here rather than left to `freeDistanceOnSide`, so the criterion can refuse rather than
+   * silently measuring past an occupant it has no size for. One `null` here means the room holds
+   * equipment the catalogue does not describe, and there is no honest headroom figure to report.
    */
-  const occupants = occupantBounds(input.occupants, input.catalog);
-  if (occupants === null) return unavailable('SC-906');
+  if (occupantBounds(input.occupants, input.catalog) === null) return unavailable('SC-906');
 
   for (const result of report.results) {
     if (result.category !== 'clearance' || result.appliedValue === null) continue;
@@ -156,7 +160,7 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
       const placement = input.placements.find((entry) => entry.id === placementId);
       if (!placement) continue;
 
-      const free = freeDistanceOnSide(placement, side, input, obstacles, roomBounds, occupants);
+      const free = freeDistanceOnSide(placement, side, input, roomBounds);
       if (free === null) continue;
       ratios.push(free / result.appliedValue);
     }
@@ -196,37 +200,41 @@ const PROBE_STEP_MM = 50;
 const PROBE_CEILING_MULTIPLE = 3;
 
 /**
- * Walks outward from a service face until something stops the walk, in millimetres.
+ * The free distance in front of a service face, in millimetres — the **minimum across the whole
+ * face**, not along one ray through its middle.
  *
- * > Architecture decision AD-21.
+ * > Architecture decision AD-21. Owner decision, following the Critical 0 review's third finding:
+ * > *"minimum across the whole face"*, matching `@mfd/rule-engine`'s own clearance evaluator and
+ * > `measureMaintenanceAccess`'s existing "full containment, not mere overlap" standard, over
+ * > "along the centreline", which let an obstruction anywhere else in a declared clearance zone
+ * > score full marks — measured at the time: 3.0 (the ceiling) for an obstruction squarely inside a
+ * > zone but off-centre, versus 0.125 for the identical obstruction moved onto the centreline.
  *
- * The face itself comes from `@mfd/object-library`'s `faceProbe`, which derives the anchor from
- * the side's own model-space outward normal rather than from a `ClearanceZone` polygon's corner
- * order. A prior version of this function read a `ClearanceZone`'s first two corners as "the inner
- * edge" — true only for `front`, on this object's `frontEdge` — because a zone rectangle's offset
- * axis swaps between `front`/`rear` (offset along the local y-axis, so the first two `rectCorners`
- * entries do share the inner edge) and `left`/`right` (offset along local x, so they do not: one of
- * the "first two" is the *outer* corner instead). That version measured `front` correctly and
- * silently walked the wrong way — parallel to the face, or straight into the machine's own
- * footprint for `rear` — on the other three, a defect the Critical 0 review found live through
- * `scoreLayout`: an obstruction squarely inside a `left` clearance zone scored full marks. See
- * `faceProbe`'s own doc comment for why deriving from corner order can't be made to work.
+ * The face itself comes from `@mfd/object-library`'s `faceGeometry`, which derives the anchor and
+ * the face's own lateral extent from the side's model-space outward normal rather than from a
+ * `ClearanceZone` polygon's corner order — see its own doc comment for why deriving from corner
+ * order can't be made to work. Against another placement's or an obstruction's real polygon, the
+ * measurement is `@mfd/rule-engine`'s exact `gapAlongNormal` — the same function, the same result,
+ * rather than a second implementation free to drift from the rule engine's own finding on the same
+ * geometry.
  *
- * **A separate, still-open limitation, found by the same review round**: this walks a *single ray*
- * from the face's own midpoint. An obstruction anywhere else in the declared zone — off to one
- * side of centre — is invisible to it and still scores full marks; only `@mfd/rule-engine`'s own
- * clearance evaluator (`gapAlongNormal`, which measures the true minimum gap across the whole face)
- * catches it. Left open pending an owner decision — "minimum across the whole face" vs "along the
- * centreline" is a real choice with a cost either way, not a coordinate-contract violation — see
- * `docs/architecture/SYSTEM_ARCHITECTURE.md`'s AD-21 entry.
+ * The room edge is not a polygon "in front of" the face the way an obstruction is — it is a
+ * container, not an obstacle — so `gapAlongNormal` does not apply to it directly. It is checked
+ * at the face's own two ends (`face.min`/`face.max`) rather than only its centre: for a *convex*
+ * room, the distance to the boundary along a fixed direction is a concave function of the starting
+ * point's position along the face, and a concave function over an interval attains its minimum at
+ * one of the interval's endpoints — so the two ends are provably enough to find the worst point,
+ * with no need to sample the interior. **This does not hold for a concave (non-convex) room
+ * outline**, where a dip between the two ends could go undetected; the room polygon is still
+ * reduced to its axis-aligned bounds beforehand (`roomBounds`, unchanged from the prior version),
+ * so a diagonal or irregular wall is already only approximated. Both are pre-existing imprecisions,
+ * not part of what this Critical 0 review round was scoped to close.
  */
 function freeDistanceOnSide(
   placement: Placement,
   side: ClearanceSide,
   input: MeasureInput,
-  obstacles: readonly Bounds[],
   room: Bounds | null,
-  occupants: readonly OccupantBounds[],
 ): number | null {
   const object = input.catalog.get(placement.equipmentObjectId);
   if (!object) return null;
@@ -234,28 +242,60 @@ function freeDistanceOnSide(
   const required = object.serviceClearance[side];
   if (required === null) return null;
 
-  const probe = faceProbe(object, placement.transform, side);
-
-  // Everything in the room blocks the probe, not only this equipment kind — see `occupants`.
-  // Excluded by id: the machine being probed is not an obstacle to its own service face.
-  const others = excluding(occupants, placement.id);
+  const face = faceGeometry(object, placement.transform, side);
   const ceiling = required * PROBE_CEILING_MULTIPLE;
 
-  for (let distance = 0; distance <= ceiling; distance += PROBE_STEP_MM) {
-    const point = {
-      x: probe.origin.x + probe.direction.x * distance,
-      y: probe.origin.y + probe.direction.y * distance,
-    };
+  let nearest: number | null = null;
+  const consider = (gap: number | null) => {
+    if (gap !== null && (nearest === null || gap < nearest)) nearest = gap;
+  };
 
-    const blocked =
-      others.some((rect) => within(rect, point)) ||
-      obstacles.some((rect) => within(rect, point)) ||
-      (room !== null && !within(room, point));
-
-    if (blocked) return distance;
+  // Every other placement in the room blocks this face, not only this equipment kind — the
+  // machine being measured is excluded by id, since it is not an obstacle to its own service face.
+  for (const other of input.occupants) {
+    if (other.id === placement.id) continue;
+    const otherObject = input.catalog.get(other.equipmentObjectId);
+    if (!otherObject) continue;
+    consider(gapAlongNormal(face, face, footprintCorners(otherObject, other.transform)));
   }
 
-  return ceiling;
+  for (const obstruction of input.obstructions) {
+    consider(gapAlongNormal(face, face, obstruction));
+  }
+
+  consider(nearestRoomEdgeAcrossFace(face, room, ceiling));
+
+  return nearest === null ? ceiling : Math.min(nearest, ceiling);
+}
+
+/**
+ * How far the face can extend, at its worst end, before leaving the room — `null` when it does not
+ * leave within `ceiling`, at either end. See {@link freeDistanceOnSide} for why the two ends suffice
+ * for a convex room and not for a concave one.
+ */
+function nearestRoomEdgeAcrossFace(face: Face, room: Bounds | null, ceiling: number): number | null {
+  if (room === null) return null;
+
+  const originProjection = face.origin.x * face.axis.x + face.origin.y * face.axis.y;
+  let nearest: number | null = null;
+
+  for (const offset of [face.min, face.max]) {
+    const along = offset - originProjection;
+    const start = {
+      x: face.origin.x + face.axis.x * along,
+      y: face.origin.y + face.axis.y * along,
+    };
+
+    for (let distance = 0; distance <= ceiling; distance += PROBE_STEP_MM) {
+      const point = { x: start.x + face.normal.x * distance, y: start.y + face.normal.y * distance };
+      if (!within(room, point)) {
+        if (nearest === null || distance < nearest) nearest = distance;
+        break;
+      }
+    }
+  }
+
+  return nearest;
 }
 
 function within(bounds: Bounds, point: Vec2): boolean {
@@ -411,7 +451,10 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
 
     const route = routedDistance({
       from: entry.position,
-      to: placement.transform.position,
+      // Owner decision, AD-21 routing/report anchor follow-up: the footprint's true centre, not
+      // `transform.position` — the corner for every shipped record, which never moved under a pure
+      // rotation even though the machine visibly swept elsewhere.
+      to: footprintCentre(input.object, placement.transform),
       blocked: blockers,
       within,
     });
@@ -586,7 +629,9 @@ function measureRouting(input: MeasureInput, kind: ReferencePointKind): Measurem
   for (const placement of input.placements) {
     const route = routedDistance({
       from: origin.position,
-      to: placement.transform.position,
+      // Owner decision, AD-21 routing/report anchor follow-up: the footprint's true centre, not
+      // `transform.position` — see `measureInstallationFeasibility`'s identical comment.
+      to: footprintCentre(input.object, placement.transform),
       blocked: [...obstacles, ...excluding(occupants, placement.id)],
       within,
     });

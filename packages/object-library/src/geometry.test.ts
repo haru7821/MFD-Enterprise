@@ -21,8 +21,9 @@ function draftVerification() {
 import { parseEquipmentObject } from './catalog';
 import {
   clearanceZones,
-  faceProbe,
+  faceGeometry,
   footprintBounds,
+  footprintCentre,
   footprintContains,
   footprintCorners,
   localFootprintRect,
@@ -235,6 +236,26 @@ describe('transformForCentre — the one conversion from a footprint centre to a
   });
 });
 
+describe('footprintCentre — the true centre of a placed footprint', () => {
+  it('round-trips through transformForCentre at several rotations, mirrored and not', () => {
+    for (const rotation of [0, 37_500, 90_000, 181_000, 271_500]) {
+      for (const mirrored of [false, true]) {
+        const centre = { x: 3_300, y: -1_200 };
+        const transform = transformForCentre(machine(), centre, rotation, mirrored);
+
+        expect(footprintCentre(machine(), transform).x).toBeCloseTo(centre.x, 6);
+        expect(footprintCentre(machine(), transform).y).toBeCloseTo(centre.y, 6);
+      }
+    }
+  });
+
+  it('is not transform.position for a front-left object — it is offset by half the footprint', () => {
+    const transform = { position: { x: 1_000, y: 1_000 }, rotation: 0, mirrored: false };
+    // 900 x 750 fixture, front-left: the centre is half the footprint past the corner.
+    expect(footprintCentre(machine(), transform)).toEqual({ x: 1_450, y: 1_375 });
+  });
+});
+
 describe('hit testing', () => {
   it('accepts points inside and rejects points outside', () => {
     const object = machine();
@@ -300,20 +321,21 @@ describe('clearance zones', () => {
   });
 });
 
-describe('faceProbe — the anchor a clearance probe walks outward from', () => {
+describe('faceGeometry — the whole face a clearance measurement checks, not one ray through it', () => {
   /*
    * Found by the Critical 0 review: a probe that read "inner edge" and "outer edge" off a
    * `ClearanceZone` polygon by corner index was correct for `front` and wrong for the other three
    * — `rear`'s first two corners are its *outer* edge, and `left`/`right`'s first two corners are
    * one inner, one outer, because the axis the clearance offset runs along swaps which pair of
-   * `rectCorners` entries shares an edge. `faceProbe` never reads a `ClearanceZone` at all, so
+   * `rectCorners` entries shares an edge. `faceGeometry` never reads a `ClearanceZone` at all, so
    * there is no index to get backwards.
    *
-   * Independent check, not a restatement of the formula: for every side, `faceProbe`'s `origin`
+   * Independent check, not a restatement of the formula: for every side, `faceGeometry`'s `origin`
    * must be the midpoint of the two `footprintCorners` that actually bound that face — the
-   * rear/front pair (indices 0-1 and 2-3) or the left/right pair (indices 0-3 and 1-2) — and
-   * `direction` must point away from the footprint, checked by walking a short distance each way
-   * and asking `footprintContains`, not by re-deriving the same rotation math.
+   * rear/front pair (indices 0-1 and 2-3) or the left/right pair (indices 0-3 and 1-2) — `normal`
+   * must point away from the footprint, checked by walking a short distance each way and asking
+   * `footprintContains`, not by re-deriving the same rotation math — and `min`/`max` must be exactly
+   * those same two corners' own projections onto `axis`, in either order.
    */
   const FACE_CORNER_INDICES: Record<'front' | 'rear' | 'left' | 'right', readonly [number, number]> = {
     rear: [0, 1],
@@ -323,7 +345,7 @@ describe('faceProbe — the anchor a clearance probe walks outward from', () => 
   };
 
   it.each(['front', 'rear', 'left', 'right'] as const)(
-    'anchors %s on its own face, walking away from the footprint, at several rotations',
+    'anchors %s on its own face, spanning it corner to corner, at several rotations',
     (side) => {
       for (const rotation of [0, 37_500, 90_000, 181_000, 271_500]) {
         const object = machine({
@@ -338,20 +360,20 @@ describe('faceProbe — the anchor a clearance probe walks outward from', () => 
         if (!a || !b) throw new Error('footprintCorners did not return four points');
         const expectedOrigin = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 
-        const probe = faceProbe(object, transform, side);
-        expect(probe.origin.x, `${side} @ ${rotation} origin.x`).toBeCloseTo(expectedOrigin.x, 6);
-        expect(probe.origin.y, `${side} @ ${rotation} origin.y`).toBeCloseTo(expectedOrigin.y, 6);
+        const face = faceGeometry(object, transform, side);
+        expect(face.origin.x, `${side} @ ${rotation} origin.x`).toBeCloseTo(expectedOrigin.x, 6);
+        expect(face.origin.y, `${side} @ ${rotation} origin.y`).toBeCloseTo(expectedOrigin.y, 6);
 
-        const length = Math.hypot(probe.direction.x, probe.direction.y);
+        const length = Math.hypot(face.normal.x, face.normal.y);
         expect(length, `${side} @ ${rotation} unit length`).toBeCloseTo(1, 6);
 
         const outward = {
-          x: probe.origin.x + probe.direction.x * 10,
-          y: probe.origin.y + probe.direction.y * 10,
+          x: face.origin.x + face.normal.x * 10,
+          y: face.origin.y + face.normal.y * 10,
         };
         const inward = {
-          x: probe.origin.x - probe.direction.x * 10,
-          y: probe.origin.y - probe.direction.y * 10,
+          x: face.origin.x - face.normal.x * 10,
+          y: face.origin.y - face.normal.y * 10,
         };
         expect(footprintContains(object, transform, outward), `${side} @ ${rotation} outward`).toBe(
           false,
@@ -359,22 +381,29 @@ describe('faceProbe — the anchor a clearance probe walks outward from', () => 
         expect(footprintContains(object, transform, inward), `${side} @ ${rotation} inward`).toBe(
           true,
         );
+
+        // The face's own width, independently: the same two corners' projections onto `axis`,
+        // not `face.min`/`face.max` re-derived from the formula that produced them.
+        const projectionA = a.x * face.axis.x + a.y * face.axis.y;
+        const projectionB = b.x * face.axis.x + b.y * face.axis.y;
+        expect(face.min, `${side} @ ${rotation} min`).toBeCloseTo(Math.min(projectionA, projectionB), 6);
+        expect(face.max, `${side} @ ${rotation} max`).toBeCloseTo(Math.max(projectionA, projectionB), 6);
       }
     },
   );
 
-  it('mirrors the direction along with the footprint', () => {
+  it('mirrors the normal along with the footprint', () => {
     const object = machine({
       serviceClearance: { front: null, rear: null, left: 400, right: null, verification: draftVerification() },
     });
     const transform: Transform = { position: { x: 0, y: 0 }, rotation: 0, mirrored: true };
 
-    const probe = faceProbe(object, transform, 'left');
+    const face = faceGeometry(object, transform, 'left');
 
     // Mirrored about the object's own axis, so left's outward normal (-1, 0) unmirrored flips to
     // (1, 0) — checked the same way, by walking each direction and asking the footprint.
-    const outward = { x: probe.origin.x + probe.direction.x * 10, y: probe.origin.y };
-    const inward = { x: probe.origin.x - probe.direction.x * 10, y: probe.origin.y };
+    const outward = { x: face.origin.x + face.normal.x * 10, y: face.origin.y };
+    const inward = { x: face.origin.x - face.normal.x * 10, y: face.origin.y };
     expect(footprintContains(object, transform, outward)).toBe(false);
     expect(footprintContains(object, transform, inward)).toBe(true);
   });

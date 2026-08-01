@@ -762,9 +762,11 @@ describe('equipment geometry rotates with its placement', () => {
       b.criteria.find((entry) => entry.criterion === 'walking_distance')?.measured;
 
     expect(walking(upright)).toBe(5_750);
-    expect(walking(turned)).toBe(5_250);
-    // Both still block the route relative to clear, which is the property under test — same object,
-    // same place, and the count changes only because the orientation did.
+    // Re-derived when routing switched targets from `target`'s corner to its true centre — Owner
+    // decision, AD-21 routing/report anchor follow-up. The property under test is unaffected: both
+    // orientations still block the route relative to clear, by different amounts, because the bed's
+    // true extent differs between them, not because the target moved.
+    expect(walking(turned)).toBe(5_500);
     expect(walking(upright)).not.toBe(walking(turned));
   });
 
@@ -879,6 +881,67 @@ describe('equipment geometry rotates with its placement', () => {
     });
 
     expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.375);
+  });
+
+  it("measures the whole service face, not only the point opposite its centre — owner decision, Critical 0 review", () => {
+    /*
+     * The Critical 0 review's third finding: `freeDistanceOnSide` walked one ray from the face's own
+     * midpoint, so an obstruction anywhere else in the declared clearance zone — off to one side of
+     * centre — was invisible to it and scored full marks. Verified live: this exact scenario measured
+     * `3.0` (the ceiling) before the fix.
+     *
+     * > Owner decision: measure the minimum across the whole face, matching `@mfd/rule-engine`'s own
+     * > clearance evaluator (`gapAlongNormal`) rather than the centreline.
+     *
+     * The bed (unrotated, front-left, `frontEdge: south`) at (3,000, 3,000) has a rear zone
+     * (rear = north, the `-y` face) of x ∈ [3,000, 4,000], y ∈ [2,200, 3,000] — 800 mm required. The
+     * face midpoint is (3,500, 3,000); a ray from there alone passes well clear of the obstruction
+     * below, which sits at the zone's *east* end, 100 mm off the rear face — 700 mm short of the
+     * 800 mm requirement, a 0.125 ratio, not the 1.0-or-better a centreline-only probe would report.
+     */
+    const bed = fixtureCatalog().get('fixture_bed');
+    if (!bed) throw new Error('fixture catalogue did not contain fixture_bed');
+
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'rear', threshold: 800, categories: ['treatment_bed'] }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+    const unrotatedBed: Placement = {
+      id: 'bed',
+      equipmentObjectId: bed.id,
+      equipmentObjectVersion: bed.version,
+      label: 'bed',
+      transform: { position: { x: 3_000, y: 3_000 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    // Squarely inside the rear zone (x ∈ [3,000, 4,000], y ∈ [2,200, 3,000]), at its east end —
+    // nowhere near the face's own midpoint at (3,500, 3,000).
+    const obstruction = [
+      { x: 3_800, y: 2_700 },
+      { x: 3_950, y: 2_700 },
+      { x: 3_950, y: 2_900 },
+      { x: 3_800, y: 2_900 },
+    ];
+
+    const breakdown = scoreLayout({
+      placements: [unrotatedBed],
+      occupants: [unrotatedBed],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+      room: fixtureRoom(10_000, 10_000),
+      obstructions: [obstruction],
+      referencePoints: [],
+      object: bed,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.125);
   });
 
   it.each([
@@ -1084,10 +1147,11 @@ describe('walking distance routes around equipment; the service runs do not', ()
       b.criteria.find((entry) => entry.criterion === 'ro_piping_length')?.measured;
 
     expect(walking(clear)).toBe(5_500);
-    // 6,250 is 25 lattice cells at the router's 250 mm pitch (routing.ts's CELL) — pinned as
-    // change-detection for this scenario, not a geometric constant. A future change to the
-    // lattice pitch is expected to move this number; a regression in occupant avoidance is not.
-    expect(walking(blocked)).toBe(6_250);
+    // Re-derived when routing switched targets from `target`'s corner to its true centre — Owner
+    // decision, AD-21 routing/report anchor follow-up. Pinned as change-detection for this scenario,
+    // not a geometric constant: a future change to the router's lattice pitch (routing.ts's CELL) is
+    // expected to move this number; a regression in occupant avoidance is not.
+    expect(walking(blocked)).toBe(5_750);
     // Same origin, same target, same blocker — and the pipe run does not move.
     expect(ro(blocked)).toBe(ro(clear));
     expect(ro(clear)).toBe(5_500);

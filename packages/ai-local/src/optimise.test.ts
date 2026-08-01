@@ -154,7 +154,7 @@ describe('Step 6B — existing placements are immutable without explicit permiss
 describe('the visual diff', () => {
   it('marks every machine of a generated layout as added', () => {
     // Generation has nothing to move from.
-    const entries = diffPlacements([], AWKWARD);
+    const entries = diffPlacements([], AWKWARD, fixtureCatalog());
     expect(entries.map((entry) => entry.change)).toEqual(['added', 'added', 'added', 'added']);
     expect(entries.every((entry) => entry.source === null)).toBe(true);
   });
@@ -178,7 +178,7 @@ describe('the visual diff', () => {
      * is, takes it, and leaves s4 to make the long trip to y. That is the documented behaviour of
      * `commandsFor`: stable and individually sensible, not globally optimal.
      */
-    const changes = diffPlacements(AWKWARD, proposed);
+    const changes = diffPlacements(AWKWARD, proposed, fixtureCatalog());
     expect(changes.map((entry) => entry.change)).toEqual([
       'unchanged', // x ← s1
       'moved', //     y ← s4, all the way across
@@ -202,7 +202,7 @@ describe('the visual diff', () => {
     const proposal = result.proposals[0];
     if (!proposal) throw new Error('expected a proposal');
 
-    const changes = diffPlacements(AWKWARD, proposal.placements);
+    const changes = diffPlacements(AWKWARD, proposal.placements, fixtureCatalog());
     const movedById = new Map(
       proposal.commands
         .filter((command) => command.type === 'placement.move')
@@ -573,14 +573,14 @@ describe('command derivation', () => {
     // An optimisation that emitted a move for every machine would read as twelve changes when it
     // made two.
     const same = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
-    expect(commandsFor(same, same)).toEqual([]);
+    expect(commandsFor(same, same, fixtureCatalog())).toEqual([]);
   });
 
   it('assigns each machine to its nearest target, so moves are short', () => {
     const current = [placement('a', 1_000, 1_000), placement('b', 5_000, 1_000)];
     const target = [placement('x', 5_200, 1_000), placement('y', 1_200, 1_000)];
 
-    const commands = commandsFor(current, target);
+    const commands = commandsFor(current, target, fixtureCatalog());
     const byId = new Map(
       commands.map((command) => [
         (command.payload as { placementId: string }).placementId,
@@ -597,8 +597,8 @@ describe('command derivation', () => {
   it('produces the same commands twice', () => {
     const current = [placement('a', 1_000, 1_000), placement('b', 5_000, 1_000)];
     const target = [placement('x', 2_000, 2_000), placement('y', 6_000, 2_000)];
-    expect(JSON.stringify(commandsFor(current, target))).toBe(
-      JSON.stringify(commandsFor(current, target)),
+    expect(JSON.stringify(commandsFor(current, target, fixtureCatalog()))).toBe(
+      JSON.stringify(commandsFor(current, target, fixtureCatalog())),
     );
   });
 });

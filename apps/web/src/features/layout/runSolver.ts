@@ -108,7 +108,7 @@ export function runSolver(request: SolverRequest): LayoutProposalSet {
      * one having *moved* — and the ghost layer would draw arrows for edits the approval will not
      * make.
      */
-    proposals: result.layouts.map((layout) => proposalOf(layout, [])),
+    proposals: result.layouts.map((layout) => proposalOf(layout, [], request.catalog)),
   };
 }
 
@@ -215,7 +215,7 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
       score: proposal.score,
       compliance: proposal.compliance,
       explanation: proposal.explanation,
-      diff: diffPlacements(current, proposal.placements),
+      diff: diffPlacements(current, proposal.placements, request.catalog),
     })),
   };
 }
@@ -264,7 +264,11 @@ function pipelineInput(
   };
 }
 
-function proposalOf(layout: RankedLayout, current: readonly Placement[]): LayoutProposal {
+function proposalOf(
+  layout: RankedLayout,
+  current: readonly Placement[],
+  catalog: Catalog,
+): LayoutProposal {
   return {
     id: layout.candidateId,
     rank: layout.rank,
@@ -272,7 +276,7 @@ function proposalOf(layout: RankedLayout, current: readonly Placement[]): Layout
     score: layout.score,
     compliance: layout.compliance,
     explanation: layout.explanation,
-    diff: diffPlacements(current, layout.placements),
+    diff: diffPlacements(current, layout.placements, catalog),
   };
 }
 

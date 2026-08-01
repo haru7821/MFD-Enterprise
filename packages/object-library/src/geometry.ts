@@ -190,6 +190,26 @@ export function footprintBounds(
   return rect(minX, minY, Math.max(...xs) - minX, Math.max(...ys) - minY);
 }
 
+/**
+ * The footprint's true geometric centre, in model space.
+ *
+ * > Architecture decision AD-21, routing/report anchor follow-up. Owner decision: several criteria,
+ * > the optimiser's nearest-match, the installation planner, and the report schedule's position
+ * > column all used to measure to or print `transform.position` — the footprint's *corner* for
+ * > every shipped, `front-left` record — so a pure rotation never moved any of those numbers even
+ * > though the machine visibly swept elsewhere on the drawing.
+ *
+ * `footprintBounds`'s axis-aligned bounding box has a midpoint equal to the rectangle's true centre
+ * regardless of rotation, mirroring, or which corner `transform.position` names — the same fact
+ * `transformForCentre` solves in the opposite direction. This is the one function every caller that
+ * needs a placement's centre, rather than its `transform.position`, should call, so there is exactly
+ * one adapter rather than the same three-line computation inlined at every call site.
+ */
+export function footprintCentre(object: EquipmentObject, transform: Transform): Vec2 {
+  const bounds = footprintBounds(object, transform);
+  return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+}
+
 /** Is this model-space point inside the footprint? */
 export function footprintContains(
   object: EquipmentObject,
@@ -259,15 +279,22 @@ export function clearanceZones(
   return zones;
 }
 
-export interface FaceProbe {
+export interface Face {
   /** The midpoint of this side's face, in model space — on the footprint, not in the clearance zone. */
   readonly origin: Vec2;
-  /** The outward unit direction from that face, in model space. */
-  readonly direction: Vec2;
+  /** The outward unit normal from that face, in model space. */
+  readonly normal: Vec2;
+  /** The face's own lateral unit direction, perpendicular to `normal`, in model space. */
+  readonly axis: Vec2;
+  /** The footprint corners' minimum projection onto `axis` — the face's own extent along itself. */
+  readonly min: number;
+  /** The footprint corners' maximum projection onto `axis`. */
+  readonly max: number;
 }
 
 /**
- * Where a side's face sits, and which way is outward — the anchor a clearance probe walks from.
+ * Where a side's face sits, which way is outward, and how wide it runs — everything a clearance
+ * measurement needs to check the **whole face**, not one ray through its midpoint.
  *
  * A `ClearanceZone`'s polygon is a plain, unlabelled rectangle: which pair of corners is the
  * "inner" edge (on the footprint) and which is "outer" (`millimetres` away) depends on which axis
@@ -281,28 +308,60 @@ export interface FaceProbe {
  * This sidesteps the ambiguity by not reading it out of a rectangle at all. The face midpoint is
  * the footprint's own local centre, offset by half its extent along the side's normal axis — a
  * `centre`-origin fact about the rectangle, true regardless of `symbol.origin` — and the outward
- * direction is that same local normal, carried through the placement's rotation and mirroring the
- * same way {@link localToModel} carries a point, minus the translation a direction has none of.
+ * normal is that same local normal, carried through the placement's rotation and mirroring the same
+ * way {@link localToModel} carries a point, minus the translation a direction has none of. `axis` is
+ * perpendicular to it, and `min`/`max` are every footprint corner's projection onto that axis — the
+ * face's own width, so a caller measuring against it (`@mfd/rule-engine`'s `gapAlongNormal`, or a
+ * caller sampling both of a convex room's ends) checks the face somebody would actually stand at,
+ * not only the point exactly opposite its centre.
+ *
+ * Previously `faceProbe`, returning only `origin`/`direction`: correct as far as it went, but a
+ * caller measuring free distance along a single ray from `origin` is blind to an obstruction
+ * anywhere else on the face — squarely inside the declared clearance zone, off to one side of
+ * centre — which is exactly the class of disagreement AD-21 exists to close between this and
+ * `@mfd/rule-engine`'s own clearance evaluator, which has measured the whole face since Sprint 3.
  */
-export function faceProbe(
+export function faceGeometry(
   object: EquipmentObject,
   transform: Transform,
   side: ClearanceSide,
-): FaceProbe {
+): Face {
   const footprint = localFootprintRect(object);
-  const normal = sideNormals(object)[side];
+  const normalLocal = sideNormals(object)[side];
   const centre = { x: footprint.x + footprint.width / 2, y: footprint.y + footprint.height / 2 };
-  const halfExtent = normal.x !== 0 ? footprint.width / 2 : footprint.height / 2;
-  const localOrigin = { x: centre.x + normal.x * halfExtent, y: centre.y + normal.y * halfExtent };
+  const halfWidth = footprint.width / 2;
+  const halfDepth = footprint.height / 2;
+  const reach = Math.abs(normalLocal.x) * halfWidth + Math.abs(normalLocal.y) * halfDepth;
 
-  const x = transform.mirrored ? -normal.x : normal.x;
-  const radians = (transform.rotation / 1000) * (Math.PI / 180);
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
+  const faceCentreLocal = {
+    x: centre.x + normalLocal.x * reach,
+    y: centre.y + normalLocal.y * reach,
+  };
+
+  const origin = localToModel(faceCentreLocal, transform);
+  const centreModel = localToModel(centre, transform);
+
+  // Rotate the local normal into model space by transforming a point and subtracting the centre,
+  // so mirroring and rotation are both accounted for the same way `localToModel` accounts for them.
+  const tip = localToModel(
+    { x: centre.x + normalLocal.x, y: centre.y + normalLocal.y },
+    transform,
+  );
+  const normal = { x: tip.x - centreModel.x, y: tip.y - centreModel.y };
+  const normalLength = Math.hypot(normal.x, normal.y) || 1;
+  const unitNormal = { x: normal.x / normalLength, y: normal.y / normalLength };
+
+  // The face's own width axis is perpendicular to its normal.
+  const axis = { x: -unitNormal.y, y: unitNormal.x };
+  const corners = footprintCorners(object, transform);
+  const projections = corners.map((corner) => corner.x * axis.x + corner.y * axis.y);
 
   return {
-    origin: localToModel(localOrigin, transform),
-    direction: { x: x * cos - normal.y * sin, y: x * sin + normal.y * cos },
+    origin,
+    normal: unitNormal,
+    axis,
+    min: Math.min(...projections),
+    max: Math.max(...projections),
   };
 }
 

@@ -219,14 +219,18 @@ documented in `docs/data-model/OBJECT_MODEL.md`. Every shipped catalogue record 
 the corner, not the middle.
 
 `@mfd/object-library`'s `geometry.ts` is the sole owner of this contract: `localFootprintRect`,
-`footprintCorners`, `footprintBounds`, `clearanceZones`, `faceProbe`, `localToModel` and
-`modelToLocal` are the only functions permitted to read `symbol.origin` and reason about where a
-footprint actually sits. Every consumer — the renderer, the three rule-engine evaluators (collision,
-clearance, boundary), the report engine's floor plan, the AI solver's scoring criteria — calls into
-these rather than re-deriving a footprint from `position` by hand. The one legitimate direction of
-travel the other way, "I have a footprint's desired centre, not a placement" — true of a packing
-algorithm's internal math — goes through the one named adapter, `transformForCentre`, and nowhere
-else.
+`footprintCorners`, `footprintBounds`, `footprintCentre`, `clearanceZones`, `faceGeometry`,
+`localToModel` and `modelToLocal` are the only functions permitted to read `symbol.origin` and reason
+about where a footprint actually sits. Every consumer — the renderer, the three rule-engine
+evaluators (collision, clearance, boundary), the report engine's floor plan, the AI solver's scoring
+criteria — calls into these rather than re-deriving a footprint from `position` by hand.
+`@mfd/rule-engine`'s own clearance evaluator delegates to `faceGeometry` too, rather than keeping its
+own copy of the same computation (`evaluators/clearance.ts`'s former private `faceOf`, hoisted here
+once two packages needed the identical geometry). The two legitimate directions of travel the other
+way — "I have a footprint's desired centre, not a placement", true of a packing algorithm's internal
+math, and "I need this placement's centre, not its `transform.position`", true of a routed distance
+or a report figure — go through the two named adapters, `transformForCentre` and `footprintCentre`,
+and nowhere else.
 
 **What this closed.** Two independent hand-rolled re-derivations both assumed `position` was the
 centre: `packages/ai-local/src/generate.ts`'s candidate generator (mistaking every existing
@@ -241,7 +245,7 @@ placement through generation and Gate 2, and a serialize/reload round trip) and
 `apps/web/src/features/layout/runSolver.test.ts` (the specific corner-vs-centre case: a bed whose
 corner sits inside an 8 m room and whose true centre sits 400 mm past its wall).
 
-**What a later review round found still open, in the same fix.** `criteria.ts`'s
+**What a later review round found still open, in the same fix — since closed.** `criteria.ts`'s
 `freeDistanceOnSide` replaced its `transform.position`-anchored probe with one derived from a
 `ClearanceZone`'s polygon, on the stated premise that the polygon's first two corners are always the
 face nearest the footprint. That premise is true for `front` alone: a zone rectangle's offset runs
@@ -251,21 +255,47 @@ correctly and, on the other three sides, walked parallel to the face or into the
 footprint — live through `scoreLayout`, an obstruction squarely inside a `left` or `right` zone
 scored full marks, and a `rear` zone read a false, inflated margin. The regression test written
 alongside the original fix asserted only `front`, at rotation 0 and 90°, and could not have caught
-this: it is the one side the defect could not touch. Closed by `faceProbe`, a new `geometry.ts`
-function that derives the probe's anchor and outward direction from the side's own model-space
-normal rather than from any polygon's corner order, tested independently across all four sides, five
-rotations and both mirror states in `geometry.test.ts`; `criteria.ts` now delegates to it rather than
-reading a zone polygon at all. Regression coverage in `score.test.ts` now covers all four sides, plus
-a direct assertion that `compliance_margin`'s implied gap agrees with the rule engine's own `measured`
-clearance finding on identical geometry — the two had silently disagreed under the front-only fix.
+this: it is the one side the defect could not touch. Closed by `faceGeometry`, a `geometry.ts`
+function that derives a face's anchor, outward normal and lateral extent from the side's own
+model-space normal rather than from any polygon's corner order, tested independently across all four
+sides, five rotations and both mirror states in `geometry.test.ts`; both `criteria.ts` and
+`@mfd/rule-engine`'s clearance evaluator delegate to it rather than either keeping its own geometry.
 
-**Known, deliberately out of scope.** Four call sites measure distance *to* a machine —
-`ro_piping_length`/`electrical_routing`/`walking_distance`/`drain_routing` (`criteria.ts`) and the
-optimiser's nearest-match (`optimise.ts`) and installation planner (`runPlanner.ts`) — by passing
-`placement.transform.position` as the machine's location. That is `transform.position`'s documented
-meaning, so it is not a contract violation the way the above were; but it means a routed distance is
-measured to the footprint's corner, not its centre or nearest face, and is silently anchor-dependent
-in a way a report reader is unlikely to expect — see the decision below.
+A third finding, from the same round, went further: even correctly anchored, the probe walked a
+*single ray* from the face's own midpoint, so an obstruction anywhere else in the declared clearance
+zone — off to one side of centre — was invisible to it and `compliance_margin` reported full marks.
+**Owner decision: measure the minimum gap across the whole face**, matching
+`@mfd/rule-engine`'s own clearance evaluator (its exported `gapAlongNormal`, from `sat.ts`) and
+`measureMaintenanceAccess`'s existing "full containment, not mere overlap" standard, rather than the
+centreline. `freeDistanceOnSide` now calls `gapAlongNormal` directly for every other placement and
+obstruction in the room — the same function, the same result, rather than a second implementation
+free to drift from the rule engine's own finding on identical geometry. The room boundary is not a
+polygon "in front of" the face the way an obstruction is, so it is checked at the face's own two
+ends (`face.min`/`face.max`) instead: for a convex room, the distance to the boundary along a fixed
+direction is a concave function of the starting point along the face, and a concave function over an
+interval attains its minimum at one of the interval's endpoints, so the two ends are provably enough
+— this does not hold for a concave room outline, which remains an unclosed, pre-existing
+imprecision (the room polygon was already reduced to its axis-aligned bounds before this round, and
+still is). Regression coverage in `score.test.ts`: the exact scenario the review measured — 3.0
+(the ceiling) before the fix, 0.125 after, for an obstruction squarely inside a zone but off-centre.
+
+**Also decided, in the same round: the routing/report anchor point.** `ro_piping_length`,
+`electrical_routing`, `walking_distance`, `drain_routing`, `installation_feasibility` (all
+`criteria.ts`), the optimiser's nearest-match (`optimise.ts`), and the installation planner's search
+extent and routes (`runPlanner.ts`) all measured distance *to* a machine by passing
+`placement.transform.position` — the footprint's corner — directly. That was `transform.position`'s
+documented meaning, so it was not a contract violation the way the geometry bugs above were, but it
+meant a routed distance was measured to a corner nobody chose for that reason, silently
+anchor-dependent in a way a report reader had no way to know, and a pure rotation
+(`rotatePlacementCommand`) never moved any of these numbers even though the machine visibly swept
+elsewhere on the drawing. **Owner decision: the footprint's true centre**, via a new adapter,
+`footprintCentre` (`footprintBounds`'s bounding-box midpoint — the same fact `transformForCentre`
+solves in the opposite direction). Every call site above, plus the report schedule's position
+column, now goes through it; every one falls back to the raw `transform.position` when the catalogue
+has nothing for a placement, since a route or a schedule row still needs an answer. Every previously
+reported routing/walking score and every printed schedule position has shifted accordingly —
+expected, and re-baselined in `score.test.ts` and confirmed unchanged in kind (not in value) by the
+Hospital_044 replay.
 
 ## 4. Deferred / Flagged Decisions
 
@@ -279,8 +309,6 @@ Versions below are those of the TS Edition specification, section 7.
 | Multi-tenancy / RBAC | Decide before `apps/api` | SaaS vs on-prem changes the auth model, not just a config flag. |
 | LLM data residency | Decide before Version 3 | If hospital data cannot leave the network, AD-10's deployment changes fundamentally. |
 | DXF / DWG / IFC import | Future, per spec 5.1 | Version 1 imports raster floor plans only. |
-| Routing/report anchor point | Owner decision required (AD-21 follow-up) | `ro_piping_length`, `electrical_routing`, `walking_distance`, `drain_routing`, `installation_feasibility` (all `criteria.ts`), the optimiser's nearest-match (`optimise.ts`), the installation planner's search extent and routes (`runPlanner.ts`), and the report schedule's position column all measure to/print `transform.position` — the footprint's corner. A pure rotation (`rotatePlacementCommand`) never changes `position`, so none of these numbers move when a machine visibly sweeps elsewhere, and since this fix made generated placements corner-anchored where they were previously centre-anchored, every one of these numbers has silently shifted by roughly half a footprint versus before. Options: **(A)** keep the corner — no work, but the anchor is origin-dependent and a report reader is not told what point "position" names; **(B)** the footprint centre via `footprintBounds`'s bounding-box midpoint — one adapter, rotation-stable, changes every currently-reported length; **(C)** the nearest declared service port — most faithful to what a pipe run actually measures, unmeasurable today since `portLocations` is null on both shipped catalogue records. Blocked until decided: any re-baselining of routing/walking scores, and the report schedule's "position" column label. |
-| `compliance_margin`'s face measurement: centreline or whole face | Owner decision required (AD-21 follow-up, blocking) | `criteria.ts`'s `freeDistanceOnSide` walks a single ray from a service face's own midpoint (`faceProbe`'s `origin`) — an obstruction anywhere else in the declared clearance zone, off to one side of centre, is invisible to it and the criterion reports full marks. Measured: a bed's rear zone with an obstruction squarely inside it, off-centre, scores `3.0` (the ceiling); the same obstruction shifted onto the centreline scores `0.125`. `@mfd/rule-engine`'s own clearance evaluator already measures the true minimum gap across the whole face width (`sat.ts`'s exported `gapAlongNormal`, used by `evaluators/clearance.ts`) and does not have this blind spot — the two engines can and do disagree on identical geometry whenever an obstruction sits off-centre. `measureMaintenanceAccess`, a different criterion, already treats a clearance zone as fully occupied by anything overlapping any part of it ("full containment, not mere overlap"), so the codebase does not currently agree with itself about what a clearance zone's occupancy means. Options: **(A)** measure the minimum gap across the whole face, reusing `gapAlongNormal` rather than writing a third implementation — matches the rule engine, matches `measureMaintenanceAccess`'s standard, and every currently-reported `compliance_margin` involving an off-centre obstruction changes; **(B)** keep the centreline ray — no work, but `compliance_margin` can permanently disagree with the rule engine's own finding on the same placement, which is exactly what AD-21 exists to prevent. Recommendation (a recommendation, not a decision): (A). Blocked until decided: closing this finding, and any resulting re-baseline of `compliance_margin` scores. |
 
 ## 5. Toolchain
 

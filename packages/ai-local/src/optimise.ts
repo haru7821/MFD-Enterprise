@@ -1,5 +1,7 @@
 import type { ProposedCommand, ScoreBreakdown, ScoringCriterion } from '@mfd/ai-contract';
 import type { Placement } from '@mfd/document-model';
+import type { Catalog } from '@mfd/object-library';
+import { footprintCentre } from '@mfd/object-library';
 
 import { type Rejection, applyGates, distinctViolations } from './gates';
 import { type RankInput, type RankedLayout, rankLayouts } from './rank';
@@ -294,7 +296,7 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
   }
 
   const proposals = better.map((layout, index) => {
-    const commands = commandsFor(input.current, layout.placements);
+    const commands = commandsFor(input.current, layout.placements, input.catalog);
     assertNoDeletions(commands);
 
     return {
@@ -328,10 +330,11 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
 export function commandsFor(
   current: readonly Placement[],
   target: readonly Placement[],
+  catalog: Catalog,
 ): ProposedCommand[] {
   const commands: ProposedCommand[] = [];
 
-  for (const { source, target: claimed, distance } of assignNearest(current, target)) {
+  for (const { source, target: claimed, distance } of assignNearest(current, target, catalog)) {
     // A machine already in the right place needs no command. An optimisation that emitted a move
     // for every machine would show as twelve changes when it made two.
     if (distance > 0) {
@@ -378,6 +381,7 @@ interface Assignment {
 function assignNearest(
   current: readonly Placement[],
   target: readonly Placement[],
+  catalog: Catalog,
 ): Assignment[] {
   const ordered = [...current].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const unclaimed = target.map((placement, index) => ({ placement, index }));
@@ -386,11 +390,12 @@ function assignNearest(
   for (const source of ordered) {
     let bestIndex = 0;
     let bestDistance = Number.POSITIVE_INFINITY;
+    const sourceCentre = centreOf(source, catalog);
 
     for (const [index, candidate] of unclaimed.entries()) {
+      const candidateCentre = centreOf(candidate.placement, catalog);
       const distance =
-        Math.abs(candidate.placement.transform.position.x - source.transform.position.x) +
-        Math.abs(candidate.placement.transform.position.y - source.transform.position.y);
+        Math.abs(candidateCentre.x - sourceCentre.x) + Math.abs(candidateCentre.y - sourceCentre.y);
       if (distance < bestDistance) {
         bestDistance = distance;
         bestIndex = index;
@@ -409,6 +414,25 @@ function assignNearest(
   }
 
   return assignments;
+}
+
+/**
+ * A placement's footprint centre, for the nearest-match assignment above — not `transform.position`.
+ *
+ * > Owner decision, AD-21 routing/report anchor follow-up. Two same-sized machines that only
+ * > differ in rotation have identical corners' Manhattan distance cancel out only when their
+ * > rotations agree; when a proposal also turns a machine, its corner moves by more than the
+ * > machine actually did, and the assignment could match it to the wrong candidate at high station
+ * > counts. The centre is what actually moved.
+ *
+ * Falls back to `transform.position` when the catalogue has nothing for this placement — the
+ * assignment still needs an answer, and an approximate one is better than none; every other
+ * criterion in this package refuses outright on a missing catalogue entry instead, because a
+ * refusal is not an option for a nearest-match heuristic with no measurement contract to refuse.
+ */
+function centreOf(placement: Placement, catalog: Catalog): Placement['transform']['position'] {
+  const object = catalog.get(placement.equipmentObjectId);
+  return object ? footprintCentre(object, placement.transform) : placement.transform.position;
 }
 
 /**
@@ -492,6 +516,7 @@ export interface PlacementDiffEntry {
 export function diffPlacements(
   current: readonly Placement[],
   proposed: readonly Placement[],
+  catalog: Catalog,
 ): PlacementDiffEntry[] {
   /*
    * `added` covers generation, where there is nothing to move from; `moved` and `unchanged` cover
@@ -499,7 +524,7 @@ export function diffPlacements(
    * canvas should not need to know which operation produced the proposal they are showing.
    */
   const byTarget = new Map(
-    assignNearest(current, proposed).map((assignment) => [assignment.targetIndex, assignment]),
+    assignNearest(current, proposed, catalog).map((assignment) => [assignment.targetIndex, assignment]),
   );
 
   return proposed.map((placement, index) => {

@@ -219,6 +219,12 @@ export interface PlacementRow {
   readonly placementId: string;
   readonly label: string;
   readonly model: string;
+  /**
+   * The footprint's true centre, in model millimetres — not `transform.position` (the front-left
+   * corner, for every shipped record). Owner decision, AD-21 routing/report anchor follow-up: a
+   * reader has no way to know which point a bare "position" names, and the corner never moves
+   * under a pure rotation even though the machine visibly sweeps elsewhere on the drawing.
+   */
   readonly position: { readonly x: number; readonly y: number };
   /** Degrees, rounded — millidegrees are a storage detail, not a report figure. */
   readonly rotationDegrees: number;

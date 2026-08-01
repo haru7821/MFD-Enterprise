@@ -1,12 +1,4 @@
-import { type Vec2 } from '@mfd/cad-engine';
-import {
-  type EquipmentObject,
-  fieldStatus,
-  footprintCorners,
-  localFootprintRect,
-  localToModel,
-  sideNormals,
-} from '@mfd/object-library';
+import { faceGeometry, fieldStatus, footprintCorners } from '@mfd/object-library';
 
 import { SIDE_WORDS } from '../messages';
 import { type EvaluationResult, decideLevel, reasonOf, weakestStatus } from '../result';
@@ -34,52 +26,6 @@ import type { EvaluationContext, ResolvedPlacement } from './types';
  * invert left and right, which would put both clearances on the wrong side of
  * every result. It cannot be settled from here — only the document settles it.
  */
-
-/** The face of the footprint on a given side, in model space. */
-function faceOf(
-  object: EquipmentObject,
-  transform: ResolvedPlacement['placement']['transform'],
-  normalLocal: Vec2,
-): { origin: Vec2; normal: Vec2; axis: Vec2; min: number; max: number } {
-  const local = localFootprintRect(object);
-
-  // A point on the face: the footprint centre pushed out to the face plane.
-  const centre = { x: local.x + local.width / 2, y: local.y + local.height / 2 };
-  const halfWidth = local.width / 2;
-  const halfDepth = local.height / 2;
-  const reach = Math.abs(normalLocal.x) * halfWidth + Math.abs(normalLocal.y) * halfDepth;
-
-  const faceCentreLocal = {
-    x: centre.x + normalLocal.x * reach,
-    y: centre.y + normalLocal.y * reach,
-  };
-
-  const origin = localToModel(faceCentreLocal, transform);
-  const centreModel = localToModel(centre, transform);
-
-  // Rotate the local normal into model space by transforming a point and
-  // subtracting the centre, so mirroring and rotation are both accounted for.
-  const tip = localToModel(
-    { x: centre.x + normalLocal.x, y: centre.y + normalLocal.y },
-    transform,
-  );
-  const normal = { x: tip.x - centreModel.x, y: tip.y - centreModel.y };
-  const normalLength = Math.hypot(normal.x, normal.y) || 1;
-  const unitNormal = { x: normal.x / normalLength, y: normal.y / normalLength };
-
-  // The face's own width axis is perpendicular to its normal.
-  const axis = { x: -unitNormal.y, y: unitNormal.x };
-  const corners = footprintCorners(object, transform);
-  const projections = corners.map((corner) => corner.x * axis.x + corner.y * axis.y);
-
-  return {
-    origin,
-    normal: unitNormal,
-    axis,
-    min: Math.min(...projections),
-    max: Math.max(...projections),
-  };
-}
 
 export function evaluateClearance(
   rule: ClearanceRule,
@@ -139,8 +85,7 @@ export function evaluateClearance(
       continue;
     }
 
-    const normals = sideNormals(object);
-    const face = faceOf(object, placement.transform, normals[rule.parameters.side]);
+    const face = faceGeometry(object, placement.transform, rule.parameters.side);
 
     let nearest: number | null = null;
     for (const other of context.placements) {

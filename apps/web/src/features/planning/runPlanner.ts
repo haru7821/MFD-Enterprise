@@ -3,9 +3,9 @@ import { EVALUATION_RESULT_VERSION, type EvaluationReport } from '@mfd/rule-engi
 import { deterministicPlanner } from '@mfd/ai-planner';
 import { dialysisSequenceSet } from '@mfd/ai-planner/sequences';
 import { boundsOf, routedDistance } from '@mfd/ai-local';
-import type { Level, MfdDocument, ReferencePoint } from '@mfd/document-model';
+import type { Level, MfdDocument, Placement, ReferencePoint } from '@mfd/document-model';
 import { obstructionBoundaries } from '@mfd/document-model';
-import { type Catalog, footprintCorners } from '@mfd/object-library';
+import { type Catalog, footprintCentre, footprintCorners } from '@mfd/object-library';
 import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
 import { projectFingerprint } from '@mfd/report-engine';
 import type { RuleSet } from '@mfd/rule-engine';
@@ -187,7 +187,7 @@ function routeAll(level: Level, catalog: Catalog): RoutedLength[] {
    */
   const within = boundsOf([
     ...level.boundaries.flatMap((boundary) => boundary.vertices),
-    ...level.placements.map((placement) => placement.transform.position),
+    ...level.placements.map((placement) => centreOrPosition(placement, catalog)),
     ...level.referencePoints.map((point) => point.position),
   ]);
   if (!within) return [];
@@ -210,7 +210,9 @@ function routeAll(level: Level, catalog: Catalog): RoutedLength[] {
     for (const placement of level.placements) {
       const distance = routedDistance({
         from: origin.position,
-        to: placement.transform.position,
+        // Owner decision, AD-21 routing/report anchor follow-up: the footprint's true centre, not
+        // `transform.position` — the corner for every shipped record.
+        to: centreOrPosition(placement, catalog),
         // The machine being routed *to* is not an obstacle to its own cable.
         blocked: obstacles.flatMap((entry) =>
           entry.placementId === placement.id || entry.bounds === null ? [] : [entry.bounds],
@@ -229,6 +231,18 @@ function routeAll(level: Level, catalog: Catalog): RoutedLength[] {
   }
 
   return out;
+}
+
+/**
+ * A placement's footprint centre, or its raw `transform.position` when the catalogue has nothing
+ * for it — the same fallback `@mfd/ai-local`'s optimiser uses, for the same reason: a route still
+ * needs an endpoint even when the object it is routing to is unknown.
+ *
+ * > Owner decision, AD-21 routing/report anchor follow-up.
+ */
+function centreOrPosition(placement: Placement, catalog: Catalog): Placement['transform']['position'] {
+  const object = catalog.get(placement.equipmentObjectId);
+  return object ? footprintCentre(object, placement.transform) : placement.transform.position;
 }
 
 function connectionKey(service: RoutedLength['service']): 'power' | 'roWater' | 'drain' {
