@@ -2,16 +2,14 @@ import { createCatalog } from '@mfd/object-library';
 import type { Placement } from '@mfd/document-model';
 import { describe, expect, it } from 'vitest';
 
-import { movedArrowTail } from './movedArrowTail';
+import { ghostCentre } from './ghostCentre';
 
 const DRAFT_GROUP = {
   status: 'draft',
   source: { document: null, revision: null, section: null, type: 'estimate', lastUpdated: '2026-08-01' },
 };
 
-/** An 800 x 800, front-left station — inline, the same fixture shape used by
- *  `runPlanner.test.ts` for the same reason: this file cannot reach `packages/ai-local`'s
- *  fixtures, and the shape itself is what the test is about. */
+/** An 800 x 800, front-left station — same inline shape `movedArrowTail.test.ts` uses. */
 function stationCatalog() {
   return createCatalog([
     {
@@ -40,39 +38,38 @@ function stationCatalog() {
   ]);
 }
 
-describe('movedArrowTail — Critical 0 regression (fifth review round)', () => {
-  it("is the source's true centre, not its corner", () => {
-    // An 800x800, front-left station at (1,000, 1,000): its corner is (1,000, 1,000) but its true
-    // centre — half its width and depth further in — is (1,400, 1,400). A corner-anchored tail
-    // would equal `transform.position` itself; asserting the true centre catches that regression.
-    const catalog = stationCatalog();
-    const source: Placement = {
-      id: 'source',
-      equipmentObjectId: 'test_station',
-      equipmentObjectVersion: '1.0.0',
-      label: 'source',
-      transform: { position: { x: 1_000, y: 1_000 }, rotation: 0, mirrored: false },
-      spaceId: null,
-    };
+function placementAt(position: { x: number; y: number }, rotation = 0): Placement {
+  return {
+    id: 'p',
+    equipmentObjectId: 'test_station',
+    equipmentObjectVersion: '1.0.0',
+    label: 'p',
+    transform: { position, rotation, mirrored: false },
+    spaceId: null,
+  };
+}
 
-    expect(movedArrowTail(source, catalog)).toEqual({ x: 1_400, y: 1_400 });
+describe('ghostCentre — Critical 0 regression (sixth review round)', () => {
+  it("is the ghost's true centre, not its corner — discriminates two placements sharing one corner at different rotations", () => {
+    // Both placements share the exact corner (1,000, 1,000): a corner-anchored anchor could not
+    // tell them apart. Their true centres do differ, because rotation moves where that corner
+    // sends the footprint's middle — proving this reads the rotated centre, not the raw position.
+    const catalog = stationCatalog();
+    const unrotated = ghostCentre(placementAt({ x: 1_000, y: 1_000 }, 0), catalog);
+    const rotated = ghostCentre(placementAt({ x: 1_000, y: 1_000 }, 90_000), catalog);
+
+    expect(unrotated).toEqual({ x: 1_400, y: 1_400 });
+    expect(rotated).not.toEqual(unrotated);
+    expect(rotated).not.toEqual({ x: 1_000, y: 1_000 });
   });
 
-  it('is null, not the corner, when the catalogue has nothing for the source', () => {
+  it('is null, not the corner, when the catalogue has nothing for the placement', () => {
     const catalog = stationCatalog();
-    const source: Placement = {
-      id: 'source',
+    const placement: Placement = {
+      ...placementAt({ x: 1_000, y: 1_000 }),
       equipmentObjectId: 'unknown_object',
-      equipmentObjectVersion: '1.0.0',
-      label: 'source',
-      transform: { position: { x: 1_000, y: 1_000 }, rotation: 0, mirrored: false },
-      spaceId: null,
     };
 
-    expect(movedArrowTail(source, catalog)).toBeNull();
-  });
-
-  it('is null when there is no source at all — an added ghost has nothing to draw from', () => {
-    expect(movedArrowTail(null, stationCatalog())).toBeNull();
+    expect(ghostCentre(placement, catalog)).toBeNull();
   });
 });

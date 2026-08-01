@@ -94,12 +94,22 @@ export function evaluateClearance(
       const otherObject = context.catalog.get(other.equipmentObjectId);
       if (!otherObject) continue;
 
-      const gap = gapAlongNormal(
+      const rawGap = gapAlongNormal(
         face,
         { axis: face.axis, min: face.min, max: face.max },
         footprintCorners(otherObject, other.transform),
       );
-      if (gap === null) continue;
+      if (rawGap === null) continue;
+      /*
+       * Owner decision, following the same one taken for `@mfd/ai-local`'s `compliance_margin`:
+       * clamped at zero, not reported signed. A polygon that crosses this face's plane without
+       * colliding with the footprint — confirmed reachable with two ordinary, non-overlapping
+       * placements, not only a contrived shape — produced `measured: -27` and the sentence "S1 has
+       * -27 mm of rear clearance," a number with no defined meaning for a pair the collision rule
+       * does not call touching. The RED verdict is unaffected: `violated` is still decided below,
+       * and zero is already less than any positive threshold a clearance rule can carry.
+       */
+      const gap = Math.max(0, rawGap);
       if (nearest === null || gap < nearest) nearest = gap;
     }
 

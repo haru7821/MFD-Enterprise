@@ -109,6 +109,33 @@ describe('clearance evaluation', () => {
 
     expect(report.results).toHaveLength(0);
   });
+
+  it('clamps a straddling, non-colliding neighbour at zero rather than reporting a signed gap', () => {
+    // A rotated 800x800 station at (-700, -900), rotated 10° (10_000 millidegrees), crosses the
+    // rear face's plane without colliding with the subject at the origin — `polygonsOverlap` finds
+    // a separating axis among the rotated rectangle's own edge normals, but `gapAlongNormal` (which
+    // only tests the face's own normal and lateral axes) sees the neighbour's nearest corner behind
+    // the plane. Before the owner's clamp decision this produced `measured: -27` and the sentence
+    // "FX 1 has -27 mm of rear clearance" — a signed distance nothing asked for, for a pair the
+    // collision rule does not call touching. Owner decision, same one taken for `@mfd/ai-local`'s
+    // `compliance_margin`: clamp at zero.
+    const report = evaluate({
+      placements: [
+        machineAt(1, { x: 0, y: 0 }, 'fixture_machine', 0),
+        machineAt(2, { x: -700, y: -900 }, 'fixture_machine', 10_000),
+      ],
+      catalog: fixtureCatalog([fixtureEquipmentRecord({ width: 800, depth: 800 })]),
+      ruleSet: fixtureRuleSet([
+        fixtureClearanceRule({ side: 'rear', threshold: 800, status: 'verified' }),
+      ]),
+    });
+
+    const first = report.results.find((r) => r.placementIds[0] === 'placement-1');
+    expect(first?.measured).toBe(0);
+    // The clamp changes the number, not the verdict: zero is still short of the 800 mm required.
+    expect(first?.level).toBe('RED');
+    expect(first?.reasonCode).toBe('RC-101');
+  });
 });
 
 describe('collision evaluation', () => {

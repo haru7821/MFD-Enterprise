@@ -311,7 +311,33 @@ A fourth CTO review of this decision found the same anchor mistake one call site
 `entry.source.transform.position` (the corner) to the proposed footprint's own centroid — a pure
 rotation about a shared corner drew a visible arrow for a machine that, by this decision's own
 definition of "moved", had not. Both ends of the arrow now come from the same footprint-centre
-computation.
+computation; the arrow-tail case is extracted into its own module, `movedArrowTail.ts`, so it is
+testable independently of the Konva canvas.
+
+A fifth review found that `gapAlongNormal` (`@mfd/rule-engine`'s `sat.ts`) can return a **negative**
+gap for a polygon that crosses a service face's plane without colliding with the footprint measured
+against it — confirmed directly, reachable with ordinary, non-overlapping, rotated placements, not
+only a contrived shape. Both callers took the value unconditionally: `criteria.ts`'s
+`freeDistanceOnSide` could report a negative ratio for `compliance_margin` on a layout Gate 2 had
+already passed as compliant, and `@mfd/rule-engine`'s own `evaluateClearance` produced findings such
+as "S1 has −27 mm of rear clearance" for a pair the collision rule does not call touching. **Owner
+decision, asked once per engine and answered the same way both times: clamp at zero.** "Free
+distance" means how far outward a service engineer can actually walk, and a neighbour that has
+crossed the plane without colliding is exactly as blocking as one standing at it; the clamp leaves
+the RED/violated determination unaffected in both engines, since zero is already less than any
+positive threshold a clearance rule can carry. Regression coverage: `score.test.ts` (the verified
+straddling-quad case, ratio 0 instead of a negative one) and `evaluate.test.ts` (a rotated,
+non-colliding pair of 800×800 stations, `measured: 0` instead of −27), each guard-broken and
+restored.
+
+**The Hospital_044 replay does not exercise this clamp, and the reason is not the absence of
+straddling geometry in the drawing.** Every clearance rule in that corpus carries `appliedValue:
+null` — the manual figures are not yet sourced, so all sixty clearance findings report `RC-110`
+("threshold unknown"). `measureComplianceMargin`'s own loop over the evaluation report
+(`criteria.ts`) skips any result whose `appliedValue` is null before it ever reaches
+`freeDistanceOnSide`, so the function the clamp lives in is not called at all for this dataset,
+regardless of what geometry it holds. The clamp is unexercised by this replay because the corpus has
+no sourced clearance threshold yet, not because its geometry happens not to straddle a plane.
 
 ## 4. Deferred / Flagged Decisions
 

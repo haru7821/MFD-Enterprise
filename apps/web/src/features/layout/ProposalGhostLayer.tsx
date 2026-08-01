@@ -3,8 +3,9 @@ import { Line, Text } from 'react-konva';
 
 import type { PlacementChange, PlacementDiffEntry } from '@mfd/ai-local';
 import { type Viewport, worldToScreen } from '@mfd/cad-engine';
-import { type Catalog, footprintCentre, footprintCorners } from '@mfd/object-library';
+import { type Catalog, footprintCorners } from '@mfd/object-library';
 
+import { ghostCentre } from './ghostCentre';
 import { movedArrowTail } from './movedArrowTail';
 
 interface ProposalGhostLayerProps {
@@ -63,7 +64,9 @@ export function ProposalGhostLayer({ diff, catalog, viewport }: ProposalGhostLay
         const corners = footprintCorners(object, entry.placement.transform).map((corner) =>
           worldToScreen(viewport, corner),
         );
-        const centre = worldToScreen(viewport, footprintCentre(object, entry.placement.transform));
+        const centreModel = ghostCentre(entry.placement, catalog);
+        if (!centreModel) return null;
+        const centre = worldToScreen(viewport, centreModel);
         const sourceCentreModel = movedArrowTail(entry.source, catalog);
         const sourceCentre = sourceCentreModel ? worldToScreen(viewport, sourceCentreModel) : null;
 
