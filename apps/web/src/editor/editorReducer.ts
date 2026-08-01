@@ -1,3 +1,4 @@
+import { transformChange } from '@mfd/ai-local';
 import {
   DEFAULT_SCALE,
   ORIGIN,
@@ -467,15 +468,27 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         if (entry.change === 'unchanged' || entry.source === null) return [];
 
         const source = entry.source;
-        const moved = [
-          movePlacementCommand(levelId, source.id, entry.placement.transform.position),
-        ];
-        if (entry.placement.transform.rotation !== source.transform.rotation) {
-          moved.push(
+        /*
+         * `transformChange` and not a comparison written out here again.
+         *
+         * `@mfd/ai-local`'s `commandsFor` decides the same thing for the solver's own command list,
+         * and this file used to decide it a second way — emitting a move unconditionally and
+         * testing only rotation. Two derivations of "what changed" is how the applied drawing and
+         * the previewed ghosts come to disagree; the review found them already disagreeing.
+         */
+        const change = transformChange(source.transform, entry.placement.transform);
+        const commandsForEntry = [];
+        if (change.moved) {
+          commandsForEntry.push(
+            movePlacementCommand(levelId, source.id, entry.placement.transform.position),
+          );
+        }
+        if (change.rotated) {
+          commandsForEntry.push(
             rotatePlacementCommand(levelId, source.id, entry.placement.transform.rotation),
           );
         }
-        return moved;
+        return commandsForEntry;
       });
 
       // Nothing to do — an "optimisation" in which every machine stayed put. Not reachable through

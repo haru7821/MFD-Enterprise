@@ -4,6 +4,8 @@ import type { ProposedCommand, ReferencePointSummary } from '@mfd/ai-contract';
 import { scoreBreakdownSchema } from '@mfd/ai-contract';
 import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
 import type { Placement } from '@mfd/document-model';
+import type { Vec2 } from '@mfd/cad-engine';
+import { footprintCentre, transformForCentre } from '@mfd/object-library';
 
 import {
   fixtureCatalog,
@@ -648,5 +650,70 @@ describe('command derivation', () => {
     const trapEntry = diff.find((entry) => entry.placement.id === 'trap');
     expect(movedEntry?.source?.id).toBe('source');
     expect(trapEntry?.change).toBe('added');
+  });
+
+  /*
+   * The converse of the test above, and the case it left open.
+   *
+   * That one covers a shared **corner** with different centres. This one covers a shared **centre**
+   * with different corners: a machine turned about its own centre. `assignNearest` reports distance
+   * 0 for it — correctly, the centre did not move — and the old code read that scalar as "nothing
+   * changed", so it emitted the rotation without the move and called the entry `unchanged`.
+   *
+   * The bed is 1,000 x 2,100 with a front-left origin. At `(0, 0)` unrotated its centre is
+   * (500, 1,050). `transformForCentre` puts the same centre under a 90° turn at corner (1,550, 550).
+   * Same centre, different corner, and a rotation the drawing must actually perform.
+   */
+  it('emits the move for a machine turned about its own centre, and calls it a change', () => {
+    const catalog = fixtureCatalog();
+    const bed = catalog.get('fixture_bed')!;
+
+    const source: Placement = {
+      id: 'source',
+      equipmentObjectId: 'fixture_bed',
+      equipmentObjectVersion: '1.0.0',
+      label: 'source',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const centre = footprintCentre(bed, source.transform);
+    const turned: Placement = {
+      ...source,
+      id: 'turned',
+      label: 'turned',
+      transform: transformForCentre(bed, centre, 90_000),
+    };
+
+    // The premise: same centre, different corner. If this ever stops holding the test below is
+    // measuring something else.
+    expect(footprintCentre(bed, turned.transform)).toEqual(centre);
+    expect(turned.transform.position).not.toEqual(source.transform.position);
+
+    const commands = commandsFor([source], [turned], catalog);
+    const kinds = commands.map((command) => command.type);
+
+    // Both, and the move carries the corner the proposal actually specifies. Emitting the rotation
+    // alone left the machine 1,644.7 mm from where it was scored.
+    expect(kinds).toContain('placement.move');
+    expect(kinds).toContain('placement.rotate');
+    const move = commands.find((command) => command.type === 'placement.move');
+    expect((move?.payload as { position: Vec2 }).position).toEqual(turned.transform.position);
+
+    // And the panel must not call it unchanged, or the ghost layer draws nothing and the reducer
+    // skips it.
+    const diff = diffPlacements([source], [turned], catalog);
+    expect(diff[0]?.change).toBe('moved');
+  });
+
+  it('refuses a proposal that changes "mirrored", which no command can carry', () => {
+    const catalog = fixtureCatalog();
+    const source = placement('a', 1_000, 1_000);
+    const flipped: Placement = {
+      ...source,
+      id: 'flipped',
+      transform: { ...source.transform, mirrored: true },
+    };
+
+    expect(() => commandsFor([source], [flipped], catalog)).toThrow(/mirrored/);
   });
 });

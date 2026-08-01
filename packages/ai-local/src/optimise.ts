@@ -334,16 +334,19 @@ export function commandsFor(
 ): ProposedCommand[] {
   const commands: ProposedCommand[] = [];
 
-  for (const { source, target: claimed, distance } of assignNearest(current, target, catalog)) {
+  for (const { source, target: claimed } of assignNearest(current, target, catalog)) {
+    const change = transformChange(source.transform, claimed.transform);
+    assertNoMirrorChange(source.id, change);
+
     // A machine already in the right place needs no command. An optimisation that emitted a move
     // for every machine would show as twelve changes when it made two.
-    if (distance > 0) {
+    if (change.moved) {
       commands.push({
         type: 'placement.move',
         payload: { placementId: source.id, position: claimed.transform.position },
       });
     }
-    if (claimed.transform.rotation !== source.transform.rotation) {
+    if (change.rotated) {
       commands.push({
         type: 'placement.rotate',
         payload: { placementId: source.id, rotation: claimed.transform.rotation },
@@ -352,6 +355,65 @@ export function commandsFor(
   }
 
   return commands;
+}
+
+/**
+ * What actually differs between where a machine is and where a proposal puts it.
+ *
+ * **The one place that answers this question**, for both the commands an approval executes
+ * (`commandsFor`) and the change the panel and the ghost layer draw (`diffPlacements`). Two
+ * derivations of "did this machine move?" is how the drawing and the highlight come to disagree.
+ *
+ * ## Why it compares fields rather than a distance
+ *
+ * `assignNearest` returns a Manhattan distance between **footprint centres**, and that is the right
+ * quantity for the job it has — deciding which target each machine is assigned to. It is not
+ * evidence that nothing changed.
+ *
+ * > Architecture decision AD-21: `transform.position` is where local `(0, 0)` sits — the front-left
+ * > corner on every shipped record — not the footprint's centre.
+ *
+ * So the two quantities come apart exactly when a proposal **turns a machine about its own centre**:
+ * the centre distance is zero and `transform.position` is different. Gating a corner-valued command
+ * on a centre-valued scalar dropped the move, applied the rotation alone, and landed the machine
+ * somewhere neither the solver nor the engineer chose — 1,644.7 mm away in the reviewed case, with
+ * the panel reporting the machine "unchanged".
+ */
+export interface TransformChange {
+  readonly moved: boolean;
+  readonly rotated: boolean;
+  readonly mirrored: boolean;
+  /** True when the machine ends up in exactly the same place, the same way round. */
+  readonly unchanged: boolean;
+}
+
+export function transformChange(
+  source: Placement['transform'],
+  target: Placement['transform'],
+): TransformChange {
+  const moved =
+    source.position.x !== target.position.x || source.position.y !== target.position.y;
+  const rotated = source.rotation !== target.rotation;
+  const mirrored = source.mirrored !== target.mirrored;
+  return { moved, rotated, mirrored, unchanged: !moved && !rotated && !mirrored };
+}
+
+/**
+ * Refuse to emit a command set that cannot reproduce the proposal.
+ *
+ * There is no mirror command in the document model, and nothing in this package sets `mirrored` —
+ * so this cannot fire today. It is written rather than assumed because the failure it guards is the
+ * one this file was just corrected for: a difference the command set silently does not carry means
+ * the applied layout is not the layout that was gated and scored. Throwing is the honest response;
+ * quietly applying the rest is what produced a 1,644.7 mm error.
+ */
+function assertNoMirrorChange(placementId: string, change: TransformChange): void {
+  if (change.mirrored) {
+    throw new Error(
+      `cannot apply proposal for placement ${placementId}: it changes "mirrored", ` +
+        'and the document model has no command for that',
+    );
+  }
 }
 
 interface Assignment {
@@ -532,9 +594,16 @@ export function diffPlacements(
     // Nothing was assigned to it, so nothing is moving into it: a machine that was not there before.
     if (!assignment) return { placement, change: 'added', source: null };
 
+    /*
+     * The same predicate `commandsFor` gates its commands on — see {@link transformChange}. Read
+     * off the transforms rather than off `assignment.distance`, which is a centre-to-centre figure
+     * and reports zero for a machine turned about its own centre.
+     */
     return {
       placement,
-      change: assignment.distance === 0 ? 'unchanged' : 'moved',
+      change: transformChange(assignment.source.transform, placement.transform).unchanged
+        ? 'unchanged'
+        : 'moved',
       source: assignment.source,
     };
   });
