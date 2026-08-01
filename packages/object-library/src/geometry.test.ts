@@ -21,6 +21,7 @@ function draftVerification() {
 import { parseEquipmentObject } from './catalog';
 import {
   clearanceZones,
+  faceProbe,
   footprintBounds,
   footprintContains,
   footprintCorners,
@@ -296,6 +297,86 @@ describe('clearance zones', () => {
     // Turned through half a circle, the front clearance now extends in −y.
     expect(Math.max(...ys)).toBeCloseTo(-750, 6);
     expect(Math.min(...ys)).toBeCloseTo(-1_750, 6);
+  });
+});
+
+describe('faceProbe — the anchor a clearance probe walks outward from', () => {
+  /*
+   * Found by the Critical 0 review: a probe that read "inner edge" and "outer edge" off a
+   * `ClearanceZone` polygon by corner index was correct for `front` and wrong for the other three
+   * — `rear`'s first two corners are its *outer* edge, and `left`/`right`'s first two corners are
+   * one inner, one outer, because the axis the clearance offset runs along swaps which pair of
+   * `rectCorners` entries shares an edge. `faceProbe` never reads a `ClearanceZone` at all, so
+   * there is no index to get backwards.
+   *
+   * Independent check, not a restatement of the formula: for every side, `faceProbe`'s `origin`
+   * must be the midpoint of the two `footprintCorners` that actually bound that face — the
+   * rear/front pair (indices 0-1 and 2-3) or the left/right pair (indices 0-3 and 1-2) — and
+   * `direction` must point away from the footprint, checked by walking a short distance each way
+   * and asking `footprintContains`, not by re-deriving the same rotation math.
+   */
+  const FACE_CORNER_INDICES: Record<'front' | 'rear' | 'left' | 'right', readonly [number, number]> = {
+    rear: [0, 1],
+    front: [2, 3],
+    left: [0, 3],
+    right: [1, 2],
+  };
+
+  it.each(['front', 'rear', 'left', 'right'] as const)(
+    'anchors %s on its own face, walking away from the footprint, at several rotations',
+    (side) => {
+      for (const rotation of [0, 37_500, 90_000, 181_000, 271_500]) {
+        const object = machine({
+          serviceClearance: { front: 1_200, rear: 800, left: 400, right: 500, verification: draftVerification() },
+        });
+        const transform: Transform = { position: { x: 1_000, y: -500 }, rotation, mirrored: false };
+
+        const corners = footprintCorners(object, transform);
+        const [i, j] = FACE_CORNER_INDICES[side];
+        const a = corners[i];
+        const b = corners[j];
+        if (!a || !b) throw new Error('footprintCorners did not return four points');
+        const expectedOrigin = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+
+        const probe = faceProbe(object, transform, side);
+        expect(probe.origin.x, `${side} @ ${rotation} origin.x`).toBeCloseTo(expectedOrigin.x, 6);
+        expect(probe.origin.y, `${side} @ ${rotation} origin.y`).toBeCloseTo(expectedOrigin.y, 6);
+
+        const length = Math.hypot(probe.direction.x, probe.direction.y);
+        expect(length, `${side} @ ${rotation} unit length`).toBeCloseTo(1, 6);
+
+        const outward = {
+          x: probe.origin.x + probe.direction.x * 10,
+          y: probe.origin.y + probe.direction.y * 10,
+        };
+        const inward = {
+          x: probe.origin.x - probe.direction.x * 10,
+          y: probe.origin.y - probe.direction.y * 10,
+        };
+        expect(footprintContains(object, transform, outward), `${side} @ ${rotation} outward`).toBe(
+          false,
+        );
+        expect(footprintContains(object, transform, inward), `${side} @ ${rotation} inward`).toBe(
+          true,
+        );
+      }
+    },
+  );
+
+  it('mirrors the direction along with the footprint', () => {
+    const object = machine({
+      serviceClearance: { front: null, rear: null, left: 400, right: null, verification: draftVerification() },
+    });
+    const transform: Transform = { position: { x: 0, y: 0 }, rotation: 0, mirrored: true };
+
+    const probe = faceProbe(object, transform, 'left');
+
+    // Mirrored about the object's own axis, so left's outward normal (-1, 0) unmirrored flips to
+    // (1, 0) — checked the same way, by walking each direction and asking the footprint.
+    const outward = { x: probe.origin.x + probe.direction.x * 10, y: probe.origin.y };
+    const inward = { x: probe.origin.x - probe.direction.x * 10, y: probe.origin.y };
+    expect(footprintContains(object, transform, outward)).toBe(false);
+    expect(footprintContains(object, transform, inward)).toBe(true);
   });
 });
 

@@ -219,33 +219,55 @@ documented in `docs/data-model/OBJECT_MODEL.md`. Every shipped catalogue record 
 the corner, not the middle.
 
 `@mfd/object-library`'s `geometry.ts` is the sole owner of this contract: `localFootprintRect`,
-`footprintCorners`, `footprintBounds`, `clearanceZones`, `localToModel` and `modelToLocal` are the
-only functions permitted to read `symbol.origin` and reason about where a footprint actually sits.
-Every consumer — the renderer, the three rule-engine evaluators (collision, clearance, boundary),
-the report engine's floor plan, the AI solver's scoring criteria — calls into these rather than
-re-deriving a footprint from `position` by hand. The one legitimate direction of travel the other
-way, "I have a footprint's desired centre, not a placement" — true of a packing algorithm's internal
-math — goes through the one named adapter, `transformForCentre`, and nowhere else.
+`footprintCorners`, `footprintBounds`, `clearanceZones`, `faceProbe`, `localToModel` and
+`modelToLocal` are the only functions permitted to read `symbol.origin` and reason about where a
+footprint actually sits. Every consumer — the renderer, the three rule-engine evaluators (collision,
+clearance, boundary), the report engine's floor plan, the AI solver's scoring criteria — calls into
+these rather than re-deriving a footprint from `position` by hand. The one legitimate direction of
+travel the other way, "I have a footprint's desired centre, not a placement" — true of a packing
+algorithm's internal math — goes through the one named adapter, `transformForCentre`, and nowhere
+else.
 
-This was violated, silently, by two independent hand-rolled re-derivations that both assumed
-`position` was the centre: `packages/ai-local/src/generate.ts`'s candidate generator (mistaking
-every existing machine's occupied polygon, and placing every new one, half a footprint away from
-where it was drawn) and `apps/web/src/features/layout/runSolver.ts`'s room-membership test (silently
-testing the corner against the room polygon while its own comment claimed "centre-based"). Neither
-was caught by a unit fixture, because both bugs are invisible at `rotation: 0` on a `centre`-origin
-object — no shipped object is `centre`-origin, and the fixtures that exercised rotation predate the
-rotation-aware footprint work that made the corner/centre distinction observable. Fixed by deleting
-the hand-rolled geometry and delegating; regression-tested in
-`packages/ai-local/src/coordinateContract.test.ts`, which drives one rotated placement through
-generation and Gate 2 and confirms its occupied polygon is unchanged by a serialize/reload round
-trip.
+**What this closed.** Two independent hand-rolled re-derivations both assumed `position` was the
+centre: `packages/ai-local/src/generate.ts`'s candidate generator (mistaking every existing
+machine's occupied polygon, and placing every new one, half a footprint away from where it was
+drawn — `transformForCentre` did not exist before this fix; there was no prior attempt to fix this
+one) and `apps/web/src/features/layout/runSolver.ts`'s room-membership test (silently testing the
+corner against the room polygon while its own comment claimed "centre-based"). Neither was caught by
+a unit fixture, because both bugs are invisible at `rotation: 0` on a `centre`-origin object — no
+shipped object is `centre`-origin. Fixed by deleting the hand-rolled geometry and delegating;
+regression-tested in `packages/ai-local/src/coordinateContract.test.ts` (drives one rotated
+placement through generation and Gate 2, and a serialize/reload round trip) and
+`apps/web/src/features/layout/runSolver.test.ts` (the specific corner-vs-centre case: a bed whose
+corner sits inside an 8 m room and whose true centre sits 400 mm past its wall).
 
-`packages/ai-local/src/criteria.ts`'s `freeDistanceOnSide` carried a related, narrower defect: it
-anchored its clearance probe on `transform.position` — correct for a `centre`-origin object, a
-footprint short for every real one — rather than on `clearanceZones`' own face geometry. Closed the
-same way, in `packages/ai-local/src/score.test.ts`.
+**What a later review round found still open, in the same fix.** `criteria.ts`'s
+`freeDistanceOnSide` replaced its `transform.position`-anchored probe with one derived from a
+`ClearanceZone`'s polygon, on the stated premise that the polygon's first two corners are always the
+face nearest the footprint. That premise is true for `front` alone: a zone rectangle's offset runs
+along the local y-axis for `front`/`rear` and the local x-axis for `left`/`right`, and only in the
+first case do `rectCorners`' first two entries happen to share an edge. The probe measured `front`
+correctly and, on the other three sides, walked parallel to the face or into the machine's own
+footprint — live through `scoreLayout`, an obstruction squarely inside a `left` or `right` zone
+scored full marks, and a `rear` zone read a false, inflated margin. The regression test written
+alongside the original fix asserted only `front`, at rotation 0 and 90°, and could not have caught
+this: it is the one side the defect could not touch. Closed by `faceProbe`, a new `geometry.ts`
+function that derives the probe's anchor and outward direction from the side's own model-space
+normal rather than from any polygon's corner order, tested independently across all four sides, five
+rotations and both mirror states in `geometry.test.ts`; `criteria.ts` now delegates to it rather than
+reading a zone polygon at all. Regression coverage in `score.test.ts` now covers all four sides, plus
+a direct assertion that `compliance_margin`'s implied gap agrees with the rule engine's own `measured`
+clearance finding on identical geometry — the two had silently disagreed under the front-only fix.
 
+**Known, deliberately out of scope.** Four call sites measure distance *to* a machine —
+`ro_piping_length`/`electrical_routing`/`walking_distance`/`drain_routing` (`criteria.ts`) and the
+optimiser's nearest-match (`optimise.ts`) and installation planner (`runPlanner.ts`) — by passing
+`placement.transform.position` as the machine's location. That is `transform.position`'s documented
+meaning, so it is not a contract violation the way the above were; but it means a routed distance is
+measured to the footprint's corner, not its centre or nearest face, and is silently anchor-dependent
+in a way a report reader is unlikely to expect — see the decision below.
 
+## 4. Deferred / Flagged Decisions
 
 Versions below are those of the TS Edition specification, section 7.
 
@@ -257,6 +279,7 @@ Versions below are those of the TS Edition specification, section 7.
 | Multi-tenancy / RBAC | Decide before `apps/api` | SaaS vs on-prem changes the auth model, not just a config flag. |
 | LLM data residency | Decide before Version 3 | If hospital data cannot leave the network, AD-10's deployment changes fundamentally. |
 | DXF / DWG / IFC import | Future, per spec 5.1 | Version 1 imports raster floor plans only. |
+| Routing/report anchor point | Owner decision required (AD-21 follow-up) | `ro_piping_length`, `electrical_routing`, `walking_distance`, `drain_routing`, the optimiser's nearest-match, the installation planner, and the report schedule's position column all measure to/print `transform.position` — the footprint's corner. A pure rotation (`rotatePlacementCommand`) never changes `position`, so none of these numbers move when a machine visibly sweeps elsewhere, and since this fix made generated placements corner-anchored where they were previously centre-anchored, every one of these numbers has silently shifted by roughly half a footprint versus before. Options: **(A)** keep the corner — no work, but the anchor is origin-dependent and a report reader is not told what point "position" names; **(B)** the footprint centre via `footprintBounds`'s bounding-box midpoint — one adapter, rotation-stable, changes every currently-reported length; **(C)** the nearest declared service port — most faithful to what a pipe run actually measures, unmeasurable today since `portLocations` is null on both shipped catalogue records. Blocked until decided: any re-baselining of routing/walking scores, and the report schedule's "position" column label. |
 
 ## 5. Toolchain
 

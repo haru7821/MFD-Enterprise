@@ -361,7 +361,7 @@ function roomOf(level: Level, spaceId: string | null) {
  * > true geometric centre regardless of rotation or which corner `transform.position` names, so it
  * > needs no case on `symbol.origin` to get there.
  */
-function withinRoom(placement: Placement, room: PipelineInput['room'], catalog: Catalog): boolean {
+export function withinRoom(placement: Placement, room: PipelineInput['room'], catalog: Catalog): boolean {
   const object = catalog.get(placement.equipmentObjectId);
   if (!object) return false;
 

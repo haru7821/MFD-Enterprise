@@ -259,6 +259,53 @@ export function clearanceZones(
   return zones;
 }
 
+export interface FaceProbe {
+  /** The midpoint of this side's face, in model space — on the footprint, not in the clearance zone. */
+  readonly origin: Vec2;
+  /** The outward unit direction from that face, in model space. */
+  readonly direction: Vec2;
+}
+
+/**
+ * Where a side's face sits, and which way is outward — the anchor a clearance probe walks from.
+ *
+ * A `ClearanceZone`'s polygon is a plain, unlabelled rectangle: which pair of corners is the
+ * "inner" edge (on the footprint) and which is "outer" (`millimetres` away) depends on which axis
+ * the offset runs along, which flips between `front`/`rear` (offset along y, so the first two
+ * `rectCorners` entries happen to share the inner edge) and `left`/`right` (offset along x, so the
+ * first two entries are one inner and one outer corner instead). A caller that reads "the first two
+ * corners are inner" — as a probe anchor once did — is right for two sides and silently wrong for
+ * the other two: it starts on the wrong edge and walks parallel to the face rather than away from
+ * it, and for `rear` it walks *into* the machine's own footprint.
+ *
+ * This sidesteps the ambiguity by not reading it out of a rectangle at all. The face midpoint is
+ * the footprint's own local centre, offset by half its extent along the side's normal axis — a
+ * `centre`-origin fact about the rectangle, true regardless of `symbol.origin` — and the outward
+ * direction is that same local normal, carried through the placement's rotation and mirroring the
+ * same way {@link localToModel} carries a point, minus the translation a direction has none of.
+ */
+export function faceProbe(
+  object: EquipmentObject,
+  transform: Transform,
+  side: ClearanceSide,
+): FaceProbe {
+  const footprint = localFootprintRect(object);
+  const normal = sideNormals(object)[side];
+  const centre = { x: footprint.x + footprint.width / 2, y: footprint.y + footprint.height / 2 };
+  const halfExtent = normal.x !== 0 ? footprint.width / 2 : footprint.height / 2;
+  const localOrigin = { x: centre.x + normal.x * halfExtent, y: centre.y + normal.y * halfExtent };
+
+  const x = transform.mirrored ? -normal.x : normal.x;
+  const radians = (transform.rotation / 1000) * (Math.PI / 180);
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return {
+    origin: localToModel(localOrigin, transform),
+    direction: { x: x * cos - normal.y * sin, y: x * sin + normal.y * cos },
+  };
+}
+
 export interface PortPoint {
   readonly kind: ConnectionKind;
   /** Model-space position in millimetres. */

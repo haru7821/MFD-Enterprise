@@ -4,6 +4,7 @@ import type { ReferencePointSummary } from '@mfd/ai-contract';
 import { SCORING_CRITERIA, scoreBreakdownSchema } from '@mfd/ai-contract';
 import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
 import type { Placement } from '@mfd/document-model';
+import { evaluate } from '@mfd/rule-engine';
 
 import {
   fixtureCatalog,
@@ -878,6 +879,167 @@ describe('equipment geometry rotates with its placement', () => {
     });
 
     expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.375);
+  });
+
+  it.each([
+    {
+      side: 'rear' as const,
+      threshold: 800,
+      // 100 mm into the 800 mm rear zone: the probe starts at the rear face (3000, 3000) and
+      // walks in −y; blocked at the obstruction's near edge, 100 mm out.
+      obstruction: [
+        { x: 3_300, y: 2_700 },
+        { x: 3_600, y: 2_700 },
+        { x: 3_600, y: 2_900 },
+        { x: 3_300, y: 2_900 },
+      ],
+    },
+    {
+      side: 'left' as const,
+      threshold: 400,
+      // The probe starts at the left face (3000, 4050) and walks in −x; blocked 50 mm out.
+      obstruction: [
+        { x: 2_850, y: 4_000 },
+        { x: 2_950, y: 4_000 },
+        { x: 2_950, y: 4_100 },
+        { x: 2_850, y: 4_100 },
+      ],
+    },
+    {
+      side: 'right' as const,
+      threshold: 400,
+      // The probe starts at the right face (4000, 4050) and walks in +x; blocked 50 mm out.
+      obstruction: [
+        { x: 4_050, y: 4_000 },
+        { x: 4_150, y: 4_000 },
+        { x: 4_150, y: 4_100 },
+        { x: 4_050, y: 4_100 },
+      ],
+    },
+  ])(
+    'measures the $side face, not just the one side the previous fix happened to get right',
+    ({ side, threshold, obstruction }) => {
+      /*
+       * The Critical 0 review (round 5) found that the prior fix — deriving a clearance probe's
+       * anchor from a `ClearanceZone` polygon's corner order — was correct for `front` alone.
+       * `front` is the one side where the zone's offset runs along the same local axis (y) that
+       * `rectCorners` happens to pair its first two corners on; for `rear`, `left` and `right` the
+       * "first two corners" claim is false, and the probe silently walked the wrong way — parallel
+       * to the face, or into the machine's own footprint. Live through `scoreLayout`, an
+       * obstruction squarely inside a real clearance zone measured full marks instead of a real,
+       * low margin. `front` alone passing was not evidence the fix worked; it was the one case
+       * that couldn't tell the difference.
+       *
+       * `faceProbe` (`@mfd/object-library`) replaces the corner-order guess with the side's own
+       * outward normal, so this is measured the same way on every side. All three obstructions
+       * here sit genuinely inside their zone, at an unrotated placement — the rotated case is
+       * `front`'s test above, and the underlying geometry is verified across five rotations and
+       * both mirror states in `geometry.test.ts`; this only has to confirm the wiring.
+       */
+      const bed = fixtureCatalog().get('fixture_bed');
+      if (!bed) throw new Error('fixture catalogue did not contain fixture_bed');
+
+      const ruleSet = fixtureRuleSet([
+        fixtureClearanceRule({ side, threshold, categories: ['treatment_bed'] }),
+        fixtureCollisionRule(),
+        fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+      ]);
+      const placement: Placement = {
+        id: 'bed',
+        equipmentObjectId: bed.id,
+        equipmentObjectVersion: bed.version,
+        label: 'bed',
+        transform: { position: { x: 3_000, y: 3_000 }, rotation: 0, mirrored: false },
+        spaceId: null,
+      };
+
+      const breakdown = scoreLayout({
+        placements: [placement],
+        occupants: [placement],
+        catalog: fixtureCatalog(),
+        ruleSet,
+        boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+        room: fixtureRoom(10_000, 10_000),
+        obstructions: [obstruction],
+        referencePoints: [],
+        object: bed,
+        planStatus: 'calibrated',
+        pitchPadding: 1_200,
+        knowledge: withDeliveryAllowance([140, 150, 160]),
+        scoring: dialysisScoringModel,
+        stationTarget: 1,
+      });
+
+      expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.125);
+    },
+  );
+
+  it("agrees with the rule engine's own measured gap on the same geometry", () => {
+    /*
+     * The Critical 0 review's second blocking finding: two machines, one placement each, no
+     * obstruction — just a bed 100 mm inside another bed's left clearance zone. The rule engine
+     * (`@mfd/rule-engine`'s clearance evaluator, unrelated code, unrelated author) and this file's
+     * `compliance_margin` both claim to measure "how much clearance is actually there," from the
+     * same two footprints. Before the fix, they did not agree: the rule engine correctly reported
+     * a 100 mm gap; `freeDistanceOnSide`, walking the wrong way on `left`, reported none at all.
+     * AD-21 exists so this cannot happen — one placement, the same answer everywhere — so this
+     * checks the two against each other directly, not each against a hand-picked number.
+     */
+    const bed = fixtureCatalog().get('fixture_bed');
+    if (!bed) throw new Error('fixture catalogue did not contain fixture_bed');
+
+    const a: Placement = {
+      id: 'bed-a',
+      equipmentObjectId: bed.id,
+      equipmentObjectVersion: bed.version,
+      label: 'Bed A',
+      transform: { position: { x: 3_000, y: 3_000 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const b: Placement = {
+      id: 'bed-b',
+      equipmentObjectId: bed.id,
+      equipmentObjectVersion: bed.version,
+      label: 'Bed B',
+      transform: { position: { x: 1_900, y: 3_000 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'left', threshold: 400, categories: ['treatment_bed'] }),
+    ]);
+    const boundaries = [fixtureRoomBoundary(10_000, 10_000)];
+
+    const report = evaluate({
+      placements: [a, b],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      spatial: { boundaries, planStatus: 'calibrated' },
+    });
+    const finding = report.results.find(
+      (result) => result.placementIds[0] === 'bed-a' && result.measured !== null,
+    );
+    if (!finding || finding.measured === null) {
+      throw new Error('expected the rule engine to measure a left-clearance gap on bed A');
+    }
+
+    const breakdown = scoreLayout({
+      placements: [a],
+      occupants: [a, b],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries,
+      room: fixtureRoom(10_000, 10_000),
+      obstructions: [],
+      referencePoints: [],
+      object: bed,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(finding.measured / 400);
   });
 });
 

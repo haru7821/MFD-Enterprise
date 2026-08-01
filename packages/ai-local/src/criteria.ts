@@ -5,8 +5,8 @@ import type {
 } from '@mfd/ai-contract';
 import type { Rect, Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement, ReferencePointKind } from '@mfd/document-model';
-import type { ClearanceSide, ClearanceZone, Catalog, EquipmentObject } from '@mfd/object-library';
-import { clearanceZones, footprintBounds as objectFootprintBounds } from '@mfd/object-library';
+import type { ClearanceSide, Catalog, EquipmentObject } from '@mfd/object-library';
+import { clearanceZones, faceProbe, footprintBounds as objectFootprintBounds } from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
 import { evaluate } from '@mfd/rule-engine';
 
@@ -196,38 +196,21 @@ const PROBE_STEP_MM = 50;
 const PROBE_CEILING_MULTIPLE = 3;
 
 /**
- * The midpoint of a `clearanceZones` polygon's edge nearest the footprint, and the outward unit
- * direction from there to the opposite edge's midpoint.
- *
- * `rectCorners` (in `@mfd/object-library`) always emits a zone rectangle's four corners in the
- * order `[innerA, innerB, outerB, outerA]` — the first two adjacent to the footprint, the last two
- * at the far edge — so index alone, not any further geometry, says which pair is which.
- */
-function probeOriginAndDirection(zone: ClearanceZone): { origin: Vec2; direction: Vec2 } | null {
-  const [innerA, innerB, outerB, outerA] = zone.polygon;
-  if (!innerA || !innerB || !outerA || !outerB) return null;
-
-  const origin = { x: (innerA.x + innerB.x) / 2, y: (innerA.y + innerB.y) / 2 };
-  const outer = { x: (outerA.x + outerB.x) / 2, y: (outerA.y + outerB.y) / 2 };
-  const length = Math.hypot(outer.x - origin.x, outer.y - origin.y);
-  if (length === 0) return null;
-
-  return { origin, direction: { x: (outer.x - origin.x) / length, y: (outer.y - origin.y) / length } };
-}
-
-/**
  * Walks outward from a service face until something stops the walk, in millimetres.
  *
  * > Architecture decision AD-21.
  *
- * The face itself comes from `@mfd/object-library`'s `clearanceZones` — the same function
- * `measureMaintenanceAccess` uses for its zone rectangles — rather than being re-derived here from
- * `sideNormals` and `transform.position` directly. That re-derivation was the residual of the
- * centre-vs-corner defect this file otherwise closed: `transform.position` is the footprint's
- * *corner* for every shipped, `front-left` record, and a probe anchored there starts inside the
- * footprint rather than at the face, over-reporting free distance by roughly half the footprint's
- * depth or width. `clearanceZones` already resolves `symbol.origin` and rotation to produce the
- * zone's true model-space rectangle; this only has to find its inner edge's midpoint.
+ * The face itself comes from `@mfd/object-library`'s `faceProbe`, which derives the anchor from
+ * the side's own model-space outward normal rather than from a `ClearanceZone` polygon's corner
+ * order. A prior version of this function read a `ClearanceZone`'s first two corners as "the inner
+ * edge" — true only for `front`, on this object's `frontEdge` — because a zone rectangle's offset
+ * axis swaps between `front`/`rear` (offset along the local y-axis, so the first two `rectCorners`
+ * entries do share the inner edge) and `left`/`right` (offset along local x, so they do not: one of
+ * the "first two" is the *outer* corner instead). That version measured `front` correctly and
+ * silently walked the wrong way — parallel to the face, or straight into the machine's own
+ * footprint for `rear` — on the other three, a defect the Critical 0 review found live through
+ * `scoreLayout`: an obstruction squarely inside a `left` clearance zone scored full marks. See
+ * `faceProbe`'s own doc comment for why deriving from corner order can't be made to work.
  */
 function freeDistanceOnSide(
   placement: Placement,
@@ -243,11 +226,7 @@ function freeDistanceOnSide(
   const required = object.serviceClearance[side];
   if (required === null) return null;
 
-  const zone = clearanceZones(object, placement.transform).find((entry) => entry.side === side);
-  if (!zone) return null;
-
-  const probe = probeOriginAndDirection(zone);
-  if (!probe) return null;
+  const probe = faceProbe(object, placement.transform, side);
 
   // Everything in the room blocks the probe, not only this equipment kind — see `occupants`.
   // Excluded by id: the machine being probed is not an obstacle to its own service face.

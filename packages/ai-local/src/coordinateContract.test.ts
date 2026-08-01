@@ -1,8 +1,15 @@
 import { createBoundary } from '@mfd/document-model';
-import { footprintCorners } from '@mfd/object-library';
+import { footprintBounds, footprintCorners } from '@mfd/object-library';
 import { describe, expect, it } from 'vitest';
 
-import { fixtureCatalog, fixtureKnowledge, fixtureMachine, fixtureRuleSet } from '../fixtures/index';
+import {
+  fixtureCatalog,
+  fixtureKnowledge,
+  fixtureMachine,
+  fixtureRoom,
+  fixtureRoomBoundary,
+  fixtureRuleSet,
+} from '../fixtures/index';
 import { generateFeasibleCandidates } from './generate';
 
 /**
@@ -107,6 +114,61 @@ describe('coordinate contract — one placement, the same occupied polygon every
           false,
         );
       }
+    }
+  });
+
+  it("puts a generated candidate's placement exactly where the candidate's own centre says, not half a footprint away", () => {
+    /*
+     * The gap the first version of this file missed. `occupiedPolygons` (tested above) is only half
+     * of what `generate.ts` converts — `placementsFor` is the other half, and it is the one the
+     * Critical 0 defect was actually reported against: *"placing every AK98 and bed proposal half a
+     * footprint away from where the generator drew it."*
+     *
+     * Reverting `placementsFor` to assign `candidate.positions[i]` straight to `transform.position`
+     * — exactly the regression this Critical 0 fixed — passes every other test in this file and in
+     * `generate.test.ts` without a single failure: `candidates.ts` only ever proposes `rotation: 0`
+     * today, so the shift is a fixed (half width, half depth) offset applied uniformly to every
+     * station in every candidate, and every fixture room here is open enough that a uniform shift
+     * finds space to land in without colliding with anything or crossing a wall. A test that only
+     * watches for a *collision* symptom cannot see a bug whose only effect, in an open room, is that
+     * every machine is honestly-but-wrongly placed.
+     *
+     * So this asserts the contract directly rather than waiting for a collision to reveal it: a
+     * candidate's `positions` are footprint *centres* (candidates.ts's own doc comment), and for
+     * every placement `placementsFor` builds from one, the placement's **true** footprint — computed
+     * the one way every real consumer computes it, `footprintBounds`'s bounding-box midpoint — must
+     * equal that centre exactly. Confirmed to fail under the reverted `placementsFor`, by exactly the
+     * (half width, half depth) offset, before being restored.
+     */
+    const station = fixtureMachine();
+
+    const result = generateFeasibleCandidates({
+      room: fixtureRoom(),
+      obstructions: [],
+      boundaries: [fixtureRoomBoundary()],
+      object: station,
+      catalog: fixtureCatalog(),
+      ruleSet: fixtureRuleSet(),
+      planStatus: 'calibrated',
+      stationTarget: 4,
+      pitchPadding: 1_200,
+      knowledge: fixtureKnowledge(),
+      existing: [],
+      referencePoints: [],
+    });
+
+    expect(result.feasible.length).toBeGreaterThan(0);
+
+    for (const candidate of result.feasible) {
+      expect(candidate.placements.length).toBe(candidate.candidate.positions.length);
+      candidate.placements.forEach((placement, index) => {
+        const intendedCentre = candidate.candidate.positions[index];
+        if (!intendedCentre) throw new Error(`no candidate position at index ${index}`);
+        const bounds = footprintBounds(station, placement.transform);
+        const actualCentre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        expect(actualCentre.x, `${placement.id} x`).toBeCloseTo(intendedCentre.x, 6);
+        expect(actualCentre.y, `${placement.id} y`).toBeCloseTo(intendedCentre.y, 6);
+      });
     }
   });
 
