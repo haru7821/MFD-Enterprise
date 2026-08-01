@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReferencePointSummary } from '@mfd/ai-contract';
 import { SCORING_CRITERIA, scoreBreakdownSchema } from '@mfd/ai-contract';
 import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
+import { createCatalog } from '@mfd/object-library';
 import { catalog as shippedCatalog } from '@mfd/object-library/catalog';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 import { dialysisKnowledge } from '@mfd/layout-knowledge/base';
@@ -13,6 +14,7 @@ import { evaluate } from '@mfd/rule-engine';
 
 import {
   fixtureCatalog,
+  fixtureMachineRecord,
   fixtureKnowledge,
   withDeliveryAllowance,
   fixtureClearanceRule,
@@ -1792,6 +1794,110 @@ describe('D4 — compliance_margin abstains rather than measuring a bounding box
      * well if D4 refused every room.
      */
     const reason = marginOf(fixtureRoom())?.reasonCode;
+    expect(reason).not.toBe('SC-908');
+  });
+});
+
+/**
+ * Owner decision **D8**: D4's rule, extended from `compliance_margin` to `maintenance_access`.
+ *
+ * The same substitution of a bounding box for the room, pointing the other way. D4's version
+ * over-reported headroom by measuring to a box edge outside the room; this one credits a service
+ * face lying in the **notch** of an L — outside the room, inside its box — as somewhere a
+ * technician can stand.
+ *
+ * ## Why these tests need their own object
+ *
+ * The guard cannot fire with the shipped catalogue. Both catalogue objects declare every
+ * `serviceClearance` side `null` pending the AK98 manual (A-1), `clearanceZones` skips null sides,
+ * so `faces` is empty and the criterion abstains with `SC-904` first — on every real project. The
+ * fixture machine declares front 1,200 and rear 800, which is what makes the geometry reachable at
+ * all here. A guard nobody has watched fire is not delivered, and this repository has shipped three
+ * of them.
+ */
+describe('D8 — maintenance_access abstains rather than measuring a bounding box', () => {
+  /** The same L as D4's: the north-east quadrant is not room, and the box is the full square. */
+  const L_ROOM = [
+    { x: 0, y: 0 },
+    { x: 4_000, y: 0 },
+    { x: 4_000, y: 3_000 },
+    { x: 8_000, y: 3_000 },
+    { x: 8_000, y: 8_000 },
+    { x: 0, y: 8_000 },
+  ];
+
+  const ROTATED = [
+    { x: 4_000, y: 0 },
+    { x: 8_000, y: 4_000 },
+    { x: 4_000, y: 8_000 },
+    { x: 0, y: 4_000 },
+  ];
+
+  function accessOn(room: readonly Vec2[]) {
+    const breakdown = score({ room });
+    return {
+      measured: measurementOf(breakdown, 'maintenance_access'),
+      reason: breakdown.unavailable.find((entry) => entry.criterion === 'maintenance_access'),
+    };
+  }
+
+  it('reports SC-908 on a concave room', () => {
+    expect(accessOn(L_ROOM).reason?.reasonCode).toBe('SC-908');
+  });
+
+  it('reports SC-908 on a convex room that is still not a rectangle', () => {
+    // Rectangularity, not convexity — a rotated rectangle's box is strictly larger than it is, so a
+    // convexity test would approve the same approximation on any room traced off a skewed drawing.
+    expect(accessOn(ROTATED).reason?.reasonCode).toBe('SC-908');
+  });
+
+  it('measures the rectangular room the other tests use', () => {
+    /*
+     * The control, and stronger than D4's could be: the fixture object *does* declare clearances,
+     * so this criterion produces a number rather than a different abstention. Without it the suite
+     * would pass equally well if D8 refused every room.
+     */
+    const { measured, reason } = accessOn(fixtureRoom());
+    expect(reason).toBeUndefined();
+    expect(measured?.measured).not.toBeNull();
+  });
+
+  it('reports the missing clearance first, because that is the one an engineer can act on', () => {
+    /*
+     * **The GM made this ordering a condition of D8**, and it is the whole reason the guard sits
+     * after the zone check rather than at the top of the function.
+     *
+     * With the shipped catalogue there is no declared service clearance, so both conditions hold at
+     * once on a non-rectangular room. `SC-904` says *supply the AK98 manual* — A-1, work somebody
+     * can do. `SC-908` says *your room is not rectangular*, which nobody can act on: they cannot
+     * reshape the building. Putting the room guard first would displace the only message that leads
+     * anywhere with one that leads nowhere.
+     */
+    const record = fixtureMachineRecord();
+    const blind = createCatalog([
+      {
+        fileName: 'fixture_station.json',
+        raw: {
+          ...record,
+          serviceClearance: {
+            front: null,
+            rear: null,
+            left: null,
+            right: null,
+            verification: (record.serviceClearance as { verification: unknown }).verification,
+          },
+        },
+      },
+    ]);
+    const object = blind.get('fixture_station');
+    if (!object) throw new Error('the no-clearance catalogue did not contain its own machine');
+
+    const breakdown = score({ room: L_ROOM, catalog: blind, object });
+    const reason = breakdown.unavailable.find(
+      (entry) => entry.criterion === 'maintenance_access',
+    )?.reasonCode;
+
+    expect(reason).toBe('SC-904');
     expect(reason).not.toBe('SC-908');
   });
 });

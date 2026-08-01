@@ -592,9 +592,15 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
  * Maintenance access — the fraction of machines a service engineer can actually reach.
  *
  * Reachable means: at least one of the machine's service faces has its clearance envelope free of
- * another machine's footprint, clear of every obstruction, and inside the room. Needs no reference
- * point, which is why it is the one weighted criterion that is always measurable — 15 % of the
- * model that survives an empty document.
+ * another machine's footprint, clear of every obstruction, and inside the room. It needs no
+ * reference point — so unlike most of the model it survives an empty document.
+ *
+ * **It is not, however, "always measurable", which this comment used to claim.** It abstains three
+ * ways: `SC-902` with nothing placed, `SC-906` when the catalogue cannot size an occupant, and
+ * `SC-904` when no service clearance is declared — and the third fires on *every* project with the
+ * shipped catalogue, because both catalogue objects declare all four sides `null` pending the AK98
+ * manual (A-1). Its 15 % of the model is therefore unmeasurable today, not guaranteed. The claim
+ * was written when the criterion counted equipment alone and never consulted `serviceClearance`.
  *
  * > Owner decision, following the standing review: **obstructions and the room boundary block a
  * > service face**, the same as equipment does.
@@ -637,9 +643,40 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
     // anybody can service this machine.
     if (faces.length === 0) return unavailable('SC-904');
 
+    /*
+     * **Owner decision D8** — D4's rule, extended from `compliance_margin` to this criterion.
+     *
+     * `clearFace` below asks whether the service face lies inside the room, and answers with
+     * `roomBounds` — the room's **axis-aligned bounding box**. That is the same substitution D4
+     * rejected, pointing the other way: D4's over-report credited a machine with clearance to a box
+     * edge outside the room; here a face lying in the notch of an L-shaped room is outside the room
+     * but inside its box, and is credited as reachable. The technician it says can stand there
+     * would be standing in a wall.
+     *
+     * ## Why the order of the two guards is the decision, not an accident
+     *
+     * This is deliberately **after** the SC-904 check, and the GM made that a condition of D8. With
+     * the shipped catalogue every `serviceClearance` side on both objects is `null`
+     * (`vantive_ak98.json`, `dialysis_bed.json`), `clearanceZones` skips null sides, so `faces` is
+     * empty and this criterion already abstains with SC-904 on every real project. SC-904 is the
+     * reason the engineer can act on — *supply the AK98 manual* (A-1). "Your room is not
+     * rectangular" is not: they cannot reshape the building, and it would displace the one message
+     * that leads somewhere.
+     *
+     * The corollary is that this guard **cannot fire with the shipped catalogue**, which is why it
+     * is pinned by a test using an object that declares clearances. A guard nobody has watched fire
+     * is not delivered — this repository has shipped three of them.
+     *
+     * Deleted outright, not relaxed, when reachability is measured against the room polygon
+     * (`polygonContains` in `@mfd/cad-engine` is concave-safe). The GM's ruling is that that work
+     * waits for A-1, because it changes no output until real clearances exist.
+     */
+    if (!isAxisAlignedRectangle(input.room)) return unavailable('SC-908');
+
     // A face standing partly outside the room is not a face anyone can stand in front of. Full
     // containment, not mere overlap — a corner of clear floor on the room side of a face does not
-    // make the other half of it reachable.
+    // make the other half of it reachable. Exact, given the guard above: the room *is* its
+    // bounding box once it is an axis-aligned rectangle.
     const clearFace = (face: Bounds): boolean =>
       blockers.every((blocker) => !overlaps(face, blocker)) &&
       (roomBounds === null || fullyWithin(roomBounds, face));
