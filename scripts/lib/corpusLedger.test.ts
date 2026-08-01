@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import {
+  compareSignatures,
   parseConfirmations,
   parseCorpusValidation,
   rowFingerprint,
@@ -610,5 +611,150 @@ describe('D11 revised — the order over two signatures, and what the ledger rec
         'confirmations.json',
       ),
     ).toThrow(/at/);
+  });
+});
+
+describe('an identical entry twice is one act transcribed twice', () => {
+  const OBSERVER = shippedLedger().observer;
+  const META = { datasetId: 'test', validatedAt: '2026-08-01T00:00:00.000Z', observer: OBSERVER };
+
+  const row: LedgerRow = {
+    drawingId: 'Hospital_004/dialysis.pdf',
+    page: 0,
+    sha256: '9'.repeat(64),
+    reached: 'report',
+    stoppedAt: null,
+    discrepancies: [],
+  };
+  const act: Confirmation = {
+    ...row,
+    kind: 'completion',
+    name: 'TS engineer',
+    at: '2026-08-01T09:00:00Z',
+    basis: 'record reviewed',
+  };
+
+  it('is refused by the file people edit, naming the entry', () => {
+    /*
+     * > Owner decision, D11 Q1 follow-up: *"a byte-identical repeat is not two acts — it is one act
+     * > transcribed twice, a case D11 never ruled on. (a) and (b) both require the product to guess
+     * > which it was; (c) refuses to guess and asks the person."*
+     *
+     * Measured before the fix: `buildLedger([row], [act, {...act}])` applied the first, filed the
+     * second as a duplicate, and the ledger's strict-`<` refine rejected the builder's own output —
+     * aborting a 306-drawing run and blaming `corpus.json` for a fault in `confirmations.json`.
+     */
+    expect(() =>
+      parseConfirmations({ version: 2, confirmations: [act, { ...act }] }, 'confirmations.json'),
+    ).toThrow(/repeats confirmations\[0\] exactly/);
+
+    // The message names the entry, so the signer can find it in a file of hundreds.
+    expect(() =>
+      parseConfirmations({ version: 2, confirmations: [act, { ...act }] }, 'confirmations.json'),
+    ).toThrow(/Hospital_004\/dialysis\.pdf p0, completion, signed TS engineer/);
+  });
+
+  it('leaves D11\'s protected case alone — two people, or one person twice over', () => {
+    /*
+     * The scope is the whole entry and nothing wider. D11 exists to keep two people signing one row
+     * benign, so a rule that swept that up would be the build error D11 refused.
+     */
+    const secondPerson = { ...act, name: 'Second reviewer' };
+    const sameNameDifferentBasis = { ...act, basis: 'checked again against the drawing' };
+    const differentRow = { ...act, sha256: '8'.repeat(64) };
+
+    for (const other of [secondPerson, sameNameDifferentBasis, differentRow]) {
+      expect(() =>
+        parseConfirmations({ version: 2, confirmations: [act, other] }, 'confirmations.json'),
+      ).not.toThrow();
+    }
+  });
+
+  it('so the builder cannot produce the tie its own refine forbids', () => {
+    /*
+     * The claim the previous commit made without a test, and it was false at the time. Both
+     * directions: the tie can no longer reach `buildLedger`, and the case that *can* reach it —
+     * two distinguishable acts — builds and files the later one as a duplicate.
+     */
+    const later = { ...act, name: 'Zulu', at: '2026-08-02T09:00:00Z' };
+    const ledger = buildLedger([row], [act, later], META);
+
+    expect(ledger.drawings[0]?.confirmedBy?.name).toBe('TS engineer');
+    expect(ledger.unapplied).toEqual([{ reason: 'duplicate', confirmation: later }]);
+
+    // And the ledger refine is still strict: an entry tying the applied act is not "another stands".
+    const tied = {
+      ...ledger,
+      unapplied: [{ reason: 'duplicate' as const, confirmation: act }],
+    };
+    expect(() => parseCorpusValidation(tied, 'tied.json')).toThrow(/strictly earlier/);
+  });
+});
+
+describe('the unapplied array is totally ordered', () => {
+  const OBSERVER = shippedLedger().observer;
+  const META = { datasetId: 'test', validatedAt: '2026-08-01T00:00:00.000Z', observer: OBSERVER };
+
+  const row: LedgerRow = {
+    drawingId: 'Hospital_005/dialysis.pdf',
+    page: 0,
+    sha256: '7'.repeat(64),
+    reached: 'report',
+    stoppedAt: null,
+    discrepancies: [],
+  };
+
+  const signer = { kind: 'completion' as const, name: 'Ann', at: '2026-08-01T09:00:00Z', basis: 'reviewed' };
+
+  it('does not fall back to file order when discrepancies differ only in listing order', () => {
+    /*
+     * The same finding as the previous round, one case narrower — and both documents had by then
+     * been changed to assert the opposite.
+     *
+     * `rowFingerprint` sorts discrepancies before hashing, so these two acts tie on signature *and*
+     * on fingerprint. The ledger serialises the confirmation verbatim, so they are different bytes,
+     * and `Array.sort`'s stability was handing their order back to the file.
+     */
+    const a = { code: 'VD-1' as const, classification: 'drawing_error' as const, subject: 'first' };
+    const b = { code: 'VD-7' as const, classification: 'insufficient_evidence' as const, subject: 'second' };
+    const gone = { ...row, sha256: '6'.repeat(64), reached: 'plan', stoppedAt: 'room' };
+
+    const forwards: Confirmation = { ...gone, ...signer, kind: 'stop', discrepancies: [a, b] };
+    const backwards: Confirmation = { ...gone, ...signer, kind: 'stop', discrepancies: [b, a] };
+
+    // Same fingerprint, same signature — the two keys that came first.
+    expect(rowFingerprint(forwards)).toBe(rowFingerprint(backwards));
+
+    const one = buildLedger([row], [forwards, backwards], META);
+    const two = buildLedger([row], [backwards, forwards], META);
+
+    expect(JSON.stringify(two)).toBe(JSON.stringify(one));
+  });
+
+  it('separates two rows one signer signed at the same instant', () => {
+    // The fingerprint key, which was itself unguarded: dropping it left the whole suite green.
+    const goneA = { ...row, sha256: '5'.repeat(64), reached: 'plan', stoppedAt: 'room' };
+    const goneB = { ...row, sha256: '4'.repeat(64), reached: 'plan', stoppedAt: 'room' };
+    const first: Confirmation = { ...goneA, ...signer, kind: 'stop' };
+    const second: Confirmation = { ...goneB, ...signer, kind: 'stop' };
+
+    expect(compareSignatures(first, second)).toBe(0);
+
+    const one = buildLedger([row], [first, second], META);
+    const two = buildLedger([row], [second, first], META);
+
+    expect(JSON.stringify(two)).toBe(JSON.stringify(one));
+  });
+
+  it('rejects a key nobody declared on an unapplied entry', () => {
+    // `strictObject` like the rest of the module — the guard fires, and nothing tested that it did.
+    const ledger = buildLedger([row], [], META);
+    const gone = { ...row, sha256: '3'.repeat(64), reached: 'plan', stoppedAt: 'room' };
+    const smuggled = {
+      ...ledger,
+      unapplied: [{ reason: 'stale', confirmation: { ...gone, ...signer, kind: 'stop' }, note: 'x' }],
+    };
+
+    expect(() => parseCorpusValidation(smuggled, 'smuggled.json')).toThrow();
   });
 });

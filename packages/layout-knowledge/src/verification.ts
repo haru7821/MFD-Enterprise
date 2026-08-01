@@ -409,10 +409,48 @@ export const confirmationSchema = z
       'a stage in `stoppedAt` — owner decision D12: the two are separate acts',
   });
 
-export const confirmationsSchema = z.strictObject({
-  version: z.literal(CONFIRMATIONS_VERSION),
-  confirmations: z.array(confirmationSchema),
-});
+export const confirmationsSchema = z
+  .strictObject({
+    version: z.literal(CONFIRMATIONS_VERSION),
+    confirmations: z.array(confirmationSchema),
+  })
+  .superRefine((file, ctx) => {
+    /*
+     * **A byte-identical entry twice is one act transcribed twice, not two acts.**
+     *
+     * > Owner decision, D11 Q1 follow-up: *"(a) and (b) both require the product to guess which it
+     * > was; (c) refuses to guess and asks the person, which is the abstain rule applied to human
+     * > input."*
+     *
+     * Found by review. With no constraint here, `buildLedger` applied the first copy, filed the
+     * second as a duplicate, and the ledger's own refine — which requires the applied act to sort
+     * **strictly earlier** — then rejected the builder's output. `pnpm validate:corpus` aborted
+     * over 306 drawings, naming the *generated* `corpus.json` for a fault in this hand-authored
+     * file, which is the wrong-file blame this module fixed once already.
+     *
+     * The scope is deliberately narrow, and D11's protected case is untouched: two people signing
+     * one row is legal, and so is the same person signing with a different `basis`. Only the whole
+     * entry repeating is refused. The ledger's refine stays strict `< 0` — nothing relaxed to make
+     * this go away.
+     */
+    const seen = new Map<string, number>();
+    file.confirmations.forEach((entry, index) => {
+      const key = JSON.stringify(entry);
+      const first = seen.get(key);
+      if (first === undefined) {
+        seen.set(key, index);
+        return;
+      }
+      ctx.addIssue({
+        code: 'custom',
+        path: ['confirmations', index],
+        message:
+          `this entry repeats confirmations[${first}] exactly — ${entry.drawingId} p${entry.page}, ` +
+          `${entry.kind}, signed ${entry.name} at ${entry.at}. One act written twice is not two ` +
+          'acts: delete the repeat, or change what distinguishes them (owner decision D11)',
+      });
+    });
+  });
 
 export type Confirmation = z.infer<typeof confirmationSchema>;
 export type Confirmations = z.infer<typeof confirmationsSchema>;

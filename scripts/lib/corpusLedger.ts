@@ -95,8 +95,32 @@ export function buildLedger(
      */
     (a, b) =>
       compareSignatures(a.confirmation, b.confirmation) ||
-      compareCodepoint(rowFingerprint(a.confirmation), rowFingerprint(b.confirmation)) ||
-      compareCodepoint(a.reason, b.reason),
+      /*
+       * **The key that makes it total**, and its absence was the same finding twice.
+       *
+       * `rowFingerprint` sorts an outcome's discrepancies before hashing them, so two acts by one
+       * signer on one run whose `discrepancies` are merely *listed* in opposite orders tie on both
+       * keys above — and `Array.sort`'s stability then hands the order back to the file, which is
+       * the dependence this array was sorted to remove. The ledger serialises the confirmation
+       * verbatim, so the two entries are genuinely different bytes and the file's order was visible
+       * in `corpus.json`. Measured.
+       *
+       * Comparing the serialisation is the only key that distinguishes everything the ledger can
+       * actually hold, because it is exactly what the ledger writes.
+       *
+       * **Two keys were removed getting here, both dead.** `compareCodepoint(a.reason, b.reason)`
+       * could never be reached: equal fingerprints imply equal reasons. And the row fingerprint
+       * itself became redundant the moment this key was added — the serialisation contains every
+       * field the fingerprint is derived from, so it distinguishes strictly more: two confirmations
+       * with different fingerprints necessarily serialise differently, while two that share a
+       * fingerprint may still differ here (that is exactly the discrepancy-order case above).
+       *
+       * Found by mutation rather than by reading: deleting the fingerprint key left the whole suite
+       * green, and the honest reading of that is not "write a test for it" — it is that a comparator
+       * key which can never decide anything is a decoration shaped like a tie-break. This module has
+       * shipped three of those.
+       */
+      compareCodepoint(JSON.stringify(a.confirmation), JSON.stringify(b.confirmation)),
   );
 
   const drawings: CorpusRow[] = rows.map((row) => ({

@@ -132,15 +132,30 @@ dependence the rule exists to remove, surviving inside its own implementation.
 One qualification on "the parsed instant": `Date.parse` resolves to the millisecond, so two acts
 inside the same millisecond are **the same instant** and are separated by spelling — which can hand
 the designation to the later one. Owner decision: that stands. A hand-rolled full-precision parser
-would trade away the 73,332-string sweep that established `Date.parse` is otherwise exact here, to
-buy resolution no human signature possesses, and restricting the format would refuse ordinary
-`isoformat()` output. Nothing is lost either way: both acts remain in the file, one applied and one
-under `unapplied`, and only the designation moves.
+would trade away the sweep that established `Date.parse` is otherwise exact here, to buy resolution
+no human signature possesses, and restricting the format would refuse ordinary `isoformat()` output.
+Nothing is lost either way: both acts remain in the file, one applied and one under `unapplied`, and
+only the designation moves.
+
+That sweep is `packages/layout-knowledge/src/instantOrder.test.ts`, and it is committed for a
+reason: the figure it produces — **73,332** strings accepted, no `NaN`, no millisecond-resolution
+inversion — was quoted here from a review probe that had since been deleted, so two documents rested
+a decision on a measurement nobody could re-run. It now runs on every push, against a reference
+computed in BigInt nanoseconds from each string's own fields.
 
 Any further signature on the same row is recorded as a **duplicate**, and one matching no row as
 **stale**, both in the ledger's own `unapplied` array rather than only in a console nobody keeps
-(owner decision D11). Neither is ever deleted, and the array is sorted by the same rule, so its
-order does not follow the order somebody appended to `confirmations.json`. A `duplicate` entry must
+(owner decision D11). Neither is ever deleted, and the array is sorted — by signature, then row
+fingerprint, then the confirmation's own serialisation, which is what makes the order **total** and
+therefore independent of the order somebody appended to `confirmations.json`. That last key exists
+because the first two were not enough: two acts by one signer on one run whose discrepancies were
+merely *listed* in the opposite order tied on both, and `Array.sort`'s stability handed their order
+straight back to the file. This sentence asserted the opposite for one commit before that was found.
+
+A **byte-identical entry twice** is refused by `confirmations.json` itself, naming the entry — one
+act transcribed twice is not two acts, and the alternative was for the builder to guess which it
+was. Two people signing one row, or one person signing twice with a different `basis`, stay legal:
+that is the case D11 protects. A `duplicate` entry must
 name a row that carries an applied confirmation of the same kind **ordered strictly earlier** — the
 ledger's sentence to a signer is *"it was recorded, but another stands"*, and a file where nothing
 stands, or where the later act is the one applied, makes that sentence false. They sit outside `totals` deliberately: D12 forbids a
