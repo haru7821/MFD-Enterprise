@@ -97,6 +97,16 @@ export const OPTIMISATION_OUTCOMES = [
   'not_optimisable',
   'movement_not_permitted',
   /**
+   * Too little of the scoring model could be measured for any ranking to mean anything.
+   *
+   * > Owner decision D1: *"If coverage is below the required threshold, suppress the total
+   * > ranking."*
+   *
+   * Distinct from `already_best`, which is a claim about the drawing, and from
+   * `no_feasible_candidate`, which is a claim about the room. This is a claim about the evidence.
+   */
+  'coverage_too_low',
+  /**
    * The layout on the drawing breaks a mandatory rule. Nothing is proposed and nothing is scored.
    *
    * > Owner decision, D1: *"When the current layout fails a gate, do NOT generate an optimized
@@ -278,7 +288,30 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
     };
   }
 
-  const better = ranked.layouts.filter((layout) => layout.score.total > currentScore.total);
+  /*
+   * Owner decision D1: *"Do not display a misleading '#1 score' when candidates have different
+   * evidence."*
+   *
+   * With no total on the incumbent there is no comparison to make, and the two answers this
+   * function could otherwise give are both false. `already_best` would assert the drawing is
+   * optimal; `improved` would assert a candidate beats a number that does not exist. So it says
+   * what is actually true — too little of the model could be measured to rank anything — and the
+   * panel shows coverage and the criterion table instead.
+   */
+  if (currentScore.total === null) {
+    return {
+      outcome: 'coverage_too_low',
+      current: currentScore,
+      proposals: [],
+      stationCount,
+      blocking: [],
+    };
+  }
+
+  const currentTotal = currentScore.total;
+  const better = ranked.layouts.filter(
+    (layout) => layout.score.total !== null && layout.score.total > currentTotal,
+  );
 
   if (better.length === 0) {
     /*

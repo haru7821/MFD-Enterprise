@@ -393,20 +393,21 @@ test('applies a rearrangement only when asked, and undoes it in one press', asyn
   await expect(page.getByTestId('layout-results')).toBeVisible();
 });
 
-test('says how much of the model it could measure before saying nothing improves', async ({
-  page,
-}) => {
+test('refuses to rank at all when too little of the model could be measured', async ({ page }) => {
   /*
-   * The honest half of `already_best`.
+   * Owner decision D1: *"If coverage is below the required threshold, suppress the total ranking.
+   * … Do not display a misleading '#1 score' when candidates have different evidence."*
    *
-   * Every clearance figure in the catalogue is null until the AK98 manual arrives, so compliance
-   * margin, maintenance access and installation feasibility all report unavailable. On a drawing
-   * with no reference points at all that leaves only future expansion, which saturates in a room
-   * this size — so the optimiser rates every arrangement alike and correctly finds nothing better.
+   * This spec used to assert *"Nothing improves on what you have drawn"* here, and its own comment
+   * called that out as the problem: correct, and unreadable, because it sounds like praise for the
+   * layout when it is a statement about missing data.
    *
-   * Correct, and unreadable: "nothing improves on what you have drawn" sounds like praise for the
-   * layout when it is a statement about missing data. So the coverage it managed goes on screen
-   * beside it.
+   * It is now a different sentence, because it is a different claim. Three criteria are
+   * unmeasurable on every project until the AK98 manual and observed drawings arrive —
+   * `compliance_margin` (0.40), `installation_feasibility` (0.20), `maintenance_access` (0.15) —
+   * so a drawing with **no reference points** is measured over 0.20 of the model, below the
+   * shipped `minimumCoverage` of 0.25. The optimiser no longer claims the layout is best; it says
+   * it cannot rank.
    */
   await traceRoom(page);
   await placeByHand(page, AWKWARD);
@@ -414,7 +415,8 @@ test('says how much of the model it could measure before saying nothing improves
 
   await optimise(page);
 
-  await expect(page.getByTestId('layout-empty')).toContainText('Nothing improves');
+  await expect(page.getByTestId('layout-empty')).toContainText('Too little of the scoring model');
+  await expect(page.getByTestId('layout-empty')).not.toContainText('Nothing improves');
   await expect(page.getByTestId('layout-empty-coverage')).toContainText('of the scoring model');
   await expect(page.getByTestId('layout-empty-coverage')).toContainText('AK98 manual');
 });

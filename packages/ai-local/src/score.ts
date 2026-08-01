@@ -20,9 +20,9 @@ import { type MeasureInput, measureAll } from './criteria';
  *      ↓
  *   weight           × the criterion's weight
  *      ↓
- *   renormalise      ÷ Σ weights that could be measured
+ *   divide           ÷ Σ weights of the **whole** model, measured or not
  *      ↓
- *   total + coverage
+ *   total + coverage — and no total at all below the model's minimumCoverage
  * ```
  *
  * Every step is reported. `CriterionScore` carries the measurement, the normalised value, the
@@ -102,36 +102,46 @@ export function scoreLayout(input: ScoreInput): ScoreBreakdown {
       unit: UNITS[criterion],
       normalised,
       weight: config.weight,
-      // Filled in below: the divisor is not known until every criterion has been measured.
+      // Filled in below, once the model's total weight is known.
       contribution: 0,
       measuredOnly: config.measuredOnly === true,
     });
   }
 
-  /*
-   * Renormalise by the weight that was actually available.
-   *
-   * Two layouts scored with different criteria available are **not comparable**, even though both
-   * totals read 0…1 — which is exactly why `coverage` is carried beside the total rather than left
-   * for a reader to infer.
-   *
-   * A zero divisor is possible and is not an error: it means nothing weighted could be measured.
-   * With the approved model that is a level with no reference points *and* no thresholds, which is
-   * every project this product has today. The total is 0 and the coverage is 0, and the two
-   * together say "nothing was scored" rather than "this layout scored badly".
-   */
-  const divisor = availableWeight > 0 ? availableWeight : 1;
-  const contributions = scores.map((score) => ({
-    ...score,
-    contribution: round(
-      (score.normalised * (score.measuredOnly ? 0 : score.weight)) / divisor,
-    ),
-  }));
-
   const totalWeight = SCORING_CRITERIA.reduce(
     (sum, criterion) => sum + effectiveWeight(input.scoring.criteria[criterion]),
     0,
   );
+
+  /*
+   * **The divisor is the whole model, not the part of it that could be measured.**
+   *
+   * > Owner decision D1: *"Do NOT renormalize away unavailable criteria. If coverage is below the
+   * > required threshold, suppress the total ranking. … Unknown must never become perfect."*
+   *
+   * This used to divide by `availableWeight`, and the effect was that **deleting evidence raised
+   * the score**. Measured on identical placements with only the reference-point set varied:
+   * coverage 0.40 gave 0.7208, coverage 0.25 gave 0.8983, and coverage 0.20 gave **1.0000** — a
+   * perfect score for a layout about which almost nothing was known.
+   *
+   * It reached the ranking, and it rewarded layouts that could not be built. In a room with one
+   * L-shaped obstruction the winner scored 0.8750 at coverage 0.6 with `SC-903` — *no route
+   * exists* — on RO piping, electrical, walking distance and drain, beating a fully-measured
+   * layout at 0.8615. Rank 1 was a layout you cannot run pipe, power, drain or a nurse to.
+   * `routing.ts` already refuses to substitute zero for an unroutable distance because "it would
+   * make an unroutable layout the best possible one"; renormalising was strictly worse than the
+   * zero it refused.
+   *
+   * With a fixed divisor an unmeasured criterion contributes nothing, so a total can only be
+   * *earned*. That makes totals comparable — but only down to a point, which is what
+   * the scoring model's `minimumCoverage` and the null total below are for.
+   */
+  const contributions = scores.map((score) => ({
+    ...score,
+    contribution: round(
+      (score.normalised * (score.measuredOnly ? 0 : score.weight)) / (totalWeight > 0 ? totalWeight : 1),
+    ),
+  }));
 
   const constraints: ConstraintMeasurement[] = [
     {
@@ -142,10 +152,21 @@ export function scoreLayout(input: ScoreInput): ScoreBreakdown {
     },
   ];
 
+  const coverage = totalWeight > 0 ? round(availableWeight / totalWeight) : 0;
+
   return {
     scoringModel: { id: input.scoring.id, version: input.scoring.version },
-    total: round(contributions.reduce((sum, score) => sum + score.contribution, 0)),
-    coverage: totalWeight > 0 ? round(availableWeight / totalWeight) : 0,
+    /*
+     * Null below the floor — Owner decision D1's *"suppress the total ranking"*.
+     *
+     * Not zero, and not a small number: those are scores, and a reader compares scores. Null is the
+     * panel and the report being unable to offer one, with `coverage`, `criteria` and `unavailable`
+     * beside it saying exactly how much was measured and what was not.
+     */
+    total: coverage >= input.scoring.minimumCoverage
+      ? round(contributions.reduce((sum, score) => sum + score.contribution, 0))
+      : null,
+    coverage,
     criteria: contributions,
     unavailable: missing,
     constraints,

@@ -232,6 +232,7 @@ const OPTIMISATION_REASONS = {
   no_feasible_candidate: 'no_feasible_arrangement',
   not_optimisable: 'nothing_to_optimise',
   movement_not_permitted: 'movement_not_permitted',
+  coverage_too_low: 'coverage_too_low',
   blocked: 'current_layout_blocked',
 } as const satisfies Record<string, LayoutEmptyReason>;
 

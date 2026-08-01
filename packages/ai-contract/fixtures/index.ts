@@ -66,6 +66,16 @@ export const fixtureScoringModel: ScoringModel = {
   id: 'dialysis_default',
   version: '1.0.0',
   criteria: APPROVED_WEIGHTS,
+  /*
+   * No floor, so a fixture always produces a total.
+   *
+   * Owner decision D1 suppresses the total below `minimumCoverage`, and most fixtures are
+   * deliberately partial — a room with no reference points is exactly what several of them are
+   * about. A fixture that returned `null` for its total would make every arithmetic assertion in
+   * this package vacuous rather than failing, which is the shape of test this project keeps having
+   * to find later. The floor has its own tests, against the shipped value.
+   */
+  minimumCoverage: 0,
 };
 
 /**

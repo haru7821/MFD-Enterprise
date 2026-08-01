@@ -72,6 +72,10 @@ const EMPTY_MESSAGES: Record<LayoutEmptyReason, Bilingual> = {
     ko: '현재 도면보다 더 나은 배치가 없습니다. 이 기기 수로 솔버가 구성할 수 있는 배치 중 현재 배치의 점수가 가장 높습니다.',
     en: 'Nothing improves on what you have drawn. Of the arrangements the solver can construct at this station count, yours scores highest.',
   },
+  coverage_too_low: {
+    ko: '채점 모델에서 측정 가능한 항목이 너무 적어 순위를 매길 수 없습니다. 아래 항목별 표에서 무엇이 측정되었고 무엇이 측정되지 않았는지 확인하세요 — 기준점을 배치하고 AK98 매뉴얼이 확보되면 측정 범위가 넓어집니다.',
+    en: 'Too little of the scoring model could be measured to rank anything. The criterion table below says what was measured and what was not — placing reference points, and the AK98 manual, are what widen it.',
+  },
   no_feasible_arrangement: {
     ko: '이 기기 수로는 규정을 만족하는 배치가 존재하지 않습니다. 모든 후보가 규정을 위반했으며, 사실상 도면 위의 배치도 마찬가지입니다.',
     en: 'No compliant arrangement exists at this station count. Every candidate broke a rule — including, in effect, the one on the drawing.',
@@ -324,8 +328,11 @@ export function LayoutPanel() {
           */}
           {results.currentScore && (
             <p className="mb-1 text-[10px] text-ink-faint" data-testid="layout-current-score">
-              Current layout {results.currentScore.total.toFixed(2)} · coverage{' '}
-              {Math.round(results.currentScore.coverage * 100)}%
+              Current layout{' '}
+              {results.currentScore.total === null
+                ? 'not scored'
+                : results.currentScore.total.toFixed(2)}{' '}
+              · coverage {Math.round(results.currentScore.coverage * 100)}%
             </p>
           )}
 
@@ -383,8 +390,24 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
         onClick={onPreview}
       >
         <span className="text-[11px] text-ink">#{proposal.rank}</span>
-        <span className="font-mono text-[11px] text-ink tabular-nums">
-          {proposal.score.total.toFixed(2)}
+        {/*
+          Owner decision D1: *"If coverage is below the required threshold, suppress the total
+          ranking. Show: coverage, measurable criteria, unavailable criteria. Do not display a
+          misleading '#1 score'."*
+
+          Words rather than a dash or a zero. A dash reads as a layout choice and a zero reads as a
+          bad layout; "not scored" reads as the statement it is, and the coverage line and the
+          criterion table beneath it say exactly how much was measured and what was not.
+        */}
+        <span
+          className={
+            proposal.score.total === null
+              ? 'text-[10px] text-ink-faint'
+              : 'font-mono text-[11px] text-ink tabular-nums'
+          }
+          data-testid={`layout-total-${proposal.rank}`}
+        >
+          {proposal.score.total === null ? 'not scored' : proposal.score.total.toFixed(2)}
         </span>
       </button>
 

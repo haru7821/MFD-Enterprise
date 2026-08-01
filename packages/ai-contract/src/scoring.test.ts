@@ -140,7 +140,7 @@ describe('ScoreBreakdown', () => {
 
   it('rejects a total that does not equal the sum of its contributions', () => {
     const breakdown = fixtureScoreBreakdown();
-    const result = scoreBreakdownSchema.safeParse({ ...breakdown, total: breakdown.total + 0.05 });
+    const result = scoreBreakdownSchema.safeParse({ ...breakdown, total: (breakdown.total ?? 0) + 0.05 });
     expect(result.success).toBe(false);
   });
 

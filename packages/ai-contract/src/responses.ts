@@ -255,7 +255,8 @@ export interface PlanProvenance {
   readonly optimisation: {
     readonly candidateId: string;
     readonly scoringModel: RefWithVersion;
-    readonly total: number;
+    /** Null when coverage was too low to offer one — see `ScoreBreakdown.total`, owner decision D1. */
+    readonly total: number | null;
     readonly coverage: number;
   } | null;
   /**

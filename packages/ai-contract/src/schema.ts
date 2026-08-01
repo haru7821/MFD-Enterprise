@@ -113,6 +113,11 @@ export const scoringModelSchema: z.ZodType<ScoringModel> = z
   .object({
     id: z.string().min(1),
     version: z.string().min(1),
+    /**
+     * Owner decision D1's coverage floor. Required rather than defaulted: a scoring model that did
+     * not say what it will refuse to score is a model whose silence somebody has to guess at.
+     */
+    minimumCoverage: z.number().min(0).max(1),
     /*
      * `z.record` with an **enum** key is exhaustive: it rejects an unrecognised key *and* requires
      * every key in the enum. Both halves are load-bearing, and both are properties of this one line
@@ -168,7 +173,7 @@ export const constraintMeasurementSchema = z.object({
 export const scoreBreakdownSchema: z.ZodType<ScoreBreakdown> = z
   .object({
     scoringModel: refWithVersionSchema,
-    total: z.number().min(0).max(1),
+    total: z.number().min(0).max(1).nullable(),
     coverage: z.number().min(0).max(1),
     criteria: z.array(criterionScoreSchema),
     unavailable: z.array(unavailableCriterionSchema),
@@ -207,10 +212,26 @@ export const scoreBreakdownSchema: z.ZodType<ScoreBreakdown> = z
   )
   .refine(
     (breakdown) => {
+      /*
+       * Owner decision D1 suppresses the total below `MINIMUM_COVERAGE`, so there is nothing to
+       * check against the sum — and nothing to check it *with*: the contributions are still there,
+       * still correct, and deliberately do not add up to a number anybody is being shown.
+       */
+      if (breakdown.total === null) return true;
       const sum = breakdown.criteria.reduce((total, c) => total + c.contribution, 0);
       return Math.abs(sum - breakdown.total) <= SUM_EPSILON;
     },
     { message: 'total must equal the sum of the contributions' },
+  )
+  .refine(
+    (breakdown) => breakdown.total !== null || breakdown.coverage < 1,
+    {
+      /*
+       * A complete measurement must produce a total. Without this, "suppressed" and "fully measured
+       * but silent" would be the same shape, and a bug that dropped every total would validate.
+       */
+      message: 'a breakdown with full coverage must carry a total',
+    },
   )
   .refine(
     (breakdown) => breakdown.criteria.every((c) => !c.measuredOnly || c.contribution === 0),

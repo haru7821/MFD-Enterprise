@@ -146,6 +146,17 @@ export const LAYOUT_EMPTY_REASONS = [
   'movement_not_permitted',
   /** Optimisation found nothing better — a real answer, and not the same as finding nothing. */
   'already_best',
+  /**
+   * Too little of the scoring model could be measured for a ranking to mean anything.
+   *
+   * > Owner decision D1: *"If coverage is below the required threshold, suppress the total
+   * > ranking."*
+   *
+   * Distinct from `already_best`, which claims the drawing is optimal, and from
+   * `no_feasible_arrangement`, which claims the room cannot hold a compliant layout. This says
+   * only that the evidence is too thin to rank on.
+   */
+  'coverage_too_low',
   /** Optimisation could not construct any compliant arrangement at the count already placed. */
   'no_feasible_arrangement',
   /**

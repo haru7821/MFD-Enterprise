@@ -124,6 +124,24 @@ export interface ScoringModel {
   readonly id: string;
   readonly version: string;
   readonly criteria: Readonly<Record<ScoringCriterion, CriterionConfig>>;
+  /**
+   * How much of the model must be measurable before a total is offered at all, 0…1.
+   *
+   * > Owner decision D1: *"If coverage is below the required threshold, suppress the total
+   * > ranking. … Do not display a misleading '#1 score' when candidates have different evidence."*
+   *
+   * **Configuration, not code.** It sets what the product will and will not put a number on, which
+   * makes it the owner's to tune — the same reason the weights live in `standards/scoring/` rather
+   * than in the solver, and the same rule the project applies to every engineering threshold.
+   *
+   * Measured on the shipped data before this was chosen. Three criteria are unmeasurable on every
+   * project today — `compliance_margin` (0.40, `SC-904`), `installation_feasibility` (0.20,
+   * `SC-905`) and `maintenance_access` (0.15) — which is **0.75 of the model**. So an engineer who
+   * places all five reference points reaches 0.25, and one who places none reaches 0.20. Any floor
+   * above 0.25 suspends ranking entirely until the AK98 manual arrives and drawings are observed:
+   * a decision about the feature, not a detail of the arithmetic, which is why it is configuration.
+   */
+  readonly minimumCoverage: number;
 }
 
 /**
@@ -168,14 +186,29 @@ export interface ConstraintMeasurement {
 
 export interface ScoreBreakdown {
   readonly scoringModel: RefWithVersion;
-  /** 0…1, the weighted sum over criteria that could be measured. */
-  readonly total: number;
+  /**
+   * 0…1, the weighted sum over the **whole** model — or **null** when too little was measurable.
+   *
+   * > Owner decision D1: *"Do NOT renormalize away unavailable criteria. If coverage is below the
+   * > required threshold, suppress the total ranking. … Unknown must never become perfect."*
+   *
+   * Two things changed together, and both matter. The divisor is the model's total weight, so an
+   * unmeasured criterion contributes nothing and a total can only be earned — it used to be the
+   * *available* weight, which meant deleting evidence raised the score, up to a perfect 1.0000 at
+   * coverage 0.20. And below `MINIMUM_COVERAGE` there is no total at all, because a number that
+   * rests mostly on silence invites a comparison it cannot support.
+   *
+   * Null is not zero. Zero is a score; null is the engine saying it will not offer one. Every
+   * consumer has to say so rather than print a dash — see `LayoutPanel`.
+   */
+  readonly total: number | null;
   /**
    * The fraction of the model's total weight that `total` was computed over. 1.0 when complete.
    *
-   * Carried because a renormalised total and a complete one both read 0…1 and mean different
-   * things. With the B-5a weights, a level with no reference points scores over 0.60 of the model,
-   * and a reader shown only the number cannot tell which they have.
+   * Carried because two totals over different evidence both read 0…1 and mean different things.
+   * With the B-5a weights, a level with no reference points scores over 0.60 of the model, and a
+   * reader shown only the number cannot tell which they have. It is also what decides whether
+   * `total` is offered at all.
    */
   readonly coverage: number;
   readonly criteria: readonly CriterionScore[];

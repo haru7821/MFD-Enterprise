@@ -165,7 +165,17 @@ function compare(
   a: { entry: { candidate: Candidate }; score: ScoreBreakdown },
   b: { entry: { candidate: Candidate }; score: ScoreBreakdown },
 ): number {
-  if (b.score.total !== a.score.total) return b.score.total - a.score.total;
+  /*
+   * A suppressed total sorts last rather than as zero — Owner decision D1.
+   *
+   * `null` means the model could not be measured well enough to offer a number, and `-1` is
+   * outside the 0…1 range every real total lives in, so a scored layout always outranks an
+   * unscored one and two unscored ones fall through to the deterministic tiebreakers below. It is
+   * never *displayed* as -1: `ScoreBreakdown.total` stays null all the way to the panel.
+   */
+  const totalA = a.score.total ?? -1;
+  const totalB = b.score.total ?? -1;
+  if (totalB !== totalA) return totalB - totalA;
 
   const marginA = marginOf(a.score);
   const marginB = marginOf(b.score);

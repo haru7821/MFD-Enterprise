@@ -2,7 +2,7 @@
   "id": "dialysis_default",
   "version": "1.0.0",
   "title": {
-    "ko": "\ud22c\uc11d\uc2e4 \uae30\ubcf8 \uc5d4\uc9c0\ub2c8\uc5b4\ub9c1 \ud3c9\uac00 \ubaa8\ub378",
+    "ko": "투석실 기본 엔지니어링 평가 모델",
     "en": "Dialysis Unit Default Engineering Scoring Model"
   },
   "authority": {
@@ -10,6 +10,8 @@
     "decision": "B-5a",
     "note": "Weights are an owner decision, not a developer default. Editing this file changes how layouts are ranked and is a reviewable change; see docs/OPEN_QUESTIONS.md B-5a."
   },
+  "minimumCoverage": 0.25,
+  "minimumCoverageNote": "Owner decision D1: below this fraction of the model's weight no total is offered — coverage and the criterion table are shown instead. Measured before choosing. On the shipped data three criteria are unmeasurable on every project: compliance_margin (0.40, SC-904, no threshold until the AK98 installation standards arrive), installation_feasibility (0.20, SC-905, no observed delivery allowance) and maintenance_access (0.15, no clearance figures). That is 0.75 of the model, so an engineer who places all five reference points reaches 0.25 and one who places none reaches 0.20. 0.25 is therefore the line between 'the engineer has supplied what they can' and 'they have not' — it suppresses the no-reference-points case that used to renormalise to a perfect 1.0000, and still scores a fully-referenced layout. RAISING THIS ABOVE 0.25 SUSPENDS RANKING ENTIRELY until the manual and observed drawings arrive; that is an owner decision, and this note exists so it is made deliberately rather than by drift.",
   "criteria": {
     "compliance_margin": {
       "weight": 0.4,
@@ -18,11 +20,11 @@
         "marginRatioTarget": 1.5
       },
       "title": {
-        "ko": "\uaddc\uc815 \uc900\uc218 \uc5ec\uc720",
+        "ko": "규정 준수 여유",
         "en": "Rule Compliance Margin"
       },
       "unit": "ratio",
-      "note": "Two roles, and they are not the same thing. A rule *violation* excludes a candidate at Gate 2, before scoring. This 40% weights the *quality* of the margin among candidates that already comply \u2014 it is never permission to trade a violation against an optimisation score."
+      "note": "Two roles, and they are not the same thing. A rule *violation* excludes a candidate at Gate 2, before scoring. This 40% weights the *quality* of the margin among candidates that already comply — it is never permission to trade a violation against an optimisation score."
     },
     "installation_feasibility": {
       "weight": 0.2,
@@ -31,7 +33,7 @@
         "fractionTarget": 1.0
       },
       "title": {
-        "ko": "\uc124\uce58 \uc2e4\ud604\uc131",
+        "ko": "설치 실현성",
         "en": "Installation Feasibility"
       },
       "unit": "fraction"
@@ -43,7 +45,7 @@
         "fractionTarget": 1.0
       },
       "title": {
-        "ko": "\uc720\uc9c0\ubcf4\uc218 \uc811\uadfc\uc131",
+        "ko": "유지보수 접근성",
         "en": "Maintenance Access"
       },
       "unit": "fraction"
@@ -55,7 +57,7 @@
         "perStation": 8000
       },
       "title": {
-        "ko": "RO \ubc30\uad00 \ud6a8\uc728",
+        "ko": "RO 배관 효율",
         "en": "RO Piping Efficiency"
       },
       "unit": "mm"
@@ -67,7 +69,7 @@
         "perStation": 10000
       },
       "title": {
-        "ko": "\uc804\uae30 \ubc30\uc120 \uacbd\ub85c",
+        "ko": "전기 배선 경로",
         "en": "Electrical Routing"
       },
       "unit": "mm"
@@ -79,7 +81,7 @@
         "additionalStations": 4
       },
       "title": {
-        "ko": "\ud5a5\ud6c4 \ud655\uc7a5\uc131",
+        "ko": "향후 확장성",
         "en": "Future Expansion"
       },
       "unit": "count"
@@ -91,7 +93,7 @@
         "perStation": 12000
       },
       "title": {
-        "ko": "\ub3d9\uc120 \uac70\ub9ac / \uc5c5\ubb34 \ub3d9\uc120 \ud6a8\uc728",
+        "ko": "동선 거리 / 업무 동선 효율",
         "en": "Walking Distance / Staff Workflow Efficiency"
       },
       "unit": "mm"
@@ -103,7 +105,7 @@
         "perStation": 6000
       },
       "title": {
-        "ko": "\ubc30\uc218 \uacbd\ub85c",
+        "ko": "배수 경로",
         "en": "Drain Routing"
       },
       "unit": "mm",
@@ -115,7 +117,7 @@
     "station_count": {
       "note": "Deliberately NOT a weighted criterion. Station count is a target the engineer sets and the solver satisfies; scoring then ranks arrangements that meet it. A weight of 0 in a maximise-total model would rank the emptiest room first, because every other criterion improves as machines are removed. Measured and displayed like a criterion; never traded against one.",
       "title": {
-        "ko": "\ud22c\uc11d\uae30 \uc218\ub7c9",
+        "ko": "투석기 수량",
         "en": "Number of Dialysis Stations"
       },
       "unit": "count"

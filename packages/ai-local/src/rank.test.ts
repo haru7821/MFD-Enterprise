@@ -148,7 +148,9 @@ describe('the ranked output', () => {
       result.layouts.map((_, index) => index + 1),
     );
 
-    const totals = result.layouts.map((layout) => layout.score.total);
+    // A suppressed total (owner decision D1) sorts last rather than as zero — `rank.ts`'s
+    // comparator substitutes -1 for null, outside the 0…1 range every real total lives in.
+    const totals = result.layouts.map((layout) => layout.score.total ?? -1);
     expect([...totals].sort((a, b) => b - a)).toEqual(totals);
   });
 

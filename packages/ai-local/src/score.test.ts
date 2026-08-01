@@ -390,7 +390,14 @@ describe('the breakdown', () => {
   it('sums the contributions to the total, exactly', () => {
     const breakdown = score();
     const sum = breakdown.criteria.reduce((total, entry) => total + entry.contribution, 0);
-    expect(sum).toBeCloseTo(breakdown.total, 9);
+    /*
+     * Owner decision D1 suppresses the total below `MINIMUM_COVERAGE`, so this fixture has to be
+     * one that clears the floor for the sum to have anything to equal. Asserted rather than
+     * assumed: if the fixture ever drops below it, this fails here rather than silently passing a
+     * `toBeCloseTo(null)`.
+     */
+    expect(breakdown.total).not.toBeNull();
+    expect(sum).toBeCloseTo(breakdown.total ?? 0, 9);
   });
 
   it('names the model that produced it', () => {
@@ -482,12 +489,14 @@ describe('coverage', () => {
      * weighted sum by making station count a constraint, coming back through a criterion that
      * improves as the room empties.
      *
-     * Total 0 and coverage 0 now say "nothing was scored" rather than "this scored badly" — a
-     * distinction a bare 0.00 could not make either.
+     * Owner decision D1 sharpened this further. It used to assert `total === 0`, which was the
+     * best available statement at the time but still a *number*, and a reader compares numbers.
+     * The total is now **null** — below the model's `minimumCoverage` there is nothing to offer —
+     * so "nothing was scored" is said outright rather than encoded as a zero.
      */
     const breakdown = score({ placements: [], referencePoints: [], stationTarget: 0 });
 
-    expect(breakdown.total).toBe(0);
+    expect(breakdown.total).toBeNull();
     expect(breakdown.coverage).toBe(0);
     expect(breakdown.criteria).toHaveLength(0);
     expect(breakdown.unavailable).toHaveLength(SCORING_CRITERIA.length);
@@ -1557,5 +1566,78 @@ describe('the column fixture routes correctly', () => {
     });
     const ro = breakdown.criteria.find((entry) => entry.criterion === 'ro_piping_length');
     expect(ro?.measured).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * Owner decision D1: *"Do NOT renormalize away unavailable criteria. If coverage is below the
+ * required threshold, suppress the total ranking. … Unknown must never become perfect."*
+ *
+ * The audit's measurement, encoded. Dividing by the *available* weight meant deleting evidence
+ * raised the score — identical placements with only the reference-point set varied gave 0.7208 at
+ * coverage 0.40, 0.8983 at 0.25, and **1.0000** at 0.20.
+ */
+describe('D1 — evidence cannot be renormalised away', () => {
+  it('never rises when a reference point is taken away', () => {
+    const all = score();
+    const fewer = score({ referencePoints: ALL_POINTS.slice(0, 2) });
+    const none = score({ referencePoints: [] });
+
+    // Coverage must fall — the premise. If it does not, this is measuring nothing.
+    expect(fewer.coverage).toBeLessThan(all.coverage);
+    expect(none.coverage).toBeLessThan(fewer.coverage);
+
+    // And the contribution sum must fall with it, never rise. Under renormalisation it rose.
+    const sum = (breakdown: ReturnType<typeof score>) =>
+      breakdown.criteria.reduce((running, entry) => running + entry.contribution, 0);
+
+    expect(sum(fewer)).toBeLessThanOrEqual(sum(all));
+    expect(sum(none)).toBeLessThanOrEqual(sum(fewer));
+  });
+
+  it('cannot reach 1.00 on a layout that was barely measured', () => {
+    // The headline failure: coverage 0.20 scored a perfect 1.0000.
+    const none = score({ referencePoints: [] });
+    const sum = none.criteria.reduce((running, entry) => running + entry.contribution, 0);
+
+    expect(none.coverage).toBeLessThan(0.5);
+    expect(sum).toBeLessThan(0.5);
+  });
+
+  it('divides by the whole model, so contributions are comparable across candidates', () => {
+    /*
+     * The property that makes a fixed divisor worth having: a criterion's contribution depends only
+     * on the criterion, not on how many *other* criteria happened to be measurable. Under
+     * renormalisation the same measurement contributed more when its neighbours went missing.
+     */
+    const all = score();
+    const fewer = score({ referencePoints: ALL_POINTS.slice(0, 2) });
+
+    const contributionOf = (breakdown: ReturnType<typeof score>, criterion: string) =>
+      breakdown.criteria.find((entry) => entry.criterion === criterion)?.contribution;
+
+    const shared = all.criteria
+      .map((entry) => entry.criterion)
+      .filter((criterion) => fewer.criteria.some((entry) => entry.criterion === criterion));
+
+    expect(shared.length).toBeGreaterThan(0);
+    for (const criterion of shared) {
+      expect(contributionOf(fewer, criterion)).toBeCloseTo(contributionOf(all, criterion) ?? 0, 9);
+    }
+  });
+
+  it('offers no total at all below the model’s coverage floor', () => {
+    const suppressed = score({ scoring: { ...dialysisScoringModel, minimumCoverage: 1 } });
+    expect(suppressed.total).toBeNull();
+    // ...and still reports everything the decision asks to be shown instead.
+    expect(suppressed.coverage).toBeGreaterThan(0);
+    expect(suppressed.criteria.length + suppressed.unavailable.length).toBe(
+      SCORING_CRITERIA.length,
+    );
+  });
+
+  it('offers a total once the floor is met', () => {
+    const offered = score({ scoring: { ...dialysisScoringModel, minimumCoverage: 0 } });
+    expect(offered.total).not.toBeNull();
   });
 });
