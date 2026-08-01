@@ -424,10 +424,150 @@ export const corpusValidationSchema = z.strictObject({
         '`totals.completed` must equal the rows that ran every stage AND carry a confirmation ' +
         '(owner decision D7: batch execution alone is not completion)',
     },
+  )
+  .refine(
+    (ledger) => ledger.drawings.every((row) => row.confirmedBy === null || row.stoppedAt === null),
+    {
+      /*
+       * The converse of D7, and the ledger could express its negation until review pointed it out.
+       * `confirmedBy` on a row that stopped at `import` parsed happily — a signature against a run
+       * that did not happen. It was asserted in a test, over an empty set, and enforced nowhere.
+       *
+       * Not merely tidiness: with this state representable, `completed` and "rows carrying a
+       * confirmation" are two different counts, and the test file was already using both as though
+       * they were one.
+       */
+      message:
+        'a row may not carry `confirmedBy` unless it ran every batch stage (`stoppedAt: null`) — ' +
+        'a confirmation is given for a run that finished, not for one that stopped',
+    },
   );
 
 export type CorpusRow = z.infer<typeof corpusRowSchema>;
 export type CorpusValidation = z.infer<typeof corpusValidationSchema>;
+
+// ---------------------------------------------------------------------------
+// Confirmations — owner decisions D9 and D10
+// ---------------------------------------------------------------------------
+
+/**
+ * The signatures, kept in a file **no batch writes**.
+ *
+ * > Owner decision D9: *"A separate `knowledge/validation/confirmations.json`, keyed and merged in
+ * > by the builder. Only that makes survival structural rather than procedural."*
+ *
+ * D7 gave a row a `confirmedBy` field and stopped there, and review found what that was worth:
+ * nothing in the tree ever wrote a non-null one. `validate-corpus.ts` rebuilt every row from the
+ * dataset with `confirmedBy: null` hardcoded and overwrote the ledger, so a signature — the one
+ * datum in this artefact that cannot be regenerated — would have been destroyed by the next run,
+ * silently, and `totals.completed` was structurally pinned at 0. The schema stated a rule the
+ * product could not obey.
+ *
+ * The split is the fix. `corpus.json` is generated and may be deleted and rebuilt at any time; this
+ * file is written by people and read by the builder, never the reverse.
+ */
+export const CONFIRMATIONS_VERSION = 1;
+
+const rowOutcomeShape = {
+  drawingId: z.string().min(1),
+  page: z.number().int().nonnegative(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  reached: z.string().min(1),
+  stoppedAt: z.string().min(1).nullable(),
+  discrepancies: z.array(
+    z.strictObject({
+      code: z.enum(VERIFICATION_DISCREPANCY_CODES),
+      classification: z.enum(DISCREPANCY_CLASSES),
+      subject: z.string().min(1),
+    }),
+  ),
+};
+
+/**
+ * What a person signed, written out in full rather than as a hash.
+ *
+ * The outcome fields are here because of **owner decision D10** — a confirmation binds to the run it
+ * was given for, not to the drawing. Writing them out rather than storing an opaque fingerprint is
+ * deliberate: a signer has to state what they confirmed, and a reader can see it without running
+ * anything.
+ */
+export const confirmationSchema = z.strictObject({
+  ...rowOutcomeShape,
+  name: z.string().min(1),
+  at: z.string().min(1),
+  /** What they confirmed against — a record, a drawing, a conversation. */
+  basis: z.string().min(1),
+});
+
+export const confirmationsSchema = z.strictObject({
+  version: z.literal(CONFIRMATIONS_VERSION),
+  confirmations: z.array(confirmationSchema),
+});
+
+export type Confirmation = z.infer<typeof confirmationSchema>;
+export type Confirmations = z.infer<typeof confirmationsSchema>;
+
+export function parseConfirmations(raw: unknown, fileName: string): Confirmations {
+  const result = confirmationsSchema.safeParse(raw);
+  if (!result.success) {
+    throw new VerificationParseError(
+      fileName,
+      result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; '),
+    );
+  }
+  return result.data;
+}
+
+/** Everything a confirmation is bound to — {@link rowFingerprint}'s input, and a row satisfies it. */
+export type RowOutcome = {
+  readonly [K in keyof typeof rowOutcomeShape]: z.infer<(typeof rowOutcomeShape)[K]>;
+};
+
+/**
+ * What a confirmation is bound to — **owner decision D10**.
+ *
+ * > *"A confirmation binds to `drawingId`, `page`, `sha256` **and** the row's outcome (`reached`,
+ * > `stoppedAt`, `discrepancies`). If any differs, it does not apply and the row is unconfirmed."*
+ *
+ * The outcome is in the key, not just the drawing, and that is the whole decision. Binding to the
+ * hash alone would keep a signature alive across a change in what the pipeline *made* of those same
+ * bytes — and this corpus has already done exactly that, `byStage.room` moving 8 → 15 under review
+ * without a single row's identity changing. "Confirmed" has to mean something about the run being
+ * reported, not about a run that once existed.
+ *
+ * A confirmation whose subject has moved is **not deleted**. It stays in the file, unmatched: a
+ * person's act is evidence, and it simply stops asserting anything.
+ */
+export function rowFingerprint(outcome: RowOutcome): string {
+  const discrepancies = outcome.discrepancies
+    .map((entry) => `${entry.code}|${entry.classification}|${entry.subject}`)
+    .sort()
+    .join('~');
+  return [
+    outcome.drawingId,
+    String(outcome.page),
+    outcome.sha256,
+    outcome.reached,
+    outcome.stoppedAt ?? '',
+    discrepancies,
+  ].join(' ');
+}
+
+/**
+ * The signature for a row, or null — the merge D9 asks the builder to perform.
+ *
+ * Exported and used by `scripts/lib/corpusLedger.ts` rather than reimplemented there, so the rule
+ * that decides whether a confirmation applies exists once. A test asserting its own copy of this
+ * would pass while the builder used a different rule, which is a failure this project has shipped.
+ */
+export function confirmationFor(
+  row: RowOutcome,
+  confirmations: readonly Confirmation[],
+): CorpusRow['confirmedBy'] {
+  const key = rowFingerprint(row);
+  const match = confirmations.find((entry) => rowFingerprint(entry) === key);
+  return match ? { name: match.name, at: match.at, basis: match.basis } : null;
+}
 
 export function parseCorpusValidation(raw: unknown, fileName: string): CorpusValidation {
   const result = corpusValidationSchema.safeParse(raw);

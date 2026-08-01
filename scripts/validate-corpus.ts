@@ -1,15 +1,12 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { readFileSync } from 'node:fs';
 
-import {
-  CORPUS_VALIDATION_VERSION,
-  parseCorpusValidation,
-  type CorpusRow,
-} from '../packages/layout-knowledge/src/verification';
+import { parseConfirmations } from '../packages/layout-knowledge/src/verification';
 
+import { buildLedger, staleConfirmations, type LedgerRow } from './lib/corpusLedger';
 import { VALIDATION_OBSERVER, validateDrawing } from './lib/validateDrawing';
 
 /**
@@ -52,7 +49,7 @@ const dataset = JSON.parse(readFileSync(join(REPO, 'knowledge', 'dataset.json'),
   drawings: { drawingId: string; pageCount: number }[];
 };
 
-const rows: CorpusRow[] = [];
+const rows: LedgerRow[] = [];
 for (const drawing of dataset.drawings) {
   /*
    * Every page of a multi-sheet file, not just the first. `pageCount` comes from the catalogue, and
@@ -76,8 +73,6 @@ for (const drawing of dataset.drawings) {
         page,
         reached: 'import',
         stoppedAt: 'import',
-        // Owner decision D7: nothing this script runs can confirm itself.
-        confirmedBy: null,
         discrepancies: [
           {
             code: 'VD-5',
@@ -95,12 +90,6 @@ for (const drawing of dataset.drawings) {
       page: outcome.page,
       reached: outcome.reached,
       stoppedAt: outcome.stoppedAt,
-      /*
-       * Owner decision D7. A batch run never confirms itself, so this is always null here — a
-       * confirmation is added by a person against a record, and the ledger keeps it so a later run
-       * cannot quietly promote a batch result into a completed one.
-       */
-      confirmedBy: null,
       discrepancies: outcome.discrepancies.map((entry) => ({
         code: entry.code,
         classification: entry.classification,
@@ -110,47 +99,36 @@ for (const drawing of dataset.drawings) {
   }
 }
 
-function tally(values: readonly string[]): { key: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
-  // Sorted by count then key, so a re-run with the same inputs produces the same bytes.
-  return [...counts.entries()]
-    .map(([key, count]) => ({ key, count }))
-    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
-}
+/*
+ * **Owner decisions D9 and D10.** The signatures come from a file this script only ever *reads*.
+ *
+ * The previous version wrote `confirmedBy: null` on every row and re-read the ledger only after
+ * overwriting it, so a signature would have been destroyed by the next run — while the comment
+ * beside it claimed the opposite. Review found it, and the fix is structural rather than careful:
+ * `corpus.json` is generated and can be rebuilt from the dataset at any time, and the one datum
+ * that cannot be regenerated lives somewhere no batch writes.
+ */
+const confirmationsPath = join(REPO, 'knowledge', 'validation', 'confirmations.json');
+const confirmations = existsSync(confirmationsPath)
+  ? parseConfirmations(
+      JSON.parse(readFileSync(confirmationsPath, 'utf8')) as unknown,
+      'knowledge/validation/confirmations.json',
+    ).confirmations
+  : [];
 
-const ledger = {
-  version: CORPUS_VALIDATION_VERSION as typeof CORPUS_VALIDATION_VERSION,
+// Every count, every invariant and the parse are `buildLedger`'s, so they are testable.
+const ledger = buildLedger(rows, confirmations, {
   datasetId: dataset.id,
   validatedAt: now,
   observer: VALIDATION_OBSERVER,
-  totals: {
-    drawings: rows.length,
-    /*
-     * Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
-     * execution alone is not completion."*
-     *
-     * This counted `stoppedAt === null` — the batch reaching its last stage — and called that
-     * completed. Nothing in this script can confirm a run: the `room` stage asks whether the region
-     * it found is the dialysis room, which is the question a person answers. So a batch run
-     * contributes to `batchComplete`, and `completed` stays 0 until somebody signs a row.
-     */
-    completed: rows.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length,
-    batchComplete: rows.filter((row) => row.stoppedAt === null).length,
-    stopped: rows.filter((row) => row.stoppedAt !== null).length,
-    byStage: tally(rows.flatMap((row) => (row.stoppedAt ? [row.stoppedAt] : []))),
-    byClassification: tally(
-      rows.flatMap((row) => row.discrepancies.map((entry) => entry.classification)),
-    ),
-  },
-  drawings: rows,
-};
+});
+const stale = staleConfirmations(rows, confirmations);
 
 mkdirSync(join(REPO, 'knowledge', 'validation'), { recursive: true });
-const path = join(REPO, 'knowledge', 'validation', 'corpus.json');
-writeFileSync(path, `${JSON.stringify(ledger, null, 2)}\n`);
-// Parse what was just written, so a run cannot commit a ledger the loader would reject.
-parseCorpusValidation(JSON.parse(readFileSync(path, 'utf8')) as unknown, 'knowledge/validation/corpus.json');
+writeFileSync(
+  join(REPO, 'knowledge', 'validation', 'corpus.json'),
+  `${JSON.stringify(ledger, null, 2)}\n`,
+);
 
 console.log(`validation programme over ${ledger.totals.drawings} drawing-pages\n`);
 console.log(`  human-confirmed complete       ${String(ledger.totals.completed).padStart(4)}`);
@@ -164,8 +142,21 @@ console.log('\n  discrepancies by classification:');
 for (const entry of ledger.totals.byClassification) {
   console.log(`    ${entry.key.padEnd(22)} ${String(entry.count).padStart(4)}`);
 }
+if (stale.length > 0) {
+  /*
+   * Owner decision D10: a confirmation binds to the outcome it was given for. These no longer match
+   * any row, so they have stopped counting — and they are **kept**, because a person's act is
+   * evidence. Reported because a signature that has quietly stopped asserting anything is exactly
+   * what whoever gave it needs to be told.
+   */
+  console.log('\n  confirmations that no longer match any run (retained, not counted):');
+  for (const entry of stale) {
+    console.log(`    ${entry.drawingId} p${entry.page} — signed by ${entry.name} on ${entry.at}`);
+  }
+}
+
 console.log('\n  ran every batch stage (awaiting human confirmation unless marked):');
 for (const row of rows.filter((entry) => entry.stoppedAt === null)) {
   console.log(`    ${row.drawingId} p${row.page}`);
 }
-console.log(`\nwritten: ${path.slice(REPO.length + 1)}`);
+console.log('\nwritten: knowledge/validation/corpus.json');

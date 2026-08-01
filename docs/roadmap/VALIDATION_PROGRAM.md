@@ -35,8 +35,18 @@ the corpus run and the single-drawing run disagree about what a drawing is worth
 ran less often would be the wrong one.
 
 **Stopping is a result, not an error.** Most drawings do not reach the end, and running them is how
-we find that out. Every stop names its stage and carries a classified discrepancy, so *"58 sheets
-carry fewer than two readable dimensions"* is a finding rather than a stack trace.
+we find that out. Every stop names its stage and carries a classified discrepancy, so *"**62** sheets
+carry no dimension set this reader can establish a scale from"* is a finding rather than a stack
+trace.
+
+> That figure read **58** and was not derivable from any ledger this repository has held — it was 61
+> when the sentence was written and is 62 now. Re-derived from `knowledge/validation/corpus.json`:
+> 62 rows stop at `calibrate` with `VD-7 insufficient_evidence · no scale can be established`, the
+> `reconcileScale` refusal. The other 18 calibrate stops are a different finding — 14
+> `extraction_error` and 4 `insufficient_evidence` on *"the sheet does not agree with itself on one
+> scale"*, which is a sheet with dimensions that contradict each other rather than one without any.
+> The old wording covered both under "fewer than two readable dimensions"; it is one number for one
+> cause now.
 
 ### The five classifications
 
@@ -77,6 +87,30 @@ after a human-confirmed run; batch execution alone is not completion"*. They bot
 is exactly why the ledger keeps them apart: with one number and one word, a batch reaching its own
 last stage was recorded as the programme being complete, and that is what put *"two complete all nine
 stages"* into `HOSPITAL_044_VERIFICATION.md` while this ledger said zero.
+
+### Where a confirmation lives
+
+`knowledge/validation/confirmations.json`, and **the batch only ever reads it** — owner decision D9.
+
+The first attempt put `confirmedBy` on the ledger row and stopped there. Review found that nothing in
+the repository ever wrote a non-null one: `validate-corpus.ts` rebuilt every row from the dataset with
+`confirmedBy: null` hardcoded, overwrote the ledger, and re-read it only afterwards. A signature would
+have been destroyed by the next run, silently — while the comment beside the code claimed the
+opposite. `totals.completed` was pinned at 0 by construction, so D7's distinction existed in the
+schema and nowhere else.
+
+The split is what fixes it rather than care: `corpus.json` is generated and may be deleted and rebuilt
+from the dataset at any time; the one datum that cannot be regenerated sits in a file no batch writes.
+
+A confirmation binds to `drawingId` + `page` + `sha256` **and the run's outcome** — `reached`,
+`stoppedAt`, `discrepancies` (owner decision D10). Change any of them and it stops applying, because
+"confirmed" has to mean something about the run being reported rather than a run that once existed.
+This corpus has already moved under its own review — `byStage.room` went 8 → 15 without a single row's
+identity changing, which is precisely where a signature bound to the hash alone would have stayed
+alive. A confirmation whose subject has moved is **kept**, never deleted, and reported by the run: a
+person's act is evidence, it has simply stopped asserting anything.
+
+The file ships empty. No run has been confirmed.
 
 By classification — a run can raise more than one:
 
