@@ -481,14 +481,12 @@ export function rowFingerprint(outcome: RowOutcome): string {
 }
 
 /**
- * The signature for a row, or null — the merge D9 asks the builder to perform.
+ * Codepoint order — deterministic on every machine, unlike `localeCompare` with no locale.
  *
- * Exported and used by `scripts/lib/corpusLedger.ts` rather than reimplemented there, so the rule
- * that decides whether a confirmation applies exists once. A test asserting its own copy of this
- * would pass while the builder used a different rule, which is a failure this project has shipped.
+ * Exported so the builder's sorts use this one rather than a second copy. Every ordering that
+ * reaches `corpus.json` goes through it or through {@link compareSignatures}.
  */
-/** Codepoint order — deterministic on every machine, unlike `localeCompare` with no locale. */
-function compare(a: string, b: string): number {
+export function compareCodepoint(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
@@ -501,23 +499,37 @@ function compare(a: string, b: string): number {
  *    two disagree — `…T09:00:00+09:00` is earlier than `…T02:00:00Z` and sorts later.
  * 2. **Name**, as before.
  * 3. **The raw `at`**, so two spellings of one instant order deterministically rather than by file
- *    position.
+ *    position. This is also where the **millisecond floor** shows: `Date.parse` resolves no finer,
+ *    so `…:00.1234Z` and `…:00.12345Z` tie on key 1 and are separated here by spelling — and `'5'`
+ *    precedes `'Z'`, so the *later* act applies. Owner decision D12-era Q2: two acts inside one
+ *    millisecond **are the same instant**, and below that the applied act is the deterministic one
+ *    rather than the earliest. Nothing is lost either way — both acts stay in the file, one as
+ *    `confirmedBy` and one under `unapplied`; only the designation moves. A hand-rolled
+ *    full-precision parser was refused: it would trade away the 73,332-string sweep that made
+ *    `Date.parse` trustworthy here, to buy resolution no human signature possesses.
  * 4. **Basis**, because two signers can share a name and an instant and differ only here; without
  *    it the comparator returns 0 and `Array.sort`'s stability hands the decision back to file
  *    order — the exact dependence D11 exists to remove.
  */
-function compareSignatures(
+export function compareSignatures(
   a: { at: string; name: string; basis: string },
   b: { at: string; name: string; basis: string },
 ): number {
   return (
     Date.parse(a.at) - Date.parse(b.at) ||
-    compare(a.name, b.name) ||
-    compare(a.at, b.at) ||
-    compare(a.basis, b.basis)
+    compareCodepoint(a.name, b.name) ||
+    compareCodepoint(a.at, b.at) ||
+    compareCodepoint(a.basis, b.basis)
   );
 }
 
+/**
+ * Every confirmation of one kind standing on a row, in D11's order — the applying act first.
+ *
+ * Shared by `confirmationFor` and `duplicateConfirmations` so "is this the same act" is decided
+ * once. Two implementations would let a confirmation be counted by one and reported a duplicate by
+ * the other, in the same run.
+ */
 export function confirmationsMatching(
   row: RowOutcome,
   confirmations: readonly Confirmation[],
@@ -549,6 +561,17 @@ export function confirmationsMatching(
  * second vanished — the one datum D9 exists to protect, disappearing silently. Ordering by (`at`,
  * `name`) rather than by file position also means the ledger's bytes do not depend on how somebody
  * chose to append to the JSON.
+ *
+ * Exported and used by `scripts/lib/corpusLedger.ts` rather than reimplemented there, so the rule
+ * that decides whether a confirmation applies exists once. A test asserting its own copy of this
+ * would pass while the builder used a different rule, which is a failure this project has shipped.
+ */
+/**
+ * The signature for a row, or null — the merge D9 asks the builder to perform.
+ *
+ * > **Owner decision D11**: the row takes the earliest matching confirmation, and every further one
+ * > is reported rather than dropped. This was `.find()`, which took whichever entry came first in
+ * > the file and discarded the rest uncounted — the one datum D9 exists to protect, vanishing.
  *
  * Exported and used by `scripts/lib/corpusLedger.ts` rather than reimplemented there, so the rule
  * that decides whether a confirmation applies exists once. A test asserting its own copy of this
@@ -710,7 +733,9 @@ export const corpusValidationSchema = z.strictObject({
    * noticed the asymmetry.
    */
   unapplied: z.array(
-    z.object({
+    // `strictObject` like every other schema in this module: a hand-added key on an entry here was
+    // silently stripped rather than rejected, which is not what the rest of this file promises.
+    z.strictObject({
       /** `duplicate` — another act already stands on that row. `stale` — it matches no row now. */
       reason: z.enum(['duplicate', 'stale']),
       confirmation: confirmationSchema,
@@ -770,22 +795,34 @@ export const corpusValidationSchema = z.strictObject({
   .refine(
     (ledger) =>
       ledger.unapplied.every(({ reason, confirmation }) => {
-        const matches = ledger.drawings.some(
-          (row) =>
-            row.stoppedAt === confirmation.stoppedAt &&
-            rowFingerprint(row) === rowFingerprint(confirmation),
-        );
-        return reason === 'stale' ? !matches : matches;
+        const key = rowFingerprint(confirmation);
+        const row = ledger.drawings.find((entry) => rowFingerprint(entry) === key);
+        if (reason === 'stale') return row === undefined;
+        if (row === undefined) return false;
+
+        /*
+         * **Owner decision, D11's Q1: a `duplicate` means another act of the same kind already
+         * stands on that row, and stands because it is the earlier one.**
+         *
+         * The first version of this refine only asked whether the entry matched a row, and review
+         * measured what that let through: a `duplicate` on a row carrying no confirmation at all —
+         * so nothing was duplicated — and, worse, `confirmedBy` set to the *later* signature with
+         * the earlier one filed as the duplicate, which is the exact inverse of D11 and checkable
+         * from the file. The ledger's sentence to a signer is *"it was recorded but another
+         * stands"*, and a file where nothing stands makes that sentence false.
+         *
+         * `buildLedger` cannot produce either state — it emits `.slice(1)` of a matched, sorted
+         * set — so the exposure is a hand-edited or third-party ledger. A ledger that can state
+         * what the rule forbids is not evidence.
+         */
+        const applied = confirmation.kind === 'completion' ? row.confirmedBy : row.stopConfirmedBy;
+        return applied !== null && compareSignatures(applied, confirmation) < 0;
       }),
     {
-      /*
-       * What makes `unapplied` evidence rather than decoration: a `stale` entry must match no row
-       * in this ledger and a `duplicate` must match one. Checkable from the file alone, without the
-       * dataset — which is the property every other invariant here has.
-       */
       message:
-        'an `unapplied` entry marked `stale` must match no row, and one marked `duplicate` must ' +
-        'match a row in this ledger',
+        'an `unapplied` entry marked `stale` must match no row; one marked `duplicate` must match ' +
+        'a row that carries an applied confirmation of the same kind, ordered strictly earlier ' +
+        '(owner decision D11: it was recorded, but another stands)',
     },
   )
   .refine(

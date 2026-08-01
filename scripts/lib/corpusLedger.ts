@@ -1,6 +1,8 @@
 import {
   CORPUS_VALIDATION_VERSION,
   confirmationFor,
+  compareCodepoint,
+  compareSignatures,
   confirmationsMatching,
   rowFingerprint,
   parseCorpusValidation,
@@ -41,10 +43,11 @@ function tally(values: readonly string[]): { key: string; count: number }[] {
   // Sorted by count then key, so a re-run with the same inputs produces the same bytes.
   return [...counts.entries()]
     .map(([key, count]) => ({ key, count }))
-    // Codepoint order rather than `localeCompare`, for the reason `confirmationsMatching` gives:
-    // the comment below promises the same bytes on a re-run, and a locale-dependent sort does not
-    // deliver that across machines.
-    .sort((a, b) => b.count - a.count || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    // `compareCodepoint` rather than `localeCompare`, and the same function the signature order
+    // uses: the comment above promises the same bytes on a re-run, and a locale-dependent sort does
+    // not deliver that across machines. Reached only when two stages tie on count, which the
+    // shipped corpus never does — so it is pinned by a constructed tie in the tests.
+    .sort((a, b) => b.count - a.count || compareCodepoint(a.key, b.key));
 }
 
 /**
@@ -78,7 +81,23 @@ export function buildLedger(
       reason: 'stale' as const,
       confirmation,
     })),
-  ];
+  ].sort(
+    /*
+     * **Sorted, because this array was the one place file order still reached the ledger.**
+     *
+     * `staleConfirmations` filters `confirmations` in file order and this concatenated it unsorted,
+     * so swapping two stale entries in `confirmations.json` swapped them in `corpus.json` —
+     * measured. The commit that added `unapplied` exists to remove exactly that dependence, and
+     * re-introduced it in the array it added.
+     *
+     * `compareSignatures` first, so the ordering rule is D11's and not a second one; the fingerprint
+     * separates acts on different rows that share a signature, and `reason` is the last resort.
+     */
+    (a, b) =>
+      compareSignatures(a.confirmation, b.confirmation) ||
+      compareCodepoint(rowFingerprint(a.confirmation), rowFingerprint(b.confirmation)) ||
+      compareCodepoint(a.reason, b.reason),
+  );
 
   const drawings: CorpusRow[] = rows.map((row) => ({
     drawingId: row.drawingId,
@@ -126,14 +145,6 @@ export function buildLedger(
   );
 }
 
-/**
- * Confirmations that match no row in this run — **owner decision D10**.
- *
- * They are not an error and are never deleted: a person's act is evidence, and it stays in the file.
- * What changed is the run, not the act, so the signature simply stops asserting anything. Reported
- * because a signature that has silently stopped counting is precisely the thing whoever gave it
- * needs to be told about.
- */
 /**
  * Confirmations that match a row another confirmation already stands on — **owner decision D11**.
  *

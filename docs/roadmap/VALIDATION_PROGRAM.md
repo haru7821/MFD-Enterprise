@@ -129,9 +129,21 @@ Every key in that order is there because a shorter one was measured wrong. "Earl
 only in `basis` tied, so `Array.sort`'s stability handed the decision back to file position — the
 dependence the rule exists to remove, surviving inside its own implementation.
 
+One qualification on "the parsed instant": `Date.parse` resolves to the millisecond, so two acts
+inside the same millisecond are **the same instant** and are separated by spelling — which can hand
+the designation to the later one. Owner decision: that stands. A hand-rolled full-precision parser
+would trade away the 73,332-string sweep that established `Date.parse` is otherwise exact here, to
+buy resolution no human signature possesses, and restricting the format would refuse ordinary
+`isoformat()` output. Nothing is lost either way: both acts remain in the file, one applied and one
+under `unapplied`, and only the designation moves.
+
 Any further signature on the same row is recorded as a **duplicate**, and one matching no row as
 **stale**, both in the ledger's own `unapplied` array rather than only in a console nobody keeps
-(owner decision D11). Neither is ever deleted. They sit outside `totals` deliberately: D12 forbids a
+(owner decision D11). Neither is ever deleted, and the array is sorted by the same rule, so its
+order does not follow the order somebody appended to `confirmations.json`. A `duplicate` entry must
+name a row that carries an applied confirmation of the same kind **ordered strictly earlier** — the
+ledger's sentence to a signer is *"it was recorded, but another stands"*, and a file where nothing
+stands, or where the later act is the one applied, makes that sentence false. They sit outside `totals` deliberately: D12 forbids a
 number beside `completed`, `batchComplete` and `stopsConfirmed` that could be read as another kind of
 completion.
 

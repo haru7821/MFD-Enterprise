@@ -350,6 +350,18 @@ describe('rowFingerprint', () => {
     expect(rowFingerprint(a)).not.toBe(rowFingerprint(b));
   });
 
+  it('separates a run that stopped from one that did not', () => {
+    /*
+     * D10 names `stoppedAt` in the binding explicitly, and it was untested: deleting it from the
+     * fingerprint left the whole suite green, because every test that moved `stoppedAt` moved
+     * `reached` with it and the fingerprint caught the change through `reached` instead. Pre-existing.
+     */
+    const ran: LedgerRow = { ...base, reached: 'report', stoppedAt: null };
+    const stoppedThere: LedgerRow = { ...base, reached: 'report', stoppedAt: 'report' };
+
+    expect(rowFingerprint(ran)).not.toBe(rowFingerprint(stoppedThere));
+  });
+
   it('is stable under discrepancy order, because a run may report them in any order', () => {
     const forwards: LedgerRow = {
       ...base,
@@ -436,15 +448,71 @@ describe('D11 revised — the order over two signatures, and what the ledger rec
 
   it('does not depend on the machine\'s locale', () => {
     /*
-     * `localeCompare` with no locale reads the runtime's. Review measured the same two
-     * confirmations producing different winners under `LC_ALL=sv_SE` and `LC_ALL=de_DE`, while two
-     * documents claimed the ledger's bytes were stable. Names chosen so the two collations disagree.
+     * `localeCompare` with no locale reads the runtime's, and two documents claimed the ledger's
+     * bytes were stable regardless.
+     *
+     * **The pair matters, and the first one chosen was wrong.** `Ärnst`/`Zoe` kills a
+     * `localeCompare` mutant on most runtimes but *survives* under `LC_ALL=sv_SE.UTF-8`, where
+     * `'Zoe'.localeCompare('Ärnst', 'sv-SE') === -1` — a guard against machine dependence whose own
+     * kill was machine-dependent. Case is the robust discriminator instead: **every** locale
+     * collates case-insensitively, putting `alice` before `Bob`, while codepoint order puts `B`
+     * (U+0042) before `a` (U+0061). No collation reorders that.
      */
     const at = '2026-08-01T09:00:00Z';
-    const winner = buildLedger([ranToEnd], [sign('Zoe', at), sign('Ärnst', at)], META);
+    const winner = buildLedger([ranToEnd], [sign('Bob', at), sign('alice', at)], META);
 
-    // Codepoint order: 'Z' (U+005A) precedes 'Ä' (U+00C4) on every machine.
-    expect(winner.drawings[0]?.confirmedBy?.name).toBe('Zoe');
+    expect(winner.drawings[0]?.confirmedBy?.name).toBe('Bob');
+    // Stated outright, so the assertion above cannot pass for the wrong reason on some runtime.
+    expect('alice'.localeCompare('Bob')).toBeLessThan(0);
+  });
+
+  it('orders the unapplied array by the same rule, not by file order', () => {
+    /*
+     * **The blocking finding.** `staleConfirmations` filters in file order and `buildLedger`
+     * concatenated it unsorted, so swapping two entries in `confirmations.json` swapped them in
+     * `corpus.json` — measured. This commit exists to remove that dependence and had re-introduced
+     * it in the array it added.
+     */
+    const goneA: LedgerRow = { ...ranToEnd, sha256: 'e'.repeat(64) };
+    const goneB: LedgerRow = { ...ranToEnd, sha256: 'f'.repeat(64) };
+    const first = { ...sign('Ann', '2026-08-01T09:00:00Z'), ...goneA };
+    const second = { ...sign('Bea', '2026-08-02T09:00:00Z'), ...goneB };
+
+    // Neither matches the row being built, so both are stale — the branch that followed file order.
+    const forwards = buildLedger([ranToEnd], [first, second], META);
+    const backwards = buildLedger([ranToEnd], [second, first], META);
+
+    expect(forwards.unapplied.map((entry) => entry.confirmation.name)).toEqual(['Ann', 'Bea']);
+    expect(backwards.unapplied).toEqual(forwards.unapplied);
+    // The whole ledger, not just the array: the claim is about the file's bytes.
+    expect(JSON.stringify(backwards)).toBe(JSON.stringify(forwards));
+  });
+
+  it('breaks a stage tie by codepoint, which the shipped corpus never exercises', () => {
+    /*
+     * `tally`'s comparator is reached only when two stages have equal counts, and 211/80/15 are all
+     * distinct — so reverting it to `localeCompare`, or flipping the tie-break sign, left the whole
+     * suite green. The tie has to be constructed.
+     */
+    const stopAt = (stage: string, sha: string): LedgerRow => ({
+      ...ranToEnd,
+      sha256: sha,
+      reached: 'import',
+      stoppedAt: stage,
+      discrepancies: [
+        { code: 'VD-7', classification: 'insufficient_evidence', subject: 'no scale' },
+      ],
+    });
+
+    const ledger = buildLedger(
+      [stopAt('acalibrate', '1'.repeat(64)), stopAt('Broom', '2'.repeat(64))],
+      [],
+      META,
+    );
+
+    // Equal counts, so the key decides: 'B' (U+0042) before 'a' (U+0061). Every locale says the
+    // opposite, which is what makes this a discriminating assertion rather than a restatement.
+    expect(ledger.totals.byStage.map((entry) => entry.key)).toEqual(['Broom', 'acalibrate']);
   });
 
   it('records the acts it did not apply, with the reason, in the ledger itself', () => {
@@ -479,6 +547,58 @@ describe('D11 revised — the order over two signatures, and what the ledger rec
     };
 
     expect(() => parseCorpusValidation(lying, 'lying.json')).toThrow(/unapplied/);
+  });
+
+  it('will not accept a duplicate where nothing stands, or where the later act stands', () => {
+    /*
+     * > **Owner decision, D11 Q1**: *"a `duplicate` means another act of the same kind already
+     * > stands on that row, and stands because it is the earlier one."*
+     *
+     * The first refine only asked whether the entry matched a **row**, and review measured both
+     * states below parsing happily. The `duplicate` branch was unexercised entirely: weakening it
+     * to `true` left all 1,247 tests green, so half of a guard reported as mutation-verified was
+     * not. `buildLedger` cannot produce either state; a hand-edited ledger can.
+     */
+    const early = sign('Adam', '2026-08-01T09:00:00Z');
+    const later = sign('Zoe', '2026-08-02T09:00:00Z');
+    const ledger = buildLedger([ranToEnd], [early, later], META);
+    expect(ledger.unapplied).toEqual([{ reason: 'duplicate', confirmation: later }]);
+
+    // (a) Nothing stands on the row, so nothing was duplicated.
+    const nothingStands = {
+      ...ledger,
+      totals: { ...ledger.totals, completed: 0 },
+      drawings: [{ ...ledger.drawings[0]!, confirmedBy: null }],
+    };
+    expect(() => parseCorpusValidation(nothingStands, 'nothing.json')).toThrow(/duplicate/);
+
+    // (b) The later act is recorded as the one that applies — the inverse of D11, and checkable.
+    const inverted = {
+      ...ledger,
+      drawings: [{ ...ledger.drawings[0]!, confirmedBy: { name: later.name, at: later.at, basis: later.basis } }],
+      unapplied: [{ reason: 'duplicate' as const, confirmation: early }],
+    };
+    expect(() => parseCorpusValidation(inverted, 'inverted.json')).toThrow(/duplicate/);
+
+    // The right way round is accepted, so the rejections are about the ordering and not the shape.
+    expect(() => parseCorpusValidation(ledger, 'ok.json')).not.toThrow();
+  });
+
+  it('holds the ledger to the same instant format as the file it copies from', () => {
+    /*
+     * `signatureSchema.at` was tightened with a docblock saying the ledger "must not accept what
+     * its source cannot produce" — and nothing tested it: reverting it to `z.string().min(1)` left
+     * all 1,247 tests green. The claim was true of the code and untrue of the guard.
+     */
+    const ledger = buildLedger([ranToEnd], [sign('Adam', '2026-08-01T09:00:00Z')], META);
+    const freeText = {
+      ...ledger,
+      drawings: [
+        { ...ledger.drawings[0]!, confirmedBy: { name: 'Adam', at: '08/01/2026', basis: 'x' } },
+      ],
+    };
+
+    expect(() => parseCorpusValidation(freeText, 'freetext.json')).toThrow(/at/);
   });
 
   it('refuses a signature that is not an instant', () => {
