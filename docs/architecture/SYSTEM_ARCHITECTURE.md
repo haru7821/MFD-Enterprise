@@ -373,29 +373,67 @@ A ninth review round presented three options for closing it — measure unavaila
 non-convex obstruction, convex-decompose obstruction geometry before measuring, or reject non-convex
 obstruction geometry at the document layer — and the owner chose the first. `@mfd/rule-engine` now
 exports `isConvexPolygon` (`sat.ts`): every turn around the polygon's own perimeter must carry the
-same sign, orientation-agnostic and tolerant of collinear vertices. `freeDistanceOnSide`
-(`criteria.ts`) checks it against every obstruction before calling `gapAlongNormal`: an obstruction
-that fails the check *and* actually overlaps the face's own lateral band — the same test
-`gapAlongNormal` itself uses to decide relevance — makes that face's headroom unmeasurable rather
-than measured wrong, surfaced through a new reason code, `SC-907`, distinct from the pre-existing
-"no threshold to compare against" (`SC-904`) so a reader can tell the two apart. An obstruction that
-is non-convex but stands nowhere near the face in question does not cost anything: the lateral check
-is what keeps this from over-penalising a drawing whose only non-convex shape is on the far side of
-the room. This is a real, accepted reduction in what the criterion can measure — a real L, U or
-staple-shaped riser near a governed face costs the 40 %-weighted criterion entirely until convex
-decomposition (option two) is built — and is the honest alternative to a number that reads as
-measured and is not.
+same sign, orientation-agnostic and tolerant of collinear vertices, and (after the tenth round below)
+checks the total turning angle to reject a self-intersecting shape the sign check alone would accept.
+`freeDistanceOnSide` (`criteria.ts`) calls `gapAlongNormal` against every obstruction as before; when
+it returns a result at all — meaning the obstruction is genuinely in front of the face, by
+`gapAlongNormal`'s own full test, not a lateral approximation of it — a non-convex obstruction makes
+that face's headroom unmeasurable rather than measured wrong, surfaced through a new reason code,
+`SC-907`, distinct from the pre-existing "no threshold to compare against" (`SC-904`) so a reader can
+tell the two apart. This is a real, accepted reduction in what the criterion can measure on a drawing
+with a non-convex riser or duct run in front of a governed face — the honest alternative to a number
+that reads as measured and is not.
+
+A tenth review round rejected the ninth round's first commit on two counts, both closed here, one
+still open:
+
+1. **Blocking, closed.** The first version's relevance test used only `gapAlongNormal`'s lateral
+   check, not its full one, so a non-convex obstruction *entirely behind the face plane* — 2 m past
+   the machine's own front face, in the reproduction that found this — voided the rear face's
+   measurement even though `gapAlongNormal` itself would report `null` for it and cost nothing.
+   Fixed by gating on `gapAlongNormal`'s own return value (`null` → skip; a result → check
+   convexity) rather than reimplementing half its relevance test. `score.test.ts` gained a
+   permanent regression: a non-convex shape 2 m clear of the governed face must not change the
+   criterion's measured value at all against the same layout without it.
+2. **Should-fix, closed.** `isConvexPolygon`'s sign check alone accepted a self-intersecting star
+   polygon (a pentagram, traced through its five points in star order — every vertex turns the same
+   way, but the shape winds around its own centre twice) and a zero-width inward slit (a spike whose
+   cross product is as near-zero as a genuine straight run, but whose edges point in opposite
+   directions rather than the same one). The function now also sums the signed turning angle at
+   every vertex and requires one full turn — true of a simple convex polygon, false of a shape that
+   winds more than once — and treats a near-zero cross product with a negative dot product as a
+   reversal rather than a collinear pass-through. It does not attempt full self-intersection
+   detection (a slit that neither reverses direction nor changes the winding number would still
+   pass); a general test is a larger geometry investment than this check is meant to be, and remains
+   undone. The collinearity threshold was also changed from a raw millimetre-scale cross product to
+   the scale-invariant sine of the angle between edges, so a long, nearly-straight run — a level
+   outline can span tens of metres — cannot misread floating-point noise as a turn.
+3. **Blocking, open — owner decision required.** `measureComplianceMargin` drops a blocked face from
+   its ratio pool and reports the minimum of whatever else measured, the same as it already does for
+   any other per-face reason a ratio could not be computed. When at least one other face on the
+   layout measures, this makes a non-convex obstruction **cost nothing at all**: a station 100 mm
+   from a non-convex riser against an 800 mm requirement, with any other governed face free, scores
+   identically to one with no obstruction present — measured directly. That is the opposite failure
+   from the one this document warned about above ("costs the criterion entirely"): that claim is
+   true only when *every* candidate ratio is blocked this way, and false whenever even one other face
+   measures. `SC-906` — an occupant with no catalogue entry — already answers a structurally
+   identical question the other way: it refuses the whole criterion rather than measuring around the
+   unknown. Closing this either matches that precedent (report the whole criterion unavailable the
+   moment any face is blocked) or asks for a different, weaker signal (e.g. a partial-coverage marker
+   alongside a still-reported number); either is a product decision about what "unavailable" should
+   mean when partial data exists, not one this document settles. Not yet implemented.
 
 Both clamps stay regardless: they cost nothing, and neither guarantee is structural — a
 non-rectangular *equipment footprint* would make a clipped placement-crossing possible again without
 an overlap, and nothing enforces that every future caller of either function arrives through a
 Gate-2-gated path. Regression coverage: `sat.test.ts` pins both the corrected (clipped) result, a
 genuine in-band crossing that still clamps, and `isConvexPolygon` itself (convex shapes wound either
-direction, a collinear-vertex rectangle, an L-shape, and the staple riser below); `score.test.ts` and
-`evaluate.test.ts` each gained a directly-overlapping reproduction exercising the clamp itself, and
-`score.test.ts` gained a permanent regression for the staple-riser case — the same shape the eighth
-review round used to demonstrate the defect — now asserting `SC-907` rather than the old wrong,
-clamped-to-zero number. All guard-broken and restored.
+direction, a collinear-vertex rectangle, an L-shape, the staple riser, a pentagram, and a zero-width
+slit); `score.test.ts` and `evaluate.test.ts` each gained a directly-overlapping reproduction
+exercising the clamp itself, and `score.test.ts` gained permanent regressions for the staple-riser
+case (asserting `SC-907` where the defect used to report a clamped-to-zero `0`) and for the
+entirely-behind-the-face case (asserting no change from the no-obstruction baseline). All
+guard-broken and restored.
 
 **The Hospital_044 replay does not exercise either clamp, and the reason is not the absence of
 straddling geometry in the drawing.** The corpus's sixty evaluation findings split as forty

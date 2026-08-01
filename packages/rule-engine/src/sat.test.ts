@@ -254,4 +254,37 @@ describe('convexity', () => {
       ]),
     ).toBe(false);
   });
+
+  it('rejects a self-intersecting star polygon — the tenth review round found the sign check alone accepts one', () => {
+    // A pentagram, traced through its five points in star order: every vertex turns the same way
+    // (the sign check alone is fooled), but the shape winds around its own centre twice rather
+    // than once. Only the total-turning check tells the two apart.
+    expect(
+      isConvexPolygon([
+        { x: 0, y: -1_000 },
+        { x: 588, y: 809 },
+        { x: -951, y: -309 },
+        { x: 951, y: -309 },
+        { x: -588, y: 809 },
+      ]),
+    ).toBe(false);
+  });
+
+  it('rejects a zero-width inward slit — a reversal, not a genuine collinear pass-through', () => {
+    // An 800x800 rectangle with a degenerate dart cut into the top edge: out to (400, 400) and
+    // straight back to the exact point it left, (400, 800). The cross product at the tip is zero —
+    // the same as a true straight-through vertex — but the two edges point in opposite directions,
+    // not the same one.
+    expect(
+      isConvexPolygon([
+        { x: 0, y: 0 },
+        { x: 800, y: 0 },
+        { x: 800, y: 800 },
+        { x: 400, y: 800 },
+        { x: 400, y: 400 },
+        { x: 400, y: 800 },
+        { x: 0, y: 800 },
+      ]),
+    ).toBe(false);
+  });
 });

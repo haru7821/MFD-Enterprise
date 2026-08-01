@@ -1213,6 +1213,66 @@ describe('equipment geometry rotates with its placement', () => {
     ).toBe('SC-907');
   });
 
+  it('does not void compliance_margin for a non-convex obstruction nowhere near the governed face', () => {
+    /*
+     * The tenth review round's finding on the fix above: the first version voided a face against
+     * *any* non-convex obstruction inside its lateral band, including one entirely on the far side
+     * of the machine — behind the rear face's own plane, where `gapAlongNormal` itself would
+     * already report null and measure nothing. An L-shape sitting at y ∈ [2,000, 2,800], 2 m clear
+     * of the 800x800 station's front face at y = 800, is exactly that: non-convex, but not in front
+     * of the rear face (y = 0, outward -y) by any test. It must cost the criterion nothing.
+     */
+    const distantLShape: Vec2[] = [
+      { x: 0, y: 2_000 },
+      { x: 800, y: 2_000 },
+      { x: 800, y: 2_400 },
+      { x: 400, y: 2_400 },
+      { x: 400, y: 2_800 },
+      { x: 0, y: 2_800 },
+    ];
+
+    const machine = fixtureMachine();
+    const placement: Placement = {
+      id: 'p',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'p',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'rear', threshold: 800 }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+
+    const layoutInput = {
+      placements: [placement],
+      occupants: [placement],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+      room: fixtureRoom(10_000, 10_000),
+      referencePoints: [],
+      object: machine,
+      planStatus: 'calibrated' as const,
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    };
+
+    const withObstruction = scoreLayout({ ...layoutInput, obstructions: [distantLShape] });
+    const withoutObstruction = scoreLayout({ ...layoutInput, obstructions: [] });
+
+    expect(
+      withObstruction.unavailable.find((entry) => entry.criterion === 'compliance_margin'),
+    ).toBeUndefined();
+    expect(measurementOf(withObstruction, 'compliance_margin')?.measured).toBe(
+      measurementOf(withoutObstruction, 'compliance_margin')?.measured,
+    );
+  });
+
   it.each([
     {
       side: 'rear' as const,

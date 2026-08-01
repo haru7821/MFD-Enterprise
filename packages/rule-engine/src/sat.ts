@@ -145,28 +145,64 @@ function clipHalfPlane(
  *
  * Orientation-agnostic: convexity is "every turn the same way", checked by the sign of the cross
  * product at each vertex, independent of whether the polygon winds clockwise or counter-clockwise.
- * Collinear vertices (a zero cross product) are skipped rather than failing the check — they turn
- * neither way, so they cannot be the concavity.
+ * A genuinely straight-through vertex (collinear, edges pointing the same way) turns neither way
+ * and is skipped rather than failing the check.
+ *
+ * The sign check alone is necessary but not sufficient — the tenth review round found it accepts a
+ * self-intersecting star polygon (five points of a pentagram, traced in star order): every vertex
+ * turns the same way, yet the shape winds around its own centre twice rather than once. This also
+ * sums the signed turning angle at every vertex (`atan2(cross, dot)`, the exterior angle) and
+ * requires the total to be one full turn — true of any simple convex polygon, false of a shape
+ * that winds more than once. It does not attempt full self-intersection detection (a slit that
+ * neither reverses direction nor changes the winding number would still pass); that is a larger
+ * geometry investment than this check is meant to be.
+ *
+ * Collinearity is judged by `sin(angle between edges)`, not the raw cross product: a raw
+ * millimetre-scale threshold would misread a long, nearly-straight run — a level's outline can span
+ * tens of metres — as a turn from floating-point noise alone, where the scale-invariant sine does
+ * not. A vertex whose edges point in *opposite* directions (a zero-width spike or slit) has the
+ * same near-zero sine as a genuine straight-through vertex, but the opposite dot product sign; that
+ * case is treated as a concavity rather than skipped; a real straight run does not reverse.
  */
 export function isConvexPolygon(polygon: readonly Vec2[]): boolean {
   if (polygon.length < 4) return true;
 
   let sign = 0;
+  let turning = 0;
+
   for (let index = 0; index < polygon.length; index += 1) {
     const a = polygon[index];
     const b = polygon[(index + 1) % polygon.length];
     const c = polygon[(index + 2) % polygon.length];
     if (!a || !b || !c) continue;
 
-    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
-    if (Math.abs(cross) < 1e-6) continue;
+    const abX = b.x - a.x;
+    const abY = b.y - a.y;
+    const bcX = c.x - b.x;
+    const bcY = c.y - b.y;
+    const abLength = Math.hypot(abX, abY);
+    const bcLength = Math.hypot(bcX, bcY);
+    if (abLength === 0 || bcLength === 0) continue;
+
+    const cross = abX * bcY - abY * bcX;
+    const dot = abX * bcX + abY * bcY;
+    const sinAngle = cross / (abLength * bcLength);
+
+    if (Math.abs(sinAngle) < 1e-9) {
+      // Same near-zero sine as a straight-through vertex, but pointing backward: a zero-width
+      // spike or slit, not an honest collinear pass-through.
+      if (dot < 0) return false;
+      continue;
+    }
 
     const turn = cross > 0 ? 1 : -1;
     if (sign === 0) sign = turn;
     else if (turn !== sign) return false;
+
+    turning += Math.atan2(cross, dot);
   }
 
-  return true;
+  return Math.abs(Math.abs(turning) - 2 * Math.PI) < 1e-3;
 }
 
 /**

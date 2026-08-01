@@ -14,7 +14,7 @@ import {
   footprintCorners,
 } from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
-import { evaluate, gapAlongNormal, isConvexPolygon, projectOnto } from '@mfd/rule-engine';
+import { evaluate, gapAlongNormal, isConvexPolygon } from '@mfd/rule-engine';
 
 import type { KnowledgeBase } from '@mfd/layout-knowledge';
 
@@ -272,24 +272,21 @@ const PROBE_CEILING_MULTIPLE = 3;
  * notion of "nearest connected material", and giving it one is a real geometry investment (convex
  * decomposition) the owner has not yet asked for. Until it exists, a face is only measured against
  * an obstruction `@mfd/rule-engine`'s `isConvexPolygon` accepts; an obstruction that both fails that
- * check and actually lies in the face's own lateral extent makes this face's headroom unknown for
- * this side, rather than reported as a number the geometry cannot back. That is a real loss of
- * coverage on any drawing with a non-convex riser or duct run near a governed face — the honest
- * alternative to a number that reads as measured and is not.
- */
-/**
- * Does a non-convex obstruction actually stand in this face's way?
+ * check and actually lies in front of the face — `gapAlongNormal`'s own full relevance test, not
+ * merely the lateral half of it (see the tenth review round's finding below) — makes this face's
+ * headroom unknown for this side, rather than reported as a number the geometry cannot back. That
+ * is a real loss of coverage on any drawing with a non-convex riser or duct run near a governed
+ * face — the honest alternative to a number that reads as measured and is not.
  *
- * Mirrors `gapAlongNormal`'s own lateral test rather than calling it: an obstruction entirely
- * beside the face (off to one side, never in front of it) is not a reason to abstain, the same as
- * it is not a reason to measure — only one that overlaps the face's own width can make
- * `gapAlongNormal`'s single global minimum untrustworthy.
+ * **The tenth review round found the first version of this check used only the lateral half of
+ * `gapAlongNormal`'s relevance test**, so a non-convex obstruction anywhere in the face's lateral
+ * band — including one entirely behind the face plane, on the far side of the machine, that
+ * `gapAlongNormal` itself would have ignored outright — voided the face's measurement. Fixed by
+ * calling `gapAlongNormal` itself and abstaining only when *it* reports a result: a `null` means
+ * `gapAlongNormal` already decided this obstruction is not in front of the face at all, and a
+ * non-convex obstruction the function ignores costs nothing, matching what the paragraph above
+ * claims.
  */
-function blocksFaceButUnmeasurable(face: Face, obstruction: readonly Vec2[]): boolean {
-  if (isConvexPolygon(obstruction)) return false;
-  const lateral = projectOnto(obstruction, face.axis);
-  return lateral.max > face.min && lateral.min < face.max;
-}
 
 function freeDistanceOnSide(
   placement: Placement,
@@ -326,8 +323,13 @@ function freeDistanceOnSide(
   }
 
   for (const obstruction of input.obstructions) {
-    if (blocksFaceButUnmeasurable(face, obstruction)) return 'unavailable';
-    consider(gapAlongNormal(face, face, obstruction));
+    const rawGap = gapAlongNormal(face, face, obstruction);
+    // `gapAlongNormal` has already decided this obstruction is not in front of the face at all —
+    // behind the plane or off to one side — so a non-convex shape here costs nothing; there is no
+    // "nearest material" question to get wrong about geometry that was never in play.
+    if (rawGap === null) continue;
+    if (!isConvexPolygon(obstruction)) return 'unavailable';
+    consider(rawGap);
   }
 
   consider(nearestRoomEdgeAcrossFace(face, room, ceiling));
