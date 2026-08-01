@@ -317,6 +317,28 @@ export const SCORE_REASON_CODES = {
       en: '{criterion} cannot be measured for this face: the obstruction in front of it is not convex, and its true nearest distance cannot be trusted.',
     },
   },
+  /*
+   * The room is not a rectangle, so its bounding box is not the room.
+   *
+   * > Owner decision D4: *"Do not use an AABB approximation. Until exact polygon measurement
+   * > exists, report: Unavailable. Never silently approximate engineering measurements."*
+   *
+   * `compliance_margin` measured free distance to the room's **axis-aligned bounding box**. On an
+   * L-shaped room the audit measured a machine whose front face is 300 mm from the arm wall — true
+   * ratio 0.2917 — reported as **2.7917**, a 9.6x over-report, because the box edge it measured to
+   * lies outside the room entirely.
+   *
+   * The test is *rectangularity*, not convexity, and that is stricter on purpose: a bounding box
+   * equals its polygon only for an axis-aligned rectangle. A rotated rectangle is convex and its
+   * box is still bigger than it is.
+   */
+  'SC-908': {
+    title: { ko: '실 형상이 직사각형이 아님', en: 'Room Is Not Rectangular' },
+    template: {
+      ko: '실 외곽선이 축 정렬 직사각형이 아니어서 {criterion} 여유를 근사 없이 측정할 수 없습니다.',
+      en: '{criterion} cannot be measured without approximation: the room outline is not an axis-aligned rectangle, so its bounding box is not the room.',
+    },
+  },
 } as const;
 export type ScoreReasonCode = keyof typeof SCORE_REASON_CODES;
 

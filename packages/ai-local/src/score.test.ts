@@ -1739,3 +1739,59 @@ describe('the shipped coverage floor', () => {
     expect(dialysisScoringModel.minimumCoverage).toBeGreaterThan(oneMissing.coverage);
   });
 });
+
+/**
+ * Owner decision D4: *"Do not use an AABB approximation. Until exact polygon measurement exists,
+ * report: Unavailable. Never silently approximate engineering measurements."*
+ *
+ * `measureComplianceMargin` measured headroom to `boundsOf(room)`. A bounding box is the room only
+ * when the room is an axis-aligned rectangle, and the audit measured what that costs: on an L-shaped
+ * room a face 300 mm from the arm wall — true ratio 0.2917 — reported **2.7917**, a 9.6x
+ * over-report, on the criterion carrying 40 % of the model.
+ */
+describe('D4 — compliance_margin abstains rather than measuring a bounding box', () => {
+  /** An L: the north-east quadrant is not room. Its bounding box is the full square. */
+  const L_ROOM = [
+    { x: 0, y: 0 },
+    { x: 4_000, y: 0 },
+    { x: 4_000, y: 3_000 },
+    { x: 8_000, y: 3_000 },
+    { x: 8_000, y: 8_000 },
+    { x: 0, y: 8_000 },
+  ];
+
+  /** Convex, and still not its own bounding box — the case a convexity test would have let through. */
+  const ROTATED = [
+    { x: 4_000, y: 0 },
+    { x: 8_000, y: 4_000 },
+    { x: 4_000, y: 8_000 },
+    { x: 0, y: 4_000 },
+  ];
+
+  function marginOf(room: readonly { x: number; y: number }[]) {
+    const breakdown = score({ room });
+    return breakdown.unavailable.find((entry) => entry.criterion === 'compliance_margin');
+  }
+
+  it('reports SC-908 on a concave room', () => {
+    expect(marginOf(L_ROOM)?.reasonCode).toBe('SC-908');
+  });
+
+  it('reports SC-908 on a convex room that is still not a rectangle', () => {
+    // Rectangularity, not convexity, is the condition under which a bounding box is the room. A
+    // rotated rectangle is convex and its box is strictly larger, so a convexity test would have
+    // approved exactly the same approximation on any room traced off a drawing not square to the page.
+    expect(marginOf(ROTATED)?.reasonCode).toBe('SC-908');
+  });
+
+  it('does not abstain on the rectangular room the other tests use', () => {
+    /*
+     * The control. `compliance_margin` is unavailable on the shipped catalogue anyway — every rule
+     * carries a null threshold until the AK98 manual arrives, so it reports SC-904 — and this
+     * asserts the *reason* is that, not the new refusal. Without it this suite would pass equally
+     * well if D4 refused every room.
+     */
+    const reason = marginOf(fixtureRoom())?.reasonCode;
+    expect(reason).not.toBe('SC-908');
+  });
+});

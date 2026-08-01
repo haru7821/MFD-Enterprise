@@ -140,6 +140,21 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
     spatial: { boundaries: input.boundaries, planStatus: input.planStatus },
   });
 
+  /*
+   * Owner decision D4: *"Do not use an AABB approximation. Until exact polygon measurement exists,
+   * report: Unavailable. Never silently approximate engineering measurements."*
+   *
+   * `freeDistanceOnSide` measures headroom to `roomBounds`, and a bounding box is the room only
+   * when the room is an axis-aligned rectangle. On the audit's L-shaped room a face 300 mm from the
+   * arm wall — true ratio 0.2917 — measured **2.7917**, because the box edge it measured to lies
+   * outside the room. A 9.6x over-report on the criterion carrying 40 % of the model.
+   *
+   * Refused before any measurement rather than per face: the whole ratio rests on that box, so a
+   * minimum taken over faces that happened to miss the error would be the same lie with fewer
+   * chances to show itself — the reasoning `SC-907` and `SC-906` already follow above.
+   */
+  if (!isAxisAlignedRectangle(input.room)) return unavailable('SC-908');
+
   const roomBounds = boundsOf(input.room);
   const ratios: number[] = [];
   /*
@@ -179,6 +194,36 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
 
   if (ratios.length === 0) return unavailable('SC-904');
   return measured(Math.min(...ratios));
+}
+
+/**
+ * Is this outline exactly its own bounding box?
+ *
+ * The condition under which measuring to `boundsOf(room)` is measuring to the room — owner decision
+ * D4. Four distinct corners, every edge axis-parallel, and each corner of the box present.
+ *
+ * Deliberately stricter than convexity. A rotated rectangle is convex and its bounding box is
+ * strictly larger than it is, so a convexity test would have let exactly the same approximation
+ * through on any room an engineer traced off a drawing that was not square to the page.
+ */
+function isAxisAlignedRectangle(room: readonly Vec2[]): boolean {
+  const distinct = room.filter(
+    (point, index) => index === 0 || point.x !== room[index - 1]?.x || point.y !== room[index - 1]?.y,
+  );
+  if (distinct.length !== 4) return false;
+
+  for (let i = 0; i < 4; i += 1) {
+    const a = distinct[i];
+    const b = distinct[(i + 1) % 4];
+    if (!a || !b) return false;
+    // Every edge runs along one axis: exactly one coordinate changes.
+    if (a.x !== b.x && a.y !== b.y) return false;
+    if (a.x === b.x && a.y === b.y) return false;
+  }
+
+  const xs = new Set(distinct.map((point) => point.x));
+  const ys = new Set(distinct.map((point) => point.y));
+  return xs.size === 2 && ys.size === 2;
 }
 
 /** Which face a clearance rule governs. Null for a rule that is not a per-side clearance. */
