@@ -15,13 +15,19 @@ import type { Bilingual } from '@mfd/rule-engine';
  *
  * Because this is *derived* from `SCORE_REASON_CODES` by iterating its own keys — not a second,
  * manually-typed object with the same key set — a reason code added there can never be missing
- * here: there is nothing to remember to update. The `Record<ScoreReasonCode, Bilingual>` return
- * type still gives the exhaustiveness guarantee the twelfth round asked for (a `ScoreReasonCode`
- * `SCORE_REASON_CODES` did not define would already fail to compile at its own declaration).
+ * here: there is nothing to remember to update.
+ *
+ * That guarantee is about the **keys**, not the **values**. The final `as Record<ScoreReasonCode,
+ * Bilingual>` is an unchecked assertion — `Object.fromEntries` widens an untyped array of pairs to
+ * its `any` overload, so a malformed `.title` (say, missing `en`) would pass that cast silently.
+ * The `.map`'s own return type is annotated as a tuple for exactly this reason: **that** is what
+ * makes a malformed value a compile error, at the one place it is actually produced, rather than
+ * something only `unavailableReasons.test.ts`'s runtime check would catch. (A CTO review round
+ * found the doc comment here previously claimed the outer cast provided this guarantee — it does
+ * not; the tuple annotation does.)
  */
 export const UNAVAILABLE_REASONS: Readonly<Record<ScoreReasonCode, Bilingual>> = Object.fromEntries(
-  (Object.keys(SCORE_REASON_CODES) as ScoreReasonCode[]).map((code) => [
-    code,
-    SCORE_REASON_CODES[code].title,
-  ]),
+  (Object.keys(SCORE_REASON_CODES) as ScoreReasonCode[]).map(
+    (code): [ScoreReasonCode, Bilingual] => [code, SCORE_REASON_CODES[code].title],
+  ),
 ) as Record<ScoreReasonCode, Bilingual>;

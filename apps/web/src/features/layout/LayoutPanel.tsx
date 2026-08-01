@@ -6,7 +6,12 @@ import type { Bilingual } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 
 import { now } from '@/editor/clock';
-import { type LayoutProposal, type LayoutProposalSet, activeLevel } from '@/editor/editorState';
+import {
+  type LayoutEmptyReason,
+  type LayoutProposal,
+  type LayoutProposalSet,
+  activeLevel,
+} from '@/editor/editorState';
 import { useEditor } from '@/editor/useEditor';
 
 import { runOptimiser, runSolver } from './runSolver';
@@ -41,17 +46,7 @@ import { UNAVAILABLE_REASONS } from './unavailableReasons';
  * bilingual convention (Korean above English, always both, no language setting — see
  * `ValidationPanel.tsx` and `@mfd/report-engine`'s `LABELS`, neither of which has a toggle either).
  */
-const EMPTY_MESSAGES: Record<
-  | 'no_room_selected'
-  | 'no_position_satisfies_rules'
-  | 'room_too_small'
-  | 'nothing_to_optimise'
-  | 'movement_not_permitted'
-  | 'already_best'
-  | 'no_feasible_arrangement'
-  | 'current_layout_blocked',
-  Bilingual
-> = {
+const EMPTY_MESSAGES: Record<LayoutEmptyReason, Bilingual> = {
   no_room_selected: {
     ko: '먼저 방을 선택하세요 — 솔버가 작업할 외곽선이 필요합니다.',
     en: 'Select a room first — the solver needs an outline to work inside.',
@@ -99,12 +94,11 @@ function coverageCaveat(percent: number): Bilingual {
  * surface in this app uses (`ValidationPanel.tsx`, this panel's own ranking-reason list, and
  * `@mfd/report-engine`'s rendered `LABELS`).
  */
-function BilingualText({ text, className }: { readonly text: Bilingual; readonly className?: string }) {
-  const line = className ? `block ${className}` : 'block';
+function BilingualText({ text }: { readonly text: Bilingual }) {
   return (
     <>
-      <span className={line}>{text.ko}</span>
-      <span className={line}>{text.en}</span>
+      <span className="block">{text.ko}</span>
+      <span className="block">{text.en}</span>
     </>
   );
 }
