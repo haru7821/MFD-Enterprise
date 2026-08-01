@@ -332,7 +332,7 @@ A seventh review found the fifth round's own reproduction was not what it claime
 width, then minimised the normal projection over *every* corner of that polygon — including corners
 laterally outside the face's own band, standing beside it rather than in front of it. In both
 reproductions above, the corner supplying the negative number sat outside the face's width; clipped
-to the band first, the true whole-face gap is positive in both (+263 mm and +50 mm), and the −27 mm
+to the band first, the true whole-face gap is positive in both (+263 mm and +100 mm), and the −27 mm
 and −500 mm findings were a measurement bug, not a genuine plane crossing. `gapAlongNormal` now
 clips the other polygon to `[faceExtent.min, faceExtent.max]` before projecting (Sutherland-Hodgman
 against the two lateral bounds) — **owner decision: clip to the face's own width**, the same
@@ -341,25 +341,40 @@ rather than changed. `score.test.ts` and `evaluate.test.ts`'s fifth-round tests 
 corrected, positive values; each was guard-broken (reverting the clip reproduces the old wrong
 number) and restored.
 
-The clip also settled what the clamp actually guards. For a plain rectangular footprint — every
-equipment record shipped today — a face spans its own object's full width, so a crossing *within*
-that clipped band is, for this codebase, indistinguishable from an actual overlap with the footprint
-being measured against: checked directly, two million randomised, band-constrained, straddling
-polygons against a reference footprint produced zero non-colliding cases. `@mfd/ai-local`'s
-`compliance_margin` is only ever reached through `scoreLayout`, and every caller in that package
-gates it behind Gate 2 first (`optimise.ts` computes the current score, and ranks every candidate,
-only after `applyGates` reports no violations) — so the clamp in `criteria.ts` is believed
-unreachable via any layout the app can actually hand it today. `@mfd/rule-engine`'s own
-`evaluateClearance` has no such gate: it is the live validation engine, reporting every category —
-clearance included — for whatever the engineer has actually drawn, collision among them, so its
-clamp remains directly reachable (two machines placed on top of each other while live-editing is
-enough). Both clamps stay regardless of reachability: they cost nothing, and neither guarantee is
-structural — a non-rectangular footprint would make a clipped crossing possible again without an
-overlap, and nothing enforces that every future caller of either function arrives through a
+The clip also raised what the clamp actually guards. For **another placement** measured against
+this one — a plain rectangular footprint, every equipment record shipped today — a face spans its
+own object's full width, so a crossing *within* that clipped band is, for this codebase,
+indistinguishable from an actual overlap with the footprint being measured against: checked
+directly, two million randomised, band-constrained, straddling polygons against a reference
+footprint produced zero non-colliding cases. `@mfd/rule-engine`'s own `evaluateClearance` only ever
+measures another placement's `footprintCorners` this way, and it has no Gate 2 of its own — it is the
+live validation engine, reporting every category for whatever the engineer has actually drawn,
+collision among them — so its clamp remains directly reachable (two machines placed on top of each
+other while live-editing is enough). `@mfd/ai-local`'s `compliance_margin` measures placements the
+same, provably-safe way, but also measures **obstructions** — arbitrary traced polygons, not
+necessarily rectangular — and every `scoreLayout` call in that package is gated behind Gate 2 first
+(`optimise.ts` computes the current score, and ranks every candidate, only after `applyGates` reports
+no violations).
+
+An eighth review round tested the placement-only half of that claim and found it did not extend to
+obstructions, which `boundary.ts` itself documents as ordinarily non-convex ("an L-shaped treatment
+area is the ordinary case"). A genuinely non-overlapping riser shaped like a wide staple — one arm
+in front of a rear face, a connecting run down one side clear of the machine's own width, the other
+arm re-emerging beyond the machine's *front* — passes Gate 2's concave-aware boundary check
+(`polygonsOverlapAnywhere`) cleanly, confirmed independently and wired the same way `runSolver.ts`
+wires it (the same `Boundary` fed to both `applyGates` and `scoreLayout`'s `obstructions`). Yet
+`gapAlongNormal` clips laterally and then takes one global minimum across everything left in the
+band — with no way to tell the near arm's genuine 100 mm gap from the far arm's material, picked up
+only because it re-enters the band after wrapping around the machine's own side. `compliance_margin`
+reported 0 for a face with 100 mm of real headroom. **This is a genuine defect the clamp does not
+fix — it only keeps the wrong number non-negative** — and closing it is an owner decision (options
+and evidence in the commit that raised it), not one this document settles. Both clamps stay
+regardless of that decision: they cost nothing, and neither guarantee is structural — a
+non-rectangular *equipment footprint* would make a clipped placement-crossing possible again without
+an overlap, and nothing enforces that every future caller of either function arrives through a
 Gate-2-gated path. Regression coverage: `sat.test.ts` pins both the corrected (clipped) result and a
 genuine in-band crossing that still clamps; `score.test.ts` and `evaluate.test.ts` each gained a
-directly-overlapping reproduction exercising the clamp itself, documented as not reachable through
-the live app for `@mfd/ai-local` specifically. All guard-broken and restored.
+directly-overlapping reproduction exercising the clamp itself. All guard-broken and restored.
 
 **The Hospital_044 replay does not exercise either clamp, and the reason is not the absence of
 straddling geometry in the drawing.** The corpus's sixty evaluation findings split as forty

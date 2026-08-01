@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { ReferencePointSummary } from '@mfd/ai-contract';
 import { SCORING_CRITERIA, scoreBreakdownSchema } from '@mfd/ai-contract';
 import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
+import type { Vec2 } from '@mfd/cad-engine';
+import { createBoundary } from '@mfd/document-model';
 import type { Placement } from '@mfd/document-model';
 import { evaluate } from '@mfd/rule-engine';
 
@@ -1019,9 +1021,19 @@ describe('equipment geometry rotates with its placement', () => {
      * The seventh review round found that reproduction was measuring against the wrong part of the
      * quad: its corner nearest the face sits at (740, -340) — laterally outside the rear face's own
      * [0, 800] band (the quad runs from x = 700 to x = 1,140, only the first 100 mm of which is in
-     * front of the face at all). Clipped to the band first, the true whole-face gap is +50 mm — a
-     * 0.0625 ratio, not the 0 the unclipped measurement produced. `gapAlongNormal` now clips to the
+     * front of the face at all). Clipped to the band first, the true whole-face gap is +100 mm — a
+     * 0.125 ratio, not the 0 the unclipped measurement produced. `gapAlongNormal` now clips to the
      * face's own band before measuring; see its own doc comment.
+     *
+     * The eighth review round found the first version of this fix's own regression test asserted a
+     * number the code did not produce (+50 mm, not the true +100 mm): `fixtureRoom`/
+     * `fixtureRoomBoundary` put the room's own rear wall exactly on the station's rear face (both at
+     * y = 0), so `nearestRoomEdgeAcrossFace`'s probe — stepping outward in `PROBE_STEP_MM` = 50 mm
+     * increments — left the room after a single step and reported 50, smaller than the obstruction's
+     * true 100 mm and so the one `consider` actually kept. The assertion passed, but for the room
+     * edge's accidental proximity, not for the clip fix this test exists to pin. The room here is
+     * pushed well clear of the rear face (500 mm, more than the `PROBE_CEILING_MULTIPLE` × 800 mm
+     * ceiling could reach) so the obstruction is what the assertion actually measures.
      *
      * The station (unrotated, front-left) sits at (0, 0); its rear face is at y = 0, outward -y.
      * The quad runs diagonally from (700, -300) to (1140, 460) — inside the face's lateral band
@@ -1048,14 +1060,23 @@ describe('equipment geometry rotates with its placement', () => {
       { x: 1_140, y: 460 },
       { x: 740, y: -340 },
     ];
+    // A room reaching well past the rear face on every side — nowhere near enough for
+    // `nearestRoomEdgeAcrossFace` to find an edge within the probe's ceiling.
+    const room: Vec2[] = [
+      { x: -5_000, y: -5_000 },
+      { x: 10_000, y: -5_000 },
+      { x: 10_000, y: 10_000 },
+      { x: -5_000, y: 10_000 },
+    ];
+    const roomBoundary = createBoundary('boundary-room', 'space_outline', room, 'Ward');
 
     const breakdown = scoreLayout({
       placements: [placement],
       occupants: [placement],
       catalog: fixtureCatalog(),
       ruleSet,
-      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
-      room: fixtureRoom(10_000, 10_000),
+      boundaries: [roomBoundary],
+      room,
       obstructions: [straddling],
       referencePoints: [],
       object: machine,
@@ -1066,7 +1087,7 @@ describe('equipment geometry rotates with its placement', () => {
       stationTarget: 1,
     });
 
-    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.0625);
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.125);
   });
 
   it('clamps a genuinely overlapping obstruction at zero — the clamp itself, exercised directly', () => {

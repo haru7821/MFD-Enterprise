@@ -237,21 +237,29 @@ const PROBE_CEILING_MULTIPLE = 3;
  * reachable and confirmed it directly with a quad `polygonsOverlap` calls non-overlapping — but the
  * seventh round found that reproduction was measuring against a corner standing beside the face,
  * outside its own width, not in front of it: `gapAlongNormal` now clips to the face's own extent
- * before measuring, and the reproduction's true whole-face gap is positive. For a footprint this
- * plain — a rectangle whose face spans its own full width — a *clipped* crossing and an actual
- * overlap with the footprint being measured against turn out to be the same event: this was checked
- * directly (two million randomised, band-constrained, straddling polygons; zero non-colliding), and
- * `compliance_margin` is only ever reached through `scoreLayout`, which every caller in this package
- * gates behind Gate 2 first (`optimise.ts` computes the current score, and ranks every candidate,
- * only after `applyGates` reports no violations) — so a negative, clipped result here would itself
- * be evidence of a collision this function is never actually asked about.
+ * before measuring, and the reproduction's true whole-face gap is positive.
  *
- * The clamp stays anyway. It costs nothing, and two of its guarantees are not architectural: a
- * non-rectangular footprint would make a clipped crossing possible again without touching the
- * subject's own footprint, and nothing enforces that every future caller of `freeDistanceOnSide`
- * arrives through a Gate-2-gated path. "Free distance" means the distance a service engineer can
- * actually walk outward, and a plane a neighbour has crossed is exactly as blocked as one it has
- * walked up to — signed distances have no reading under that definition, reachable today or not.
+ * For **another placement** measured against this one — always a plain rectangle, both today's only
+ * shape — a clipped crossing and an actual overlap with the footprint being measured against turn
+ * out to be the same event (checked directly: two million randomised, band-constrained, straddling
+ * polygons against a rectangular reference, zero non-colliding), and every `scoreLayout` call in
+ * this package is gated behind Gate 2 first — so a negative, clipped result against a placement
+ * would itself be evidence of a collision this function is never actually asked about.
+ *
+ * **This does not extend to an obstruction.** The eighth review round found a genuinely
+ * non-overlapping, non-convex obstruction — a riser wrapping around one side of the machine, from in
+ * front of this face to beyond its far side — can still drive `gapAlongNormal` deeply negative: the
+ * function clips laterally and then takes the single minimum projection across everything left, with
+ * no regard for whether that minimum comes from material actually nearest the face or from a
+ * disconnected piece reached only by going around the machine. Gate 2's own boundary rule uses a
+ * concave-correct test (`polygonsOverlapAnywhere`) and passes this shape; `compliance_margin` still
+ * reports 0 for a rear face with 100 mm of genuine headroom. Confirmed directly, wired the way
+ * `apps/web`'s `runSolver.ts` actually wires it — the same `Boundary` fed to both `applyGates` and
+ * `scoreLayout`'s `obstructions`, not two disconnected inputs.
+ *
+ * **Owner decision pending on how obstruction geometry should be handled when it is not convex** —
+ * this is not a decision this comment makes. Until it lands, the clamp here still catches the sign
+ * of the wrong number, but the number itself is not trustworthy for a non-convex obstruction.
  */
 function freeDistanceOnSide(
   placement: Placement,
