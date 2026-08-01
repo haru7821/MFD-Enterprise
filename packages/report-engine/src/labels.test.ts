@@ -54,6 +54,22 @@ describe('labels', () => {
   it('exposes the pair for a renderer that stacks them', () => {
     expect(labelPair('section_notice')).toEqual({ ko: '책임 범위', en: 'Liability Statement' });
   });
+
+  it('keeps the two labels the planning panel composes its unplaced-reference-point text from', () => {
+    /*
+     * `InstallationPanel.tsx`'s `NO_REFERENCE_POINT` is built from these two pairs, so that a
+     * reword here reaches the panel rather than leaving it behind. That only holds while the keys
+     * exist: renaming either one is a compile error in the panel, but *retiring* the concept —
+     * dropping the key and its use from the renderers — would leave the panel composing from a
+     * label the report no longer prints, and nothing in this package would notice.
+     *
+     * Values are asserted, not just presence: the panel joins them with ': ', and a label that
+     * grew its own punctuation or turned into a sentence would compose into something the panel
+     * never intended.
+     */
+    expect(labelPair('field_origin_point')).toEqual({ ko: '기준점', en: 'Origin Point' });
+    expect(labelPair('status_unknown')).toEqual({ ko: '미상', en: 'Unknown' });
+  });
 });
 
 describe('equipment field groups', () => {

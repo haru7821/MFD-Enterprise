@@ -62,6 +62,18 @@ const DEPENDENCY_TEXT: Record<PlanDependency, string> = {
   rule_set: 'the rule set changed',
 };
 
+/**
+ * The blocker kinds this panel still states in English only.
+ *
+ * `missing_reference_point` is absent deliberately — it is handled below through
+ * `NO_REFERENCE_POINT`, the owner's decision on that one wording.
+ *
+ * `uncalibrated_level` **does** have a canonical bilingual counterpart, `not_calibrated` in
+ * `@mfd/report-engine`'s `labels.ts`, rendered in both export modes. It is left here anyway: the
+ * owner scoped the decision to the reference-point wording, and extending it unasked would be a
+ * second wording call made on their behalf. Recorded rather than silently skipped, because the
+ * earlier version of this comment claimed no such source existed, which was false.
+ */
 const BLOCKER_TEXT: Record<string, string> = {
   open_violation: 'A rule violation is open',
   missing_prerequisite: 'A prerequisite is missing',
@@ -69,19 +81,22 @@ const BLOCKER_TEXT: Record<string, string> = {
 };
 
 /**
- * "Origin Point: Unknown" / "기준점: 미상" — composed from the report's own `field_origin_point`
- * and `status_unknown` labels, not hand-translated.
+ * "기준점: 미상" / "Origin Point: Unknown" — the report's **vocabulary**, in this panel's own form.
  *
  * Owner decision, following the review of the SC-901 reuse this replaced: an unplaced reference
- * point used to read differently depending on where in this panel it showed up (this connections
- * caption, the blockers list below, and the exported PDF's own field for the same fact were three
- * different sentences for one absence). The report is the document that leaves the building, so
- * the panel now says what it says — `field_origin_point`/`status_unknown` render exactly this way
- * in both the connections table and the reference-point field of every export mode (see
- * `render/html.ts`'s `field('field_origin_point', ...)` and `render/pdf.ts`'s equivalent), and this
- * panel's own stated rule for figures elsewhere (`planning_rates_unavailable`, above) is the same
- * one: an engineer who checks the screen and then reads the PDF must not be told two different
- * things about the same absence.
+ * point read differently depending on where in this panel it appeared — the connections caption and
+ * the blockers list below were two separate sentences for one absence, and neither was the word the
+ * exported document uses. Both now compose from `field_origin_point` and `status_unknown`, so a
+ * reword in `labels.ts` reaches the panel instead of leaving it behind.
+ *
+ * **This reuses the labels; it does not reproduce either renderer's output.** Measured, for a
+ * connection with no origin point: `render/html.ts` emits the pair slash-joined across two fields
+ * (`기준점 / Origin Point`, then `미상 / Unknown`), and `render/pdf.ts` does not name the origin
+ * point at all — `pdf.ts`'s connections block labels the line with the *service* and folds the
+ * unknown into the value. There is no single rendered string to match character for character, so
+ * this is the shared vocabulary rendered in the stacked Korean-above-English form the rest of this
+ * app uses. The guarantee is that the panel and the report cannot drift in *what they call this*,
+ * not that they are typographically identical.
  */
 const NO_REFERENCE_POINT: Bilingual = {
   ko: `${labelPair('field_origin_point').ko}: ${labelPair('status_unknown').ko}`,
