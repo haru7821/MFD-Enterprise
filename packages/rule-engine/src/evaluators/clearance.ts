@@ -2,7 +2,7 @@ import { faceGeometry, fieldStatus, footprintCorners } from '@mfd/object-library
 
 import { SIDE_WORDS } from '../messages';
 import { type EvaluationResult, decideLevel, reasonOf, weakestStatus } from '../result';
-import { gapAlongNormal } from '../sat';
+import { gapAlongNormal, isConvexPolygon } from '../sat';
 import type { ClearanceRule } from '../schema';
 import { resolveClearanceThreshold } from '../threshold';
 import type { EvaluationContext, ResolvedPlacement } from './types';
@@ -86,8 +86,61 @@ export function evaluateClearance(
     }
 
     const face = faceGeometry(object, placement.transform, rule.parameters.side);
+    const band = { axis: face.axis, min: face.min, max: face.max };
 
     let nearest: number | null = null;
+
+    /*
+     * Walls and obstructions, measured the same way equipment is.
+     *
+     * > Owner decision D3: *"Treat walls as real obstructions. If the implementation cannot yet
+     * > measure wall clearance correctly, abstain. Do not report 'clear' simply because walls were
+     * > excluded. Unknown is preferable to false GREEN."*
+     *
+     * This loop did not exist. Clearance saw `context.placements` and nothing else, so a wall
+     * 100 mm in front of a face produced `GREEN` — *"Nothing stands within FX 1's 1,200 mm front
+     * clearance"* — while the identical geometry made of a *machine* produced `RED measured=100`.
+     * `criteria.ts` had the owner's decision that obstructions and the room edge block a service
+     * face; the rule engine contradicted it.
+     *
+     * `space_outline` is deliberately absent. A room outline *contains* the machine rather than
+     * standing in front of it, and `gapAlongNormal` measures towards a polygon the face is outside
+     * of — pointing it at the room would return a number about the wrong side of the wall. That is
+     * the half this decision's own fallback covers, and it is recorded as `RC-905` below rather
+     * than guessed at.
+     */
+    let unmeasurableFace = false;
+    for (const boundary of context.boundaries) {
+      if (boundary.kind !== 'wall' && boundary.kind !== 'obstruction') continue;
+
+      /*
+       * The ninth review's `SC-907` finding, in the rule engine. `gapAlongNormal` takes a single
+       * global minimum across whatever survives its lateral clip, which is the nearest *connected*
+       * material only when the polygon is convex. A non-convex wall run can present a disconnected
+       * far arm inside the same band as a near one, and the function cannot tell them apart — so
+       * the face is reported unmeasurable rather than measured wrongly.
+       */
+      if (!isConvexPolygon(boundary.vertices)) {
+        unmeasurableFace = true;
+        continue;
+      }
+
+      const rawGap = gapAlongNormal(face, band, boundary.vertices);
+      if (rawGap === null) continue;
+      const gap = Math.max(0, rawGap);
+      if (nearest === null || gap < nearest) nearest = gap;
+    }
+
+    if (unmeasurableFace) {
+      results.push({
+        ...base,
+        level: 'YELLOW',
+        measured: null,
+        ...reasonOf('RC-905', { label, side }),
+      });
+      continue;
+    }
+
     for (const other of context.placements) {
       if (other.id === placement.id) continue;
 
@@ -96,7 +149,7 @@ export function evaluateClearance(
 
       const rawGap = gapAlongNormal(
         face,
-        { axis: face.axis, min: face.min, max: face.max },
+        band,
         footprintCorners(otherObject, other.transform),
       );
       if (rawGap === null) continue;

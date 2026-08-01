@@ -29,19 +29,63 @@ function source(name: string): string {
   return readFileSync(join(HERE, `${name}.ts`), 'utf8');
 }
 
-describe('the three questions are asked independently', () => {
-  it('clearance cannot see the room outlines', () => {
-    /*
-     * `EvaluationContext` is `{ placements, catalog }`; only `BoundaryEvaluationContext` adds
-     * `boundaries`. A clearance evaluator that took the wider context could answer "too close to the
-     * wall" — which is a real question, and one for a *wall clearance rule* with a threshold and a
-     * document behind it, not for the room outline an engineer happened to trace.
-     */
-    const clearance = source('clearance');
+/**
+ * The file with its comments removed.
+ *
+ * These assertions are about what the code *does*, and a doc comment explaining why a kind is
+ * excluded is not the evaluator reading it. Asserting against raw source made the guard fail on the
+ * sentence that explains the guard — which would have pushed the next person to delete the
+ * assertion rather than satisfy it.
+ */
+function code(name: string): string {
+  return source(name)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '');
+}
 
-    expect(clearance).not.toMatch(/BoundaryEvaluationContext/);
-    expect(clearance).not.toMatch(/\bboundaries\b/);
-    expect(clearance).not.toMatch(/\bBoundary\b/);
+describe('the three questions are asked independently', () => {
+  it('clearance never consults the room outline, and never answers containment', () => {
+    /*
+     * **Narrowed, not weakened** — and it is worth being exact about which.
+     *
+     * > Owner decision A-4: *"Clearance evaluation remains completely separate from **containment**
+     * > evaluation."*
+     *
+     * This used to ban the words `boundaries` and `Boundary` from the file outright. That is wider
+     * than A-4: `wall` and `obstruction` are not containment inputs. `boundary.ts` treats only
+     * `space_outline` as a container — the other two kinds it tests for *overlap*, exactly as
+     * equipment is tested.
+     *
+     * The blanket ban had a cost that was being paid live. `@mfd/ai-local`'s `measureMaintenanceAccess`
+     * has counted walls and obstructions against a service face since the owner's round-8 decision
+     * (`criteria.ts`, via `obstructionBoundaries` — every non-`space_outline` boundary). So the
+     * solver scored a candidate with a wall in front of its face while the rule engine reported that
+     * same face clear: two subsystems, one question, two answers.
+     *
+     * Owner decision D3 settled it — *"treat walls as real obstructions"* — and the GM's ruling was
+     * that A-4 is narrowed rather than overturned. So the assertions below are about the specific
+     * line A-4 draws, and each names why it is there. A guard that asserts more than its decision
+     * says is a guard that will one day be deleted wholesale to get past it, which is very nearly
+     * what happened here.
+     */
+    const clearance = code('clearance');
+
+    // 1. The room outline is containment's alone. Clearance must not read it under any name.
+    expect(clearance).not.toMatch(/space_outline/);
+
+    // 2. It must not import the containment evaluator or reuse its answer.
+    expect(clearance).not.toMatch(/from '\.\/boundary'/);
+    expect(clearance).not.toMatch(/evaluateBoundaryCollision/);
+    expect(clearance).not.toMatch(/polygonContainsPolygon/);
+
+    // 3. It must not emit a containment finding. RC-3xx is the boundary evaluator's range.
+    expect(clearance).not.toMatch(/RC-3\d\d/);
+
+    // 4. And it must still be reading boundaries for the reason D3 gave — the positive assertion,
+    //    so this test fails if someone reverts the fix rather than silently passing again.
+    expect(clearance).toMatch(/boundary\.kind !== 'wall' && boundary\.kind !== 'obstruction'/);
+    // ...and the doc comment must still explain the exclusion, which is where a reader looks first.
+    expect(source('clearance')).toMatch(/space_outline/);
   });
 
   it('collision cannot see the room outlines either', () => {

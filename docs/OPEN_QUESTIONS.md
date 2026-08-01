@@ -372,3 +372,27 @@ Not blocking; recorded so they are visible and can be corrected.
 | Desktop application or web? | **Web-native**, no exceptions. Desktop browsers primary, tablet secondary, installable as a PWA. No Electron. | Sprint 5 close |
 | Offline? | The **application** caches itself. Remembering recent **projects** offline is a future sprint — it means storing hospital floor plans in browser storage, which touches B-4. | Sprint 5 close |
 | Liability wording? | Settled verbatim in both languages, at the end of every report. See B-3. | Sprint 4 close |
+
+### The audit round — decisions D1 to D5
+
+Recorded here because they were not. They existed only in commit messages, and the consequence
+arrived quickly: D3 reached the lead developer as a *contradiction* of A-4, was implemented, broke an
+architectural guard, and had to be stopped and escalated. It was never a contradiction — A-4
+separates clearance from **containment**, and the guard had been written wider than that. A decision
+that lives only in a commit message is a decision the next person meets as a surprise.
+
+| Question | Decision | Guard it touches |
+| --- | --- | --- |
+| May an unavailable criterion be renormalised out of the total? | **No.** The divisor is the whole model's weight, so an unmeasured criterion contributes nothing and a total can only be earned. Below the scoring model's `minimumCoverage` there is no total at all — `null`, not zero. Dividing by the *available* weight meant deleting evidence raised the score, to a perfect 1.0000 at coverage 0.20. | D1 · `score.ts`, `rank.ts`, `optimise.ts` |
+| What is `minimumCoverage`? | **0.25** — the ceiling reachable today, so a total is offered only when the engineer supplied every input obtainable. Measured against the shipped catalogue: three criteria are unmeasurable on every project (0.75 of the model), so reachable coverages are {0.05, 0.10, 0.15, 0.20, 0.25}. Decided by the GM; reversing it is one number in `standards/scoring/dialysis.json`. | D1 · pinned by `score.test.ts` |
+| Does contact count as collision? | **No. Proper overlap only**, and one predicate for every subsystem. Contact with an obstruction used to be `RED measured=0` while the same contact between two machines, and between a machine and a room, was `GREEN`. | D2 · `polygonsOverlapAnywhere`, cross-checked against `polygonsOverlap` in `sat.test.ts` |
+| Must clearance see walls? | **Yes, `wall` and `obstruction`** — measured with the equipment's own service-clearance threshold, no new standard. `space_outline` stays invisible to it, so **A-4 is narrowed, not overturned**. A non-convex wall abstains (`RC-905`), mirroring `SC-907`. And `RC-103` no longer asserts that *nothing* stands there, because with the room outline excluded the engine cannot know: it now names what was searched. | D3 · `independence.test.ts` narrowed to the room outline; behavioural test in `boundary.test.ts` |
+| Concave rooms and `compliance_margin`? | **Report unavailable.** No AABB approximation — it over-reported 9.6× on an L-room. | D4 · not yet implemented |
+| What happens when a placement cannot be evaluated? | **The level cannot receive a PASS.** `RC-903` names the placement whose catalogue record is missing; `RC-904` withdraws the neighbour passes on that level, because clearance and equipment collision both measure *against* the object that was dropped. Containment is unaffected — it does not depend on other objects. | D5 · `EVALUATION_RESULT_VERSION` 3 |
+| Is support counted per file or per facility? | **Per independent facility.** Multiple PDFs/DWGs of one facility are corroboration, not independent evidence. | D6 · not yet implemented |
+| What does "completed the programme" mean? | **A human-confirmed run.** Batch execution alone is not completion. | D7 · not yet implemented |
+
+**The standing rule behind all of them**, restated by the owner in each round: *"If something cannot
+honestly be measured, do not estimate it."* Where implementation must choose between optimistic,
+inferred, approximate and abstaining behaviour, it abstains. The goal is not to maximise PASS; it is
+to maximise **truthful** PASS.

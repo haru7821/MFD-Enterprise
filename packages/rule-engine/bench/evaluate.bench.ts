@@ -254,12 +254,13 @@ console.log('─'.repeat(94));
 
 for (const count of [10, 50, 100, 200]) {
   const placements = layout(count);
-  const context = { placements, catalog };
   const spatial: SpatialContext = {
     boundaries: building(count),
     planStatus: 'calibrated',
   };
-  const boundaryContext = { ...context, boundaries: spatial.boundaries };
+  // One scene for every evaluator — clearance reads `boundaries` too since owner decision D3.
+  const context = { placements, catalog, boundaries: spatial.boundaries };
+  const boundaryContext = context;
   const subjects = placements.flatMap((placement) => {
     const object = catalog.get(placement.equipmentObjectId);
     return object ? [{ placement, object }] : [];

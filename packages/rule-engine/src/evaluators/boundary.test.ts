@@ -174,11 +174,15 @@ describe('containment and clearance are separate questions', () => {
    * > Owner decision, VD-5 / A-4: *"Clearance evaluation remains completely separate from
    * > containment evaluation."*
    *
-   * Held structurally rather than by discipline: `evaluateClearance` is handed `{ placements,
-   * catalog }` and never the boundaries, so it *cannot* read a room outline however the containment
-   * rule is written. These assert the consequence — that changing one question's answer leaves the
-   * other's untouched — because the structural fact is invisible from outside the package and would
-   * be easy to give away in a refactor.
+   * **Narrowed by owner decision D3**, which is worth stating precisely because the earlier version
+   * of this comment claimed more than A-4 does. A-4 separates clearance from *containment*. It does
+   * not make walls invisible: `boundary.ts` treats only `space_outline` as a container, and D3 —
+   * *"treat walls as real obstructions"* — made clearance measure `wall` and `obstruction` the way
+   * `@mfd/ai-local`'s `measureMaintenanceAccess` already did.
+   *
+   * So the invariant these hold is now about the **room outline** specifically, and there is a
+   * behavioural test below proving the other half: a wall in a face's clearance zone produces the
+   * same finding as an equal-footprint machine in the same place.
    */
   const BOTH_RULES = fixtureRuleSet([
     fixtureCollisionRule({ ruleId: 'boundary_rule', scope: 'boundary', status: 'verified' }),
@@ -199,13 +203,107 @@ describe('containment and clearance are separate questions', () => {
     });
   }
 
-  it('leaves every clearance finding identical whether a room is drawn or not', () => {
-    const clearanceOf = (report: ReturnType<typeof evaluateWith>) =>
-      report.results
-        .filter((result) => result.ruleId === 'front_clearance')
-        .map((result) => ({ level: result.level, code: result.reasonCode, measured: result.measured }));
+  const clearanceOf = (report: ReturnType<typeof evaluateWith>) =>
+    report.results
+      .filter((result) => result.ruleId === 'front_clearance')
+      .map((result) => ({ level: result.level, code: result.reasonCode, measured: result.measured }));
 
+  it('leaves every clearance finding identical whether a ROOM OUTLINE is drawn or not', () => {
+    // A-4, still held: tracing the room an engineer works in must not change what can be serviced.
     expect(clearanceOf(evaluateWith([ROOM]))).toEqual(clearanceOf(evaluateWith([])));
+  });
+
+  it('measures a wall in the clearance zone exactly as it measures a machine there', () => {
+    /*
+     * Owner decision D3, as behaviour rather than as source text.
+     *
+     * The audit's case: a 1,200 mm front clearance with something 100 mm in front of the face. Made
+     * of equipment it reported `RED measured=100`; made of a *wall* it reported `GREEN`, because
+     * `evaluateClearance` could not see boundaries at all. Here the same obstruction is built both
+     * ways and the two findings must agree.
+     */
+    const subject = fixturePlacement(1, { x: 2_000, y: 0 });
+    // The fixture machine is 900 x 750, front-left, front edge +y — so its front face sits at
+    // y = 750 and a blocker starting at y = 850 leaves exactly 100 mm.
+    const blockerBounds = { minX: 2_000, maxX: 2_900, minY: 850, maxY: 1_000 };
+
+    const asMachine = evaluate({
+      placements: [subject, fixturePlacement(2, { x: 2_000, y: 850 })],
+      catalog: VERIFIED_CATALOG,
+      ruleSet: BOTH_RULES,
+      spatial: spatial([]),
+    }).results.filter(
+      (result) => result.ruleId === 'front_clearance' && result.placementIds[0] === subject.id,
+    );
+
+    const asWall = evaluate({
+      placements: [subject],
+      catalog: VERIFIED_CATALOG,
+      ruleSet: BOTH_RULES,
+      spatial: spatial([
+        {
+          id: 'wall-1',
+          kind: 'wall',
+          label: 'Partition',
+          obstructionType: null,
+          vertices: [
+            { x: blockerBounds.minX, y: blockerBounds.minY },
+            { x: blockerBounds.maxX, y: blockerBounds.minY },
+            { x: blockerBounds.maxX, y: blockerBounds.maxY },
+            { x: blockerBounds.minX, y: blockerBounds.maxY },
+          ],
+        },
+      ]),
+    }).results.filter((result) => result.ruleId === 'front_clearance');
+
+    expect(asMachine[0]?.measured).toBe(100);
+    expect(asWall).toHaveLength(1);
+    expect(asWall[0]?.measured).toBe(100);
+    expect(asWall[0]?.level).toBe(asMachine[0]?.level);
+  });
+
+  it('abstains rather than measuring a non-convex wall in front of the face', () => {
+    /*
+     * Owner decision D3's own fallback — *"if the implementation cannot yet measure wall clearance
+     * correctly, abstain"* — and the rule-engine twin of the owner's existing `SC-907`.
+     *
+     * `gapAlongNormal` takes one global minimum across its lateral clip, which is the nearest
+     * *connected* material only when the polygon is convex. An L-shaped partition can put a
+     * disconnected far arm in the same band as a near one, and the function cannot tell them apart.
+     * So the face reports `RC-905` with no number rather than a number nobody should trust.
+     *
+     * Found missing by mutation: deleting the convexity check left all 231 tests green.
+     */
+    const subject = fixturePlacement(1, { x: 2_000, y: 0 });
+    const report = evaluate({
+      placements: [subject],
+      catalog: VERIFIED_CATALOG,
+      ruleSet: BOTH_RULES,
+      spatial: spatial([
+        {
+          id: 'wall-L',
+          kind: 'wall',
+          label: 'Riser wrap',
+          obstructionType: null,
+          // Reflex vertex at (2,450, 1,000): a near arm across the band and a far arm behind it.
+          vertices: [
+            { x: 2_000, y: 850 },
+            { x: 2_900, y: 850 },
+            { x: 2_900, y: 1_000 },
+            { x: 2_450, y: 1_000 },
+            { x: 2_450, y: 1_600 },
+            { x: 2_000, y: 1_600 },
+          ],
+        },
+      ]),
+    });
+
+    const clearance = report.results.filter((result) => result.ruleId === 'front_clearance');
+    expect(clearance).toHaveLength(1);
+    expect(clearance[0]?.reasonCode).toBe('RC-905');
+    expect(clearance[0]?.measured).toBeNull();
+    // Abstention, not a pass and not a violation.
+    expect(clearance[0]?.level).not.toBe('GREEN');
   });
 
   it('answers containment without consulting the clearance threshold', () => {

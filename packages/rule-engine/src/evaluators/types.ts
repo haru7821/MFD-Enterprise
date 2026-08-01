@@ -14,6 +14,19 @@ import type { Rule } from '../schema';
 export interface EvaluationContext {
   readonly placements: readonly Placement[];
   readonly catalog: Catalog;
+  /**
+   * The traced geometry of the level — room outlines, walls, obstructions.
+   *
+   * > Owner decision D3: *"Treat walls as real obstructions. If the implementation cannot yet
+   * > measure wall clearance correctly, abstain. Do not report 'clear' simply because walls were
+   * > excluded. Unknown is preferable to false GREEN."*
+   *
+   * Clearance did not see this at all until that decision, so it measured against other machines
+   * and nothing else: a wall 100 mm in front of a face reported GREEN, *"nothing stands within the
+   * front clearance"*, while the identical geometry made of a *machine* reported RED at 100 mm.
+   * The boundary evaluator has always had it; the field lives here now so both read one scene.
+   */
+  readonly boundaries: readonly Boundary[];
 }
 
 /** A placement paired with its resolved catalogue record. */

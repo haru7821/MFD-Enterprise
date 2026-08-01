@@ -131,11 +131,24 @@ export const REASON_CODES = {
     },
     kind: 'pass',
   },
+  /**
+   * Reworded by owner decision D3, and the rewording is the point.
+   *
+   * It used to read *"Nothing stands within {label}'s {required} mm {side} clearance"* — an
+   * assertion of **absence**, which the engine cannot make. It measures equipment, walls and
+   * obstructions; the room outline is deliberately outside its question (owner decision A-4 keeps
+   * clearance separate from containment), so a face 100 mm from the room's own wall is a gap this
+   * sentence does not cover.
+   *
+   * So it now names what was searched instead of claiming what is not there. The reader can tell
+   * the difference between "we looked and found nothing" and "there is nothing", and only the first
+   * is true.
+   */
   'RC-103': {
-    title: { ko: '정비 공간 내 장애물 없음', en: 'Service Clearance Clear' },
+    title: { ko: '정비 공간 내 장애물 미발견', en: 'Service Clearance Clear Of What Was Checked' },
     template: {
-      ko: '{label}의 {side} 정비 공간 {required} mm 내에 다른 장비가 없습니다.',
-      en: 'Nothing stands within {label}’s {required} mm {side} clearance.',
+      ko: '{label}의 {side} 정비 공간 {required} mm 내에서 장비·벽·장애물이 발견되지 않았습니다. (실 외곽선과의 거리는 이 검토에 포함되지 않습니다.)',
+      en: 'No equipment, wall or obstruction was found within {label}’s {required} mm {side} clearance. (Distance to the room outline is not part of this check.)',
     },
     kind: 'pass',
   },
@@ -277,6 +290,26 @@ export const REASON_CODES = {
     template: {
       ko: '이 층에 치수를 알 수 없는 장비({count}대)가 있어 {label}의 이격/간섭 검토 결과를 신뢰할 수 없습니다.',
       en: '{label} cannot be judged against its neighbours: this level holds {count} item(s) whose dimensions are unknown.',
+    },
+    kind: 'unevaluable',
+  },
+
+  /**
+   * A face whose clearance cannot be trusted because the geometry in front of it is non-convex.
+   *
+   * > Owner decision D3: *"If the implementation cannot yet measure wall clearance correctly,
+   * > abstain."*
+   *
+   * The rule-engine counterpart of `SC-907` in the scoring model, and the same underlying limit:
+   * `gapAlongNormal` takes one global minimum across its lateral clip, which is the nearest
+   * connected material only for a convex obstruction. A riser or duct run that wraps around a
+   * machine can put a disconnected far arm in the same band as a near one.
+   */
+  'RC-905': {
+    title: { ko: '이격 측정 불가 — 비볼록 형상', en: 'Clearance Not Measurable — Non-Convex Geometry' },
+    template: {
+      ko: '{label}의 {side} 앞을 막고 있는 벽·장애물이 비볼록 형상이어서 이격 거리를 신뢰성 있게 측정할 수 없습니다.',
+      en: '{label}: the {side} clearance cannot be measured — the wall or obstruction in front of it is not convex, so its true nearest distance cannot be trusted.',
     },
     kind: 'unevaluable',
   },

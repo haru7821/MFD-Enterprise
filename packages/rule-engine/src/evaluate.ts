@@ -194,8 +194,8 @@ export function evaluate({
     else unresolved.push(placement);
   }
 
-  const context = { placements, catalog };
-  const boundaryContext = { ...context, boundaries: spatial?.boundaries ?? [] };
+  // One scene, read by every evaluator — see `EvaluationContext.boundaries` and owner decision D3.
+  const context = { placements, catalog, boundaries: spatial?.boundaries ?? [] };
   const results: EvaluationResult[] = [];
 
   /*
@@ -219,7 +219,7 @@ export function evaluate({
       if (rule.parameters.scope !== 'boundary') neighbourRuleIds.add(rule.ruleId);
       results.push(
         ...(rule.parameters.scope === 'boundary'
-          ? evaluateBoundaryCollision(rule, subjects, boundaryContext)
+          ? evaluateBoundaryCollision(rule, subjects, context)
           : evaluateCollision(rule, subjects, context)),
       );
     }
