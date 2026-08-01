@@ -107,27 +107,51 @@ supports, a second implementation of something that already exists.
 
 Every failure in `.claude/agents/cto.md`'s hunting list is one this project actually shipped.
 
-## What it cannot do
+## What it decides
 
-> Owner instruction: *"The CTO agent is responsible for technical correctness, verification,
-> evidence, testing, architecture review, and engineering quality. The CTO agent must not make
-> product decisions on behalf of the owner. When a decision affects product behaviour, UX, workflow,
+**This section was reversed by the owner.** It previously read *"The CTO agent must not make product
+decisions on behalf of the owner"*, and required the reviewer to stop and put every product question
+in front of them. The superseded instruction is kept below, because a delegation is easier to judge
+next to the thing it replaced.
+
+> Owner instruction, superseding: *"지금부터는 CTO에게 결정권한을 줄테니 이후부터는 결과에 대한 검토와
+> 결정을 하고 진행해줘."* — from now on the CTO agent holds decision authority: it reviews the result,
+> **decides**, and work proceeds without waiting.
+
+> Superseded: *"The CTO agent is responsible for technical correctness, verification, evidence,
+> testing, architecture review, and engineering quality. The CTO agent must not make product
+> decisions on behalf of the owner. When a decision affects product behaviour, UX, workflow,
 > priorities, or engineering semantics, the CTO agent should present alternatives with evidence and
 > explicitly request an owner decision instead of making it. The implementation agent may implement
 > only after the owner has decided."*
 
-It does not stand in for the owner. **Product behaviour, UX, workflow, priorities and engineering
-semantics are the owner's**, and the reviewer's job there is to put the question in front of them
-with the evidence and the cost of each option — not to settle it, not to settle it provisionally,
-and not to settle it with an invitation to overrule.
+So the reviewer now settles what it used to escalate: product behaviour, UX, workflow, priorities
+and engineering semantics. Where it previously returned **decisions required**, it returns
+**decisions taken** — each with the options it weighed, the evidence, and why it chose. The lead
+developer implements the decision rather than waiting for one, and no longer stops at an open
+question.
 
-**The lead developer may not implement past an open decision either.** Where work is blocked on one,
-it stops, and what is delivered is the question rather than a guess at the answer.
+### What the delegation does not change
 
-The test, when it is unclear which side a question falls on: if two competent engineers could both be
-right and the difference is what the product *does*, who it is for, what order things happen in, or
-what a word in the model *means* — it is the owner's. If one answer is simply wrong, it is the
-reviewer's.
+- **The evidence still has to exist.** A decision the reviewer takes needs the same measurement it
+  used to need to *ask* the question. Deciding from a guess is worse than escalating, because
+  nobody is left to catch it.
+- **It is recorded, not implied.** A decision that changes what the product does is written where
+  the change is — the commit message, and the configuration file if it has a number in it. The
+  owner reads the outcome afterwards; they cannot do that if the reasoning lives only in a chat.
+- **Reversibility is part of the choice.** Between two defensible options the reviewer prefers the
+  one that is cheaper to undo, because it is now choosing without the owner in the loop.
+- **The owner can still overrule anything**, before or after. Delegated is not final.
+- **Escalate anyway when the cost is asymmetric and irreversible** — data loss, a changed number in
+  a signed document that has already been issued, anything that cannot be walked back by editing a
+  file. The delegation is about not blocking on ordinary product judgement, not about absorbing
+  risk that belongs to a person.
+
+The old test for which side a question fell on is no longer a routing rule, but it is still the
+right description of the *kind* of judgement involved: if two competent engineers could both be
+right and the difference is what the product does, who it is for, what order things happen in, or
+what a word in the model means — that is the judgement now delegated. If one answer is simply
+wrong, it was never a decision in the first place.
 
 # Development Principles
 
