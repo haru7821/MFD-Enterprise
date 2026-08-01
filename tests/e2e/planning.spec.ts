@@ -227,17 +227,18 @@ test('names the missing reference point instead of quietly dropping a stage', as
   await page.getByTestId('plan-generate').click();
 
   await expect(page.getByTestId('plan-stages')).not.toContainText('RO Loop Pressure Test');
-  await expect(page.getByTestId('plan-blockers')).toContainText('No reference point placed');
+  await expect(page.getByTestId('plan-blockers')).toContainText('Origin Point: Unknown');
+  await expect(page.getByTestId('plan-blockers')).toContainText('기준점: 미상');
   await expect(page.getByTestId('plan-blockers')).toContainText('ro_supply');
 
-  // The connections list reports the same absence for every service, bilingually — the caption
-  // is SC-901's own title, not a hand-typed English copy of it (regression: this only fails if
-  // the derivation is reverted or its source is swapped for a different code).
+  // The connections list reports the same absence for every service, bilingually, in the exact
+  // words the exported report uses for the same field — not a hand-typed copy of it (regression:
+  // this only fails if the composition is reverted or its source labels are swapped for others).
   await expect(page.getByTestId('plan-connection-power-no-reference-point')).toContainText(
-    '기준점 없음',
+    '기준점: 미상',
   );
   await expect(page.getByTestId('plan-connection-power-no-reference-point')).toContainText(
-    'No Reference Point',
+    'Origin Point: Unknown',
   );
 });
 

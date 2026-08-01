@@ -1,8 +1,8 @@
-import { SCORE_REASON_CODES } from '@mfd/ai-contract';
 import type { PlanService, SourcedNumber, SourcedRange } from '@mfd/ai-contract';
 import { catalog } from '@mfd/object-library/catalog';
 import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
-import { projectFingerprint } from '@mfd/report-engine';
+import { labelPair, projectFingerprint } from '@mfd/report-engine';
+import type { Bilingual } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 import { type PlanDependency, planStaleness } from '@mfd/ai-contract';
 
@@ -64,9 +64,28 @@ const DEPENDENCY_TEXT: Record<PlanDependency, string> = {
 
 const BLOCKER_TEXT: Record<string, string> = {
   open_violation: 'A rule violation is open',
-  missing_reference_point: 'No reference point placed',
   missing_prerequisite: 'A prerequisite is missing',
   uncalibrated_level: 'The plan drawing is not calibrated',
+};
+
+/**
+ * "Origin Point: Unknown" / "기준점: 미상" — composed from the report's own `field_origin_point`
+ * and `status_unknown` labels, not hand-translated.
+ *
+ * Owner decision, following the review of the SC-901 reuse this replaced: an unplaced reference
+ * point used to read differently depending on where in this panel it showed up (this connections
+ * caption, the blockers list below, and the exported PDF's own field for the same fact were three
+ * different sentences for one absence). The report is the document that leaves the building, so
+ * the panel now says what it says — `field_origin_point`/`status_unknown` render exactly this way
+ * in both the connections table and the reference-point field of every export mode (see
+ * `render/html.ts`'s `field('field_origin_point', ...)` and `render/pdf.ts`'s equivalent), and this
+ * panel's own stated rule for figures elsewhere (`planning_rates_unavailable`, above) is the same
+ * one: an engineer who checks the screen and then reads the PDF must not be told two different
+ * things about the same absence.
+ */
+const NO_REFERENCE_POINT: Bilingual = {
+  ko: `${labelPair('field_origin_point').ko}: ${labelPair('status_unknown').ko}`,
+  en: `${labelPair('field_origin_point').en}: ${labelPair('status_unknown').en}`,
 };
 
 export function InstallationPanel() {
@@ -252,7 +271,16 @@ export function InstallationPanel() {
                     key={`${blocker.kind}-${blocker.ref}-${index}`}
                     className="text-[10px] leading-snug text-amber-200/80"
                   >
-                    {BLOCKER_TEXT[blocker.kind] ?? blocker.kind} · {blocker.ref}
+                    {blocker.kind === 'missing_reference_point' ? (
+                      <>
+                        <BilingualText text={NO_REFERENCE_POINT} />
+                        <span className="block">· {blocker.ref}</span>
+                      </>
+                    ) : (
+                      <>
+                        {BLOCKER_TEXT[blocker.kind] ?? blocker.kind} · {blocker.ref}
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -317,17 +345,16 @@ export function InstallationPanel() {
               >
                 {SERVICE_LABELS[connection.service]}: <Figure figure={connection.totalLength} />
                 {/*
-                  The same absence the scoring breakdown reports as SC-901 — a run cannot be
-                  measured without the reference point it is measured from, and the criterion
-                  table already says so in these words. A hand-typed "no reference point placed"
-                  here would be a second, English-only account of the one fact.
+                  The same field the exported report prints for this absence — see
+                  `NO_REFERENCE_POINT`'s own doc comment for why it is composed from the report's
+                  labels rather than hand-typed here.
                 */}
                 {connection.originPointId === null && (
                   <span
                     className="mt-0.5 block text-ink-faint"
                     data-testid={`plan-connection-${connection.service}-no-reference-point`}
                   >
-                    <BilingualText text={SCORE_REASON_CODES['SC-901'].title} bullet />
+                    <BilingualText text={NO_REFERENCE_POINT} bullet />
                   </span>
                 )}
               </li>
