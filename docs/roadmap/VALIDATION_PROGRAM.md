@@ -118,10 +118,22 @@ from confirming a completed run, counted on its own as `totals.stopsConfirmed` a
 `completed` or `batchComplete`. A correctly diagnosed failure to read a drawing is not a step towards
 reading it.
 
-A row takes one confirmation — the earliest by (`at`, `name`), so appending to the file does not
-change the ledger's bytes — and any further signature on the same row is **reported as a duplicate**,
-in a different sentence from a stale one, because the two ask different things of whoever signed
-(owner decision D11). Neither is ever deleted.
+A row takes one confirmation — the earliest, ordered by the **parsed instant**, then name, then the
+raw `at`, then basis. `at` is an ISO-8601 instant written in the signer's own zone, so
+`2026-08-01T18:00:00+09:00` is as acceptable as the same moment in `Z`; it is not UTC-only because a
+hand-converted wrong time is a valid-but-false record, and that is worse than a rejection.
+
+Every key in that order is there because a shorter one was measured wrong. "Earliest by (`at`,
+`name`)" over free text let `08/01/2026` sort ahead of an ISO string; ISO alone still put
+`…T09:00:00+09:00` *after* `…T02:00:00Z` although it is two hours earlier; and two signers differing
+only in `basis` tied, so `Array.sort`'s stability handed the decision back to file position — the
+dependence the rule exists to remove, surviving inside its own implementation.
+
+Any further signature on the same row is recorded as a **duplicate**, and one matching no row as
+**stale**, both in the ledger's own `unapplied` array rather than only in a console nobody keeps
+(owner decision D11). Neither is ever deleted. They sit outside `totals` deliberately: D12 forbids a
+number beside `completed`, `batchComplete` and `stopsConfirmed` that could be read as another kind of
+completion.
 
 By classification — a run can raise more than one:
 

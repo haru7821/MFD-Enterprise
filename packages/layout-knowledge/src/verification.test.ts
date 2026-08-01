@@ -583,6 +583,30 @@ describe('the corpus validation ledger', () => {
     ).not.toThrow();
   });
 
+  it('rejects a stop confirmation on a run that did not stop', () => {
+    /*
+     * The mirror of the test below, and it was **missing**: review neutered this refine and all
+     * 1,240 tests stayed green. The commit that added it claimed seven guards verified; there were
+     * eight. A guard nothing exercises is the exact class this whole arc exists to remove, so it
+     * reappearing inside the fix for it is worth the note.
+     */
+    const base = shippedLedger();
+    const ran = {
+      ...base.drawings[0]!,
+      reached: 'report',
+      stoppedAt: null,
+      stopConfirmedBy: { name: 'TS engineer', at: '2026-08-01T00:00:00.000Z', basis: 'checked' },
+    };
+    // `totals` corrected for the row's new shape, so only the refine under test can fire.
+    const wrong = {
+      ...base,
+      totals: { ...base.totals, batchComplete: 1, stopped: base.totals.stopped - 1, stopsConfirmed: 1 },
+      drawings: [ran, ...base.drawings.slice(1)],
+    };
+
+    expect(() => parseCorpusValidation(wrong, 'wrong.json')).toThrow(/stopConfirmedBy/);
+  });
+
   it('rejects a confirmation on a run that stopped early', () => {
     /*
      * A state D7's model forbids and the ledger could express: `confirmedBy` on a row that stopped

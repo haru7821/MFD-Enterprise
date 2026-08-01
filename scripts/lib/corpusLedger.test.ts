@@ -380,3 +380,115 @@ describe('rowFingerprint', () => {
     expect(printed).toMatch(/^[\x20-\x7e]*$/);
   });
 });
+
+describe('D11 revised — the order over two signatures, and what the ledger records', () => {
+  const OBSERVER = shippedLedger().observer;
+  const META = { datasetId: 'test', validatedAt: '2026-08-01T00:00:00.000Z', observer: OBSERVER };
+
+  const ranToEnd: LedgerRow = {
+    drawingId: 'Hospital_003/dialysis.pdf',
+    page: 0,
+    sha256: 'd'.repeat(64),
+    reached: 'report',
+    stoppedAt: null,
+    discrepancies: [],
+  };
+
+  const sign = (name: string, at: string, basis = 'record reviewed'): Confirmation => ({
+    ...ranToEnd,
+    kind: 'completion',
+    name,
+    at,
+    basis,
+  });
+
+  it('compares the instant, not its spelling', () => {
+    /*
+     * The hole ISO-8601 alone does not close, and the reason the comparator does not sort the
+     * string. `…T09:00:00+09:00` is midnight UTC — chronologically **earlier** than
+     * `…T02:00:00Z` — yet sorts after it in every string order.
+     */
+    const seoul = sign('Seoul', '2026-08-01T09:00:00+09:00');
+    const utc = sign('Utc', '2026-08-01T02:00:00Z');
+
+    expect(Date.parse(seoul.at)).toBeLessThan(Date.parse(utc.at));
+    // Lexicographically the other way round, which is what a string sort would have picked.
+    expect(seoul.at > utc.at).toBe(true);
+
+    for (const order of [[seoul, utc], [utc, seoul]]) {
+      expect(buildLedger([ranToEnd], order, META).drawings[0]?.confirmedBy?.name).toBe('Seoul');
+    }
+  });
+
+  it('is total, so file order never decides', () => {
+    /*
+     * Two signers sharing a name and an instant and differing only in `basis`. With (`at`, `name`)
+     * alone the comparator returns 0 and `Array.sort`'s stability hands the choice back to file
+     * position — the dependence D11 exists to remove, surviving inside D11's own implementation.
+     */
+    const a = sign('Kim', '2026-08-01T09:00:00Z', 'against the record');
+    const b = sign('Kim', '2026-08-01T09:00:00Z', 'against the drawing');
+
+    expect(buildLedger([ranToEnd], [a, b], META).drawings[0]?.confirmedBy?.basis).toBe(
+      buildLedger([ranToEnd], [b, a], META).drawings[0]?.confirmedBy?.basis,
+    );
+  });
+
+  it('does not depend on the machine\'s locale', () => {
+    /*
+     * `localeCompare` with no locale reads the runtime's. Review measured the same two
+     * confirmations producing different winners under `LC_ALL=sv_SE` and `LC_ALL=de_DE`, while two
+     * documents claimed the ledger's bytes were stable. Names chosen so the two collations disagree.
+     */
+    const at = '2026-08-01T09:00:00Z';
+    const winner = buildLedger([ranToEnd], [sign('Zoe', at), sign('Ärnst', at)], META);
+
+    // Codepoint order: 'Z' (U+005A) precedes 'Ä' (U+00C4) on every machine.
+    expect(winner.drawings[0]?.confirmedBy?.name).toBe('Zoe');
+  });
+
+  it('records the acts it did not apply, with the reason, in the ledger itself', () => {
+    /*
+     * > Owner decision D11, revised: *"one top-level array, outside `totals`, outside `drawings`."*
+     *
+     * Previously a duplicate went to stdout and nowhere else, so the committed artefact could not
+     * show that a second person had signed.
+     */
+    const early = sign('Adam', '2026-08-01T09:00:00Z');
+    const later = sign('Zoe', '2026-08-02T09:00:00Z');
+    const moved: LedgerRow = { ...ranToEnd, reached: 'plan', stoppedAt: 'room' };
+
+    const ledger = buildLedger([ranToEnd], [early, later], META);
+    expect(ledger.unapplied).toEqual([{ reason: 'duplicate', confirmation: later }]);
+    expect(ledger.drawings[0]?.confirmedBy?.name).toBe('Adam');
+
+    const stale = buildLedger([moved], [early], META);
+    expect(stale.unapplied).toEqual([{ reason: 'stale', confirmation: early }]);
+
+    // Outside `totals` — D12 forbids a number beside the completion counts that reads like one.
+    expect(Object.keys(ledger.totals)).not.toContain('unapplied');
+    expect(Object.keys(ledger.totals)).not.toContain('duplicates');
+  });
+
+  it('will not accept an unapplied entry whose reason contradicts the rows', () => {
+    // What makes the array evidence rather than decoration, checkable without the dataset.
+    const ledger = buildLedger([ranToEnd], [sign('Adam', '2026-08-01T09:00:00Z')], META);
+    const lying = {
+      ...ledger,
+      unapplied: [{ reason: 'stale', confirmation: sign('Adam', '2026-08-01T09:00:00Z') }],
+    };
+
+    expect(() => parseCorpusValidation(lying, 'lying.json')).toThrow(/unapplied/);
+  });
+
+  it('refuses a signature that is not an instant', () => {
+    // Owner decision D11: `at` is an instant. `08/01/2026` sorted before an ISO string, so the
+    // ledger could have recorded a later act as the one that applies.
+    expect(() =>
+      parseConfirmations(
+        { version: 2, confirmations: [{ ...sign('Adam', '2026-08-01T09:00:00Z'), at: '08/01/2026' }] },
+        'confirmations.json',
+      ),
+    ).toThrow(/at/);
+  });
+});

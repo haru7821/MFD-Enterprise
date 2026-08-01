@@ -313,195 +313,6 @@ export function primaryDimensionIsSound(verification: DrawingVerification): bool
 }
 
 // ---------------------------------------------------------------------------
-// The corpus ledger
-// ---------------------------------------------------------------------------
-
-/**
- * Every drawing in the corpus, and how far the validation programme carried it.
- *
- * > Owner decision, validation programme: *"Continue validating against the real drawing corpus. For
- * > every drawing: …"* — and **for every drawing** is the part this exists for. A programme that
- * recorded only the drawings that worked would report a corpus of six and call it coverage.
- *
- * So a row is written for all three hundred, whether they reached the report or stopped at import,
- * and every stop names its stage and carries a classified discrepancy. The interesting number is not
- * how many completed; it is which of the five classes the rest fall into, because that says whether
- * the next engineering effort belongs in the reader, in the engines, or in asking for better
- * drawings.
- *
- * Derived data only — an identifier, a hash and an outcome per drawing. No drawing content.
- */
-export const CORPUS_VALIDATION_VERSION = 1;
-
-/** A person's act, on either kind of confirmation. */
-const signatureSchema = z.strictObject({
-  name: z.string().min(1),
-  at: z.string().min(1),
-  /** What they confirmed against — a record, a drawing, a conversation. */
-  basis: z.string().min(1),
-});
-
-export const corpusRowSchema = z.strictObject({
-  drawingId: z.string().min(1),
-  sha256: z.string().regex(/^[a-f0-9]{64}$/),
-  page: z.number().int().nonnegative(),
-  /** The last stage that completed. */
-  reached: z.string().min(1),
-  /** Where it stopped, or null when every batch stage ran. **Not the same as completed** — see below. */
-  stoppedAt: z.string().min(1).nullable(),
-  /**
-   * Who confirmed the run, and when. Null until a person has.
-   *
-   * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
-   * > execution alone is not completion."*
-   *
-   * The ledger could not express that before: `stoppedAt === null` meant "the batch reached the
-   * end", and `totals.completed` counted exactly those, so a machine finishing its own stages was
-   * recorded as the programme being complete. The `room` stage in particular asks whether the
-   * region found is the dialysis room, which no batch can answer for itself.
-   *
-   * A row is complete when it ran to the end **and** carries this.
-   */
-  confirmedBy: signatureSchema.nullable(),
-  /**
-   * Who accepted that this run stopped where it should have — **owner decision D12**. Null until
-   * somebody has.
-   *
-   * A different act from {@link confirmedBy} and counted separately, never summed with it. The
-   * corpus's actual output today *is* its classification of 306 stops — 211 unsupported drawings,
-   * 81 with insufficient evidence — and that is a machine's claim until a person has checked one.
-   * D7 is untouched: this never joins `completed` or `batchComplete`, and is never presented as
-   * progress towards completion.
-   */
-  stopConfirmedBy: signatureSchema.nullable(),
-  discrepancies: z.array(
-    z.strictObject({
-      code: z.enum(VERIFICATION_DISCREPANCY_CODES),
-      classification: z.enum(DISCREPANCY_CLASSES),
-      subject: z.string().min(1),
-    }),
-  ),
-});
-
-const countSchema = z.strictObject({ key: z.string().min(1), count: z.number().int().nonnegative() });
-
-export const corpusValidationSchema = z.strictObject({
-  version: z.literal(CORPUS_VALIDATION_VERSION),
-  datasetId: z.string().min(1),
-  validatedAt: z.string().min(1),
-  observer: observerSchema,
-  totals: z.strictObject({
-    drawings: z.number().int().nonnegative(),
-    /**
-     * Runs that reached the end of the batch **and** were confirmed by a person — owner decision D7.
-     *
-     * Kept distinct from `batchComplete` deliberately. Collapsing the two is what let
-     * `HOSPITAL_044_VERIFICATION.md` state that two drawings "complete all nine stages" while this
-     * ledger said `completed: 0`.
-     */
-    completed: z.number().int().nonnegative(),
-    /** Runs where every batch stage ran, confirmed or not. `completed` is a subset of this. */
-    batchComplete: z.number().int().nonnegative(),
-    stopped: z.number().int().nonnegative(),
-    /**
-     * Stops a person has accepted as correctly diagnosed — **owner decision D12**.
-     *
-     * Its own number, beside `stopped` rather than inside `completed`. D12's hard constraint is
-     * that it is never summed with either completion count nor presented as progress towards one:
-     * a correctly diagnosed failure to read a drawing is not a step towards reading it.
-     */
-    stopsConfirmed: z.number().int().nonnegative(),
-    /** Where runs stopped, most common first. Sums to `stopped`. */
-    byStage: z.array(countSchema),
-    /** What kind the discrepancies were. One run can contribute more than one. */
-    byClassification: z.array(countSchema),
-  }),
-  drawings: z.array(corpusRowSchema).min(1),
-})
-  .refine(
-    (ledger) =>
-      ledger.totals.batchComplete === ledger.drawings.filter((row) => row.stoppedAt === null).length,
-    { message: '`totals.batchComplete` must equal the rows that ran every batch stage' },
-  )
-  .refine(
-    (ledger) =>
-      ledger.totals.completed ===
-      ledger.drawings.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length,
-    {
-      /*
-       * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
-       * > execution alone is not completion."*
-       *
-       * Held in the contract rather than in the script that writes the ledger, and the difference
-       * matters: `validate-corpus.ts` parses back what it has just written, so a builder that counts
-       * completion any other way fails on its own output instead of shipping a number.
-       *
-       * That placement was chosen after the obvious one failed. With the count in the builder alone,
-       * reverting it to `stoppedAt === null` was invisible — no row in the corpus reaches the end of
-       * the batch, so both rules return 0 and no test over real data can tell them apart.
-       */
-      message:
-        '`totals.completed` must equal the rows that ran every stage AND carry a confirmation ' +
-        '(owner decision D7: batch execution alone is not completion)',
-    },
-  )
-  .refine(
-    (ledger) =>
-      ledger.totals.stopsConfirmed ===
-      ledger.drawings.filter((row) => row.stopConfirmedBy !== null).length,
-    {
-      // Owner decision D12. Re-derived from the rows like every other total, so a count cannot be
-      // stated beside rows that do not support it.
-      message: '`totals.stopsConfirmed` must equal the rows carrying a stop confirmation',
-    },
-  )
-  .refine(
-    (ledger) =>
-      ledger.drawings.every((row) => row.stopConfirmedBy === null || row.stoppedAt !== null),
-    {
-      /*
-       * The mirror of the invariant below — owner decision D12. A stop confirmation on a run that
-       * did not stop is as meaningless as a completion confirmation on one that did.
-       */
-      message:
-        'a row may not carry `stopConfirmedBy` unless it stopped — a stop confirmation accepts a ' +
-        'stop, and there is none to accept',
-    },
-  )
-  .refine(
-    (ledger) => ledger.drawings.every((row) => row.stoppedAt !== null || row.reached === 'report'),
-    {
-      /*
-       * A run that stopped nowhere reached the last stage. Definitional, and it lived as a loop in
-       * `verification.test.ts` over a set the corpus leaves empty — so mutating the assertion inside
-       * it left the suite green. Declaring the set empty made that visible but did not make the
-       * property hold; only stating it where every ledger must satisfy it does.
-       */
-      message: '`stoppedAt: null` means the run reached the end, so `reached` must be `report`',
-    },
-  )
-  .refine(
-    (ledger) => ledger.drawings.every((row) => row.confirmedBy === null || row.stoppedAt === null),
-    {
-      /*
-       * The converse of D7, and the ledger could express its negation until review pointed it out.
-       * `confirmedBy` on a row that stopped at `import` parsed happily — a signature against a run
-       * that did not happen. It was asserted in a test, over an empty set, and enforced nowhere.
-       *
-       * Not merely tidiness: with this state representable, `completed` and "rows carrying a
-       * confirmation" are two different counts, and the test file was already using both as though
-       * they were one.
-       */
-      message:
-        'a row may not carry `confirmedBy` unless it ran every batch stage (`stoppedAt: null`) — ' +
-        'a confirmation is given for a run that finished, not for one that stopped',
-    },
-  );
-
-export type CorpusRow = z.infer<typeof corpusRowSchema>;
-export type CorpusValidation = z.infer<typeof corpusValidationSchema>;
-
-// ---------------------------------------------------------------------------
 // Confirmations — owner decisions D9 and D10
 // ---------------------------------------------------------------------------
 
@@ -521,7 +332,7 @@ export type CorpusValidation = z.infer<typeof corpusValidationSchema>;
  * The split is the fix. `corpus.json` is generated and may be deleted and rebuilt at any time; this
  * file is written by people and read by the builder, never the reverse.
  */
-export const CONFIRMATIONS_VERSION = 1;
+export const CONFIRMATIONS_VERSION = 2;
 
 const rowOutcomeShape = {
   drawingId: z.string().min(1),
@@ -565,7 +376,22 @@ export const confirmationSchema = z
      */
     kind: z.enum(['completion', 'stop']),
     name: z.string().min(1),
-    at: z.string().min(1),
+    /**
+     * When they signed — an **ISO-8601 instant**, offset or `Z`, e.g. `2026-08-01T18:00:00+09:00`.
+     *
+     * > Owner decision D11, revised: *"`at` is an instant, written in the signer's own zone.
+     * > Offsets are accepted; ordering compares the parsed instant numerically."*
+     *
+     * It was `z.string().min(1)` — free text — while D11 said the applying signature is "the
+     * earliest by (`at`, `name`)" and two documents claimed that made the ledger byte-stable.
+     * Measured: `['08/01/2026', '1 Aug 2026', '2026-08-01T09:00:00Z', '2026/08/01']` sorts to
+     * `08/01/2026` first, so the ledger could record a **later** act as the one that applies.
+     *
+     * ISO alone does not fix it either, which is why {@link confirmationsMatching} does not sort
+     * the string: `2026-08-01T09:00:00+09:00` is midnight UTC and precedes `2026-08-01T02:00:00Z`,
+     * yet sorts after it. The order is over the instant, not its spelling.
+     */
+    at: z.string().datetime({ offset: true }),
     /** What they confirmed against — a record, a drawing, a conversation. */
     basis: z.string().min(1),
   })
@@ -661,6 +487,37 @@ export function rowFingerprint(outcome: RowOutcome): string {
  * that decides whether a confirmation applies exists once. A test asserting its own copy of this
  * would pass while the builder used a different rule, which is a failure this project has shipped.
  */
+/** Codepoint order — deterministic on every machine, unlike `localeCompare` with no locale. */
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * D11's order over two signatures: **the instant**, then name, then the raw spelling, then basis.
+ *
+ * Every key is needed, and each closes a measured hole in "the earliest by (`at`, `name`)":
+ *
+ * 1. **The instant, numerically.** `Date.parse` rather than the string, because an offset makes the
+ *    two disagree — `…T09:00:00+09:00` is earlier than `…T02:00:00Z` and sorts later.
+ * 2. **Name**, as before.
+ * 3. **The raw `at`**, so two spellings of one instant order deterministically rather than by file
+ *    position.
+ * 4. **Basis**, because two signers can share a name and an instant and differ only here; without
+ *    it the comparator returns 0 and `Array.sort`'s stability hands the decision back to file
+ *    order — the exact dependence D11 exists to remove.
+ */
+function compareSignatures(
+  a: { at: string; name: string; basis: string },
+  b: { at: string; name: string; basis: string },
+): number {
+  return (
+    Date.parse(a.at) - Date.parse(b.at) ||
+    compare(a.name, b.name) ||
+    compare(a.at, b.at) ||
+    compare(a.basis, b.basis)
+  );
+}
+
 export function confirmationsMatching(
   row: RowOutcome,
   confirmations: readonly Confirmation[],
@@ -669,7 +526,15 @@ export function confirmationsMatching(
   const key = rowFingerprint(row);
   return confirmations
     .filter((entry) => entry.kind === kind && rowFingerprint(entry) === key)
-    .sort((a, b) => a.at.localeCompare(b.at) || a.name.localeCompare(b.name));
+    /*
+     * **Codepoint order, not `localeCompare`.** D11's whole point is that the ledger's bytes do not
+     * depend on how somebody appended to the file — and `localeCompare` with no locale reads the
+     * runtime's, so review measured the same two confirmations producing different winners under
+     * `LC_ALL=sv_SE` and `LC_ALL=de_DE`. A ledger whose contents depend on the machine that built it
+     * is not reproducible, which is the property being claimed. `rowFingerprint`'s own sort was
+     * already codepoint; there were two orderings in one module.
+     */
+    .sort(compareSignatures);
 }
 
 /**
@@ -692,7 +557,7 @@ export function confirmationsMatching(
 export function confirmationFor(
   row: RowOutcome,
   confirmations: readonly Confirmation[],
-  kind: Confirmation['kind'] = 'completion',
+  kind: Confirmation['kind'],
 ): CorpusRow['confirmedBy'] {
   const match = confirmationsMatching(row, confirmations, kind)[0];
   return match ? { name: match.name, at: match.at, basis: match.basis } : null;
@@ -708,3 +573,250 @@ export function parseCorpusValidation(raw: unknown, fileName: string): CorpusVal
   }
   return result.data;
 }
+
+// ---------------------------------------------------------------------------
+// The corpus ledger
+// ---------------------------------------------------------------------------
+
+/**
+ * Every drawing in the corpus, and how far the validation programme carried it.
+ *
+ * > Owner decision, validation programme: *"Continue validating against the real drawing corpus. For
+ * > every drawing: …"* — and **for every drawing** is the part this exists for. A programme that
+ * recorded only the drawings that worked would report a corpus of six and call it coverage.
+ *
+ * So a row is written for all three hundred, whether they reached the report or stopped at import,
+ * and every stop names its stage and carries a classified discrepancy. The interesting number is not
+ * how many completed; it is which of the five classes the rest fall into, because that says whether
+ * the next engineering effort belongs in the reader, in the engines, or in asking for better
+ * drawings.
+ *
+ * Derived data only — an identifier, a hash and an outcome per drawing. No drawing content.
+ */
+export const CORPUS_VALIDATION_VERSION = 2;
+
+/**
+ * A person's act, on either kind of confirmation.
+ *
+ * `at` is an **instant**, ISO-8601, written in the signer's own zone — `2026-08-01T18:00:00+09:00`
+ * is as acceptable as the same moment in `Z`. Owner decision D11: not UTC-only, because this
+ * product's signers work in KST and a hand-converted wrong time is a valid-but-false record, which
+ * is strictly worse than a rejection.
+ *
+ * Tightened here as well as on {@link confirmationSchema} because the ledger copies this field, and
+ * it must not accept what its source cannot produce.
+ */
+const signatureSchema = z.strictObject({
+  name: z.string().min(1),
+  at: z.string().datetime({ offset: true }),
+  /** What they confirmed against — a record, a drawing, a conversation. */
+  basis: z.string().min(1),
+});
+
+export const corpusRowSchema = z.strictObject({
+  drawingId: z.string().min(1),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+  page: z.number().int().nonnegative(),
+  /** The last stage that completed. */
+  reached: z.string().min(1),
+  /** Where it stopped, or null when every batch stage ran. **Not the same as completed** — see below. */
+  stoppedAt: z.string().min(1).nullable(),
+  /**
+   * Who confirmed the run, and when. Null until a person has.
+   *
+   * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+   * > execution alone is not completion."*
+   *
+   * The ledger could not express that before: `stoppedAt === null` meant "the batch reached the
+   * end", and `totals.completed` counted exactly those, so a machine finishing its own stages was
+   * recorded as the programme being complete. The `room` stage in particular asks whether the
+   * region found is the dialysis room, which no batch can answer for itself.
+   *
+   * A row is complete when it ran to the end **and** carries this.
+   */
+  confirmedBy: signatureSchema.nullable(),
+  /**
+   * Who accepted that this run stopped where it should have — **owner decision D12**. Null until
+   * somebody has.
+   *
+   * A different act from {@link confirmedBy} and counted separately, never summed with it. The
+   * corpus's actual output today *is* its classification of 306 stops — 211 unsupported drawings,
+   * 81 with insufficient evidence — and that is a machine's claim until a person has checked one.
+   * D7 is untouched: this never joins `completed` or `batchComplete`, and is never presented as
+   * progress towards completion.
+   */
+  stopConfirmedBy: signatureSchema.nullable(),
+  discrepancies: z.array(
+    z.strictObject({
+      code: z.enum(VERIFICATION_DISCREPANCY_CODES),
+      classification: z.enum(DISCREPANCY_CLASSES),
+      subject: z.string().min(1),
+    }),
+  ),
+});
+
+const countSchema = z.strictObject({ key: z.string().min(1), count: z.number().int().nonnegative() });
+
+export const corpusValidationSchema = z.strictObject({
+  version: z.literal(CORPUS_VALIDATION_VERSION),
+  datasetId: z.string().min(1),
+  validatedAt: z.string().min(1),
+  observer: observerSchema,
+  totals: z.strictObject({
+    drawings: z.number().int().nonnegative(),
+    /**
+     * Runs that reached the end of the batch **and** were confirmed by a person — owner decision D7.
+     *
+     * Kept distinct from `batchComplete` deliberately. Collapsing the two is what let
+     * `HOSPITAL_044_VERIFICATION.md` state that two drawings "complete all nine stages" while this
+     * ledger said `completed: 0`.
+     */
+    completed: z.number().int().nonnegative(),
+    /** Runs where every batch stage ran, confirmed or not. `completed` is a subset of this. */
+    batchComplete: z.number().int().nonnegative(),
+    stopped: z.number().int().nonnegative(),
+    /**
+     * Stops a person has accepted as correctly diagnosed — **owner decision D12**.
+     *
+     * Its own number, beside `stopped` rather than inside `completed`. D12's hard constraint is
+     * that it is never summed with either completion count nor presented as progress towards one:
+     * a correctly diagnosed failure to read a drawing is not a step towards reading it.
+     */
+    stopsConfirmed: z.number().int().nonnegative(),
+    /** Where runs stopped, most common first. Sums to `stopped`. */
+    byStage: z.array(countSchema),
+    /** What kind the discrepancies were. One run can contribute more than one. */
+    byClassification: z.array(countSchema),
+  }),
+  drawings: z.array(corpusRowSchema).min(1),
+  /**
+   * Acts present in `confirmations.json` that this run did **not** apply, and why.
+   *
+   * > Owner decision D11, revised: *"One top-level array, outside `totals`, outside `drawings` —
+   * > the concept is 'acts present in the file that this run did not apply, and why'."*
+   *
+   * Previously these were printed to the console and nowhere else, so six months on the committed
+   * artefact could not show that a second person had signed. The act itself was never lost —
+   * `confirmations.json` is committed and nothing deletes from it — but *which* act applied, and
+   * that another did not, could only be recovered by re-running `rowFingerprint` by hand.
+   *
+   * **Outside `totals` deliberately.** D12 forbids a number that can be read as completion-like,
+   * and a `duplicates` count sitting beside `completed`, `batchComplete` and `stopsConfirmed` is
+   * exactly that. **Not per-row either**: an `alsoConfirmedBy` list on the row is co-signature,
+   * which D11 declined to build.
+   *
+   * Both reasons live here rather than only `duplicate`, because `staleConfirmations` already
+   * computes the other half and shipping one would mean a second schema change the day somebody
+   * noticed the asymmetry.
+   */
+  unapplied: z.array(
+    z.object({
+      /** `duplicate` — another act already stands on that row. `stale` — it matches no row now. */
+      reason: z.enum(['duplicate', 'stale']),
+      confirmation: confirmationSchema,
+    }),
+  ),
+})
+  .refine(
+    (ledger) =>
+      ledger.totals.batchComplete === ledger.drawings.filter((row) => row.stoppedAt === null).length,
+    { message: '`totals.batchComplete` must equal the rows that ran every batch stage' },
+  )
+  .refine(
+    (ledger) =>
+      ledger.totals.completed ===
+      ledger.drawings.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length,
+    {
+      /*
+       * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+       * > execution alone is not completion."*
+       *
+       * Held in the contract rather than in the script that writes the ledger, and the difference
+       * matters: `validate-corpus.ts` parses back what it has just written, so a builder that counts
+       * completion any other way fails on its own output instead of shipping a number.
+       *
+       * That placement was chosen after the obvious one failed. With the count in the builder alone,
+       * reverting it to `stoppedAt === null` was invisible — no row in the corpus reaches the end of
+       * the batch, so both rules return 0 and no test over real data can tell them apart.
+       */
+      message:
+        '`totals.completed` must equal the rows that ran every stage AND carry a confirmation ' +
+        '(owner decision D7: batch execution alone is not completion)',
+    },
+  )
+  .refine(
+    (ledger) =>
+      ledger.totals.stopsConfirmed ===
+      ledger.drawings.filter((row) => row.stopConfirmedBy !== null).length,
+    {
+      // Owner decision D12. Re-derived from the rows like every other total, so a count cannot be
+      // stated beside rows that do not support it.
+      message: '`totals.stopsConfirmed` must equal the rows carrying a stop confirmation',
+    },
+  )
+  .refine(
+    (ledger) =>
+      ledger.drawings.every((row) => row.stopConfirmedBy === null || row.stoppedAt !== null),
+    {
+      /*
+       * The mirror of the invariant below — owner decision D12. A stop confirmation on a run that
+       * did not stop is as meaningless as a completion confirmation on one that did.
+       */
+      message:
+        'a row may not carry `stopConfirmedBy` unless it stopped — a stop confirmation accepts a ' +
+        'stop, and there is none to accept',
+    },
+  )
+  .refine(
+    (ledger) =>
+      ledger.unapplied.every(({ reason, confirmation }) => {
+        const matches = ledger.drawings.some(
+          (row) =>
+            row.stoppedAt === confirmation.stoppedAt &&
+            rowFingerprint(row) === rowFingerprint(confirmation),
+        );
+        return reason === 'stale' ? !matches : matches;
+      }),
+    {
+      /*
+       * What makes `unapplied` evidence rather than decoration: a `stale` entry must match no row
+       * in this ledger and a `duplicate` must match one. Checkable from the file alone, without the
+       * dataset — which is the property every other invariant here has.
+       */
+      message:
+        'an `unapplied` entry marked `stale` must match no row, and one marked `duplicate` must ' +
+        'match a row in this ledger',
+    },
+  )
+  .refine(
+    (ledger) => ledger.drawings.every((row) => row.stoppedAt !== null || row.reached === 'report'),
+    {
+      /*
+       * A run that stopped nowhere reached the last stage. Definitional, and it lived as a loop in
+       * `verification.test.ts` over a set the corpus leaves empty — so mutating the assertion inside
+       * it left the suite green. Declaring the set empty made that visible but did not make the
+       * property hold; only stating it where every ledger must satisfy it does.
+       */
+      message: '`stoppedAt: null` means the run reached the end, so `reached` must be `report`',
+    },
+  )
+  .refine(
+    (ledger) => ledger.drawings.every((row) => row.confirmedBy === null || row.stoppedAt === null),
+    {
+      /*
+       * The converse of D7, and the ledger could express its negation until review pointed it out.
+       * `confirmedBy` on a row that stopped at `import` parsed happily — a signature against a run
+       * that did not happen. It was asserted in a test, over an empty set, and enforced nowhere.
+       *
+       * Not merely tidiness: with this state representable, `completed` and "rows carrying a
+       * confirmation" are two different counts, and the test file was already using both as though
+       * they were one.
+       */
+      message:
+        'a row may not carry `confirmedBy` unless it ran every batch stage (`stoppedAt: null`) — ' +
+        'a confirmation is given for a run that finished, not for one that stopped',
+    },
+  );
+
+export type CorpusRow = z.infer<typeof corpusRowSchema>;
+export type CorpusValidation = z.infer<typeof corpusValidationSchema>;

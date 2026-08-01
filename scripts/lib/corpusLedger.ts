@@ -41,7 +41,10 @@ function tally(values: readonly string[]): { key: string; count: number }[] {
   // Sorted by count then key, so a re-run with the same inputs produces the same bytes.
   return [...counts.entries()]
     .map(([key, count]) => ({ key, count }))
-    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+    // Codepoint order rather than `localeCompare`, for the reason `confirmationsMatching` gives:
+    // the comment below promises the same bytes on a re-run, and a locale-dependent sort does not
+    // deliver that across machines.
+    .sort((a, b) => b.count - a.count || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
 /**
@@ -62,6 +65,21 @@ export function buildLedger(
   confirmations: readonly Confirmation[],
   meta: LedgerMeta,
 ): CorpusValidation {
+  /*
+   * Owner decision D11, revised: the acts this run did not apply go **into** the ledger, so the
+   * committed artefact shows them without anyone re-running a fingerprint by hand.
+   */
+  const unapplied = [
+    ...duplicateConfirmations(rows, confirmations).map((confirmation) => ({
+      reason: 'duplicate' as const,
+      confirmation,
+    })),
+    ...staleConfirmations(rows, confirmations).map((confirmation) => ({
+      reason: 'stale' as const,
+      confirmation,
+    })),
+  ];
+
   const drawings: CorpusRow[] = rows.map((row) => ({
     drawingId: row.drawingId,
     sha256: row.sha256,
@@ -102,6 +120,7 @@ export function buildLedger(
         ),
       },
       drawings,
+      unapplied,
     },
     'knowledge/validation/corpus.json',
   );
@@ -142,6 +161,14 @@ export function duplicateConfirmations(
   return duplicates;
 }
 
+/**
+ * Confirmations that match no row in this run — **owner decision D10**.
+ *
+ * They are not an error and are never deleted: a person's act is evidence, and it stays in the file.
+ * What changed is the run, not the act, so the signature simply stops asserting anything. Reported
+ * because a signature that has silently stopped counting is precisely the thing whoever gave it
+ * needs to be told about.
+ */
 export function staleConfirmations(
   rows: readonly LedgerRow[],
   confirmations: readonly Confirmation[],
