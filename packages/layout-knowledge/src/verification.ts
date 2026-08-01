@@ -333,6 +333,14 @@ export function primaryDimensionIsSound(verification: DrawingVerification): bool
  */
 export const CORPUS_VALIDATION_VERSION = 1;
 
+/** A person's act, on either kind of confirmation. */
+const signatureSchema = z.strictObject({
+  name: z.string().min(1),
+  at: z.string().min(1),
+  /** What they confirmed against — a record, a drawing, a conversation. */
+  basis: z.string().min(1),
+});
+
 export const corpusRowSchema = z.strictObject({
   drawingId: z.string().min(1),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
@@ -354,14 +362,18 @@ export const corpusRowSchema = z.strictObject({
    *
    * A row is complete when it ran to the end **and** carries this.
    */
-  confirmedBy: z
-    .strictObject({
-      name: z.string().min(1),
-      at: z.string().min(1),
-      /** What they confirmed against — a record, a drawing, a conversation. */
-      basis: z.string().min(1),
-    })
-    .nullable(),
+  confirmedBy: signatureSchema.nullable(),
+  /**
+   * Who accepted that this run stopped where it should have — **owner decision D12**. Null until
+   * somebody has.
+   *
+   * A different act from {@link confirmedBy} and counted separately, never summed with it. The
+   * corpus's actual output today *is* its classification of 306 stops — 211 unsupported drawings,
+   * 81 with insufficient evidence — and that is a machine's claim until a person has checked one.
+   * D7 is untouched: this never joins `completed` or `batchComplete`, and is never presented as
+   * progress towards completion.
+   */
+  stopConfirmedBy: signatureSchema.nullable(),
   discrepancies: z.array(
     z.strictObject({
       code: z.enum(VERIFICATION_DISCREPANCY_CODES),
@@ -391,6 +403,14 @@ export const corpusValidationSchema = z.strictObject({
     /** Runs where every batch stage ran, confirmed or not. `completed` is a subset of this. */
     batchComplete: z.number().int().nonnegative(),
     stopped: z.number().int().nonnegative(),
+    /**
+     * Stops a person has accepted as correctly diagnosed — **owner decision D12**.
+     *
+     * Its own number, beside `stopped` rather than inside `completed`. D12's hard constraint is
+     * that it is never summed with either completion count nor presented as progress towards one:
+     * a correctly diagnosed failure to read a drawing is not a step towards reading it.
+     */
+    stopsConfirmed: z.number().int().nonnegative(),
     /** Where runs stopped, most common first. Sums to `stopped`. */
     byStage: z.array(countSchema),
     /** What kind the discrepancies were. One run can contribute more than one. */
@@ -423,6 +443,41 @@ export const corpusValidationSchema = z.strictObject({
       message:
         '`totals.completed` must equal the rows that ran every stage AND carry a confirmation ' +
         '(owner decision D7: batch execution alone is not completion)',
+    },
+  )
+  .refine(
+    (ledger) =>
+      ledger.totals.stopsConfirmed ===
+      ledger.drawings.filter((row) => row.stopConfirmedBy !== null).length,
+    {
+      // Owner decision D12. Re-derived from the rows like every other total, so a count cannot be
+      // stated beside rows that do not support it.
+      message: '`totals.stopsConfirmed` must equal the rows carrying a stop confirmation',
+    },
+  )
+  .refine(
+    (ledger) =>
+      ledger.drawings.every((row) => row.stopConfirmedBy === null || row.stoppedAt !== null),
+    {
+      /*
+       * The mirror of the invariant below — owner decision D12. A stop confirmation on a run that
+       * did not stop is as meaningless as a completion confirmation on one that did.
+       */
+      message:
+        'a row may not carry `stopConfirmedBy` unless it stopped — a stop confirmation accepts a ' +
+        'stop, and there is none to accept',
+    },
+  )
+  .refine(
+    (ledger) => ledger.drawings.every((row) => row.stoppedAt !== null || row.reached === 'report'),
+    {
+      /*
+       * A run that stopped nowhere reached the last stage. Definitional, and it lived as a loop in
+       * `verification.test.ts` over a set the corpus leaves empty — so mutating the assertion inside
+       * it left the suite green. Declaring the set empty made that visible but did not make the
+       * property hold; only stating it where every ledger must satisfy it does.
+       */
+      message: '`stoppedAt: null` means the run reached the end, so `reached` must be `report`',
     },
   )
   .refine(
@@ -491,13 +546,42 @@ const rowOutcomeShape = {
  * deliberate: a signer has to state what they confirmed, and a reader can see it without running
  * anything.
  */
-export const confirmationSchema = z.strictObject({
-  ...rowOutcomeShape,
-  name: z.string().min(1),
-  at: z.string().min(1),
-  /** What they confirmed against — a record, a drawing, a conversation. */
-  basis: z.string().min(1),
-});
+export const confirmationSchema = z
+  .strictObject({
+    ...rowOutcomeShape,
+    /**
+     * Which act this is — **owner decision D12**.
+     *
+     * > *"Confirming that a stop was correctly diagnosed is a different act from confirming a
+     * > completed run, and would say so."*
+     *
+     * `completion` accepts a run that reached the end. `stop` accepts that a run stopped where it
+     * should have — *"yes, this sheet genuinely carries no dimension set a scale can be established
+     * from"*. They are counted separately and **never summed**: `completed` keeps exactly D7's
+     * meaning, and a stop confirmation is never presented as progress towards it.
+     *
+     * The discriminator is stated by the signer rather than inferred from the row, so signing the
+     * wrong kind is a rejection rather than a silent reclassification.
+     */
+    kind: z.enum(['completion', 'stop']),
+    name: z.string().min(1),
+    at: z.string().min(1),
+    /** What they confirmed against — a record, a drawing, a conversation. */
+    basis: z.string().min(1),
+  })
+  .refine((entry) => (entry.kind === 'completion') === (entry.stoppedAt === null), {
+    /*
+     * The mirror invariants, D12's hard constraint, enforced **here** rather than on the ledger.
+     *
+     * Review found the failure this fixes: a confirmation naming a stopped run made the *ledger*
+     * fail to parse, so `pnpm validate:corpus` aborted with `knowledge/validation/corpus.json: a
+     * row may not carry confirmedBy…` — blaming the generated file for a fault in the
+     * hand-authored one, and naming no row. A file people edit has to fail on its own terms.
+     */
+    message:
+      'a `completion` confirmation requires `stoppedAt: null` and a `stop` confirmation requires ' +
+      'a stage in `stoppedAt` — owner decision D12: the two are separate acts',
+  });
 
 export const confirmationsSchema = z.strictObject({
   version: z.literal(CONFIRMATIONS_VERSION),
@@ -539,18 +623,35 @@ export type RowOutcome = {
  * person's act is evidence, and it simply stops asserting anything.
  */
 export function rowFingerprint(outcome: RowOutcome): string {
-  const discrepancies = outcome.discrepancies
-    .map((entry) => `${entry.code}|${entry.classification}|${entry.subject}`)
-    .sort()
-    .join('~');
-  return [
+  /*
+   * **`JSON.stringify`, not a delimiter.** Two defects in one line, both found by review.
+   *
+   * The first version joined the parts with `|` and `~` and escaped neither, and one of the
+   * subjects this receives is `the harness threw: ${cause.message}` — arbitrary text. Measured
+   * collision: a single discrepancy whose subject reads `a~VD-7|insufficient_evidence|b` produces
+   * exactly the string two separate discrepancies with subjects `a` and `b` produce. Under D10 a
+   * collision means a signature applying to a run it was not given for, which is the one thing the
+   * binding exists to prevent. Latent rather than live — no subject in today's corpus contains
+   * either character — but the harness message is unbounded, so it is one thrown error away.
+   *
+   * The second was the repair: joining with a NUL byte made it the only tracked text file
+   * containing one, and `git grep` and `rg` skip a file they think is binary. The whole module went
+   * invisible to search to fix a problem that was really about structure.
+   *
+   * `JSON.stringify` over the parts as an array is unambiguous for these types by construction —
+   * it escapes what it must and the nesting carries the field boundaries — so there is no separator
+   * to collide with and nothing unprintable in the file.
+   */
+  return JSON.stringify([
     outcome.drawingId,
-    String(outcome.page),
+    outcome.page,
     outcome.sha256,
     outcome.reached,
-    outcome.stoppedAt ?? '',
-    discrepancies,
-  ].join(' ');
+    outcome.stoppedAt,
+    outcome.discrepancies
+      .map((entry) => [entry.code, entry.classification, entry.subject])
+      .sort((a, b) => (a.join() < b.join() ? -1 : 1)),
+  ]);
 }
 
 /**
@@ -560,12 +661,40 @@ export function rowFingerprint(outcome: RowOutcome): string {
  * that decides whether a confirmation applies exists once. A test asserting its own copy of this
  * would pass while the builder used a different rule, which is a failure this project has shipped.
  */
+export function confirmationsMatching(
+  row: RowOutcome,
+  confirmations: readonly Confirmation[],
+  kind: Confirmation['kind'],
+): Confirmation[] {
+  const key = rowFingerprint(row);
+  return confirmations
+    .filter((entry) => entry.kind === kind && rowFingerprint(entry) === key)
+    .sort((a, b) => a.at.localeCompare(b.at) || a.name.localeCompare(b.name));
+}
+
+/**
+ * The signature that applies to a row, or null — the merge D9 asks the builder to perform.
+ *
+ * > **Owner decision D11**: *"the row takes the earliest matching confirmation by (`at`, `name`) —
+ * > a deterministic order, so a re-run produces the same bytes — and every further confirmation on
+ * > the same fingerprint is reported by the run as a duplicate."*
+ *
+ * This was `.find()`, which took whichever entry happened to come first in the file and dropped the
+ * rest without counting or reporting them. Review measured it: two signatures on one row, and the
+ * second vanished — the one datum D9 exists to protect, disappearing silently. Ordering by (`at`,
+ * `name`) rather than by file position also means the ledger's bytes do not depend on how somebody
+ * chose to append to the JSON.
+ *
+ * Exported and used by `scripts/lib/corpusLedger.ts` rather than reimplemented there, so the rule
+ * that decides whether a confirmation applies exists once. A test asserting its own copy of this
+ * would pass while the builder used a different rule, which is a failure this project has shipped.
+ */
 export function confirmationFor(
   row: RowOutcome,
   confirmations: readonly Confirmation[],
+  kind: Confirmation['kind'] = 'completion',
 ): CorpusRow['confirmedBy'] {
-  const key = rowFingerprint(row);
-  const match = confirmations.find((entry) => rowFingerprint(entry) === key);
+  const match = confirmationsMatching(row, confirmations, kind)[0];
   return match ? { name: match.name, at: match.at, basis: match.basis } : null;
 }
 

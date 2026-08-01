@@ -1,6 +1,7 @@
 import {
   CORPUS_VALIDATION_VERSION,
   confirmationFor,
+  confirmationsMatching,
   rowFingerprint,
   parseCorpusValidation,
   type Confirmation,
@@ -67,7 +68,9 @@ export function buildLedger(
     page: row.page,
     reached: row.reached,
     stoppedAt: row.stoppedAt,
-    confirmedBy: confirmationFor(row, confirmations),
+    confirmedBy: confirmationFor(row, confirmations, 'completion'),
+    // Owner decision D12 — a separate act, a separate field, and never summed with the above.
+    stopConfirmedBy: confirmationFor(row, confirmations, 'stop'),
     discrepancies: row.discrepancies.map((entry) => ({
       code: entry.code,
       classification: entry.classification,
@@ -92,6 +95,7 @@ export function buildLedger(
           .length,
         batchComplete: drawings.filter((row) => row.stoppedAt === null).length,
         stopped: drawings.filter((row) => row.stoppedAt !== null).length,
+        stopsConfirmed: drawings.filter((row) => row.stopConfirmedBy !== null).length,
         byStage: tally(drawings.flatMap((row) => (row.stoppedAt ? [row.stoppedAt] : []))),
         byClassification: tally(
           drawings.flatMap((row) => row.discrepancies.map((entry) => entry.classification)),
@@ -111,6 +115,33 @@ export function buildLedger(
  * because a signature that has silently stopped counting is precisely the thing whoever gave it
  * needs to be told about.
  */
+/**
+ * Confirmations that match a row another confirmation already stands on — **owner decision D11**.
+ *
+ * > *"A duplicate is reported distinctly from a stale one: stale tells a signer their signature
+ * > stopped applying, duplicate tells them it was recorded but another stands. Same channel,
+ * > different sentence, because the actions differ."*
+ *
+ * Not an error, and never deleted. Two people signing the same row is a benign act, and making it
+ * abort a 306-page batch would make the correct human act the expensive one. What it must not do is
+ * vanish — `confirmationFor` used `.find()`, so the second signature was uncounted and unreported,
+ * which is precisely the datum D9 exists to protect.
+ */
+export function duplicateConfirmations(
+  rows: readonly LedgerRow[],
+  confirmations: readonly Confirmation[],
+): Confirmation[] {
+  const duplicates: Confirmation[] = [];
+  for (const row of rows) {
+    for (const kind of ['completion', 'stop'] as const) {
+      // The first is the one that applies — D11's (`at`, `name`) order, from the same function the
+      // builder merges with. Everything after it is a duplicate.
+      duplicates.push(...confirmationsMatching(row, confirmations, kind).slice(1));
+    }
+  }
+  return duplicates;
+}
+
 export function staleConfirmations(
   rows: readonly LedgerRow[],
   confirmations: readonly Confirmation[],

@@ -12,6 +12,7 @@
     "completed": 0,
     "batchComplete": 0,
     "stopped": 306,
+    "stopsConfirmed": 0,
     "byStage": [
       {
         "key": "import",
@@ -53,6 +54,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -68,6 +70,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -83,6 +86,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -98,6 +102,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -113,6 +118,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -128,6 +134,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -143,6 +150,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -158,6 +166,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -173,6 +182,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -188,6 +198,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -203,6 +214,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -218,6 +230,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -233,6 +246,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -248,6 +262,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -263,6 +278,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -278,6 +294,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -293,6 +310,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -308,6 +326,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -323,6 +342,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -338,6 +358,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -353,6 +374,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -368,6 +390,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -383,6 +406,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -398,6 +422,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -413,6 +438,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -428,6 +454,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -443,6 +470,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -458,6 +486,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -473,6 +502,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -488,6 +518,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -503,6 +534,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -518,6 +550,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -533,6 +566,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -548,6 +582,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -563,6 +598,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -578,6 +614,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -593,6 +630,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -608,6 +646,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -623,6 +662,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -638,6 +678,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -653,6 +694,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -668,6 +710,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -683,6 +726,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -698,6 +742,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -713,6 +758,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -728,6 +774,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -743,6 +790,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -758,6 +806,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -773,6 +822,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -788,6 +838,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -803,6 +854,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -818,6 +870,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -833,6 +886,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -848,6 +902,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -863,6 +918,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -878,6 +934,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -893,6 +950,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -908,6 +966,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -923,6 +982,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -938,6 +998,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -953,6 +1014,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -968,6 +1030,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -983,6 +1046,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -998,6 +1062,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1013,6 +1078,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1028,6 +1094,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1043,6 +1110,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1058,6 +1126,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1073,6 +1142,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1088,6 +1158,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1103,6 +1174,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1118,6 +1190,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1133,6 +1206,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1148,6 +1222,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1163,6 +1238,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1178,6 +1254,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1193,6 +1270,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1208,6 +1286,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1223,6 +1302,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1238,6 +1318,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1253,6 +1334,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1268,6 +1350,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1283,6 +1366,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1298,6 +1382,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1313,6 +1398,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1328,6 +1414,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1343,6 +1430,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1358,6 +1446,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1373,6 +1462,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1388,6 +1478,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1403,6 +1494,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1418,6 +1510,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1433,6 +1526,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1448,6 +1542,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1463,6 +1558,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1478,6 +1574,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1493,6 +1590,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1508,6 +1606,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1523,6 +1622,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1538,6 +1638,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1553,6 +1654,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1568,6 +1670,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1583,6 +1686,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1598,6 +1702,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1613,6 +1718,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1628,6 +1734,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1643,6 +1750,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1658,6 +1766,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1673,6 +1782,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1688,6 +1798,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1703,6 +1814,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1718,6 +1830,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1733,6 +1846,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1748,6 +1862,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1763,6 +1878,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1778,6 +1894,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1793,6 +1910,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1808,6 +1926,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1823,6 +1942,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1838,6 +1958,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1853,6 +1974,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1868,6 +1990,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1883,6 +2006,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1898,6 +2022,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1913,6 +2038,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1928,6 +2054,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1943,6 +2070,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1958,6 +2086,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1973,6 +2102,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1988,6 +2118,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2003,6 +2134,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2018,6 +2150,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2033,6 +2166,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -2053,6 +2187,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2068,6 +2203,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2083,6 +2219,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2098,6 +2235,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2113,6 +2251,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2128,6 +2267,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2143,6 +2283,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2158,6 +2299,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2173,6 +2315,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2188,6 +2331,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2203,6 +2347,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2218,6 +2363,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2233,6 +2379,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2248,6 +2395,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2263,6 +2411,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2278,6 +2427,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2293,6 +2443,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2308,6 +2459,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2323,6 +2475,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2338,6 +2491,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2353,6 +2507,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2368,6 +2523,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2383,6 +2539,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2398,6 +2555,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2413,6 +2571,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2428,6 +2587,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2443,6 +2603,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2458,6 +2619,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2473,6 +2635,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2488,6 +2651,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2503,6 +2667,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2518,6 +2683,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2533,6 +2699,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2548,6 +2715,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2563,6 +2731,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -2583,6 +2752,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2598,6 +2768,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2613,6 +2784,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2628,6 +2800,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2643,6 +2816,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2658,6 +2832,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2673,6 +2848,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2688,6 +2864,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2703,6 +2880,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2718,6 +2896,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2733,6 +2912,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2748,6 +2928,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2763,6 +2944,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2778,6 +2960,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2793,6 +2976,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2808,6 +2992,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2823,6 +3008,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2838,6 +3024,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2853,6 +3040,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2868,6 +3056,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2883,6 +3072,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2898,6 +3088,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2913,6 +3104,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2928,6 +3120,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2943,6 +3136,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2958,6 +3152,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2973,6 +3168,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2988,6 +3184,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3003,6 +3200,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3018,6 +3216,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3033,6 +3232,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3048,6 +3248,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3063,6 +3264,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3078,6 +3280,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3093,6 +3296,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3108,6 +3312,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3123,6 +3328,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3138,6 +3344,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3153,6 +3360,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3168,6 +3376,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3183,6 +3392,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3198,6 +3408,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3213,6 +3424,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3228,6 +3440,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3243,6 +3456,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3258,6 +3472,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3273,6 +3488,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3288,6 +3504,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3303,6 +3520,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3318,6 +3536,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3333,6 +3552,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3348,6 +3568,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3363,6 +3584,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3383,6 +3605,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3398,6 +3621,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3413,6 +3637,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3428,6 +3653,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3443,6 +3669,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3458,6 +3685,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3483,6 +3711,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3498,6 +3727,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3518,6 +3748,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3533,6 +3764,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3548,6 +3780,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3563,6 +3796,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3583,6 +3817,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3598,6 +3833,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3613,6 +3849,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3628,6 +3865,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3643,6 +3881,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3658,6 +3897,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3673,6 +3913,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3688,6 +3929,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3703,6 +3945,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3718,6 +3961,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3733,6 +3977,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3748,6 +3993,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3763,6 +4009,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3778,6 +4025,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3793,6 +4041,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3808,6 +4057,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3823,6 +4073,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3838,6 +4089,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3853,6 +4105,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3868,6 +4121,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -3883,6 +4137,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3898,6 +4153,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3913,6 +4169,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3928,6 +4185,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3943,6 +4201,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3958,6 +4217,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3973,6 +4233,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3988,6 +4249,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4003,6 +4265,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4018,6 +4281,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4033,6 +4297,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4048,6 +4313,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4063,6 +4329,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4078,6 +4345,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4093,6 +4361,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4108,6 +4377,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4123,6 +4393,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4138,6 +4409,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4153,6 +4425,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4168,6 +4441,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4183,6 +4457,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4198,6 +4473,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4213,6 +4489,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4228,6 +4505,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4243,6 +4521,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4258,6 +4537,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4273,6 +4553,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -4293,6 +4574,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -4313,6 +4595,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4328,6 +4611,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4343,6 +4627,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4358,6 +4643,7 @@
       "reached": "verify_mapping",
       "stoppedAt": "room",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -4373,6 +4659,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4388,6 +4675,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4403,6 +4691,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4418,6 +4707,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4433,6 +4723,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4448,6 +4739,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4463,6 +4755,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4478,6 +4771,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4493,6 +4787,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4508,6 +4803,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4523,6 +4819,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4538,6 +4835,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4553,6 +4851,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4568,6 +4867,7 @@
       "reached": "import",
       "stoppedAt": "calibrate",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4583,6 +4883,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4598,6 +4899,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4613,6 +4915,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4628,6 +4931,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4643,6 +4947,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4658,6 +4963,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4673,6 +4979,7 @@
       "reached": "import",
       "stoppedAt": "import",
       "confirmedBy": null,
+      "stopConfirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",

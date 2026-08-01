@@ -4,9 +4,17 @@ import { fileURLToPath } from 'node:url';
 
 import { readFileSync } from 'node:fs';
 
-import { parseConfirmations } from '../packages/layout-knowledge/src/verification';
+import {
+  parseConfirmations,
+  parseCorpusValidation,
+} from '../packages/layout-knowledge/src/verification';
 
-import { buildLedger, staleConfirmations, type LedgerRow } from './lib/corpusLedger';
+import {
+  buildLedger,
+  duplicateConfirmations,
+  staleConfirmations,
+  type LedgerRow,
+} from './lib/corpusLedger';
 import { VALIDATION_OBSERVER, validateDrawing } from './lib/validateDrawing';
 
 /**
@@ -123,17 +131,25 @@ const ledger = buildLedger(rows, confirmations, {
   observer: VALIDATION_OBSERVER,
 });
 const stale = staleConfirmations(rows, confirmations);
+const duplicates = duplicateConfirmations(rows, confirmations);
 
 mkdirSync(join(REPO, 'knowledge', 'validation'), { recursive: true });
-writeFileSync(
-  join(REPO, 'knowledge', 'validation', 'corpus.json'),
-  `${JSON.stringify(ledger, null, 2)}\n`,
-);
+const ledgerPath = join(REPO, 'knowledge', 'validation', 'corpus.json');
+writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
+/*
+ * Parse the **bytes**, not the object `buildLedger` already validated in memory. One JSON round
+ * trip apart, and the round trip is the point: it is where a value that does not survive
+ * serialisation — an `undefined`, a `NaN`, a key order the loader depends on — would show itself.
+ * A run cannot commit a ledger the loader would reject.
+ */
+parseCorpusValidation(JSON.parse(readFileSync(ledgerPath, 'utf8')) as unknown, 'corpus.json');
 
 console.log(`validation programme over ${ledger.totals.drawings} drawing-pages\n`);
 console.log(`  human-confirmed complete       ${String(ledger.totals.completed).padStart(4)}`);
 console.log(`  ran every batch stage          ${String(ledger.totals.batchComplete).padStart(4)}`);
 console.log(`  stopped                        ${String(ledger.totals.stopped).padStart(4)}`);
+// Owner decision D12: its own line, never added to either count above.
+console.log(`  of those, stop confirmed       ${String(ledger.totals.stopsConfirmed).padStart(4)}`);
 console.log('\n  stopped at:');
 for (const entry of ledger.totals.byStage) {
   console.log(`    ${entry.key.padEnd(16)} ${String(entry.count).padStart(4)}`);
@@ -152,6 +168,17 @@ if (stale.length > 0) {
   console.log('\n  confirmations that no longer match any run (retained, not counted):');
   for (const entry of stale) {
     console.log(`    ${entry.drawingId} p${entry.page} — signed by ${entry.name} on ${entry.at}`);
+  }
+}
+
+if (duplicates.length > 0) {
+  /*
+   * Owner decision D11: recorded, but another signature already stands on that row. Reported in a
+   * different sentence from a stale one because the two ask different things of the signer.
+   */
+  console.log('\n  confirmations recorded but not applied (another already stands on the row):');
+  for (const entry of duplicates) {
+    console.log(`    ${entry.drawingId} p${entry.page} — ${entry.name} on ${entry.at}`);
   }
 }
 

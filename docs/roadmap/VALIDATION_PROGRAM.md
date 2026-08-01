@@ -110,7 +110,18 @@ identity changing, which is precisely where a signature bound to the hash alone 
 alive. A confirmation whose subject has moved is **kept**, never deleted, and reported by the run: a
 person's act is evidence, it has simply stopped asserting anything.
 
-The file ships empty. No run has been confirmed.
+The file ships empty, and **for two reasons rather than one**: no completed run exists to confirm —
+all 306 pages stopped — and no stop has been confirmed either. The first sentence of that is
+structural, not neglect, and it is why a stop is confirmable at all (owner decision D12): confirming
+*"this sheet genuinely carries no dimension set a scale can be established from"* is a different act
+from confirming a completed run, counted on its own as `totals.stopsConfirmed` and never summed with
+`completed` or `batchComplete`. A correctly diagnosed failure to read a drawing is not a step towards
+reading it.
+
+A row takes one confirmation — the earliest by (`at`, `name`), so appending to the file does not
+change the ledger's bytes — and any further signature on the same row is **reported as a duplicate**,
+in a different sentence from a stale one, because the two ask different things of whoever signed
+(owner decision D11). Neither is ever deleted.
 
 By classification — a run can raise more than one:
 

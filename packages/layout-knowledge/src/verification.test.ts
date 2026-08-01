@@ -5,14 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { parseDataset } from './load';
-import { buildLedger, staleConfirmations, type LedgerRow } from '../../../scripts/lib/corpusLedger';
 import {
   DISCREPANCY_CLASSES,
-  parseConfirmations,
   parseCorpusValidation,
   parseDrawingVerification,
   primaryDimensionIsSound,
-  type Confirmation,
   type CorpusRow,
   type DrawingVerification,
 } from './verification';
@@ -328,13 +325,41 @@ describe('the corpus validation ledger', () => {
      * in a ledger from one that had nothing to report. The converse matters as much: a run that
      * completed the whole programme cannot also claim to have stopped somewhere.
      */
-    for (const row of ledger.drawings) {
-      if (row.stoppedAt === null) continue;
-      expect(row.discrepancies.length, `${row.drawingId} p${row.page} stopped silently`).toBeGreaterThan(0);
+    const stopped = ledger.drawings.filter((entry) => entry.stoppedAt !== null);
+    const ranToEnd = ledger.drawings.filter((entry) => entry.stoppedAt === null);
+
+    /*
+     * The sizes first — the rule this file adopted and then did not obey.
+     *
+     * Review measured it: mutating `toBe('report')` below to `toBe('NEVER')` left the whole suite
+     * green, because `ranToEnd` is empty. The test's title claims both halves and only one of them
+     * was running. `isomorphism.test.ts` has done this correctly all along and is the pattern.
+     */
+    expect(stopped.length).toBe(306);
+    expect(ranToEnd.length).toBe(0);
+
+    for (const row of stopped) {
+      expect(
+        row.discrepancies.length,
+        `${row.drawingId} p${row.page} stopped silently`,
+      ).toBeGreaterThan(0);
     }
-    for (const row of ledger.drawings.filter((entry) => entry.stoppedAt === null)) {
-      expect(row.reached, row.drawingId).toBe('report');
-    }
+    /*
+     * The second half is **not** a loop over `ranToEnd`, which is empty. It was, and mutating the
+     * assertion inside it left the suite green; declaring the emptiness above made that visible
+     * without making the property hold anywhere. So it is now a rejection test against the schema,
+     * where every ledger has to satisfy it whether or not this corpus contains an example.
+     */
+    expect(ranToEnd).toEqual([]);
+    const impossible = {
+      ...ledger,
+      totals: { ...ledger.totals, batchComplete: 1, stopped: ledger.totals.stopped - 1 },
+      drawings: [
+        { ...ledger.drawings[0]!, stoppedAt: null, reached: 'calibrate' },
+        ...ledger.drawings.slice(1),
+      ],
+    };
+    expect(() => parseCorpusValidation(impossible, 'impossible.json')).toThrow(/reached/);
   });
 
   it('its totals are the rows counted, not a claim beside them', () => {
@@ -467,7 +492,13 @@ describe('the corpus validation ledger', () => {
       JSON.parse(readFileSync(join(REPO, 'knowledge', 'validation', 'corpus.json'), 'utf8')),
       'corpus.json',
     );
-    const ran: CorpusRow = { ...base.drawings[0]!, stoppedAt: null, confirmedBy: null };
+    // `reached: 'report'` because a row that stopped nowhere reached the end — the schema says so.
+    const ran: CorpusRow = {
+      ...base.drawings[0]!,
+      reached: 'report',
+      stoppedAt: null,
+      confirmedBy: null,
+    };
 
     const inflated = {
       ...base,
@@ -499,7 +530,13 @@ describe('the corpus validation ledger', () => {
      * presented "two refine() rules" as the enforcement. One of the two was doing the work.
      */
     const base = shippedLedger();
-    const ran: CorpusRow = { ...base.drawings[0]!, stoppedAt: null, confirmedBy: null };
+    // `reached: 'report'` because a row that stopped nowhere reached the end — the schema says so.
+    const ran: CorpusRow = {
+      ...base.drawings[0]!,
+      reached: 'report',
+      stoppedAt: null,
+      confirmedBy: null,
+    };
     const wrong = {
       ...base,
       totals: { ...base.totals, batchComplete: 99, stopped: base.totals.stopped - 1 },
@@ -514,6 +551,35 @@ describe('the corpus validation ledger', () => {
         { ...wrong, totals: { ...wrong.totals, batchComplete: 1 } },
         'right.json',
       ),
+    ).not.toThrow();
+  });
+
+  it('rejects a ledger whose stopsConfirmed does not count its own rows', () => {
+    /*
+     * Owner decision D12's count, and it escaped the first mutation round: disabling this refine
+     * left all 54 tests in the two files green, because the shipped ledger has `stopsConfirmed: 0`
+     * and `buildLedger` computes it consistently, so nothing discriminated. The same shape as the
+     * `completed` and `batchComplete` guards beside it, and for the same reason.
+     */
+    const base = shippedLedger();
+    const stopped = base.drawings.find((row) => row.stoppedAt !== null)!;
+    const signed = {
+      ...base,
+      totals: { ...base.totals, stopsConfirmed: 5 },
+      drawings: [
+        {
+          ...stopped,
+          stopConfirmedBy: { name: 'TS engineer', at: '2026-08-01T00:00:00.000Z', basis: 'checked' },
+        },
+        ...base.drawings.filter((row) => row !== stopped),
+      ],
+    };
+
+    expect(() => parseCorpusValidation(signed, 'inflated.json')).toThrow(/stopsConfirmed/);
+
+    // The same ledger with the count right is accepted, so it is the number being rejected.
+    expect(() =>
+      parseCorpusValidation({ ...signed, totals: { ...signed.totals, stopsConfirmed: 1 } }, 'ok.json'),
     ).not.toThrow();
   });
 
@@ -537,123 +603,6 @@ describe('the corpus validation ledger', () => {
     };
 
     expect(() => parseCorpusValidation(signed, 'signed.json')).toThrow(/stoppedAt/);
-  });
-});
-
-/**
- * Owner decisions **D9** and **D10** — where a signature lives, and what it is bound to.
- *
- * D7 gave a row a `confirmedBy` field and nothing ever wrote a non-null one: the builder hardcoded
- * `null`, overwrote the ledger, and re-read it only afterwards, so a signature would have been
- * destroyed by the next `pnpm validate:corpus` — while the comment beside it claimed the opposite.
- * `totals.completed` was structurally pinned at 0 and D7's distinction was unobservable.
- *
- * These exercise `buildLedger`, the function `scripts/validate-corpus.ts` now calls, rather than a
- * copy of its arithmetic. The distinction is not academic: the test these replace asserted its own
- * local re-implementation of the completion rule, and **neither mutation of the production refines
- * touched it**. It was asserting that `Array.filter` works.
- */
-describe('D9/D10 — a confirmation survives a re-run, and binds to the run it was given for', () => {
-  const OBSERVER = shippedLedger().observer;
-  const META = { datasetId: 'test', validatedAt: '2026-08-01T00:00:00.000Z', observer: OBSERVER };
-
-  const ranToEnd: LedgerRow = {
-    drawingId: 'Hospital_001/dialysis.pdf',
-    page: 0,
-    sha256: 'a'.repeat(64),
-    reached: 'report',
-    stoppedAt: null,
-    discrepancies: [],
-  };
-
-  const signature = {
-    name: 'TS engineer',
-    at: '2026-08-01T00:00:00.000Z',
-    basis: 'record reviewed against the drawing',
-  };
-  const confirmation: Confirmation = { ...ranToEnd, ...signature };
-
-  it('merges a confirmation the batch itself never writes', () => {
-    // The blocking finding, inverted into an assertion. `buildLedger` is handed rows that carry no
-    // signature — as every batch row does — and the ledger comes back with one.
-    const ledger = buildLedger([ranToEnd], [confirmation], META);
-
-    expect(ledger.drawings[0]?.confirmedBy).toEqual(signature);
-    expect(ledger.totals.completed).toBe(1);
-    expect(ledger.totals.batchComplete).toBe(1);
-  });
-
-  it('a re-run over the same outcome keeps it — the point of a separate file', () => {
-    /*
-     * Owner decision D9. The rows are rebuilt from the dataset on every run and carry no signature;
-     * `confirmations.json` is not rebuilt. So running twice over the same corpus must produce the
-     * same confirmation, which is what the old builder could not do.
-     */
-    const first = buildLedger([ranToEnd], [confirmation], META);
-    const second = buildLedger([ranToEnd], [confirmation], META);
-
-    expect(second.drawings[0]?.confirmedBy).toEqual(first.drawings[0]?.confirmedBy);
-    expect(second.totals.completed).toBe(1);
-  });
-
-  it('does not count a confirmation whose run has changed', () => {
-    /*
-     * Owner decision D10: the binding includes the **outcome**, not just the drawing. Each case
-     * below changes one bound field and nothing else.
-     *
-     * The corpus has already done this to itself — `byStage.room` moved 8 → 15 under review with no
-     * row's identity changing — which is exactly where a signature bound to the hash alone would
-     * have stayed alive over a run nobody confirmed.
-     */
-    const cases: { readonly what: string; readonly row: LedgerRow }[] = [
-      { what: 'the drawing bytes', row: { ...ranToEnd, sha256: 'b'.repeat(64) } },
-      { what: 'the page', row: { ...ranToEnd, page: 1 } },
-      { what: 'the stage reached', row: { ...ranToEnd, reached: 'plan' } },
-      {
-        what: 'a discrepancy the run now raises',
-        row: {
-          ...ranToEnd,
-          discrepancies: [{ code: 'VD-1', classification: 'drawing_error', subject: '3000' }],
-        },
-      },
-    ];
-
-    expect(cases.length).toBe(4);
-    for (const { what, row } of cases) {
-      const ledger = buildLedger([row], [confirmation], META);
-      expect(ledger.drawings[0]?.confirmedBy, `changed: ${what}`).toBeNull();
-      expect(ledger.totals.completed, `changed: ${what}`).toBe(0);
-      // Still a batch completion — what it lost is the signature, not the run.
-      expect(ledger.totals.batchComplete, `changed: ${what}`).toBe(1);
-    }
-  });
-
-  it('reports a stale confirmation rather than deleting it', () => {
-    /*
-     * Owner decision D10: *"stale confirmations are retained — a person's act is evidence and is
-     * not deleted, it just stops asserting anything."* So the builder does not silently drop it; it
-     * comes back from `staleConfirmations` to be reported.
-     */
-    const moved: LedgerRow = { ...ranToEnd, reached: 'plan', stoppedAt: 'room' };
-
-    const stale = staleConfirmations([moved], [confirmation]);
-    expect(stale).toEqual([confirmation]);
-
-    // And a confirmation that does match is not reported stale.
-    expect(staleConfirmations([ranToEnd], [confirmation])).toEqual([]);
-  });
-
-  it('the shipped confirmations file parses, and is empty', () => {
-    /*
-     * Empty is the honest state: no run has been confirmed. Asserted rather than assumed, so the
-     * day somebody signs a row, the figures in VALIDATION_PROGRAM.md have to be revisited.
-     */
-    const file = parseConfirmations(
-      JSON.parse(readFileSync(join(REPO, 'knowledge', 'validation', 'confirmations.json'), 'utf8')),
-      'confirmations.json',
-    );
-
-    expect(file.confirmations).toEqual([]);
   });
 });
 
