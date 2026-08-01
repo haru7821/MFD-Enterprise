@@ -652,6 +652,26 @@ describe('maintenance access counts obstructions and the room edge, not only equ
     expect(measurementOf(bothBlocked, 'maintenance_access')?.measured).toBe(0);
   });
 
+  it('treats a face flush with the wall as inside, matching VD-5', () => {
+    /*
+     * > Owner decision, VD-5: *"A footprint touching the room boundary is considered contained...
+     * > treat boundary contact as topological contact, not as a crossing."*
+     *
+     * The machine above (1,500, 1,200) puts its rear face's near edge exactly at y = 0 — the
+     * room's own wall. The front face is blocked by an obstruction here, so the flush rear face is
+     * the only one left to decide the outcome — reachable only if flush counts as inside, which is
+     * the property under test rather than a side effect of a face that was clear anyway.
+     */
+    const flush = score({
+      placements: machine,
+      occupants: machine,
+      room,
+      boundaries,
+      obstructions: [fixtureColumn({ x: 1_200, y: 1_800 }, 400).vertices],
+    });
+    expect(measurementOf(flush, 'maintenance_access')?.measured).toBe(1);
+  });
+
   it('counts a face standing outside the room as unreachable', () => {
     // The same machine, 700 mm from the room's near wall: the rear face (800 mm deep) now runs
     // past y = 0, out of the room, and only the front face remains reachable — until the room
@@ -680,16 +700,28 @@ describe('walking distance routes around equipment; the service runs do not', ()
    * > the three service runs do not — they are carried in a ceiling or floor void.
    */
   it('routes a walk around a machine standing in the way; a pipe run ignores it', () => {
-    // Two machines in a line between the staff base and the target: the direct route is blocked for
-    // a person, not for a service run.
+    /*
+     * `ro_supply` and `staff_base` are **co-located**, both routing to the same target along the
+     * same straight line the blocker sits on. That is deliberate: the first version of this test
+     * put the RO origin somewhere the blocker was nowhere near either L-shaped route, so its
+     * "unmoved" assertion held no matter what the criterion did with occupants — it would have
+     * passed just as well against a service run that also dodged equipment. Verified directly:
+     * routing this same from/to/blocker through `routedDistance` gives 5,500 mm clear and
+     * 6,250 mm if the blocker is treated as an obstacle, so a service run that leaked occupant
+     * avoidance would move this number and this test would catch it.
+     */
+    const points: ReferencePointSummary[] = [
+      { id: 'ro', kind: 'ro_supply', position: { x: 4_000, y: 6_000 } },
+      { id: 'staff', kind: 'staff_base', position: { x: 4_000, y: 6_000 } },
+    ];
     const inTheWay = placement('blocker', 4_000, 3_000);
     const target = placement('target', 4_000, 500);
 
-    const clear = score({ placements: [target], occupants: [target], referencePoints: ALL_POINTS });
+    const clear = score({ placements: [target], occupants: [target], referencePoints: points });
     const blocked = score({
       placements: [target],
       occupants: [target, inTheWay],
-      referencePoints: ALL_POINTS,
+      referencePoints: points,
     });
 
     const walking = (b: ReturnType<typeof score>) =>
@@ -697,11 +729,11 @@ describe('walking distance routes around equipment; the service runs do not', ()
     const ro = (b: ReturnType<typeof score>) =>
       b.criteria.find((entry) => entry.criterion === 'ro_piping_length')?.measured;
 
-    expect(walking(blocked)).toBeGreaterThan(walking(clear) ?? 0);
-    // The pipe run is measured from a different point (ro_supply), but the property under test is
-    // that it is unmoved by the same obstacle that moved the walk — a straight Manhattan distance
-    // either sees the blocker or it does not, and it must not.
+    expect(walking(clear)).toBe(5_500);
+    expect(walking(blocked)).toBe(6_250);
+    // Same origin, same target, same blocker — and the pipe run does not move.
     expect(ro(blocked)).toBe(ro(clear));
+    expect(ro(clear)).toBe(5_500);
   });
 });
 

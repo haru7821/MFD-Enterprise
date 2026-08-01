@@ -591,7 +591,14 @@ function overlaps(a: Bounds, b: Bounds): boolean {
   return !(a.maxX <= b.minX || a.minX >= b.maxX || a.maxY <= b.minY || a.minY >= b.maxY);
 }
 
-/** Is `inner` entirely inside `outer`? Touching an edge counts as inside. */
+/**
+ * Is `inner` entirely inside `outer`? Touching an edge counts as inside.
+ *
+ * The same tie-break as `polygonContainsPolygon`'s VD-5 decision: *"A footprint touching the room
+ * boundary is considered contained... treat boundary contact as topological contact, not as a
+ * crossing."* A service face flush with the wall is not a face standing outside the room; the
+ * flip side is that a face crossing the wall by any amount is.
+ */
 function fullyWithin(outer: Bounds, inner: Bounds): boolean {
   return (
     inner.minX >= outer.minX &&
