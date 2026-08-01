@@ -405,7 +405,7 @@ test('refuses to rank at all when too little of the model could be measured', as
    * It is now a different sentence, because it is a different claim. Three criteria are
    * unmeasurable on every project until the AK98 manual and observed drawings arrive —
    * `compliance_margin` (0.40), `installation_feasibility` (0.20), `maintenance_access` (0.15) —
-   * so a drawing with **no reference points** is measured over 0.20 of the model, below the
+   * so a drawing with **no reference points** is measured over 0.05 of the model, far below the
    * shipped `minimumCoverage` of 0.25. The optimiser no longer claims the layout is best; it says
    * it cannot rank.
    */

@@ -12,6 +12,7 @@ import { evaluate } from './evaluate';
 import {
   EVALUATION_RESULT_VERSION,
   LANGUAGES,
+  RESULT_CATEGORIES,
   REASON_CODE_LIST,
   RESULT_LEVELS,
   renderReason,
@@ -77,8 +78,8 @@ function report() {
 }
 
 describe('the frozen evaluation contract', () => {
-  it('is at version 2', () => {
-    expect(EVALUATION_RESULT_VERSION).toBe(2);
+  it('is at version 3', () => {
+    expect(EVALUATION_RESULT_VERSION).toBe(3);
   });
 
   it('reports exactly the agreed keys', () => {
@@ -98,7 +99,8 @@ describe('the frozen evaluation contract', () => {
   it('holds every field to its agreed type', () => {
     for (const result of report().results) {
       expect(typeof result.ruleId).toBe('string');
-      expect(['clearance', 'collision', 'equipment_data']).toContain(result.category);
+      // Locked to the exported domain, not to a copy of it — see RESULT_CATEGORIES.
+      expect(RESULT_CATEGORIES as readonly string[]).toContain(result.category);
       expect(RESULT_LEVELS).toContain(result.level);
       expect(Array.isArray(result.placementIds)).toBe(true);
       expect(result.measured === null || typeof result.measured === 'number').toBe(true);

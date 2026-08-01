@@ -37,8 +37,23 @@ import type { ThresholdOrigin } from './threshold';
  * bilingual report decision cannot be satisfied any other way: a translated sentence
  * drifts behind its original, and substituting words into English word order does not
  * produce Korean. See ./messages.ts.
+ * Version 3 — the audit round. `category`'s domain gained `equipment_data`, for a finding that is
+ * not about a rule at all: owner decision D5's *"identify the unevaluable placement"*. Widening a
+ * published enum is a shape change even though no field was added — a consumer switching on
+ * `category` meets a value its build has never heard of, which is exactly what a version exists to
+ * warn it about. Caught by review: the first attempt widened the domain and *relaxed*
+ * `result.shape.test.ts` to accept it, which is the freeze being unlocked rather than honoured.
  */
-export const EVALUATION_RESULT_VERSION = 2;
+export const EVALUATION_RESULT_VERSION = 3;
+
+/**
+ * The domain of {@link EvaluationResult.category}, as data.
+ *
+ * Exported so `result.shape.test.ts` can lock the published enum against *this* rather than against
+ * a hand-typed list beside it. A test carrying its own copy of the domain is one that can be edited
+ * into agreement with a change instead of failing on it.
+ */
+export const RESULT_CATEGORIES = ['clearance', 'collision', 'equipment_data'] as const;
 
 /**
  * What a finding is *about*.

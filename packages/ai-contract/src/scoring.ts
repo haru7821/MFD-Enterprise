@@ -134,12 +134,21 @@ export interface ScoringModel {
    * makes it the owner's to tune — the same reason the weights live in `standards/scoring/` rather
    * than in the solver, and the same rule the project applies to every engineering threshold.
    *
-   * Measured on the shipped data before this was chosen. Three criteria are unmeasurable on every
-   * project today — `compliance_margin` (0.40, `SC-904`), `installation_feasibility` (0.20,
-   * `SC-905`) and `maintenance_access` (0.15) — which is **0.75 of the model**. So an engineer who
-   * places all five reference points reaches 0.25, and one who places none reaches 0.20. Any floor
-   * above 0.25 suspends ranking entirely until the AK98 manual arrives and drawings are observed:
-   * a decision about the feature, not a detail of the arithmetic, which is why it is configuration.
+   * Measured against the **shipped** catalogue over all 32 reference-point subsets. Three criteria
+   * are unmeasurable on every project today — `compliance_margin` (0.40, `SC-904`),
+   * `installation_feasibility` (0.20, `SC-905`) and `maintenance_access` (0.15, AK98's service
+   * clearances are null) — which is **0.75 of the model**. Reachable coverages are exactly
+   * {0.05, 0.10, 0.15, 0.20, 0.25}: **0.25 is the ceiling** and 0.05 is an unreferenced drawing.
+   *
+   * The figure to distrust here is the one that was wrong. An earlier version of this comment said
+   * an unreferenced drawing scored 0.20; that was measured against the *fixture* catalogue, whose
+   * machine has service clearances and so keeps `maintenance_access` measurable. Two worlds mixed
+   * into one justification — the shape of error this project keeps finding, and the reason the
+   * note in `standards/scoring/dialysis.json` now names which catalogue it was measured against.
+   *
+   * Any floor above 0.25 suspends ranking entirely until the AK98 manual arrives and drawings are
+   * observed: a decision about the feature, not a detail of the arithmetic, which is why it is
+   * configuration rather than a constant.
    */
   readonly minimumCoverage: number;
 }
@@ -195,8 +204,8 @@ export interface ScoreBreakdown {
    * Two things changed together, and both matter. The divisor is the model's total weight, so an
    * unmeasured criterion contributes nothing and a total can only be earned — it used to be the
    * *available* weight, which meant deleting evidence raised the score, up to a perfect 1.0000 at
-   * coverage 0.20. And below `MINIMUM_COVERAGE` there is no total at all, because a number that
-   * rests mostly on silence invites a comparison it cannot support.
+   * coverage 0.20 in the audit's fixture. And below `minimumCoverage` there is no total at all,
+   * because a number resting mostly on silence invites a comparison it cannot support.
    *
    * Null is not zero. Zero is a score; null is the engine saying it will not offer one. Every
    * consumer has to say so rather than print a dash — see `LayoutPanel`.

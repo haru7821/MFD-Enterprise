@@ -213,7 +213,7 @@ export const scoreBreakdownSchema: z.ZodType<ScoreBreakdown> = z
   .refine(
     (breakdown) => {
       /*
-       * Owner decision D1 suppresses the total below `MINIMUM_COVERAGE`, so there is nothing to
+       * Owner decision D1 suppresses the total below `minimumCoverage`, so there is nothing to
        * check against the sum — and nothing to check it *with*: the contributions are still there,
        * still correct, and deliberately do not add up to a number anybody is being shown.
        */

@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type { ReferencePointSummary } from '@mfd/ai-contract';
 import { SCORING_CRITERIA, scoreBreakdownSchema } from '@mfd/ai-contract';
 import { dialysisScoringModel } from '@mfd/ai-contract/scoring';
+import { catalog as shippedCatalog } from '@mfd/object-library/catalog';
+import { dialysisRuleSet } from '@mfd/rule-engine/rules';
+import { dialysisKnowledge } from '@mfd/layout-knowledge/base';
 import type { Vec2 } from '@mfd/cad-engine';
 import { createBoundary } from '@mfd/document-model';
 import type { Placement } from '@mfd/document-model';
@@ -391,7 +394,7 @@ describe('the breakdown', () => {
     const breakdown = score();
     const sum = breakdown.criteria.reduce((total, entry) => total + entry.contribution, 0);
     /*
-     * Owner decision D1 suppresses the total below `MINIMUM_COVERAGE`, so this fixture has to be
+     * Owner decision D1 suppresses the total below `minimumCoverage`, so this fixture has to be
      * one that clears the floor for the sum to have anything to equal. Asserted rather than
      * assumed: if the fixture ever drops below it, this fails here rather than silently passing a
      * `toBeCloseTo(null)`.
@@ -1639,5 +1642,100 @@ describe('D1 — evidence cannot be renormalised away', () => {
   it('offers a total once the floor is met', () => {
     const offered = score({ scoring: { ...dialysisScoringModel, minimumCoverage: 0 } });
     expect(offered.total).not.toBeNull();
+  });
+});
+
+/**
+ * The coverage floor, pinned against the **shipped** model *and* the **shipped** catalogue.
+ *
+ * Every other test in this file uses `fixtureScoringModel`, which sets `minimumCoverage: 0` so
+ * partial fixtures still produce a total. That leaves the shipped value guarded by nothing: the
+ * review measured that moving it from 0.25 to 0.20 left all 1,184 tests green.
+ *
+ * It is also the file where a wrong number was written down. The first justification for 0.25 said
+ * an unreferenced drawing scored 0.20 — measured against the *fixture* catalogue, whose machine has
+ * service clearances and so keeps `maintenance_access` measurable. AK98's are null
+ * (`vantive_ak98.json`), so the real figure is 0.05. Two worlds mixed into one justification, and
+ * the standards file carried it. These assertions exist so the numbers in that file are checked by
+ * the build rather than by whoever last read it.
+ */
+describe('the shipped coverage floor', () => {
+  const ak98 = shippedCatalog.get('vantive_ak98');
+
+  function shippedScore(referencePoints: readonly ReferencePointSummary[]) {
+    if (!ak98) throw new Error('vantive_ak98 is not in the shipped catalogue');
+    const placements = [1, 2, 3].map((n) => ({
+      id: `s${n}`,
+      equipmentObjectId: 'vantive_ak98',
+      equipmentObjectVersion: ak98.version,
+      label: `s${n}`,
+      transform: { position: { x: 1_500 * n, y: 2_000 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    }));
+
+    return scoreLayout({
+      placements,
+      occupants: placements,
+      catalog: shippedCatalog,
+      ruleSet: dialysisRuleSet,
+      boundaries: [],
+      room: [
+        { x: 0, y: 0 },
+        { x: 10_000, y: 0 },
+        { x: 10_000, y: 8_000 },
+        { x: 0, y: 8_000 },
+      ],
+      obstructions: [],
+      referencePoints,
+      object: ak98,
+      planStatus: 'calibrated',
+      pitchPadding: 900,
+      knowledge: dialysisKnowledge,
+      scoring: dialysisScoringModel,
+      stationTarget: 3,
+    });
+  }
+
+  it('reaches its ceiling of 0.25 with every reference point placed, and offers a total there', () => {
+    const breakdown = shippedScore(ALL_POINTS);
+    expect(breakdown.coverage).toBeCloseTo(0.25, 9);
+    expect(breakdown.total).not.toBeNull();
+  });
+
+  it('scores an unreferenced drawing at 0.05, not 0.20, and offers no total', () => {
+    // The corrected figure. 0.20 was the fixture catalogue's answer, not this one.
+    const breakdown = shippedScore([]);
+    expect(breakdown.coverage).toBeCloseTo(0.05, 9);
+    expect(breakdown.total).toBeNull();
+  });
+
+  it('suppresses the total when any reference point that matters is missing', () => {
+    /*
+     * Only three kinds move coverage — `ro_supply` 0.10, `electrical_panel` 0.05, `staff_base`
+     * 0.05 — because `drain_routing` carries weight 0 and `installation_feasibility` reports
+     * `SC-905` whether `access_entry` is placed or not. Dropping any one of the three therefore
+     * falls below the floor, which is the whole behaviour the value 0.25 buys.
+     */
+    for (const kind of ['ro_supply', 'electrical_panel', 'staff_base'] as const) {
+      const breakdown = shippedScore(ALL_POINTS.filter((point) => point.kind !== kind));
+      expect(breakdown.coverage, kind).toBeLessThan(0.25);
+      expect(breakdown.total, kind).toBeNull();
+    }
+  });
+
+  it('fails if the shipped floor moves in either direction', () => {
+    /*
+     * The guard the review found missing. Written against the model as loaded rather than against a
+     * literal repeated from it, so lowering the floor to admit a less-measured layout — or raising
+     * it and suspending ranking — has to be a deliberate edit that comes here and says so.
+     */
+    expect(dialysisScoringModel.minimumCoverage).toBeCloseTo(0.25, 9);
+
+    const ceiling = shippedScore(ALL_POINTS);
+    const oneMissing = shippedScore(ALL_POINTS.filter((point) => point.kind !== 'electrical_panel'));
+
+    // The floor sits in the gap between "everything obtainable" and "one thing short of it".
+    expect(dialysisScoringModel.minimumCoverage).toBeLessThanOrEqual(ceiling.coverage);
+    expect(dialysisScoringModel.minimumCoverage).toBeGreaterThan(oneMissing.coverage);
   });
 });

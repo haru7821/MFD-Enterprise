@@ -100,7 +100,11 @@ describe('buildReport', () => {
     // silently, and the point of this line is that changing what a report says about its own
     // provenance has to be a deliberate edit somebody made.
     expect(provenance.documentVersion).toBe(5);
-    expect(provenance.evaluationResultVersion).toBe(2);
+    // 3 since owner decision D5 widened `EvaluationResult.category` with `equipment_data`, for a
+    // finding that is not about a rule: the placement whose catalogue record is missing. A literal
+    // for the same reason as the line above — a report that quietly followed the bump would tell a
+    // consumer nothing had changed about what its findings can say.
+    expect(provenance.evaluationResultVersion).toBe(3);
     expect(provenance.ruleSetId).toBe('fixture');
     expect(provenance.ruleSetVersion).toBe('0.0.1');
     expect(provenance.mfdVersion).toBe(FIXTURE_MFD_VERSION);
