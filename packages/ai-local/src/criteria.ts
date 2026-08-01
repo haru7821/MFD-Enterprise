@@ -149,11 +149,6 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
    */
   if (occupantBounds(input.occupants, input.catalog) === null) return unavailable('SC-906');
 
-  // Owner decision, ninth review round: distinguish "no face was blocked by anything
-  // unmeasurable" from "every face that could have contributed a ratio was" — the latter is
-  // `SC-907`, not the generic "no threshold to compare against" of `SC-904`.
-  let blockedByNonConvexObstruction = false;
-
   for (const result of report.results) {
     if (result.category !== 'clearance' || result.appliedValue === null) continue;
     if (result.appliedValue <= 0) continue;
@@ -167,17 +162,22 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
 
       const free = freeDistanceOnSide(placement, side, input, roomBounds);
       if (free === null) continue;
-      if (free === 'unavailable') {
-        blockedByNonConvexObstruction = true;
-        continue;
-      }
+      /*
+       * Owner decision, tenth review round: one blocked face voids the whole criterion, even
+       * when every other face measures cleanly. `SC-906` already answers a structurally
+       * identical question this way — an occupant with no catalogue entry refuses the whole
+       * criterion rather than measuring around the unknown — and the standing "Unknown must
+       * remain Unknown" instruction points at the same answer here. The alternative (report the
+       * minimum of whatever measured) was confirmed to make a non-convex obstruction cost
+       * nothing whenever any other governed face happened to be clear, which is the opposite
+       * failure from the one this whole fix exists to close.
+       */
+      if (free === 'unavailable') return unavailable('SC-907');
       ratios.push(free / result.appliedValue);
     }
   }
 
-  if (ratios.length === 0) {
-    return unavailable(blockedByNonConvexObstruction ? 'SC-907' : 'SC-904');
-  }
+  if (ratios.length === 0) return unavailable('SC-904');
   return measured(Math.min(...ratios));
 }
 
@@ -286,6 +286,16 @@ const PROBE_CEILING_MULTIPLE = 3;
  * `gapAlongNormal` already decided this obstruction is not in front of the face at all, and a
  * non-convex obstruction the function ignores costs nothing, matching what the paragraph above
  * claims.
+ *
+ * **The same review round also found the caller's original handling of a blocked face too
+ * forgiving**: dropping it from the ratio pool and reporting the minimum of whatever else
+ * measured made a non-convex obstruction cost *nothing* the moment any other governed face was
+ * clear — confirmed directly, a station 100 mm from a non-convex riser scored identically to one
+ * with no obstruction at all, so long as one other face was free. **Owner decision: any blocked
+ * face voids the whole criterion** (`measureComplianceMargin` returns `SC-907` the instant this
+ * function returns `'unavailable'`, rather than continuing to the next candidate), matching how
+ * `SC-906` already refuses the whole criterion for an occupant with no catalogue entry rather than
+ * measuring around the unknown.
  */
 
 function freeDistanceOnSide(

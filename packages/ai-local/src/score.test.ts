@@ -1273,6 +1273,68 @@ describe('equipment geometry rotates with its placement', () => {
     );
   });
 
+  it('voids compliance_margin entirely when only one of two governed faces is blocked — tenth review round, owner decision', () => {
+    /*
+     * The tenth review round's second finding: the first version of the fix dropped a blocked
+     * face from the ratio pool and reported the minimum of whatever else measured, which made a
+     * non-convex obstruction cost *nothing* whenever any other governed face happened to be
+     * clear — confirmed directly, a station scored identically with and without the obstruction
+     * so long as one other face was free. The owner's decision: any blocked face voids the whole
+     * criterion, matching `SC-906`'s "refuse rather than measure around the unknown".
+     *
+     * Two clearance rules on the same station: rear (threshold 800) and front (threshold 1,200).
+     * A small L-shape sits at y ∈ [-300, -100], x ∈ [0, 400] — entirely in front of the rear face
+     * (y = 0, outward -y) and entirely behind the front face's own plane (y = 800, outward +y), so
+     * it blocks the rear measurement alone; the front face has nothing in front of it at all.
+     */
+    const rearOnlyObstruction: Vec2[] = [
+      { x: 0, y: -300 },
+      { x: 400, y: -300 },
+      { x: 400, y: -200 },
+      { x: 200, y: -200 },
+      { x: 200, y: -100 },
+      { x: 0, y: -100 },
+    ];
+
+    const machine = fixtureMachine();
+    const placement: Placement = {
+      id: 'p',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'p',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ ruleId: 'fixture_rear_clearance', side: 'rear', threshold: 800 }),
+      fixtureClearanceRule({ ruleId: 'fixture_front_clearance', side: 'front', threshold: 1_200 }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+
+    const breakdown = scoreLayout({
+      placements: [placement],
+      occupants: [placement],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+      room: fixtureRoom(10_000, 10_000),
+      obstructions: [rearOnlyObstruction],
+      referencePoints: [],
+      object: machine,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(breakdown, 'compliance_margin')).toBeUndefined();
+    expect(
+      breakdown.unavailable.find((entry) => entry.criterion === 'compliance_margin')?.reasonCode,
+    ).toBe('SC-907');
+  });
+
   it.each([
     {
       side: 'rear' as const,

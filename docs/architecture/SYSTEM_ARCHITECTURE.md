@@ -408,20 +408,20 @@ still open:
    undone. The collinearity threshold was also changed from a raw millimetre-scale cross product to
    the scale-invariant sine of the angle between edges, so a long, nearly-straight run — a level
    outline can span tens of metres — cannot misread floating-point noise as a turn.
-3. **Blocking, open — owner decision required.** `measureComplianceMargin` drops a blocked face from
-   its ratio pool and reports the minimum of whatever else measured, the same as it already does for
+3. **Blocking, closed by owner decision.** The first version of the fix dropped a blocked face from
+   the ratio pool and reported the minimum of whatever else measured, the same as it already did for
    any other per-face reason a ratio could not be computed. When at least one other face on the
-   layout measures, this makes a non-convex obstruction **cost nothing at all**: a station 100 mm
-   from a non-convex riser against an 800 mm requirement, with any other governed face free, scores
+   layout measured, this made a non-convex obstruction **cost nothing at all**: a station 100 mm from
+   a non-convex riser against an 800 mm requirement, with any other governed face free, scored
    identically to one with no obstruction present — measured directly. That is the opposite failure
-   from the one this document warned about above ("costs the criterion entirely"): that claim is
-   true only when *every* candidate ratio is blocked this way, and false whenever even one other face
-   measures. `SC-906` — an occupant with no catalogue entry — already answers a structurally
-   identical question the other way: it refuses the whole criterion rather than measuring around the
-   unknown. Closing this either matches that precedent (report the whole criterion unavailable the
-   moment any face is blocked) or asks for a different, weaker signal (e.g. a partial-coverage marker
-   alongside a still-reported number); either is a product decision about what "unavailable" should
-   mean when partial data exists, not one this document settles. Not yet implemented.
+   from the one this whole fix exists to close, and it was presented to the owner as a three-way
+   choice: report the whole criterion unavailable the moment any face is blocked; report a number with
+   a new partial-coverage marker; or keep the pre-existing silent-minimum behaviour. **The owner chose
+   the first**, matching `SC-906` — an occupant with no catalogue entry — which already refuses the
+   whole criterion rather than measuring around the unknown. `measureComplianceMargin` now returns
+   `SC-907` the instant any face reports `'unavailable'`, rather than continuing to the next
+   candidate; a layout with eleven clear faces and one blocked by a non-convex obstruction reports the
+   criterion unavailable, not the minimum of the eleven.
 
 Both clamps stay regardless: they cost nothing, and neither guarantee is structural — a
 non-rectangular *equipment footprint* would make a clipped placement-crossing possible again without
@@ -431,8 +431,9 @@ genuine in-band crossing that still clamps, and `isConvexPolygon` itself (convex
 direction, a collinear-vertex rectangle, an L-shape, the staple riser, a pentagram, and a zero-width
 slit); `score.test.ts` and `evaluate.test.ts` each gained a directly-overlapping reproduction
 exercising the clamp itself, and `score.test.ts` gained permanent regressions for the staple-riser
-case (asserting `SC-907` where the defect used to report a clamped-to-zero `0`) and for the
-entirely-behind-the-face case (asserting no change from the no-obstruction baseline). All
+case (asserting `SC-907` where the defect used to report a clamped-to-zero `0`), the
+entirely-behind-the-face case (asserting no change from the no-obstruction baseline), and the mixed
+case (one blocked face, one clear, asserting `SC-907` rather than the clear face's ratio). All
 guard-broken and restored.
 
 **The Hospital_044 replay does not exercise either clamp, and the reason is not the absence of
