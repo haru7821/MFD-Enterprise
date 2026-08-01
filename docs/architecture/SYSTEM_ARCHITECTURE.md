@@ -367,14 +367,35 @@ wires it (the same `Boundary` fed to both `applyGates` and `scoreLayout`'s `obst
 band — with no way to tell the near arm's genuine 100 mm gap from the far arm's material, picked up
 only because it re-enters the band after wrapping around the machine's own side. `compliance_margin`
 reported 0 for a face with 100 mm of real headroom. **This is a genuine defect the clamp does not
-fix — it only keeps the wrong number non-negative** — and closing it is an owner decision (options
-and evidence in the commit that raised it), not one this document settles. Both clamps stay
-regardless of that decision: they cost nothing, and neither guarantee is structural — a
+fix — it only keeps the wrong number non-negative.**
+
+A ninth review round presented three options for closing it — measure unavailable against a
+non-convex obstruction, convex-decompose obstruction geometry before measuring, or reject non-convex
+obstruction geometry at the document layer — and the owner chose the first. `@mfd/rule-engine` now
+exports `isConvexPolygon` (`sat.ts`): every turn around the polygon's own perimeter must carry the
+same sign, orientation-agnostic and tolerant of collinear vertices. `freeDistanceOnSide`
+(`criteria.ts`) checks it against every obstruction before calling `gapAlongNormal`: an obstruction
+that fails the check *and* actually overlaps the face's own lateral band — the same test
+`gapAlongNormal` itself uses to decide relevance — makes that face's headroom unmeasurable rather
+than measured wrong, surfaced through a new reason code, `SC-907`, distinct from the pre-existing
+"no threshold to compare against" (`SC-904`) so a reader can tell the two apart. An obstruction that
+is non-convex but stands nowhere near the face in question does not cost anything: the lateral check
+is what keeps this from over-penalising a drawing whose only non-convex shape is on the far side of
+the room. This is a real, accepted reduction in what the criterion can measure — a real L, U or
+staple-shaped riser near a governed face costs the 40 %-weighted criterion entirely until convex
+decomposition (option two) is built — and is the honest alternative to a number that reads as
+measured and is not.
+
+Both clamps stay regardless: they cost nothing, and neither guarantee is structural — a
 non-rectangular *equipment footprint* would make a clipped placement-crossing possible again without
 an overlap, and nothing enforces that every future caller of either function arrives through a
-Gate-2-gated path. Regression coverage: `sat.test.ts` pins both the corrected (clipped) result and a
-genuine in-band crossing that still clamps; `score.test.ts` and `evaluate.test.ts` each gained a
-directly-overlapping reproduction exercising the clamp itself. All guard-broken and restored.
+Gate-2-gated path. Regression coverage: `sat.test.ts` pins both the corrected (clipped) result, a
+genuine in-band crossing that still clamps, and `isConvexPolygon` itself (convex shapes wound either
+direction, a collinear-vertex rectangle, an L-shape, and the staple riser below); `score.test.ts` and
+`evaluate.test.ts` each gained a directly-overlapping reproduction exercising the clamp itself, and
+`score.test.ts` gained a permanent regression for the staple-riser case — the same shape the eighth
+review round used to demonstrate the defect — now asserting `SC-907` rather than the old wrong,
+clamped-to-zero number. All guard-broken and restored.
 
 **The Hospital_044 replay does not exercise either clamp, and the reason is not the absence of
 straddling geometry in the drawing.** The corpus's sixty evaluation findings split as forty

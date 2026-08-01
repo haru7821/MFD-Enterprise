@@ -133,6 +133,43 @@ function clipHalfPlane(
 }
 
 /**
+ * Is a polygon convex?
+ *
+ * `gapAlongNormal` takes the single minimum projection across whatever survives its clip, on the
+ * assumption that the nearest point of the clipped band is the nearest *material* — true only when
+ * the polygon has no concavity to wrap a disconnected far piece into that same band. A staple- or
+ * L-shaped obstruction can present a near arm and a far arm both inside a face's lateral extent;
+ * `gapAlongNormal` cannot tell them apart, and reports whichever projects closer to the face
+ * regardless of which arm it actually belongs to. Callers that cannot tolerate that — see
+ * `@mfd/ai-local`'s `freeDistanceOnSide` — check this first and decline to measure otherwise.
+ *
+ * Orientation-agnostic: convexity is "every turn the same way", checked by the sign of the cross
+ * product at each vertex, independent of whether the polygon winds clockwise or counter-clockwise.
+ * Collinear vertices (a zero cross product) are skipped rather than failing the check — they turn
+ * neither way, so they cannot be the concavity.
+ */
+export function isConvexPolygon(polygon: readonly Vec2[]): boolean {
+  if (polygon.length < 4) return true;
+
+  let sign = 0;
+  for (let index = 0; index < polygon.length; index += 1) {
+    const a = polygon[index];
+    const b = polygon[(index + 1) % polygon.length];
+    const c = polygon[(index + 2) % polygon.length];
+    if (!a || !b || !c) continue;
+
+    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    if (Math.abs(cross) < 1e-6) continue;
+
+    const turn = cross > 0 ? 1 : -1;
+    if (sign === 0) sign = turn;
+    else if (turn !== sign) return false;
+  }
+
+  return true;
+}
+
+/**
  * Free distance from a face to another polygon, measured along the face normal.
  *
  * Returns null when the other polygon does not lie in front of the face at all —

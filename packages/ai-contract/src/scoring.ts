@@ -256,6 +256,25 @@ export const SCORE_REASON_CODES = {
       en: '{criterion} cannot be measured: the room holds equipment that is not in the catalogue, so its size is unknown.',
     },
   },
+  /*
+   * The ninth review round's finding, resolved by owner decision (option 1 of three presented):
+   * report the face unavailable rather than measure it.
+   *
+   * `gapAlongNormal` takes a single global minimum across whatever survives its lateral clip, on
+   * the assumption that the nearest projected point is the nearest connected material — true only
+   * when the obstruction is convex. A non-convex obstruction (a riser or duct run wrapping around a
+   * machine) can present a disconnected far arm inside the same clipped band as a genuine near arm,
+   * and the function cannot tell them apart. Giving it that notion is a real geometry investment
+   * (convex decomposition) the owner has not asked for, so until it exists, this code marks the
+   * specific face `SC-904` would otherwise have silently reported a number for.
+   */
+  'SC-907': {
+    title: { ko: '비볼록 장애물 형상', en: 'Non-Convex Obstruction Geometry' },
+    template: {
+      ko: '해당 면을 막고 있는 장애물이 비볼록 형상이어서 {criterion} 여유를 신뢰성 있게 측정할 수 없습니다.',
+      en: '{criterion} cannot be measured for this face: the obstruction in front of it is not convex, and its true nearest distance cannot be trusted.',
+    },
+  },
 } as const;
 export type ScoreReasonCode = keyof typeof SCORE_REASON_CODES;
 

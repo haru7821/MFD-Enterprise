@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Vec2 } from '@mfd/cad-engine';
 
-import { edgeNormals, gapAlongNormal, polygonsOverlap, projectOnto } from './sat';
+import { edgeNormals, gapAlongNormal, isConvexPolygon, polygonsOverlap, projectOnto } from './sat';
 
 /** Axis-aligned rectangle as a polygon. */
 function box(x: number, y: number, width: number, height: number): Vec2[] {
@@ -192,5 +192,66 @@ describe('gap along a face normal', () => {
     expect(Math.min(...xs)).toBeGreaterThanOrEqual(rearExtent.min);
     expect(Math.max(...xs)).toBeLessThanOrEqual(rearExtent.max);
     expect(gapAlongNormal(rearFace, rearExtent, other)).toBeCloseTo(-317.42, 1);
+  });
+});
+
+describe('convexity', () => {
+  it('accepts a plain rectangle', () => {
+    expect(isConvexPolygon(box(0, 0, 800, 800))).toBe(true);
+  });
+
+  it('accepts a triangle', () => {
+    expect(isConvexPolygon([{ x: 0, y: 0 }, { x: 400, y: 0 }, { x: 200, y: 300 }])).toBe(true);
+  });
+
+  it('accepts a convex polygon wound either direction', () => {
+    const clockwise = box(0, 0, 800, 800);
+    const counterClockwise = [...clockwise].reverse();
+    expect(isConvexPolygon(clockwise)).toBe(true);
+    expect(isConvexPolygon(counterClockwise)).toBe(true);
+  });
+
+  it('accepts a rectangle with a collinear vertex on one edge', () => {
+    // The midpoint of the bottom edge turns neither way — it must not be read as a concavity.
+    expect(
+      isConvexPolygon([
+        { x: 0, y: 0 },
+        { x: 400, y: 0 },
+        { x: 800, y: 0 },
+        { x: 800, y: 800 },
+        { x: 0, y: 800 },
+      ]),
+    ).toBe(true);
+  });
+
+  it('rejects an L-shaped polygon', () => {
+    expect(
+      isConvexPolygon([
+        { x: 0, y: 0 },
+        { x: 800, y: 0 },
+        { x: 800, y: 400 },
+        { x: 400, y: 400 },
+        { x: 400, y: 800 },
+        { x: 0, y: 800 },
+      ]),
+    ).toBe(false);
+  });
+
+  it('rejects a staple-shaped riser — one arm in front of a face, the other reachable only by wrapping around', () => {
+    // The shape the eighth CTO review round used to show `gapAlongNormal` picking up a
+    // disconnected far arm instead of the near one: two arms joined by a crossbar, wrapping
+    // around three sides of an 800x800 station.
+    expect(
+      isConvexPolygon([
+        { x: -200, y: -300 },
+        { x: 0, y: -300 },
+        { x: 0, y: 900 },
+        { x: 800, y: 900 },
+        { x: 800, y: -300 },
+        { x: 1_000, y: -300 },
+        { x: 1_000, y: 1_100 },
+        { x: -200, y: 1_100 },
+      ]),
+    ).toBe(false);
   });
 });

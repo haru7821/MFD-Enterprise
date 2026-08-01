@@ -1147,6 +1147,72 @@ describe('equipment geometry rotates with its placement', () => {
     expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0);
   });
 
+  it('reports compliance_margin unavailable rather than a wrong number against a non-convex obstruction — ninth review round', () => {
+    /*
+     * The eighth review round's staple/riser reproduction, made a permanent regression by the
+     * owner's decision on how to handle it (option 1 of three presented): a genuinely
+     * non-overlapping, non-convex obstruction wraps around the station's left side — one arm
+     * 100 mm in front of the rear face (y ∈ [-200, -100], nearest edge at y = -100), the other
+     * re-emerging 100 mm beyond the front face (y ∈ [900, 1,000]), joined by a connecting run down
+     * the left side entirely outside the station's own footprint (x < 0) and entirely outside the
+     * rear face's own lateral band ([0, 800]) — never touching or overlapping the station.
+     *
+     * `gapAlongNormal` clips this to the band and takes the single global minimum projection, which
+     * comes from the far arm (reached only by wrapping around the left side), not the near one:
+     * before the fix this reported roughly -1,000 mm (clamped to 0 by `freeDistanceOnSide`),
+     * reading as a rear face with no clearance at all for one that actually clears by a genuine
+     * 100 mm. The fix is not a better number — `isConvexPolygon` rejects this shape, so the face is
+     * reported unmeasurable (`SC-907`) rather than measured wrong.
+     */
+    const staple: Vec2[] = [
+      { x: 700, y: -200 },
+      { x: -200, y: -200 },
+      { x: -200, y: 1_000 },
+      { x: 700, y: 1_000 },
+      { x: 700, y: 900 },
+      { x: -100, y: 900 },
+      { x: -100, y: -100 },
+      { x: 700, y: -100 },
+    ];
+
+    const machine = fixtureMachine();
+    const placement: Placement = {
+      id: 'p',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'p',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'rear', threshold: 800 }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+
+    const breakdown = scoreLayout({
+      placements: [placement],
+      occupants: [placement],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+      room: fixtureRoom(10_000, 10_000),
+      obstructions: [staple],
+      referencePoints: [],
+      object: machine,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(breakdown, 'compliance_margin')).toBeUndefined();
+    expect(
+      breakdown.unavailable.find((entry) => entry.criterion === 'compliance_margin')?.reasonCode,
+    ).toBe('SC-907');
+  });
+
   it.each([
     {
       side: 'rear' as const,

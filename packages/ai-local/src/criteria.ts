@@ -14,7 +14,7 @@ import {
   footprintCorners,
 } from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
-import { evaluate, gapAlongNormal } from '@mfd/rule-engine';
+import { evaluate, gapAlongNormal, isConvexPolygon, projectOnto } from '@mfd/rule-engine';
 
 import type { KnowledgeBase } from '@mfd/layout-knowledge';
 
@@ -149,6 +149,11 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
    */
   if (occupantBounds(input.occupants, input.catalog) === null) return unavailable('SC-906');
 
+  // Owner decision, ninth review round: distinguish "no face was blocked by anything
+  // unmeasurable" from "every face that could have contributed a ratio was" — the latter is
+  // `SC-907`, not the generic "no threshold to compare against" of `SC-904`.
+  let blockedByNonConvexObstruction = false;
+
   for (const result of report.results) {
     if (result.category !== 'clearance' || result.appliedValue === null) continue;
     if (result.appliedValue <= 0) continue;
@@ -162,11 +167,17 @@ function measureComplianceMargin(input: MeasureInput): Measurement {
 
       const free = freeDistanceOnSide(placement, side, input, roomBounds);
       if (free === null) continue;
+      if (free === 'unavailable') {
+        blockedByNonConvexObstruction = true;
+        continue;
+      }
       ratios.push(free / result.appliedValue);
     }
   }
 
-  if (ratios.length === 0) return unavailable('SC-904');
+  if (ratios.length === 0) {
+    return unavailable(blockedByNonConvexObstruction ? 'SC-907' : 'SC-904');
+  }
   return measured(Math.min(...ratios));
 }
 
@@ -253,20 +264,39 @@ const PROBE_CEILING_MULTIPLE = 3;
  * no regard for whether that minimum comes from material actually nearest the face or from a
  * disconnected piece reached only by going around the machine. Gate 2's own boundary rule uses a
  * concave-correct test (`polygonsOverlapAnywhere`) and passes this shape; `compliance_margin` still
- * reports 0 for a rear face with 100 mm of genuine headroom. Confirmed directly, wired the way
+ * reported 0 for a rear face with 100 mm of genuine headroom. Confirmed directly, wired the way
  * `apps/web`'s `runSolver.ts` actually wires it — the same `Boundary` fed to both `applyGates` and
  * `scoreLayout`'s `obstructions`, not two disconnected inputs.
  *
- * **Owner decision pending on how obstruction geometry should be handled when it is not convex** —
- * this is not a decision this comment makes. Until it lands, the clamp here still catches the sign
- * of the wrong number, but the number itself is not trustworthy for a non-convex obstruction.
+ * **Owner decision: report the face unavailable rather than measure it.** `gapAlongNormal` has no
+ * notion of "nearest connected material", and giving it one is a real geometry investment (convex
+ * decomposition) the owner has not yet asked for. Until it exists, a face is only measured against
+ * an obstruction `@mfd/rule-engine`'s `isConvexPolygon` accepts; an obstruction that both fails that
+ * check and actually lies in the face's own lateral extent makes this face's headroom unknown for
+ * this side, rather than reported as a number the geometry cannot back. That is a real loss of
+ * coverage on any drawing with a non-convex riser or duct run near a governed face — the honest
+ * alternative to a number that reads as measured and is not.
  */
+/**
+ * Does a non-convex obstruction actually stand in this face's way?
+ *
+ * Mirrors `gapAlongNormal`'s own lateral test rather than calling it: an obstruction entirely
+ * beside the face (off to one side, never in front of it) is not a reason to abstain, the same as
+ * it is not a reason to measure — only one that overlaps the face's own width can make
+ * `gapAlongNormal`'s single global minimum untrustworthy.
+ */
+function blocksFaceButUnmeasurable(face: Face, obstruction: readonly Vec2[]): boolean {
+  if (isConvexPolygon(obstruction)) return false;
+  const lateral = projectOnto(obstruction, face.axis);
+  return lateral.max > face.min && lateral.min < face.max;
+}
+
 function freeDistanceOnSide(
   placement: Placement,
   side: ClearanceSide,
   input: MeasureInput,
   room: Bounds | null,
-): number | null {
+): number | null | 'unavailable' {
   const object = input.catalog.get(placement.equipmentObjectId);
   if (!object) return null;
 
@@ -296,6 +326,7 @@ function freeDistanceOnSide(
   }
 
   for (const obstruction of input.obstructions) {
+    if (blocksFaceButUnmeasurable(face, obstruction)) return 'unavailable';
     consider(gapAlongNormal(face, face, obstruction));
   }
 
