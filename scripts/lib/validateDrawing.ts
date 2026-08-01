@@ -40,6 +40,29 @@ import { measureRoomWidth } from './hallGeometry';
 import { readPageGeometry } from './pdfGeometry';
 
 /**
+ * How far out a printed dimension may be and still be a **draughting** error rather than ours.
+ *
+ * > Owner decision, the five-way discrepancy taxonomy: a discrepancy is filed against the drawing
+ * > or against this reader, never vaguely against both.
+ *
+ * Ten per cent. A draughtsman typing a round number over an awkward one is out by a few per cent;
+ * a label an order of magnitude out is this reader having paired it with the wrong line, and filing
+ * that against the drawing would blame a hospital for our own mistake.
+ *
+ * Extracted because the same `0.1` was written twice — once to exclude outliers from the
+ * calibration and once to classify them — and two copies of a taxonomy boundary is one edit away
+ * from a discrepancy being excluded under one rule and reported under another. The audit found the
+ * classification unguarded: reclassifying every `drawing_error` as `extraction_error` left the
+ * whole suite green.
+ */
+export const TEXT_OVERRIDE_TOLERANCE = 0.1;
+
+export function isTextOverride(relativeError: number): boolean {
+  return Math.abs(relativeError) <= TEXT_OVERRIDE_TOLERANCE;
+}
+
+
+/**
  * One drawing, all the way through, or as far as the evidence carries it.
  *
  * > Owner decision, validation programme: *"For every drawing: import the original PDF · perform
@@ -322,7 +345,7 @@ export async function validateDrawing(input: ValidationInput): Promise<Validatio
      * lines. Classified by which of the two the majority of them are, rather than by a guess.
      */
     const wild = agreement.inconsistent.filter(
-      (entry) => Math.abs(entry.impliedScale / agreement.scale - 1) > 0.1,
+      (entry) => !isTextOverride(entry.impliedScale / agreement.scale - 1),
     ).length;
     return stop({
       ...base,
@@ -352,7 +375,7 @@ export async function validateDrawing(input: ValidationInput): Promise<Validatio
      * of magnitude out is this reader having paired it with the wrong line — a fact about the
      * reader, and it would be dishonest to file it against the drawing.
      */
-    const isOverride = Math.abs(outBy) <= 0.1;
+    const isOverride = isTextOverride(outBy);
     discrepancies.push(
       discrepancy(
         'VD-1',
