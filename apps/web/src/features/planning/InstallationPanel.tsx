@@ -1,7 +1,9 @@
+import { SCORE_REASON_CODES } from '@mfd/ai-contract';
 import type { PlanService, SourcedNumber, SourcedRange } from '@mfd/ai-contract';
 import { catalog } from '@mfd/object-library/catalog';
 import { dialysisChecklistTemplate } from '@mfd/report-engine/checklists';
 import { projectFingerprint } from '@mfd/report-engine';
+import type { Bilingual } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 import { type PlanDependency, planStaleness } from '@mfd/ai-contract';
 
@@ -66,6 +68,20 @@ const BLOCKER_TEXT: Record<string, string> = {
   missing_prerequisite: 'A prerequisite is missing',
   uncalibrated_level: 'The plan drawing is not calibrated',
 };
+
+/**
+ * Korean above English, always both, stacked as two block lines — the convention every bilingual
+ * surface in this app uses (`ValidationPanel.tsx`, `LayoutPanel.tsx`'s own `BilingualText`, and
+ * `@mfd/report-engine`'s rendered `LABELS`).
+ */
+function BilingualText({ text }: { readonly text: Bilingual }) {
+  return (
+    <>
+      <span className="block">{text.ko}</span>
+      <span className="block">{text.en}</span>
+    </>
+  );
+}
 
 export function InstallationPanel() {
   const { state, dispatch } = useEditor();
@@ -314,8 +330,16 @@ export function InstallationPanel() {
                 className="text-[10px] text-ink-muted"
               >
                 {SERVICE_LABELS[connection.service]}: <Figure figure={connection.totalLength} />
+                {/*
+                  The same absence the scoring breakdown reports as SC-901 — a run cannot be
+                  measured without the reference point it is measured from, and the criterion
+                  table already says so in these words. A hand-typed "no reference point placed"
+                  here would be a second, English-only account of the one fact.
+                */}
                 {connection.originPointId === null && (
-                  <span className="text-ink-faint"> · no reference point placed</span>
+                  <span className="mt-0.5 block text-ink-faint" data-testid="plan-connection-no-reference-point">
+                    · <BilingualText text={SCORE_REASON_CODES['SC-901'].title} />
+                  </span>
                 )}
               </li>
             ))}
