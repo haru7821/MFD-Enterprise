@@ -173,6 +173,18 @@ function clipHalfPlane(
  * geometry of their own, so they are collapsed out of the vertex list before the corner walk
  * begins, rather than skipped mid-walk — the same corner is then seen exactly once, by its two
  * genuine neighbours, whichever positions in the original array those turned out to be.
+ *
+ * The deduplication is **exact-equality**, not a distance tolerance — deliberately: today's only
+ * caller (`@mfd/ai-local`'s `freeDistanceOnSide`) passes an obstruction's traced vertices
+ * untransformed (`runSolver.ts` reads `boundary.vertices` directly). Exact equality is what grid
+ * snapping actually produces, and a distance tolerance would need a scale to compare against —
+ * the same scale question `sinAngle`'s epsilon already answers for collinearity, not one this
+ * function should answer twice with two different numbers. **If a caller ever feeds this rotated
+ * or otherwise transformed geometry**, floating-point arithmetic can turn an exact duplicate into
+ * a near-duplicate a fraction of a millimetre apart, which this check would then treat as two
+ * genuine, very-short edges rather than one degenerate point — a convex obstruction could then
+ * read as non-convex and needlessly void `compliance_margin`. Not a defect in what exists today,
+ * only a constraint on what may be added without revisiting this function first.
  */
 export function isConvexPolygon(polygon: readonly Vec2[]): boolean {
   const vertices: Vec2[] = [];

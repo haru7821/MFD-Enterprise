@@ -10,6 +10,7 @@ import { type LayoutProposal, type LayoutProposalSet, activeLevel } from '@/edit
 import { useEditor } from '@/editor/useEditor';
 
 import { runOptimiser, runSolver } from './runSolver';
+import { UNAVAILABLE_REASONS } from './unavailableReasons';
 
 /**
  * Layout generation and optimisation, through the editor.
@@ -43,14 +44,6 @@ const CRITERION_LABELS: Record<ScoringCriterion, string> = {
   future_expansion: 'Future expansion',
   walking_distance: 'Walking distance',
   drain_routing: 'Drain routing',
-};
-
-/** Why a criterion could not be measured, in a sentence an engineer can act on. */
-const UNAVAILABLE_REASONS: Record<string, string> = {
-  'SC-901': 'no reference point placed',
-  'SC-902': 'nothing of that kind on this level',
-  'SC-903': 'no route avoiding the obstructions',
-  'SC-904': 'no requirement to compare against',
 };
 
 const EMPTY_MESSAGES = {
@@ -433,7 +426,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
                 <tr key={entry.criterion} className="text-ink-faint">
                   <td className="py-px pr-1">{CRITERION_LABELS[entry.criterion]}</td>
                   <td colSpan={2} className="py-px text-right">
-                    {UNAVAILABLE_REASONS[entry.reasonCode] ?? 'not measurable'}
+                    {UNAVAILABLE_REASONS[entry.reasonCode]}
                   </td>
                 </tr>
               ))}
