@@ -61,22 +61,27 @@ export function ProposalGhostLayer({ diff, catalog, viewport }: ProposalGhostLay
         const corners = footprintCorners(object, entry.placement.transform).map((corner) =>
           worldToScreen(viewport, corner),
         );
-        const centre = corners.reduce(
-          (sum, corner) => ({
-            x: sum.x + corner.x / corners.length,
-            y: sum.y + corner.y / corners.length,
-          }),
-          { x: 0, y: 0 },
-        );
+        const centre = screenCentreOf(corners);
+
+        // Looked up separately from `object` above, since nothing here assumes the two are the
+        // same equipment kind. The tail must be `source`'s own footprint centre — never
+        // `entry.source.transform.position`, which a pure rotation about a shared corner would
+        // leave unmoved even though the ghost's own centre visibly swept elsewhere (AD-21).
+        const sourceObject = entry.source ? catalog.get(entry.source.equipmentObjectId) : null;
+        const sourceCentre =
+          entry.source && sourceObject
+            ? screenCentreOf(
+                footprintCorners(sourceObject, entry.source.transform).map((corner) =>
+                  worldToScreen(viewport, corner),
+                ),
+              )
+            : null;
 
         return (
           <Fragment key={entry.placement.id}>
-            {entry.change === 'moved' && entry.source && (
+            {entry.change === 'moved' && entry.source && sourceCentre && (
               <Line
-                points={[
-                  ...vec(worldToScreen(viewport, entry.source.transform.position)),
-                  ...vec(centre),
-                ]}
+                points={[...vec(sourceCentre), ...vec(centre)]}
                 stroke={style.stroke}
                 strokeWidth={1}
                 dash={[2, 3]}
@@ -118,4 +123,13 @@ export function ProposalGhostLayer({ diff, catalog, viewport }: ProposalGhostLay
 
 function vec(point: { x: number; y: number }): [number, number] {
   return [point.x, point.y];
+}
+
+/** The centroid of a quad already in screen space — averaging commutes with `worldToScreen`'s
+ *  affine map, so this agrees with transforming the model-space centre directly. */
+function screenCentreOf(corners: readonly { x: number; y: number }[]): { x: number; y: number } {
+  return corners.reduce(
+    (sum, corner) => ({ x: sum.x + corner.x / corners.length, y: sum.y + corner.y / corners.length }),
+    { x: 0, y: 0 },
+  );
 }

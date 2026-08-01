@@ -601,4 +601,52 @@ describe('command derivation', () => {
       JSON.stringify(commandsFor(current, target, fixtureCatalog())),
     );
   });
+
+  it("matches by the true centre, not the corner — a rotation that shares a corner is not a non-move", () => {
+    /*
+     * Found by the third CTO review of this arc: reverting `centreOf` to `transform.position` left
+     * every existing test passing, because none of them gave a rotated candidate the same corner as
+     * an unrotated one.
+     *
+     * The bed (1,000 x 2,100, front-left) sitting at `source` has its corner at (0, 0) and its true
+     * centre at (500, 1,050). `trap` shares that exact corner but is turned 90° — its centre is at
+     * (-1,050, 500), 2,100 mm from `source`'s. `moved` sits 1,000 mm away at the same rotation, so
+     * its centre is only 1,000 mm from `source`'s.
+     *
+     * A corner-anchored assignment sees `trap` at distance 0 — the same corner, therefore "no move
+     * at all" — and claims it over `moved`, even though the bed's footprint swept a quarter turn.
+     * The correct, centre-anchored assignment recognises `moved` as the nearer match.
+     */
+    const source: Placement = {
+      id: 'source',
+      equipmentObjectId: 'fixture_bed',
+      equipmentObjectVersion: '1.0.0',
+      label: 'source',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const trap: Placement = {
+      id: 'trap',
+      equipmentObjectId: 'fixture_bed',
+      equipmentObjectVersion: '1.0.0',
+      label: 'trap',
+      transform: { position: { x: 0, y: 0 }, rotation: 90_000, mirrored: false },
+      spaceId: null,
+    };
+    const moved: Placement = {
+      id: 'moved',
+      equipmentObjectId: 'fixture_bed',
+      equipmentObjectVersion: '1.0.0',
+      label: 'moved',
+      transform: { position: { x: 1_000, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+
+    const diff = diffPlacements([source], [trap, moved], fixtureCatalog());
+
+    const movedEntry = diff.find((entry) => entry.placement.id === 'moved');
+    const trapEntry = diff.find((entry) => entry.placement.id === 'trap');
+    expect(movedEntry?.source?.id).toBe('source');
+    expect(trapEntry?.change).toBe('added');
+  });
 });

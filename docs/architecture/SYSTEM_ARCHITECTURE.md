@@ -294,8 +294,22 @@ solves in the opposite direction). Every call site above, plus the report schedu
 column, now goes through it; every one falls back to the raw `transform.position` when the catalogue
 has nothing for a placement, since a route or a schedule row still needs an answer. Every previously
 reported routing/walking score and every printed schedule position has shifted accordingly —
-expected, and re-baselined in `score.test.ts` and confirmed unchanged in kind (not in value) by the
-Hospital_044 replay.
+expected, and re-baselined in `score.test.ts`, `optimise.test.ts` and two new tests
+(`apps/web/src/features/planning/runPlanner.test.ts`, `packages/report-engine/src/floorPlan.test.ts`),
+each guard-broken and restored to confirm it actually discriminates the corner from the centre.
+**The Hospital_044 replay does not, and cannot, confirm the routing legs**: the reference dataset
+carries no reference points, so `ro_piping_length`/`electrical_routing`/`walking_distance`/
+`drain_routing`/`installation_feasibility` all report `SC-901` regardless of anchor and the replay
+never reaches `routeAll`. What it does confirm is the report schedule leg alone — its committed
+verification record changes by exactly one field, `pdfBytes` (164079 to 164107), isolated to the
+schedule's position column printing centre coordinates instead of corner coordinates.
+
+A fourth CTO review of this decision found the same anchor mistake one call site further out:
+`apps/web/src/features/layout/ProposalGhostLayer.tsx` drew a "moved" ghost's arrow from
+`entry.source.transform.position` (the corner) to the proposed footprint's own centroid — a pure
+rotation about a shared corner drew a visible arrow for a machine that, by this decision's own
+definition of "moved", had not. Both ends of the arrow now come from the same footprint-centre
+computation.
 
 ## 4. Deferred / Flagged Decisions
 

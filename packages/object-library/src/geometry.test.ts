@@ -345,68 +345,51 @@ describe('faceGeometry — the whole face a clearance measurement checks, not on
   };
 
   it.each(['front', 'rear', 'left', 'right'] as const)(
-    'anchors %s on its own face, spanning it corner to corner, at several rotations',
+    'anchors %s on its own face, spanning it corner to corner, at several rotations, mirrored and not',
     (side) => {
       for (const rotation of [0, 37_500, 90_000, 181_000, 271_500]) {
-        const object = machine({
-          serviceClearance: { front: 1_200, rear: 800, left: 400, right: 500, verification: draftVerification() },
-        });
-        const transform: Transform = { position: { x: 1_000, y: -500 }, rotation, mirrored: false };
+        for (const mirrored of [false, true]) {
+          const object = machine({
+            serviceClearance: { front: 1_200, rear: 800, left: 400, right: 500, verification: draftVerification() },
+          });
+          const transform: Transform = { position: { x: 1_000, y: -500 }, rotation, mirrored };
+          const label = `${side} @ ${rotation}${mirrored ? ' mirrored' : ''}`;
 
-        const corners = footprintCorners(object, transform);
-        const [i, j] = FACE_CORNER_INDICES[side];
-        const a = corners[i];
-        const b = corners[j];
-        if (!a || !b) throw new Error('footprintCorners did not return four points');
-        const expectedOrigin = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+          const corners = footprintCorners(object, transform);
+          const [i, j] = FACE_CORNER_INDICES[side];
+          const a = corners[i];
+          const b = corners[j];
+          if (!a || !b) throw new Error('footprintCorners did not return four points');
+          const expectedOrigin = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 
-        const face = faceGeometry(object, transform, side);
-        expect(face.origin.x, `${side} @ ${rotation} origin.x`).toBeCloseTo(expectedOrigin.x, 6);
-        expect(face.origin.y, `${side} @ ${rotation} origin.y`).toBeCloseTo(expectedOrigin.y, 6);
+          const face = faceGeometry(object, transform, side);
+          expect(face.origin.x, `${label} origin.x`).toBeCloseTo(expectedOrigin.x, 6);
+          expect(face.origin.y, `${label} origin.y`).toBeCloseTo(expectedOrigin.y, 6);
 
-        const length = Math.hypot(face.normal.x, face.normal.y);
-        expect(length, `${side} @ ${rotation} unit length`).toBeCloseTo(1, 6);
+          const length = Math.hypot(face.normal.x, face.normal.y);
+          expect(length, `${label} unit length`).toBeCloseTo(1, 6);
 
-        const outward = {
-          x: face.origin.x + face.normal.x * 10,
-          y: face.origin.y + face.normal.y * 10,
-        };
-        const inward = {
-          x: face.origin.x - face.normal.x * 10,
-          y: face.origin.y - face.normal.y * 10,
-        };
-        expect(footprintContains(object, transform, outward), `${side} @ ${rotation} outward`).toBe(
-          false,
-        );
-        expect(footprintContains(object, transform, inward), `${side} @ ${rotation} inward`).toBe(
-          true,
-        );
+          const outward = {
+            x: face.origin.x + face.normal.x * 10,
+            y: face.origin.y + face.normal.y * 10,
+          };
+          const inward = {
+            x: face.origin.x - face.normal.x * 10,
+            y: face.origin.y - face.normal.y * 10,
+          };
+          expect(footprintContains(object, transform, outward), `${label} outward`).toBe(false);
+          expect(footprintContains(object, transform, inward), `${label} inward`).toBe(true);
 
-        // The face's own width, independently: the same two corners' projections onto `axis`,
-        // not `face.min`/`face.max` re-derived from the formula that produced them.
-        const projectionA = a.x * face.axis.x + a.y * face.axis.y;
-        const projectionB = b.x * face.axis.x + b.y * face.axis.y;
-        expect(face.min, `${side} @ ${rotation} min`).toBeCloseTo(Math.min(projectionA, projectionB), 6);
-        expect(face.max, `${side} @ ${rotation} max`).toBeCloseTo(Math.max(projectionA, projectionB), 6);
+          // The face's own width, independently: the same two corners' projections onto `axis`,
+          // not `face.min`/`face.max` re-derived from the formula that produced them.
+          const projectionA = a.x * face.axis.x + a.y * face.axis.y;
+          const projectionB = b.x * face.axis.x + b.y * face.axis.y;
+          expect(face.min, `${label} min`).toBeCloseTo(Math.min(projectionA, projectionB), 6);
+          expect(face.max, `${label} max`).toBeCloseTo(Math.max(projectionA, projectionB), 6);
+        }
       }
     },
   );
-
-  it('mirrors the normal along with the footprint', () => {
-    const object = machine({
-      serviceClearance: { front: null, rear: null, left: 400, right: null, verification: draftVerification() },
-    });
-    const transform: Transform = { position: { x: 0, y: 0 }, rotation: 0, mirrored: true };
-
-    const face = faceGeometry(object, transform, 'left');
-
-    // Mirrored about the object's own axis, so left's outward normal (-1, 0) unmirrored flips to
-    // (1, 0) — checked the same way, by walking each direction and asking the footprint.
-    const outward = { x: face.origin.x + face.normal.x * 10, y: face.origin.y };
-    const inward = { x: face.origin.x - face.normal.x * 10, y: face.origin.y };
-    expect(footprintContains(object, transform, outward)).toBe(false);
-    expect(footprintContains(object, transform, inward)).toBe(true);
-  });
 });
 
 describe('side normals', () => {

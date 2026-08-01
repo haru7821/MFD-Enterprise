@@ -156,8 +156,11 @@ const ORIGIN_KIND = {
  * The obstructions are the level's own — columns, shafts, anything the router must go around — plus
  * the other machines' footprints. A cable that runs through a dialysis machine is not a shorter
  * cable.
+ *
+ * Exported so tests can check it directly — see `apps/web/src/features/layout/runSolver.test.ts`
+ * for the same pattern applied to `withinRoom`.
  */
-function routeAll(level: Level, catalog: Catalog): RoutedLength[] {
+export function routeAll(level: Level, catalog: Catalog): RoutedLength[] {
   interface Obstacle {
     /** The placement this rectangle belongs to, or null for a column or shaft. */
     readonly placementId: string | null;

@@ -289,6 +289,71 @@ describe('what is measured, and what is merely in the way', () => {
     expect(sealed?.measured).toBeLessThan(1);
   });
 
+  it("routes to a placement's true centre, not its corner — proven by a pure rotation", () => {
+    /*
+     * Found by the third CTO review of this arc: nothing guarded `measureInstallationFeasibility`'s
+     * switch from `transform.position` to `footprintCentre` — reverting it back to the corner left
+     * every existing test passing. Two machines share the exact same corner, (0, 0), and differ only
+     * in rotation: `upright` (0°) has its true centre at (400, 400); `turned` (180°) has its centre
+     * at (-400, -400), the same footprint swept to the opposite side of that shared corner by a pure
+     * rotation — the property AD-21 exists to make visible.
+     *
+     * A corner-anchored router would send the delivery crate to (0, 0) for both, so both would
+     * report identically reachable or identically blocked — `deliverable` could only ever be 0 or 2
+     * out of 2. The obstruction below sits squarely over (400, 400) and nowhere near (-400, -400),
+     * so a centre-anchored router reports exactly one of the two reachable: `deliverable` is 1, a
+     * result the corner-anchored version cannot produce no matter how the obstruction is placed.
+     */
+    const upright: Placement = {
+      id: 'upright',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'upright',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const turned: Placement = {
+      id: 'turned',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'turned',
+      transform: { position: { x: 0, y: 0 }, rotation: 180_000, mirrored: false },
+      spaceId: null,
+    };
+    const points: ReferencePointSummary[] = [
+      { id: 'entry', kind: 'access_entry', position: { x: -3_000, y: -3_000 } },
+    ];
+    // Encloses (400, 400) — `upright`'s true centre — and stops well short of (-400, -400),
+    // `turned`'s.
+    const obstruction = [
+      { x: -100, y: -100 },
+      { x: 1_000, y: -100 },
+      { x: 1_000, y: 1_000 },
+      { x: -100, y: 1_000 },
+    ];
+    const room = [
+      { x: -5_000, y: -5_000 },
+      { x: 5_000, y: -5_000 },
+      { x: 5_000, y: 5_000 },
+      { x: -5_000, y: 5_000 },
+    ];
+
+    const result = measurementOf(
+      score({
+        ...measurable,
+        placements: [upright, turned],
+        occupants: [upright, turned],
+        referencePoints: points,
+        obstructions: [obstruction],
+        room,
+        stationTarget: 2,
+      }),
+      'installation_feasibility',
+    );
+
+    expect(result?.measured).toBe(0.5);
+  });
+
   it('keeps the measured population to the equipment being scored', () => {
     // The other half. `occupants` is geometry; it must never become a station in the count, or the
     // constraint reports a number the target was never about.
@@ -993,7 +1058,7 @@ describe('equipment geometry rotates with its placement', () => {
        * low margin. `front` alone passing was not evidence the fix worked; it was the one case
        * that couldn't tell the difference.
        *
-       * `faceProbe` (`@mfd/object-library`) replaces the corner-order guess with the side's own
+       * `faceGeometry` (`@mfd/object-library`) replaces the corner-order guess with the side's own
        * outward normal, so this is measured the same way on every side. All three obstructions
        * here sit genuinely inside their zone, at an unrotated placement — the rotated case is
        * `front`'s test above, and the underlying geometry is verified across five rotations and
