@@ -694,6 +694,106 @@ describe('maintenance access counts obstructions and the room edge, not only equ
   });
 });
 
+describe('equipment geometry rotates with its placement', () => {
+  /*
+   * > Owner decision, following the standing review: **A** — rotate the footprint with the
+   * > placement's rotation.
+   *
+   * Two separate gaps, both closed the same way: an occupant's own footprint, and the measured
+   * object's own service-face zone, are both built in a local frame and only then rotated into
+   * model space (`rotatedRectBounds`) — rather than assuming the world axes and the object's axes
+   * always line up.
+   */
+
+  it("sizes an occupant's footprint by its actual orientation, not its unrotated one", () => {
+    /*
+     * The gap the review measured directly: a bed (1,000 x 2,100) turned 90° reported the same
+     * `walking_distance` as upright, though its true extent blocks both L-routes differently. Two
+     * different orientations of the same physical object, in the same place, now measure
+     * differently — verified against `routedDistance` by hand before writing this: 6,250 mm
+     * upright, 7,250 mm turned, because the turned bed is *wider* across the route even though it
+     * is *shorter along* it.
+     */
+    const points: ReferencePointSummary[] = [
+      { id: 'ro', kind: 'ro_supply', position: { x: 0, y: 0 } },
+      { id: 'staff', kind: 'staff_base', position: { x: 4_000, y: 6_000 } },
+    ];
+    const target = placement('target', 4_000, 500);
+    const bed = (rotation: number) => ({
+      ...placement('bed', 4_000, 3_000),
+      equipmentObjectId: 'fixture_bed',
+      transform: { position: { x: 4_000, y: 3_000 }, rotation, mirrored: false },
+    });
+
+    const upright = score({
+      placements: [target],
+      occupants: [target, bed(0)],
+      referencePoints: points,
+    });
+    const turned = score({
+      placements: [target],
+      occupants: [target, bed(90_000)],
+      referencePoints: points,
+    });
+
+    const walking = (b: ReturnType<typeof score>) =>
+      b.criteria.find((entry) => entry.criterion === 'walking_distance')?.measured;
+
+    expect(walking(upright)).toBe(6_250);
+    expect(walking(turned)).toBe(7_250);
+  });
+
+  it("checks a service face where the machine's own rotation actually put it", () => {
+    /*
+     * The other gap: not another machine's footprint, but the *measured* machine's own front/rear
+     * zone, which used to be built directly in world axes — always "front is +Y" — regardless of
+     * `transform.rotation`. A station turned 90° has its front face to the **west**, not the south,
+     * and an obstruction sitting south of it no longer has anything to do with whether the station
+     * is reachable.
+     *
+     * Both obstructions below sit inside the *unrotated* front (south) and rear (north) zones and
+     * nowhere near the *rotated* ones (west and east) — computed by hand from `localToModel`, not
+     * eyeballed.
+     */
+    const room = fixtureRoom(8_000, 8_000);
+    const boundaries = [fixtureRoomBoundary(8_000, 8_000)];
+    const station = (rotation: number) => [
+      { ...placement('a', 3_000, 3_000), transform: { position: { x: 3_000, y: 3_000 }, rotation, mirrored: false } },
+    ];
+    const obstructionsBothSides = [
+      [
+        { x: 2_700, y: 3_450 }, { x: 3_300, y: 3_450 },
+        { x: 3_300, y: 4_550 }, { x: 2_700, y: 4_550 },
+      ],
+      [
+        { x: 2_700, y: 1_900 }, { x: 3_300, y: 1_900 },
+        { x: 3_300, y: 2_500 }, { x: 2_700, y: 2_500 },
+      ],
+    ];
+
+    const upright = station(0);
+    const turned = station(90_000);
+
+    const blockedBothFaces = score({
+      placements: upright,
+      occupants: upright,
+      room,
+      boundaries,
+      obstructions: obstructionsBothSides,
+    });
+    const clearedByRotation = score({
+      placements: turned,
+      occupants: turned,
+      room,
+      boundaries,
+      obstructions: obstructionsBothSides,
+    });
+
+    expect(measurementOf(blockedBothFaces, 'maintenance_access')?.measured).toBe(0);
+    expect(measurementOf(clearedByRotation, 'maintenance_access')?.measured).toBe(1);
+  });
+});
+
 describe('walking distance routes around equipment; the service runs do not', () => {
   /*
    * > Owner decision, following the standing review: `walking_distance` routes around equipment,

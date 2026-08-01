@@ -3,7 +3,7 @@ import type {
   ScoreReasonCode,
   ScoringCriterion,
 } from '@mfd/ai-contract';
-import type { Vec2 } from '@mfd/cad-engine';
+import type { Transform, Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement, ReferencePointKind } from '@mfd/document-model';
 import type { ClearanceSide, Catalog, EquipmentObject } from '@mfd/object-library';
 import { localToModel, sideNormals } from '@mfd/object-library';
@@ -13,7 +13,7 @@ import { evaluate } from '@mfd/rule-engine';
 import type { KnowledgeBase } from '@mfd/layout-knowledge';
 
 import { generateCandidates } from './candidates';
-import { type Bounds, boundsAround, boundsOf, routedDistance } from './routing';
+import { type Bounds, boundsOf, routedDistance } from './routing';
 
 /**
  * Measuring the eight criteria.
@@ -274,6 +274,90 @@ function within(bounds: Bounds, point: Vec2): boolean {
  * So the answer is that the criterion cannot be measured, reported as `SC-906`, and every caller
  * has to handle it because the type says so.
  */
+/**
+ * The axis-aligned bounding box of a rectangle in an object's own local frame, after `transform`
+ * turns and moves it — the smallest box that contains the rectangle at whatever angle it is
+ * actually drawn at.
+ *
+ * > Owner decision, following the standing review: equipment geometry rotates with its placement.
+ *
+ * Everything downstream of this file compares axis-aligned `Bounds`, so rotation is folded in
+ * **once**, here, as the bounding box of the four rotated corners — not as a second, genuinely
+ * rotation-aware intersection test running alongside the first. A turned rectangle's AABB is
+ * larger than the rectangle itself off every multiple of 90°, which is the conservative direction:
+ * it can call a face blocked that a exact rotated-rectangle test would clear, never the reverse.
+ *
+ * At `rotation: 0` the four corners are exactly `centre ± (width/2, depth/2)`, so this is a drop-in
+ * replacement for the unrotated box everywhere it was used before.
+ */
+function rotatedRectBounds(
+  transform: Transform,
+  localMinX: number,
+  localMinY: number,
+  localMaxX: number,
+  localMaxY: number,
+): Bounds {
+  const corners = [
+    { x: localMinX, y: localMinY },
+    { x: localMaxX, y: localMinY },
+    { x: localMaxX, y: localMaxY },
+    { x: localMinX, y: localMaxY },
+  ].map((corner) => localToModel(corner, transform));
+
+  const xs = corners.map((corner) => corner.x);
+  const ys = corners.map((corner) => corner.y);
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys),
+  };
+}
+
+/** The rotated bounding box of a placement's own planning footprint, centred on its position. */
+function footprintBounds(transform: Transform, width: number, depth: number): Bounds {
+  return rotatedRectBounds(transform, -width / 2, -depth / 2, width / 2, depth / 2);
+}
+
+/**
+ * A clearance zone extending outward from one face of the footprint, in the object's own local
+ * frame, then rotated into model space.
+ *
+ * `normal` is one of the four axis-aligned unit vectors `sideNormals` returns — whichever edge the
+ * object's own `frontEdge` configuration says a side is — so this generalises past the "front is
+ * always +Y" assumption the un-rotated version of this file used to make, the same way rotation
+ * generalises past "never rotated".
+ */
+function localFaceBounds(
+  footprint: { readonly width: number; readonly depth: number },
+  normal: Vec2,
+  clearance: number,
+  transform: Transform,
+): Bounds {
+  const halfWidth = footprint.width / 2;
+  const halfDepth = footprint.depth / 2;
+
+  // The normal is axis-aligned by construction (north/south/east/west), so exactly one of its two
+  // components is non-zero; that component picks which edge the zone extends from and which stays
+  // at the footprint's own extent.
+  const local =
+    normal.x === 0
+      ? {
+          minX: -halfWidth,
+          maxX: halfWidth,
+          minY: normal.y > 0 ? halfDepth : -halfDepth - clearance,
+          maxY: normal.y > 0 ? halfDepth + clearance : -halfDepth,
+        }
+      : {
+          minX: normal.x > 0 ? halfWidth : -halfWidth - clearance,
+          maxX: normal.x > 0 ? halfWidth + clearance : -halfWidth,
+          minY: -halfDepth,
+          maxY: halfDepth,
+        };
+
+  return rotatedRectBounds(transform, local.minX, local.minY, local.maxX, local.maxY);
+}
+
 interface OccupantBounds {
   readonly placementId: string;
   readonly bounds: Bounds;
@@ -286,8 +370,8 @@ function occupantBounds(placements: readonly Placement[], catalog: Catalog): Occ
     if (!object) return null;
     found.push({
       placementId: placement.id,
-      bounds: boundsAround(
-        placement.transform.position,
+      bounds: footprintBounds(
+        placement.transform,
         object.planningFootprint.width,
         object.planningFootprint.depth,
       ),
@@ -413,6 +497,7 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
 
   const clearance = input.object.serviceClearance;
   const footprint = input.object.planningFootprint;
+  const normals = sideNormals(input.object);
 
   const occupants = occupantBounds(input.occupants, input.catalog);
   if (occupants === null) return unavailable('SC-906');
@@ -423,24 +508,21 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
   let reachable = 0;
   for (const placement of input.placements) {
     const blockers = [...excluding(occupants, placement.id), ...obstacles];
-    const centre = placement.transform.position;
 
+    /*
+     * Built in the object's own local frame — width along local x, depth along local y, the face
+     * a rectangle extending outward from whichever edge `sideNormals` says is that side — and only
+     * then rotated into model space with `rotatedRectBounds`. The old version built these directly
+     * in model space assuming front was always +Y, which was two assumptions baked into one
+     * formula: that the object is never rotated, and that its front edge is always "south". Both
+     * were true of every fixture used to write it and neither is true in general.
+     */
     const faces: Bounds[] = [];
     if (clearance.front !== null) {
-      faces.push({
-        minX: centre.x - footprint.width / 2,
-        maxX: centre.x + footprint.width / 2,
-        minY: centre.y + footprint.depth / 2,
-        maxY: centre.y + footprint.depth / 2 + clearance.front,
-      });
+      faces.push(localFaceBounds(footprint, normals.front, clearance.front, placement.transform));
     }
     if (clearance.rear !== null) {
-      faces.push({
-        minX: centre.x - footprint.width / 2,
-        maxX: centre.x + footprint.width / 2,
-        minY: centre.y - footprint.depth / 2 - clearance.rear,
-        maxY: centre.y - footprint.depth / 2,
-      });
+      faces.push(localFaceBounds(footprint, normals.rear, clearance.rear, placement.transform));
     }
 
     // No declared clearance at all is a data gap, not a pass: it cannot be established that
