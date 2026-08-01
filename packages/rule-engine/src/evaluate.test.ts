@@ -399,3 +399,73 @@ describe('the report', () => {
     expect(report.results[0]?.source.revision).toBe('Rev. 1');
   });
 });
+
+/**
+ * Owner decision D5: *"If one placement cannot be evaluated, the level cannot receive a PASS.
+ * Report: Inconclusive and identify the unevaluable placement."*
+ *
+ * The audit's smallest case, verbatim: two machines 100 mm apart, one referencing a catalogue id
+ * that does not exist. The engine dropped it three times over — `evaluate` never resolved it,
+ * `evaluateCollision` left it out of the scene, `evaluateClearance` skipped it — and then reported
+ * the survivor GREEN twice: *"FX 1 does not overlap any other equipment"* and *"Nothing stands
+ * within FX 1's 1,200 mm front clearance."* Both sentences were positively false.
+ */
+describe('D5 — a placement the catalogue cannot answer for', () => {
+  const ghost = { ...machineAt(2, { x: 0, y: 850 }), equipmentObjectId: 'ghost_machine' };
+
+  function reportWithGhost() {
+    return evaluate({
+      placements: [machineAt(1, { x: 0, y: 0 }), ghost],
+      catalog: fixtureCatalog([fixtureEquipmentRecord({ dataStatus: 'verified' })]),
+      ruleSet: fixtureRuleSet([
+        fixtureClearanceRule({ threshold: 1_200, status: 'verified' }),
+        fixtureCollisionRule({ status: 'verified' }),
+      ]),
+    });
+  }
+
+  it('names the unevaluable placement instead of dropping it', () => {
+    const report = reportWithGhost();
+    const named = report.results.filter((result) => result.reasonCode === 'RC-903');
+
+    expect(named).toHaveLength(1);
+    expect(named[0]?.placementIds).toEqual([ghost.id]);
+    // The id an engineer has to go and fix is in the sentence, not only in the data.
+    expect(renderReason('en', 'RC-903', named[0]?.reasonParams ?? {})).toContain('ghost_machine');
+  });
+
+  it('reports no pass for the machine it could not measure against', () => {
+    const report = reportWithGhost();
+
+    // Nothing may claim the scene was clear. Before this decision both of these were GREEN.
+    expect(report.counts.GREEN).toBe(0);
+    for (const result of report.results) {
+      expect(result.reasonCode).not.toBe('RC-202');
+      expect(result.reasonCode).not.toBe('RC-103');
+    }
+    expect(report.results.some((result) => result.reasonCode === 'RC-904')).toBe(true);
+  });
+
+  it('leaves the level unable to pass, and says so as unevaluable', () => {
+    const report = reportWithGhost();
+    // `kind: 'unevaluable'` is what carries this into the report's verdict.
+    expect(report.results.every((result) => result.level !== 'GREEN')).toBe(true);
+  });
+
+  it('still passes cleanly when every placement resolves', () => {
+    // The control. Without the ghost the same geometry is a genuine pass, so the assertions above
+    // are about the missing record and not about the fixture being unsatisfiable.
+    const report = evaluate({
+      placements: [machineAt(1, { x: 0, y: 0 }), machineAt(2, { x: 0, y: 2_000 })],
+      catalog: fixtureCatalog([fixtureEquipmentRecord({ dataStatus: 'verified' })]),
+      ruleSet: fixtureRuleSet([
+        fixtureClearanceRule({ threshold: 1_200, status: 'verified' }),
+        fixtureCollisionRule({ status: 'verified' }),
+      ]),
+    });
+
+    expect(report.counts.GREEN).toBeGreaterThan(0);
+    expect(report.results.some((result) => result.reasonCode === 'RC-903')).toBe(false);
+    expect(report.results.some((result) => result.reasonCode === 'RC-904')).toBe(false);
+  });
+});

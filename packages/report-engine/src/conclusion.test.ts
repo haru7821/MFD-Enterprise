@@ -237,3 +237,57 @@ describe('the summary', () => {
     expect(summary.totalEquipment).toBe(3);
   });
 });
+
+/**
+ * Owner decision D5: *"If one placement cannot be evaluated, the level cannot receive a PASS.
+ * Report: Inconclusive and identify the unevaluable placement."*
+ *
+ * The verdict end of the change made in `@mfd/rule-engine`'s `evaluate`. The audit's measured
+ * failure was `{"totalEquipment":2,"green":2,"red":0,"verdict":"acceptable","grounds":[]}` — a
+ * clean bill of health for a level holding a machine nobody had the dimensions of.
+ */
+describe('D5 — an unevaluable placement cannot leave the level acceptable', () => {
+  it('is inconclusive when the only findings are unevaluable ones', () => {
+    // What the engine now produces for that case: the machine it could not resolve (RC-903) and
+    // the neighbour whose pass it withdrew (RC-904). No GREEN anywhere.
+    expect(
+      verdictOf(
+        [
+          { level: 'YELLOW', reasonCode: 'RC-903' },
+          { level: 'YELLOW', reasonCode: 'RC-904' },
+        ],
+        { equipment: 2 },
+      ),
+    ).toBe('inconclusive');
+  });
+
+  it('counts them in the summary grounds rather than leaving them empty', () => {
+    const summary = buildSummary({
+      reports: [
+        report([
+          { level: 'YELLOW', reasonCode: 'RC-903' },
+          { level: 'YELLOW', reasonCode: 'RC-904' },
+        ]),
+      ],
+      totalEquipment: 2,
+      uncalibratedLevels: 0,
+      draftFieldGroups: 0,
+      draftRuleCount: 0,
+    });
+
+    expect(summary.grounds.length).toBeGreaterThan(0);
+  });
+
+  it('a genuine violation still outranks them', () => {
+    // Unevaluable must not soften a real finding — a RED is still not_acceptable.
+    expect(
+      verdictOf(
+        [
+          { level: 'RED', reasonCode: 'RC-201' },
+          { level: 'YELLOW', reasonCode: 'RC-903' },
+        ],
+        { equipment: 2 },
+      ),
+    ).toBe('not_acceptable');
+  });
+});

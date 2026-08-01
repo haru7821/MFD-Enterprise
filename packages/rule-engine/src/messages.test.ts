@@ -146,6 +146,8 @@ describe('rendering', () => {
       scope: 'boundary',
       measured: 150,
       required: 1_200,
+      equipmentObjectId: 'vantive_ak98',
+      count: 2,
     };
 
     for (const code of REASON_CODE_LIST) {

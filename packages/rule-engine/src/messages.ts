@@ -243,6 +243,44 @@ export const REASON_CODES = {
   },
 
   // ── Caveats: qualify a finding without replacing it ─────────────────────────
+  /**
+   * A placement whose catalogue record is missing, named rather than dropped.
+   *
+   * > Owner decision D5: *"If one placement cannot be evaluated, the level cannot receive a PASS.
+   * > Report: Inconclusive and identify the unevaluable placement."*
+   *
+   * The engine used to drop these silently — `if (object) resolved.push(...)` — and the machines
+   * around them were then reported clear, in so many words: *"FX 1 does not overlap any other
+   * equipment"* beside a machine the collision test could not see.
+   */
+  'RC-903': {
+    title: { ko: '카탈로그 자료 없음', en: 'Equipment Record Missing' },
+    template: {
+      ko: '{label}의 장비 자료({equipmentObjectId})가 카탈로그에 없어 이 장비를 검토하지 못했습니다.',
+      en: '{label} could not be checked: its equipment record ({equipmentObjectId}) is not in the catalogue.',
+    },
+    kind: 'unevaluable',
+  },
+  /**
+   * A rule that measures one machine **against others**, on a level holding a machine nobody has
+   * the dimensions of.
+   *
+   * Separate from `RC-903`, which names the machine that is missing; this is what the *other*
+   * machines get. Collision and clearance both answer "what else is near this?", and an answer
+   * computed over a scene with an object of unknown size left out of it is not a pass — it is a
+   * measurement that excluded something. Containment is deliberately not affected: whether a machine
+   * is inside the room does not depend on any other machine, and the independence of the three
+   * evaluators is already enforced by test.
+   */
+  'RC-904': {
+    title: { ko: '검토 범위 불완전', en: 'Incomplete Scene' },
+    template: {
+      ko: '이 층에 치수를 알 수 없는 장비({count}대)가 있어 {label}의 이격/간섭 검토 결과를 신뢰할 수 없습니다.',
+      en: '{label} cannot be judged against its neighbours: this level holds {count} item(s) whose dimensions are unknown.',
+    },
+    kind: 'unevaluable',
+  },
+
   'RC-911': {
     title: { ko: '도면 축척 미설정', en: 'Plan Not Calibrated' },
     template: {

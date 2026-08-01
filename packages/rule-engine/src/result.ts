@@ -40,9 +40,25 @@ import type { ThresholdOrigin } from './threshold';
  */
 export const EVALUATION_RESULT_VERSION = 2;
 
+/**
+ * What a finding is *about*.
+ *
+ * The two rule categories, plus one thing that is not a rule at all.
+ *
+ * > Owner decision D5: *"If one placement cannot be evaluated, the level cannot receive a PASS.
+ * > Report: Inconclusive and identify the unevaluable placement."*
+ *
+ * `equipment_data` is what that finding carries. It is deliberately **not** a `RuleCategory`: no
+ * rule may declare it, because nothing about it is a requirement somebody wrote down. It says the
+ * engine had no record to apply a requirement to, which is a fact about the project's data rather
+ * than about the layout — and filing it under `clearance` or `collision` would put it in a
+ * standards table beside clauses that have documents behind them.
+ */
+export type ResultCategory = RuleCategory | 'equipment_data';
+
 export interface EvaluationResult {
   readonly ruleId: string;
-  readonly category: RuleCategory;
+  readonly category: ResultCategory;
   readonly level: ResultLevel;
   /** One placement for clearance, two for a collision. */
   readonly placementIds: readonly string[];

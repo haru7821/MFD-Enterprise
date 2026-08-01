@@ -98,7 +98,7 @@ describe('the frozen evaluation contract', () => {
   it('holds every field to its agreed type', () => {
     for (const result of report().results) {
       expect(typeof result.ruleId).toBe('string');
-      expect(['clearance', 'collision']).toContain(result.category);
+      expect(['clearance', 'collision', 'equipment_data']).toContain(result.category);
       expect(RESULT_LEVELS).toContain(result.level);
       expect(Array.isArray(result.placementIds)).toBe(true);
       expect(result.measured === null || typeof result.measured === 'number').toBe(true);
