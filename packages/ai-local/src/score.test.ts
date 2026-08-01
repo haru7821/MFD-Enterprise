@@ -730,6 +730,9 @@ describe('walking distance routes around equipment; the service runs do not', ()
       b.criteria.find((entry) => entry.criterion === 'ro_piping_length')?.measured;
 
     expect(walking(clear)).toBe(5_500);
+    // 6,250 is 25 lattice cells at the router's 250 mm pitch (routing.ts's CELL) — pinned as
+    // change-detection for this scenario, not a geometric constant. A future change to the
+    // lattice pitch is expected to move this number; a regression in occupant avoidance is not.
     expect(walking(blocked)).toBe(6_250);
     // Same origin, same target, same blocker — and the pipe run does not move.
     expect(ro(blocked)).toBe(ro(clear));
