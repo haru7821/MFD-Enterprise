@@ -329,6 +329,17 @@ test('shows what each candidate scores, and against what', async ({ page }) => {
   await expect(page.getByTestId('layout-coverage-1')).toContainText('Coverage');
   await expect(page.getByTestId('layout-compliance-1')).toContainText('0 violations');
   await expect(page.getByTestId('layout-breakdown-1')).toContainText('Maintenance access');
+  /*
+   * `placeServices`' own doc comment: with the delivery allowance not yet observed in any
+   * drawing, `installation_feasibility` reports `SC-905` specifically, not a generic "could not
+   * measure". The twelfth CTO review round found `SC-905`/`SC-906`/`SC-907` had no entry in the
+   * panel's lookup table and fell through to a plain "not measurable" — this is the one existing
+   * spec both scenarios (services placed, breakdown table visible) already satisfy, so it is
+   * where the fix belongs pinned.
+   */
+  await expect(page.getByTestId('layout-breakdown-1')).toContainText(
+    'no observed figure in the drawing dataset',
+  );
   // Bilingual, composed from AR- codes — the solver never writes prose of its own.
   await expect(page.getByTestId('layout-reason-1')).toContainText('Arranged 3 stations');
   await expect(page.getByTestId('layout-reason-1')).toContainText('방식으로');

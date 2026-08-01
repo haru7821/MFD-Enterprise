@@ -177,10 +177,10 @@ function clipHalfPlane(
  * The deduplication is **exact-equality**, not a distance tolerance — deliberately: today's only
  * caller (`@mfd/ai-local`'s `freeDistanceOnSide`) passes an obstruction's traced vertices
  * untransformed (`runSolver.ts` reads `boundary.vertices` directly). Exact equality is what grid
- * snapping actually produces, and a distance tolerance would need a scale to compare against —
- * the same scale question `sinAngle`'s epsilon already answers for collinearity, not one this
- * function should answer twice with two different numbers. **If a caller ever feeds this rotated
- * or otherwise transformed geometry**, floating-point arithmetic can turn an exact duplicate into
+ * snapping actually produces, and a distance tolerance would need a millimetre-scale threshold
+ * this function has no principled way to pick — unlike `sinAngle`'s collinearity epsilon just
+ * above, which is dimensionless and answers no scale question at all. **If a caller ever feeds this
+ * rotated or otherwise transformed geometry**, floating-point arithmetic can turn an exact duplicate into
  * a near-duplicate a fraction of a millimetre apart, which this check would then treat as two
  * genuine, very-short edges rather than one degenerate point — a convex obstruction could then
  * read as non-convex and needlessly void `compliance_margin`. Not a defect in what exists today,
