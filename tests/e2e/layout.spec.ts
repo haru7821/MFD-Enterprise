@@ -592,10 +592,11 @@ test('flags only the machine that is elsewhere, on a collision that spans two ro
     [0.25, 0.85],
   ]);
 
-  // One just inside the first room, one just inside the second, close enough to overlap.
+  // One well inside the first room, one right at the shared edge — close enough that their
+  // 800 mm footprints still overlap across it.
   await placeByHand(page, [
-    [0.5, 0.535],
-    [0.5, 0.565],
+    [0.5, 0.495],
+    [0.5, 0.555],
   ]);
 
   await selectRoom(page);

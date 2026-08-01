@@ -817,24 +817,22 @@ describe('equipment geometry rotates with its placement', () => {
     expect(measurementOf(clearedByRotation, 'maintenance_access')?.measured).toBe(1);
   });
 
-  it("starts the compliance-margin probe from the rotated object's own face, not a model-space guess", () => {
+  it("starts the compliance-margin probe from the rotated object's own clearance zone, not its footprint", () => {
     /*
-     * A third assumption in this file, found by the second review of this decision:
-     * `freeDistanceOnSide` rotated the *normal* correctly, then picked which half-extent (width or
-     * depth) to start the probe from by comparing the **rotated** direction's x/y magnitudes —
-     * which agrees with the *local* axis only at multiples of 90° by coincidence, not by
-     * construction, and is a coin-flip at 45°.
+     * A fourth assumption in this file, found by the Critical 0 coordinate-contract review:
+     * `freeDistanceOnSide` derived its reach from `transform.position` and a half-extent, and
+     * `transform.position` is the footprint's **corner** for every shipped, `front-left` record —
+     * so the probe started a half-footprint short of the object's actual face. An obstruction
+     * placed genuinely inside the clearance zone is the case the old code got wrong without
+     * throwing or producing an obviously-impossible number: it simply measured a shorter clearance
+     * zone than the one `clearanceZones` (and the renderer, and the gate) agree the object has.
      *
-     * The bed (1,000 x 2,100, `frontEdge: south`) turned 90° has its front normal rotated to due
-     * west. The correct reach is `depth/2 = 1,050` — the local normal (0, 1) has no x-component, so
-     * it is a north/south side regardless of which way it now points in the world. The old
-     * comparison looked at the *rotated* direction, (-1, 0), saw it was "more x than y", and picked
-     * `width/2 = 500` instead — starting the probe 550 mm short of the bed's actual face.
-     *
-     * An obstruction sits due west of both possible starting points, so the same obstacle produces
-     * two different measured margins depending on which one the probe actually started from —
-     * verified through the full criterion, not asserted from the formula alone. Both figures were
-     * confirmed by deliberately reintroducing the old comparison and reading back the result.
+     * The bed (1,000 x 2,100, `front-left`, `frontEdge: south`) turned 90° at (3,000, 3,000) has a
+     * front clearance zone of x ∈ [-300, 900], y ∈ [3,000, 4,000] — `clearanceZones` itself, not a
+     * hand re-derivation. The obstruction below sits squarely inside that zone, 450 mm in from the
+     * face at (900, 3,500): the probe travels 450 mm before it is blocked, for a 0.375 ratio against
+     * the 1,200 mm requirement. Confirmed by running the full criterion, not asserted from the
+     * formula alone.
      */
     const bed = fixtureCatalog().get('fixture_bed');
     if (!bed) throw new Error('fixture catalogue did not contain fixture_bed');
@@ -852,12 +850,14 @@ describe('equipment geometry rotates with its placement', () => {
       transform: { position: { x: 3_000, y: 3_000 }, rotation: 90_000, mirrored: false },
       spaceId: null,
     };
-    // Due west of both the correct start (1,950, 3,000) and the buggy one (2,500, 3,000).
+    // Squarely inside the front clearance zone (x ∈ [-300, 900], y ∈ [3,000, 4,000]), not the
+    // footprint (x ∈ [900, 3,000], y ∈ [3,000, 4,000]) the old, corner-anchored probe would have
+    // started inside of.
     const obstruction = [
-      { x: 1_250, y: 2_900 },
-      { x: 1_350, y: 2_900 },
-      { x: 1_350, y: 3_100 },
-      { x: 1_250, y: 3_100 },
+      { x: 350, y: 3_400 },
+      { x: 450, y: 3_400 },
+      { x: 450, y: 3_600 },
+      { x: 350, y: 3_600 },
     ];
 
     const breakdown = scoreLayout({
@@ -877,9 +877,7 @@ describe('equipment geometry rotates with its placement', () => {
       stationTarget: 1,
     });
 
-    // 600 mm free (probe stops at the obstruction's east edge, 50 mm steps) over the 1,200 mm
-    // requirement. The buggy start would have measured 1,150 mm free (a 0.9583 ratio) instead.
-    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.5);
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.375);
   });
 });
 

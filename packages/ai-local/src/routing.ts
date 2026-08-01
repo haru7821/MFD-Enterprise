@@ -62,15 +62,6 @@ export function boundsOf(polygon: readonly Vec2[]): Bounds | null {
   };
 }
 
-export function boundsAround(centre: Vec2, width: number, depth: number): Bounds {
-  return {
-    minX: centre.x - width / 2,
-    minY: centre.y - depth / 2,
-    maxX: centre.x + width / 2,
-    maxY: centre.y + depth / 2,
-  };
-}
-
 function contains(bounds: Bounds, point: Vec2): boolean {
   return (
     point.x >= bounds.minX &&

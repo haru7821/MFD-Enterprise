@@ -2,6 +2,7 @@ import type { PlacementSummary, ReferencePointSummary } from '@mfd/ai-contract';
 import type { Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement } from '@mfd/document-model';
 import type { Catalog, EquipmentObject } from '@mfd/object-library';
+import { footprintCorners, transformForCentre } from '@mfd/object-library';
 import type { KnowledgeBase } from '@mfd/layout-knowledge';
 import type { RuleSet } from '@mfd/rule-engine';
 
@@ -226,34 +227,46 @@ function maximumSlots(input: PipelineInput): number {
   return Math.max(0, columns * rows);
 }
 
-/** The footprints of machines already placed, as polygons the generator can avoid. */
+/**
+ * The footprints of machines already placed, as polygons the generator can avoid.
+ *
+ * > Architecture decision AD-21: `transform.position` is where local `(0, 0)` sits, and
+ * > `symbol.origin` says where that is on the footprint — never assumed to be the centre.
+ *
+ * `input.existing` holds real `Placement`s, already contract-compliant. `footprintCorners` is the
+ * one function in the codebase that turns a placement into its true occupied polygon; rebuilding
+ * that rectangle here by hand — as `position ± width/2, depth/2` — was a second implementation
+ * that assumed every object is `centre`-origin, wrongly, for every object the shipped catalogue
+ * actually has.
+ */
 function occupiedPolygons(input: PipelineInput): Vec2[][] {
   return input.existing.flatMap((placement) => {
     const object = input.catalog.get(placement.equipmentObjectId);
     if (!object) return [];
-    const half = {
-      x: object.planningFootprint.width / 2,
-      y: object.planningFootprint.depth / 2,
-    };
-    const { x, y } = placement.transform.position;
-    return [
-      [
-        { x: x - half.x, y: y - half.y },
-        { x: x + half.x, y: y - half.y },
-        { x: x + half.x, y: y + half.y },
-        { x: x - half.x, y: y + half.y },
-      ],
-    ];
+    return [footprintCorners(object, placement.transform)];
   });
 }
 
+/**
+ * Turns each candidate slot into a real `Placement`.
+ *
+ * > Architecture decision AD-21.
+ *
+ * `candidate.positions` are the **footprint's centre** — `candidates.ts`'s own packing math is
+ * naturally centre-based, and there is nothing wrong with that as an internal representation, as
+ * long as becoming a `Placement` goes through one named conversion rather than an inline offset.
+ * `transformForCentre` is that conversion: it reads `input.object.symbol.origin` and solves for
+ * the `transform.position` that actually centres the footprint there, at the candidate's rotation.
+ * Handing a centre straight to `transform.position` — what this function used to do — silently
+ * placed every AK98 and bed proposal half a footprint away from where the generator drew it.
+ */
 function placementsFor(candidate: Candidate, input: PipelineInput): Placement[] {
-  return candidate.positions.map((position, index) => ({
+  return candidate.positions.map((centre, index) => ({
     id: `${candidate.id}-${index + 1}`,
     equipmentObjectId: input.object.id,
     equipmentObjectVersion: input.object.version,
     label: `${input.object.model} ${index + 1}`,
-    transform: { position, rotation: candidate.rotation, mirrored: false },
+    transform: transformForCentre(input.object, centre, candidate.rotation),
     spaceId: null,
   }));
 }

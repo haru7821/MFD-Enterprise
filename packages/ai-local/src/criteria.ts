@@ -5,13 +5,8 @@ import type {
 } from '@mfd/ai-contract';
 import type { Rect, Vec2 } from '@mfd/cad-engine';
 import type { Boundary, Placement, ReferencePointKind } from '@mfd/document-model';
-import type { ClearanceSide, Catalog, EquipmentObject } from '@mfd/object-library';
-import {
-  clearanceZones,
-  footprintBounds as objectFootprintBounds,
-  localToModel,
-  sideNormals,
-} from '@mfd/object-library';
+import type { ClearanceSide, ClearanceZone, Catalog, EquipmentObject } from '@mfd/object-library';
+import { clearanceZones, footprintBounds as objectFootprintBounds } from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
 import { evaluate } from '@mfd/rule-engine';
 
@@ -200,6 +195,40 @@ function sideOfRule(ruleSet: RuleSet, ruleId: string): ClearanceSide | null {
 const PROBE_STEP_MM = 50;
 const PROBE_CEILING_MULTIPLE = 3;
 
+/**
+ * The midpoint of a `clearanceZones` polygon's edge nearest the footprint, and the outward unit
+ * direction from there to the opposite edge's midpoint.
+ *
+ * `rectCorners` (in `@mfd/object-library`) always emits a zone rectangle's four corners in the
+ * order `[innerA, innerB, outerB, outerA]` — the first two adjacent to the footprint, the last two
+ * at the far edge — so index alone, not any further geometry, says which pair is which.
+ */
+function probeOriginAndDirection(zone: ClearanceZone): { origin: Vec2; direction: Vec2 } | null {
+  const [innerA, innerB, outerB, outerA] = zone.polygon;
+  if (!innerA || !innerB || !outerA || !outerB) return null;
+
+  const origin = { x: (innerA.x + innerB.x) / 2, y: (innerA.y + innerB.y) / 2 };
+  const outer = { x: (outerA.x + outerB.x) / 2, y: (outerA.y + outerB.y) / 2 };
+  const length = Math.hypot(outer.x - origin.x, outer.y - origin.y);
+  if (length === 0) return null;
+
+  return { origin, direction: { x: (outer.x - origin.x) / length, y: (outer.y - origin.y) / length } };
+}
+
+/**
+ * Walks outward from a service face until something stops the walk, in millimetres.
+ *
+ * > Architecture decision AD-21.
+ *
+ * The face itself comes from `@mfd/object-library`'s `clearanceZones` — the same function
+ * `measureMaintenanceAccess` uses for its zone rectangles — rather than being re-derived here from
+ * `sideNormals` and `transform.position` directly. That re-derivation was the residual of the
+ * centre-vs-corner defect this file otherwise closed: `transform.position` is the footprint's
+ * *corner* for every shipped, `front-left` record, and a probe anchored there starts inside the
+ * footprint rather than at the face, over-reporting free distance by roughly half the footprint's
+ * depth or width. `clearanceZones` already resolves `symbol.origin` and rotation to produce the
+ * zone's true model-space rectangle; this only has to find its inner edge's midpoint.
+ */
 function freeDistanceOnSide(
   placement: Placement,
   side: ClearanceSide,
@@ -214,34 +243,12 @@ function freeDistanceOnSide(
   const required = object.serviceClearance[side];
   if (required === null) return null;
 
-  const normal = sideNormals(object)[side];
-  const transform = placement.transform;
-  // The normal is in the object's local frame; rotating it by the placement's own rotation gives
-  // the direction in model space. `localToModel` on the origin and on the normal, differenced,
-  // does that without this file needing to know the transform's internals.
-  const origin = localToModel({ x: 0, y: 0 }, transform);
-  const tip = localToModel(normal, transform);
-  const direction = { x: tip.x - origin.x, y: tip.y - origin.y };
+  const zone = clearanceZones(object, placement.transform).find((entry) => entry.side === side);
+  if (!zone) return null;
 
-  const footprint = input.catalog.get(placement.equipmentObjectId)?.planningFootprint;
-  if (!footprint) return null;
+  const probe = probeOriginAndDirection(zone);
+  if (!probe) return null;
 
-  /*
-   * Start at the face rather than the centre. Which half-extent that is depends on which LOCAL
-   * axis the normal lies along — `normal.x !== 0` for east/west, `normal.y !== 0` for north/south —
-   * and not on the *rotated* `direction`, which the previous version compared instead. Comparing
-   * the rotated direction is wrong at every angle except multiples of 90°: at rotation 0 it happens
-   * to agree with the local axis, which is why every test written before a non-square, rotated
-   * occupant existed passed anyway. At 45° the comparison degenerates to an arbitrary tie-break;
-   * a bed at 90° started this probe 550 mm inside its own footprint rather than at its face.
-   *
-   * This does not correct a separate, pre-existing simplification: for a `symbol.origin:
-   * "front-left"` object — every shipped record — `transform.position` is the footprint's corner,
-   * not its centre, so this probe's start point is offset from the true face centre along the
-   * perpendicular axis too. That is unrelated to rotation and unchanged here; it is a question
-   * about `freeDistanceOnSide`'s anchor, not about which axis its reach uses.
-   */
-  const reach = normal.x !== 0 ? footprint.width / 2 : footprint.depth / 2;
   // Everything in the room blocks the probe, not only this equipment kind — see `occupants`.
   // Excluded by id: the machine being probed is not an obstacle to its own service face.
   const others = excluding(occupants, placement.id);
@@ -249,8 +256,8 @@ function freeDistanceOnSide(
 
   for (let distance = 0; distance <= ceiling; distance += PROBE_STEP_MM) {
     const point = {
-      x: placement.transform.position.x + direction.x * (reach + distance),
-      y: placement.transform.position.y + direction.y * (reach + distance),
+      x: probe.origin.x + probe.direction.x * distance,
+      y: probe.origin.y + probe.direction.y * distance,
     };
 
     const blocked =

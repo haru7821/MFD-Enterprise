@@ -47,6 +47,19 @@ export interface Candidate {
    * renumbering around the gap.
    */
   readonly id: string;
+  /**
+   * Each station's footprint **centre** — not a `Placement`'s `transform.position`.
+   *
+   * > Architecture decision AD-21: `transform.position` is where an object's local `(0, 0)` sits,
+   * > and every shipped, `front-left` record has that at the footprint's corner, not its centre.
+   *
+   * The packing math above is naturally centre-based — "a rectangle here" is simpler to reason
+   * about than a corner offset by half a footprint and then rotated about the wrong point — and
+   * there is nothing wrong with that as this file's own internal representation. What would be
+   * wrong is a caller assigning one of these straight to `transform.position`, which is exactly
+   * what `generate.ts` used to do. `transformForCentre` (`@mfd/object-library`) is the one
+   * conversion from a centre here to a real placement; see `generate.ts`'s `placementsFor`.
+   */
   readonly positions: readonly Vec2[];
   /** Millidegrees, as everywhere in the document. One rotation for the whole arrangement. */
   readonly rotation: number;

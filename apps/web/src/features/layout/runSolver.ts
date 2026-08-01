@@ -5,6 +5,7 @@ import { dialysisKnowledge } from '@mfd/layout-knowledge/base';
 import type { Level, Placement } from '@mfd/document-model';
 import { obstructionBoundaries } from '@mfd/document-model';
 import type { Catalog, EquipmentObject } from '@mfd/object-library';
+import { footprintBounds } from '@mfd/object-library';
 import type { RuleSet } from '@mfd/rule-engine';
 
 import type { LayoutEmptyReason, LayoutProposal, LayoutProposalSet } from '@/editor/editorState';
@@ -353,10 +354,20 @@ function roomOf(level: Level, spaceId: string | null) {
  * rearrangement, where the gates then judge its proposed position properly. Excluding it would
  * leave it as an obstruction the optimiser works around, which is a decision the engineer did not
  * make.
+ *
+ * > Architecture decision AD-21: `transform.position` is where local `(0, 0)` sits, not the
+ * > footprint's centre — true for every shipped, `front-left` record. The centre this test actually
+ * > needs comes from `footprintBounds`'s axis-aligned bounding box: its midpoint is the rectangle's
+ * > true geometric centre regardless of rotation or which corner `transform.position` names, so it
+ * > needs no case on `symbol.origin` to get there.
  */
 function withinRoom(placement: Placement, room: PipelineInput['room'], catalog: Catalog): boolean {
-  if (!catalog.get(placement.equipmentObjectId)) return false;
-  const { x, y } = placement.transform.position;
+  const object = catalog.get(placement.equipmentObjectId);
+  if (!object) return false;
+
+  const bounds = footprintBounds(object, placement.transform);
+  const x = bounds.x + bounds.width / 2;
+  const y = bounds.y + bounds.height / 2;
 
   let inside = false;
   for (let i = 0, j = room.length - 1; i < room.length; j = i, i += 1) {

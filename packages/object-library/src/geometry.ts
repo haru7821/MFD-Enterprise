@@ -111,6 +111,52 @@ export function modelToLocal(point: Vec2, transform: Transform): Vec2 {
   return { x: transform.mirrored ? -x : x, y };
 }
 
+/**
+ * The `Transform` that puts this object's footprint **centred** on `centre` — the one place a
+ * caller is allowed to go from "I want this footprint here" to a `transform.position`.
+ *
+ * > Architecture decision AD-21: `transform.position` is where local `(0, 0)` sits, and
+ * > `symbol.origin` says where that is on the footprint. There is exactly one definition, and
+ * > every conversion into it goes through a named function — never an inline `x - width / 2`.
+ *
+ * A packing algorithm (grid slots, candidate generation) naturally reasons in centres: it is
+ * simpler to say "a rectangle here" than "this rectangle's `front-left` corner here, offset by
+ * half its width and depth, then rotated about that corner rather than about the rectangle's own
+ * middle." This function is the boundary where that convenience ends and the one true contract
+ * begins — solving `localToModel(localCentre, transform) === centre` for `transform.position`,
+ * where `localCentre` is `(0, 0)` for a `centre`-origin object and `(width / 2, depth / 2)` for a
+ * `front-left` one.
+ *
+ * At `rotation: 0`, this is exactly `centre` minus the object's own half-extent — the fixed offset
+ * every centre-anchored caller in this codebase used to apply by hand, inconsistently, and only
+ * for the unrotated case. This generalises it to any rotation and mirror, and reads `symbol.origin`
+ * instead of assuming one.
+ */
+export function transformForCentre(
+  object: EquipmentObject,
+  centre: Vec2,
+  rotation = 0,
+  mirrored = false,
+): Transform {
+  const footprint = localFootprintRect(object);
+  const localCentre = {
+    x: footprint.x + footprint.width / 2,
+    y: footprint.y + footprint.height / 2,
+  };
+
+  const x = mirrored ? -localCentre.x : localCentre.x;
+  const radians = (rotation / 1000) * (Math.PI / 180);
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const rotated = { x: x * cos - localCentre.y * sin, y: x * sin + localCentre.y * cos };
+
+  return {
+    position: { x: centre.x - rotated.x, y: centre.y - rotated.y },
+    rotation,
+    mirrored,
+  };
+}
+
 function rectCorners(r: Rect): Vec2[] {
   return [
     { x: r.x, y: r.y },

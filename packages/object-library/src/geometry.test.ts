@@ -29,6 +29,7 @@ import {
   modelToLocal,
   portPoints,
   sideNormals,
+  transformForCentre,
 } from './geometry';
 import type { EquipmentObject } from './schema';
 
@@ -179,6 +180,57 @@ describe('placement transform', () => {
       900,
       6,
     );
+  });
+});
+
+describe('transformForCentre — the one conversion from a footprint centre to a placement', () => {
+  /*
+   * > Architecture decision AD-21: exactly one definition of `transform.position`, and every
+   * > conversion into it goes through a named function.
+   *
+   * The fixture object is `front-left`, 900 x 750 — every shipped catalogue record is too.
+   */
+
+  it('offsets by half the footprint at rotation 0, the fixed amount every caller used to hand-roll', () => {
+    const transform = transformForCentre(machine(), { x: 5_000, y: 2_000 });
+
+    expect(transform.position.x).toBeCloseTo(5_000 - 450, 6);
+    expect(transform.position.y).toBeCloseTo(2_000 - 375, 6);
+    expect(transform.rotation).toBe(0);
+    expect(transform.mirrored).toBe(false);
+  });
+
+  it('is the identity for a centre-origin object', () => {
+    const centred = machine({ symbol: { origin: 'centre', outline: 'rectangle', frontEdge: 'south' } });
+    const transform = transformForCentre(centred, { x: 5_000, y: 2_000 });
+
+    expect(transform.position).toEqual({ x: 5_000, y: 2_000 });
+  });
+
+  it('places the true centre at the requested point under rotation, verified independently', () => {
+    /*
+     * "True centre" measured a second way — `footprintBounds`'s bounding-box midpoint — so this
+     * is not the same arithmetic as `transformForCentre` checking itself. A rectangle is point-
+     * symmetric about its own centre, so its axis-aligned bounding box is centred there at any
+     * rotation, about any pivot; that is what makes the midpoint a valid independent check.
+     */
+    for (const rotation of [0, 37_500, 90_000, 181_000, 271_500]) {
+      const centre = { x: 3_300, y: -1_200 };
+      const transform = transformForCentre(machine(), centre, rotation);
+      const bounds = footprintBounds(machine(), transform);
+
+      expect(bounds.x + bounds.width / 2).toBeCloseTo(centre.x, 6);
+      expect(bounds.y + bounds.height / 2).toBeCloseTo(centre.y, 6);
+    }
+  });
+
+  it('places the true centre at the requested point when mirrored too', () => {
+    const centre = { x: 900, y: 900 };
+    const transform = transformForCentre(machine(), centre, 45_000, true);
+    const bounds = footprintBounds(machine(), transform);
+
+    expect(bounds.x + bounds.width / 2).toBeCloseTo(centre.x, 6);
+    expect(bounds.y + bounds.height / 2).toBeCloseTo(centre.y, 6);
   });
 });
 

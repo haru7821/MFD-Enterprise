@@ -209,7 +209,43 @@ interprets intent, explains results, and drafts documentation. A generative layo
 validator is unusable in a regulated context — which is why AI comes after the rule
 engine, not before.
 
-## 4. Deferred / Flagged Decisions
+### AD-21. `transform.position` is where an object's local `(0, 0)` sits — never assumed to be the centre
+
+`Placement.transform.position` has exactly one meaning: the model-space point that a `Placement`'s
+local `(0, 0)` maps to under `localToModel`. Where local `(0, 0)` falls *on the footprint* is a
+separate, per-object fact — `EquipmentObject.symbol.origin`, `"front-left"` or `"centre"` — already
+documented in `docs/data-model/OBJECT_MODEL.md`. Every shipped catalogue record and fixture is
+`"front-left"`: the footprint spans `[0, width] × [0, depth]` in local space, so `position` names
+the corner, not the middle.
+
+`@mfd/object-library`'s `geometry.ts` is the sole owner of this contract: `localFootprintRect`,
+`footprintCorners`, `footprintBounds`, `clearanceZones`, `localToModel` and `modelToLocal` are the
+only functions permitted to read `symbol.origin` and reason about where a footprint actually sits.
+Every consumer — the renderer, the three rule-engine evaluators (collision, clearance, boundary),
+the report engine's floor plan, the AI solver's scoring criteria — calls into these rather than
+re-deriving a footprint from `position` by hand. The one legitimate direction of travel the other
+way, "I have a footprint's desired centre, not a placement" — true of a packing algorithm's internal
+math — goes through the one named adapter, `transformForCentre`, and nowhere else.
+
+This was violated, silently, by two independent hand-rolled re-derivations that both assumed
+`position` was the centre: `packages/ai-local/src/generate.ts`'s candidate generator (mistaking
+every existing machine's occupied polygon, and placing every new one, half a footprint away from
+where it was drawn) and `apps/web/src/features/layout/runSolver.ts`'s room-membership test (silently
+testing the corner against the room polygon while its own comment claimed "centre-based"). Neither
+was caught by a unit fixture, because both bugs are invisible at `rotation: 0` on a `centre`-origin
+object — no shipped object is `centre`-origin, and the fixtures that exercised rotation predate the
+rotation-aware footprint work that made the corner/centre distinction observable. Fixed by deleting
+the hand-rolled geometry and delegating; regression-tested in
+`packages/ai-local/src/coordinateContract.test.ts`, which drives one rotated placement through
+generation and Gate 2 and confirms its occupied polygon is unchanged by a serialize/reload round
+trip.
+
+`packages/ai-local/src/criteria.ts`'s `freeDistanceOnSide` carried a related, narrower defect: it
+anchored its clearance probe on `transform.position` — correct for a `centre`-origin object, a
+footprint short for every real one — rather than on `clearanceZones`' own face geometry. Closed the
+same way, in `packages/ai-local/src/score.test.ts`.
+
+
 
 Versions below are those of the TS Edition specification, section 7.
 
