@@ -10,6 +10,7 @@
   "totals": {
     "drawings": 306,
     "completed": 0,
+    "batchComplete": 0,
     "stopped": 306,
     "byStage": [
       {
@@ -51,6 +52,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -65,6 +67,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -79,6 +82,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -93,6 +97,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -107,6 +112,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -121,6 +127,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -135,6 +142,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -149,6 +157,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -163,6 +172,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -177,6 +187,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -191,6 +202,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -205,6 +217,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -219,6 +232,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -233,6 +247,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -247,6 +262,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -261,6 +277,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -275,6 +292,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -289,6 +307,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -303,6 +322,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -317,6 +337,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -331,6 +352,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -345,6 +367,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -359,6 +382,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -373,6 +397,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -387,6 +412,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -401,6 +427,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -415,6 +442,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -429,6 +457,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -443,6 +472,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -457,6 +487,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -471,6 +502,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -485,6 +517,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -499,6 +532,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -513,6 +547,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -527,6 +562,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -541,6 +577,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -555,6 +592,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -569,6 +607,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -583,6 +622,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -597,6 +637,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -611,6 +652,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -625,6 +667,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -639,6 +682,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -653,6 +697,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -667,6 +712,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -681,6 +727,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -695,6 +742,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -709,6 +757,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -723,6 +772,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -737,6 +787,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -751,6 +802,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -765,6 +817,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -779,6 +832,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -793,6 +847,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -807,6 +862,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -821,6 +877,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -835,6 +892,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -849,6 +907,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -863,6 +922,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -877,6 +937,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -891,6 +952,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -905,6 +967,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -919,6 +982,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -933,6 +997,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -947,6 +1012,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -961,6 +1027,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -975,6 +1042,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -989,6 +1057,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1003,6 +1072,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1017,6 +1087,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1031,6 +1102,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1045,6 +1117,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1059,6 +1132,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1073,6 +1147,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1087,6 +1162,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1101,6 +1177,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1115,6 +1192,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1129,6 +1207,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1143,6 +1222,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1157,6 +1237,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1171,6 +1252,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1185,6 +1267,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1199,6 +1282,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1213,6 +1297,7 @@
       "page": 1,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1227,6 +1312,7 @@
       "page": 2,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1241,6 +1327,7 @@
       "page": 3,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1255,6 +1342,7 @@
       "page": 4,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1269,6 +1357,7 @@
       "page": 5,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1283,6 +1372,7 @@
       "page": 6,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1297,6 +1387,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1311,6 +1402,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1325,6 +1417,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1339,6 +1432,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1353,6 +1447,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1367,6 +1462,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1381,6 +1477,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1395,6 +1492,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1409,6 +1507,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1423,6 +1522,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1437,6 +1537,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1451,6 +1552,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1465,6 +1567,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1479,6 +1582,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1493,6 +1597,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1507,6 +1612,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1521,6 +1627,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1535,6 +1642,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1549,6 +1657,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1563,6 +1672,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1577,6 +1687,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1591,6 +1702,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1605,6 +1717,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1619,6 +1732,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1633,6 +1747,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1647,6 +1762,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1661,6 +1777,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1675,6 +1792,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1689,6 +1807,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1703,6 +1822,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1717,6 +1837,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1731,6 +1852,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1745,6 +1867,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1759,6 +1882,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1773,6 +1897,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1787,6 +1912,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1801,6 +1927,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1815,6 +1942,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1829,6 +1957,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1843,6 +1972,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1857,6 +1987,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1871,6 +2002,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -1885,6 +2017,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1899,6 +2032,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -1918,6 +2052,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1932,6 +2067,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1946,6 +2082,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1960,6 +2097,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1974,6 +2112,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -1988,6 +2127,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2002,6 +2142,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2016,6 +2157,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2030,6 +2172,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2044,6 +2187,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2058,6 +2202,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2072,6 +2217,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2086,6 +2232,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2100,6 +2247,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2114,6 +2262,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2128,6 +2277,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2142,6 +2292,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2156,6 +2307,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2170,6 +2322,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2184,6 +2337,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2198,6 +2352,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2212,6 +2367,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2226,6 +2382,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2240,6 +2397,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2254,6 +2412,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2268,6 +2427,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2282,6 +2442,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2296,6 +2457,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2310,6 +2472,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2324,6 +2487,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2338,6 +2502,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2352,6 +2517,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2366,6 +2532,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2380,6 +2547,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2394,6 +2562,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -2413,6 +2582,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2427,6 +2597,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2441,6 +2612,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2455,6 +2627,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2469,6 +2642,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2483,6 +2657,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2497,6 +2672,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2511,6 +2687,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2525,6 +2702,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2539,6 +2717,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2553,6 +2732,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2567,6 +2747,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2581,6 +2762,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2595,6 +2777,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2609,6 +2792,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2623,6 +2807,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2637,6 +2822,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2651,6 +2837,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2665,6 +2852,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2679,6 +2867,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2693,6 +2882,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2707,6 +2897,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2721,6 +2912,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2735,6 +2927,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2749,6 +2942,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2763,6 +2957,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2777,6 +2972,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -2791,6 +2987,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2805,6 +3002,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2819,6 +3017,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2833,6 +3032,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2847,6 +3047,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2861,6 +3062,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2875,6 +3077,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2889,6 +3092,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2903,6 +3107,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2917,6 +3122,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2931,6 +3137,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2945,6 +3152,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2959,6 +3167,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -2973,6 +3182,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -2987,6 +3197,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3001,6 +3212,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3015,6 +3227,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3029,6 +3242,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3043,6 +3257,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3057,6 +3272,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3071,6 +3287,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3085,6 +3302,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3099,6 +3317,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3113,6 +3332,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3127,6 +3347,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3141,6 +3362,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3160,6 +3382,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3174,6 +3397,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3188,6 +3412,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3202,6 +3427,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3216,6 +3442,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3230,6 +3457,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3254,6 +3482,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3268,6 +3497,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3287,6 +3517,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3301,6 +3532,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3315,6 +3547,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3329,6 +3562,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -3348,6 +3582,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3362,6 +3597,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3376,6 +3612,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3390,6 +3627,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3404,6 +3642,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3418,6 +3657,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3432,6 +3672,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3446,6 +3687,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3460,6 +3702,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3474,6 +3717,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3488,6 +3732,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3502,6 +3747,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3516,6 +3762,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3530,6 +3777,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3544,6 +3792,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3558,6 +3807,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3572,6 +3822,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3586,6 +3837,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3600,6 +3852,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3614,6 +3867,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -3628,6 +3882,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3642,6 +3897,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3656,6 +3912,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3670,6 +3927,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3684,6 +3942,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3698,6 +3957,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3712,6 +3972,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3726,6 +3987,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3740,6 +4002,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3754,6 +4017,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3768,6 +4032,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3782,6 +4047,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3796,6 +4062,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3810,6 +4077,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3824,6 +4092,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3838,6 +4107,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3852,6 +4122,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3866,6 +4137,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3880,6 +4152,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3894,6 +4167,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3908,6 +4182,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3922,6 +4197,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3936,6 +4212,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3950,6 +4227,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -3964,6 +4242,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3978,6 +4257,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -3992,6 +4272,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -4011,6 +4292,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-1",
@@ -4030,6 +4312,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4044,6 +4327,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4058,6 +4342,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4072,6 +4357,7 @@
       "page": 0,
       "reached": "verify_mapping",
       "stoppedAt": "room",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-4",
@@ -4086,6 +4372,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4100,6 +4387,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4114,6 +4402,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4128,6 +4417,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4142,6 +4432,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4156,6 +4447,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4170,6 +4462,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4184,6 +4477,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4198,6 +4492,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4212,6 +4507,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4226,6 +4522,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4240,6 +4537,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4254,6 +4552,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4268,6 +4567,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "calibrate",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-7",
@@ -4282,6 +4582,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4296,6 +4597,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4310,6 +4612,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4324,6 +4627,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4338,6 +4642,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4352,6 +4657,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",
@@ -4366,6 +4672,7 @@
       "page": 0,
       "reached": "import",
       "stoppedAt": "import",
+      "confirmedBy": null,
       "discrepancies": [
         {
           "code": "VD-6",

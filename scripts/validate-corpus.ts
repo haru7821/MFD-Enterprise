@@ -76,6 +76,8 @@ for (const drawing of dataset.drawings) {
         page,
         reached: 'import',
         stoppedAt: 'import',
+        // Owner decision D7: nothing this script runs can confirm itself.
+        confirmedBy: null,
         discrepancies: [
           {
             code: 'VD-5',
@@ -93,6 +95,12 @@ for (const drawing of dataset.drawings) {
       page: outcome.page,
       reached: outcome.reached,
       stoppedAt: outcome.stoppedAt,
+      /*
+       * Owner decision D7. A batch run never confirms itself, so this is always null here — a
+       * confirmation is added by a person against a record, and the ledger keeps it so a later run
+       * cannot quietly promote a batch result into a completed one.
+       */
+      confirmedBy: null,
       discrepancies: outcome.discrepancies.map((entry) => ({
         code: entry.code,
         classification: entry.classification,
@@ -118,7 +126,17 @@ const ledger = {
   observer: VALIDATION_OBSERVER,
   totals: {
     drawings: rows.length,
-    completed: rows.filter((row) => row.stoppedAt === null).length,
+    /*
+     * Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+     * execution alone is not completion."*
+     *
+     * This counted `stoppedAt === null` — the batch reaching its last stage — and called that
+     * completed. Nothing in this script can confirm a run: the `room` stage asks whether the region
+     * it found is the dialysis room, which is the question a person answers. So a batch run
+     * contributes to `batchComplete`, and `completed` stays 0 until somebody signs a row.
+     */
+    completed: rows.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length,
+    batchComplete: rows.filter((row) => row.stoppedAt === null).length,
     stopped: rows.filter((row) => row.stoppedAt !== null).length,
     byStage: tally(rows.flatMap((row) => (row.stoppedAt ? [row.stoppedAt] : []))),
     byClassification: tally(
@@ -135,7 +153,8 @@ writeFileSync(path, `${JSON.stringify(ledger, null, 2)}\n`);
 parseCorpusValidation(JSON.parse(readFileSync(path, 'utf8')) as unknown, 'knowledge/validation/corpus.json');
 
 console.log(`validation programme over ${ledger.totals.drawings} drawing-pages\n`);
-console.log(`  completed the whole programme  ${String(ledger.totals.completed).padStart(4)}`);
+console.log(`  human-confirmed complete       ${String(ledger.totals.completed).padStart(4)}`);
+console.log(`  ran every batch stage          ${String(ledger.totals.batchComplete).padStart(4)}`);
 console.log(`  stopped                        ${String(ledger.totals.stopped).padStart(4)}`);
 console.log('\n  stopped at:');
 for (const entry of ledger.totals.byStage) {
@@ -145,7 +164,7 @@ console.log('\n  discrepancies by classification:');
 for (const entry of ledger.totals.byClassification) {
   console.log(`    ${entry.key.padEnd(22)} ${String(entry.count).padStart(4)}`);
 }
-console.log('\n  completed:');
+console.log('\n  ran every batch stage (awaiting human confirmation unless marked):');
 for (const row of rows.filter((entry) => entry.stoppedAt === null)) {
   console.log(`    ${row.drawingId} p${row.page}`);
 }

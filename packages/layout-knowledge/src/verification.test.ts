@@ -10,6 +10,7 @@ import {
   parseCorpusValidation,
   parseDrawingVerification,
   primaryDimensionIsSound,
+  type CorpusRow,
   type DrawingVerification,
 } from './verification';
 
@@ -328,13 +329,23 @@ describe('the corpus validation ledger', () => {
   it('its totals are the rows counted, not a claim beside them', () => {
     // Re-derived rather than trusted: a summary edited to look better stops matching its own rows.
     expect(ledger.totals.drawings).toBe(ledger.drawings.length);
+    /*
+     * Two counts, two rules — owner decision D7. This assertion said `completed` was the rows with
+     * `stoppedAt === null`, which is the rule D7 replaced; it survived the change only because the
+     * shipped corpus has no such row and both numbers are 0. A stale assertion that agrees with the
+     * code by coincidence is the same defect as a guard over an empty set.
+     */
     expect(ledger.totals.completed).toBe(
+      ledger.drawings.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length,
+    );
+    expect(ledger.totals.batchComplete).toBe(
       ledger.drawings.filter((row) => row.stoppedAt === null).length,
     );
     expect(ledger.totals.stopped).toBe(
       ledger.drawings.filter((row) => row.stoppedAt !== null).length,
     );
-    expect(ledger.totals.completed + ledger.totals.stopped).toBe(ledger.totals.drawings);
+    // Every row either ran the whole batch or stopped — completion is a subset, not a partition.
+    expect(ledger.totals.batchComplete + ledger.totals.stopped).toBe(ledger.totals.drawings);
 
     /*
      * Both directions, and the second one is the one that matters.
@@ -366,12 +377,132 @@ describe('the corpus validation ledger', () => {
   });
 
   it('every drawing it says completed has a full record beside it', () => {
-    // The ledger and the records are two views of the same runs. A row claiming a drawing finished
-    // with no record to show for it is a claim nothing backs.
+    /*
+     * **This test used to pass on an empty set.** It filtered `stoppedAt === null` and looped over
+     * the result; every row in the shipped ledger stops somewhere, so the loop never executed and
+     * the assertion inside it never ran. Found by review, and it is the shape this project keeps
+     * finding: a guard whose subject is empty is not a guard.
+     *
+     * So it now asserts in **both directions** and states what it is quantifying over, which is
+     * what makes an empty set visible rather than silent.
+     */
     const withRecords = new Set(records().map((entry) => entry.verification.drawingId));
-    for (const row of ledger.drawings.filter((entry) => entry.stoppedAt === null)) {
-      expect(withRecords.has(row.drawingId), `${row.drawingId} completed but has no record`).toBe(true);
+    const completed = ledger.drawings.filter((row) => row.confirmedBy !== null);
+
+    // Direction 1: a row the ledger calls completed must have a record.
+    for (const row of completed) {
+      expect(withRecords.has(row.drawingId), `${row.drawingId} completed but has no record`).toBe(
+        true,
+      );
     }
+
+    // Direction 2: and the count the ledger reports must be that same set, so a row cannot be
+    // counted as completed without appearing in it.
+    expect(completed.length).toBe(ledger.totals.completed);
+  });
+
+  it('does not call a batch run complete', () => {
+    /*
+     * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+     * > execution alone is not completion."*
+     *
+     * The ledger used to have one notion of finishing — `stoppedAt === null` — and `totals.completed`
+     * counted it, so a machine reaching its own last stage was recorded as the programme being
+     * complete. That is what let `HOSPITAL_044_VERIFICATION.md` claim two drawings "complete all
+     * nine stages" while this file said 0.
+     *
+     * Two fields now, and this asserts the relationship rather than either number: completion is a
+     * subset of batch completion, and every completed row carries a confirmation.
+     */
+    expect(ledger.totals.completed).toBeLessThanOrEqual(ledger.totals.batchComplete);
+
+    const batchComplete = ledger.drawings.filter((row) => row.stoppedAt === null);
+    expect(batchComplete.length).toBe(ledger.totals.batchComplete);
+
+    for (const row of batchComplete) {
+      if (row.confirmedBy === null) continue;
+      expect(row.confirmedBy.name.length).toBeGreaterThan(0);
+      expect(row.confirmedBy.basis.length).toBeGreaterThan(0);
+    }
+
+    // And no row may be confirmed without having run to the end.
+    for (const row of ledger.drawings.filter((entry) => entry.confirmedBy !== null)) {
+      expect(row.stoppedAt, `${row.drawingId} is confirmed but stopped early`).toBeNull();
+    }
+  });
+
+  it('refuses to count an unconfirmed batch run as complete', () => {
+    /*
+     * The discriminating case, and it has to be constructed: the shipped ledger has **no** row that
+     * reaches the end of the batch — all 306 stop somewhere — so `completed` and `batchComplete` are
+     * both 0 and no assertion against real data can tell the two rules apart. Found by mutation:
+     * reverting `completed` to count `stoppedAt === null` left the whole suite green.
+     *
+     * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+     * > execution alone is not completion."*
+     *
+     * This is exactly the shape D7 rejects — a run that finished every stage the machine can run,
+     * with nobody having looked at it.
+     */
+    const ran: CorpusRow = { ...ledger.drawings[0]!, stoppedAt: null, confirmedBy: null };
+    const signed: CorpusRow = {
+      ...ran,
+      confirmedBy: { name: 'TS engineer', at: '2026-08-01T00:00:00.000Z', basis: 'record reviewed' },
+    };
+
+    const completedIn = (rows: readonly CorpusRow[]) =>
+      rows.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length;
+    const batchCompleteIn = (rows: readonly CorpusRow[]) =>
+      rows.filter((row) => row.stoppedAt === null).length;
+
+    expect(batchCompleteIn([ran])).toBe(1);
+    expect(completedIn([ran])).toBe(0);
+
+    // ...and a signature is what moves it across.
+    expect(completedIn([signed])).toBe(1);
+  });
+
+  it('rejects a ledger that counts an unconfirmed run as complete', () => {
+    /*
+     * The guard that actually catches a miscounting **builder**, which the test above cannot.
+     *
+     * `validate-corpus.ts` is a top-level script no test imports, so mutating its arithmetic is
+     * invisible to a unit test — and today's corpus cannot discriminate anyway, because no row
+     * reaches the end of the batch and both rules therefore return 0. Measured on 2026-08-01:
+     * reverting the builder's `completed` to `stoppedAt === null` left all 1,218 tests in 67 files
+     * green, and weakening the schema rule below to the same wrong count fails this test alone.
+     *
+     * So the invariant lives in the schema, and the builder parses back what it has just written.
+     * A ledger claiming a completion it cannot show a confirmation for is now rejected by the
+     * loader, whatever produced it.
+     */
+    const base = parseCorpusValidation(
+      JSON.parse(readFileSync(join(REPO, 'knowledge', 'validation', 'corpus.json'), 'utf8')),
+      'corpus.json',
+    );
+    const ran: CorpusRow = { ...base.drawings[0]!, stoppedAt: null, confirmedBy: null };
+
+    const inflated = {
+      ...base,
+      totals: { ...base.totals, completed: 1, batchComplete: 1, stopped: base.totals.stopped - 1 },
+      drawings: [ran, ...base.drawings.slice(1)],
+    };
+
+    expect(() => parseCorpusValidation(inflated, 'inflated.json')).toThrow(/D7|confirmation/);
+
+    // The same ledger with the row actually signed is accepted, so the rejection is about the
+    // missing confirmation and not about the shape of the edit.
+    const signed = {
+      ...inflated,
+      drawings: [
+        {
+          ...ran,
+          confirmedBy: { name: 'TS engineer', at: '2026-08-01T00:00:00.000Z', basis: 'record reviewed' },
+        },
+        ...base.drawings.slice(1),
+      ],
+    };
+    expect(() => parseCorpusValidation(signed, 'signed.json')).not.toThrow();
   });
 
   it('was produced by a model, and says so', () => {

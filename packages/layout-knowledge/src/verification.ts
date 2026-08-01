@@ -339,8 +339,29 @@ export const corpusRowSchema = z.strictObject({
   page: z.number().int().nonnegative(),
   /** The last stage that completed. */
   reached: z.string().min(1),
-  /** Where it stopped, or null when the whole programme ran. */
+  /** Where it stopped, or null when every batch stage ran. **Not the same as completed** — see below. */
   stoppedAt: z.string().min(1).nullable(),
+  /**
+   * Who confirmed the run, and when. Null until a person has.
+   *
+   * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+   * > execution alone is not completion."*
+   *
+   * The ledger could not express that before: `stoppedAt === null` meant "the batch reached the
+   * end", and `totals.completed` counted exactly those, so a machine finishing its own stages was
+   * recorded as the programme being complete. The `room` stage in particular asks whether the
+   * region found is the dialysis room, which no batch can answer for itself.
+   *
+   * A row is complete when it ran to the end **and** carries this.
+   */
+  confirmedBy: z
+    .strictObject({
+      name: z.string().min(1),
+      at: z.string().min(1),
+      /** What they confirmed against — a record, a drawing, a conversation. */
+      basis: z.string().min(1),
+    })
+    .nullable(),
   discrepancies: z.array(
     z.strictObject({
       code: z.enum(VERIFICATION_DISCREPANCY_CODES),
@@ -359,7 +380,16 @@ export const corpusValidationSchema = z.strictObject({
   observer: observerSchema,
   totals: z.strictObject({
     drawings: z.number().int().nonnegative(),
+    /**
+     * Runs that reached the end of the batch **and** were confirmed by a person — owner decision D7.
+     *
+     * Kept distinct from `batchComplete` deliberately. Collapsing the two is what let
+     * `HOSPITAL_044_VERIFICATION.md` state that two drawings "complete all nine stages" while this
+     * ledger said `completed: 0`.
+     */
     completed: z.number().int().nonnegative(),
+    /** Runs where every batch stage ran, confirmed or not. `completed` is a subset of this. */
+    batchComplete: z.number().int().nonnegative(),
     stopped: z.number().int().nonnegative(),
     /** Where runs stopped, most common first. Sums to `stopped`. */
     byStage: z.array(countSchema),
@@ -367,7 +397,34 @@ export const corpusValidationSchema = z.strictObject({
     byClassification: z.array(countSchema),
   }),
   drawings: z.array(corpusRowSchema).min(1),
-});
+})
+  .refine(
+    (ledger) =>
+      ledger.totals.batchComplete === ledger.drawings.filter((row) => row.stoppedAt === null).length,
+    { message: '`totals.batchComplete` must equal the rows that ran every batch stage' },
+  )
+  .refine(
+    (ledger) =>
+      ledger.totals.completed ===
+      ledger.drawings.filter((row) => row.stoppedAt === null && row.confirmedBy !== null).length,
+    {
+      /*
+       * > Owner decision D7: *"The programme is complete only after a human-confirmed run. Batch
+       * > execution alone is not completion."*
+       *
+       * Held in the contract rather than in the script that writes the ledger, and the difference
+       * matters: `validate-corpus.ts` parses back what it has just written, so a builder that counts
+       * completion any other way fails on its own output instead of shipping a number.
+       *
+       * That placement was chosen after the obvious one failed. With the count in the builder alone,
+       * reverting it to `stoppedAt === null` was invisible — no row in the corpus reaches the end of
+       * the batch, so both rules return 0 and no test over real data can tell them apart.
+       */
+      message:
+        '`totals.completed` must equal the rows that ran every stage AND carry a confirmation ' +
+        '(owner decision D7: batch execution alone is not completion)',
+    },
+  );
 
 export type CorpusRow = z.infer<typeof corpusRowSchema>;
 export type CorpusValidation = z.infer<typeof corpusValidationSchema>;

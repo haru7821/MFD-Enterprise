@@ -66,10 +66,17 @@ alone.
 
 | | Pages |
 | --- | ---: |
-| **Completed all nine stages** | **0** |
+| **Complete — ran every stage *and* a person confirmed it** (`totals.completed`) | **0** |
+| Ran every batch stage, awaiting confirmation (`totals.batchComplete`) | 0 |
 | Stopped at `import` | 211 |
 | Stopped at `calibrate` | 80 |
 | Stopped at `room` | 15 |
+
+The first two rows are separate counts under **owner decision D7** — *"the programme is complete only
+after a human-confirmed run; batch execution alone is not completion"*. They both read 0 today, which
+is exactly why the ledger keeps them apart: with one number and one word, a batch reaching its own
+last stage was recorded as the programme being complete, and that is what put *"two complete all nine
+stages"* into `HOSPITAL_044_VERIFICATION.md` while this ledger said zero.
 
 By classification — a run can raise more than one:
 
@@ -170,17 +177,27 @@ those readings mean something.
 drawing at a time, after a person has read what it found. A knowledge base a batch job can fill on
 its own is one nobody has checked.
 
-**Independent evidence, or nothing.** `Hospital_044/ro_room.pdf` completed the whole programme and
-its observations are deliberately withheld: it is the same floor plan as `dialysis.pdf` plotted by
-different software, so counting both would claim two drawings support a figure that one room
-produced. `support` is a count of independent evidence or it is meaningless.
+**Independent evidence, or nothing.** `Hospital_044/ro_room.pdf` reaches `verify_mapping` and stops
+at `room`, like its twin `dialysis.pdf`, and its observations would be withheld even if it ran to the
+end: it is the same floor plan as `dialysis.pdf` plotted by different software, so counting both
+would claim two drawings support a figure that one room produced. `support` is a count of independent
+evidence or it is meaningless.
+
+> Corrected twice, and the second one is worth recording. This read *"completed the whole
+> programme"*; the first correction read *"ran every batch stage"*, which the ledger does not support
+> either — both rows carry `stoppedAt: "room"`. It was rewritten from the sentence rather than from
+> `knowledge/validation/corpus.json`, which is how the original claim survived. Owner decision D7 —
+> **batch execution alone is not completion** — is the structural half of the fix; reading the ledger
+> before writing about it is the other half.
 
 ---
 
 ## 4 · Next milestone — automatic room understanding
 
-The 8 drawings that stop at `room` are the case for this, and Hospital_044 is the case against
-guessing. `measureRoomWidth` takes the outermost same-colour wall pair on a cross-section. Where the
+The **15** drawings that stop at `room` are the case for this, and Hospital_044 is the case against
+guessing. (This read 8, against the ledger's own 15 in the table above — two figures for one count,
+in one document, disagreeing.) `measureRoomWidth` takes the outermost same-colour wall pair on a
+cross-section. Where the
 treatment room spans its building — Hospital_044 — that is the room's own walls, and the answer
 checks against the title block's area figure to 0.6 %. Where it does not, the same arithmetic returns
 the *building's* width: 11 to 14 m against a known 7.4 m. Nothing in the geometry distinguishes the

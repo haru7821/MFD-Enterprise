@@ -484,7 +484,22 @@ programme rather than two overlapping tools, driving the same pipeline this draw
 over every drawing in the corpus and classifying every discrepancy.
 
 Its finding about this drawing's neighbours has not changed and is worth repeating here: of 306
-drawing-pages, **two complete all nine stages — both of them Hospital_044's**. 211 stop at import
-(DWG or scans), 80 at calibration, and 8 at the room, which is the case for automatic room
-understanding stated in one number. The `3000` override recorded above as VD-1 is one of only three
-drawing errors in the whole corpus, and it appears twice: once on each plot of this plan.
+drawing-pages, **none completes the programme and none reaches the end of the batch**. 211 stop at
+import (DWG or scans), 80 at calibration, and **15** at the room — including both of this drawing's
+own pages, which is the case for automatic room understanding stated in one number.
+
+> Corrected, twice. This paragraph read *"two complete all nine stages — both of them
+> Hospital_044's"* and *"8 at the room"*. The ledger it summarises says `completed: 0`,
+> `batchComplete: 0` and `byStage.room: 15`, and both Hospital_044 rows carry
+> `reached: "verify_mapping"`, `stoppedAt: "room"` — so they are two of the fifteen that stop at the
+> room, not two that finished.
+>
+> The first correction of this sentence still said two drawings "ran every batch stage", which the
+> ledger also does not support; it was written from the old prose rather than from the data, which
+> is how the original error got here. Owner decision D7 is the structural half of the fix — **batch
+> execution alone is not completion** — and the ledger now carries `batchComplete` and `completed`
+> separately so a future summary has two distinct numbers to quote instead of one word covering
+> both.
+
+The `3000` override recorded above as VD-1 is one of only three drawing errors in the whole corpus,
+and it appears twice: once on each plot of this plan.
