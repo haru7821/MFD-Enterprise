@@ -297,12 +297,14 @@ reported routing/walking score and every printed schedule position has shifted a
 expected, and re-baselined in `score.test.ts`, `optimise.test.ts` and two new tests
 (`apps/web/src/features/planning/runPlanner.test.ts`, `packages/report-engine/src/floorPlan.test.ts`),
 each guard-broken and restored to confirm it actually discriminates the corner from the centre.
-**The Hospital_044 replay does not, and cannot, confirm the routing legs**: the reference dataset
-carries no reference points, so `ro_piping_length`/`electrical_routing`/`walking_distance`/
-`drain_routing`/`installation_feasibility` all report `SC-901` regardless of anchor and the replay
-never reaches `routeAll`. What it does confirm is the report schedule leg alone — its committed
-verification record changes by exactly one field, `pdfBytes` (164079 to 164107), isolated to the
-schedule's position column printing centre coordinates instead of corner coordinates.
+**The Hospital_044 replay does not, and cannot, confirm the routing legs**: the level's own
+`referencePoints` is empty on that dataset, so `ro_piping_length`/`electrical_routing`/
+`walking_distance`/`drain_routing`/`installation_feasibility` all report `SC-901` before reaching
+any geometry, regardless of anchor — `apps/web`'s `runPlanner` (and its own `routeAll`) is still
+called and still runs, it simply has no reference point of any kind to route from and returns
+nothing. What the replay does confirm is the report schedule leg alone — its committed verification
+record changes by exactly one field, `pdfBytes` (164079 to 164107), isolated to the schedule's
+position column printing centre coordinates instead of corner coordinates.
 
 A fourth CTO review of this decision found the same anchor mistake one call site further out:
 `apps/web/src/features/layout/ProposalGhostLayer.tsx` drew a "moved" ghost's arrow from

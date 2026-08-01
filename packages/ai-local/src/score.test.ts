@@ -298,11 +298,12 @@ describe('what is measured, and what is merely in the way', () => {
      * at (-400, -400), the same footprint swept to the opposite side of that shared corner by a pure
      * rotation — the property AD-21 exists to make visible.
      *
-     * A corner-anchored router would send the delivery crate to (0, 0) for both, so both would
-     * report identically reachable or identically blocked — `deliverable` could only ever be 0 or 2
-     * out of 2. The obstruction below sits squarely over (400, 400) and nowhere near (-400, -400),
-     * so a centre-anchored router reports exactly one of the two reachable: `deliverable` is 1, a
-     * result the corner-anchored version cannot produce no matter how the obstruction is placed.
+     * A corner-anchored router would send the delivery crate to the same point, (0, 0), for both —
+     * the obstruction below sits squarely over (400, 400) and nowhere near (-400, -400), nor near
+     * (0, 0) itself, so a corner-anchored run measures both reachable, `deliverable` = 2 out of 2 (a
+     * fact checked directly by reverting `footprintCentre` back to `transform.position` and
+     * re-running this test, not asserted from the geometry alone). A centre-anchored router reports
+     * exactly one of the two reachable instead: `deliverable` = 1.
      */
     const upright: Placement = {
       id: 'upright',
@@ -1007,6 +1008,65 @@ describe('equipment geometry rotates with its placement', () => {
     });
 
     expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.125);
+  });
+
+  it('clamps a straddling, non-colliding obstruction at zero — owner decision, fifth review round', () => {
+    /*
+     * Found by the fifth CTO review of this arc, verified directly: `@mfd/rule-engine`'s
+     * `gapAlongNormal` reports a *negative* gap for a polygon that crosses a service face's plane
+     * without overlapping the footprint measured against it — `polygonsOverlap` calls the exact
+     * quad below non-overlapping while `gapAlongNormal` returns -500 for the same pair. Left
+     * unclamped, `compliance_margin` could report a negative ratio for a layout Gate 2 has already
+     * passed as compliant — a "measurement" with no defined meaning.
+     *
+     * > Owner decision: clamp at zero, matching the old stepped probe's floor. "Free distance" is
+     * > how far a service engineer can walk outward, and a neighbour that has crossed the plane
+     * > without colliding is exactly as blocking as one standing at it.
+     *
+     * The station (unrotated, front-left) sits at (0, 0); its rear face is at y = 0, outward -y.
+     * The quad runs diagonally from (700, -300) to (1140, 460) — inside the face's lateral band
+     * (x ∈ [0, 800]) only where y < 0 (ahead of the plane), outside it everywhere y ≥ 0, so it never
+     * enters the footprint's own [0, 800] × [0, 800] box. `polygonsOverlap` agrees: not colliding.
+     */
+    const machine = fixtureMachine();
+    const placement: Placement = {
+      id: 'p',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'p',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'rear', threshold: 800 }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+    const straddling = [
+      { x: 700, y: -300 },
+      { x: 1_100, y: 500 },
+      { x: 1_140, y: 460 },
+      { x: 740, y: -340 },
+    ];
+
+    const breakdown = scoreLayout({
+      placements: [placement],
+      occupants: [placement],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+      room: fixtureRoom(10_000, 10_000),
+      obstructions: [straddling],
+      referencePoints: [],
+      object: machine,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0);
   });
 
   it.each([

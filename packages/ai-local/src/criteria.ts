@@ -229,6 +229,18 @@ const PROBE_CEILING_MULTIPLE = 3;
  * reduced to its axis-aligned bounds beforehand (`roomBounds`, unchanged from the prior version),
  * so a diagonal or irregular wall is already only approximated. Both are pre-existing imprecisions,
  * not part of what this Critical 0 review round was scoped to close.
+ *
+ * ## Clamped at zero
+ *
+ * `@mfd/rule-engine`'s `gapAlongNormal` reports a *negative* gap when a polygon crosses the face's
+ * plane without overlapping the footprint it is measured against — reachable for a genuinely
+ * non-colliding neighbour that merely straddles the plane off to one side, found by the fifth
+ * Critical 0 review round and confirmed directly (`gapAlongNormal` returning a negative value for a
+ * quad `polygonsOverlap` reports as not overlapping). Left as `gapAlongNormal` returns it, the old
+ * stepped probe's floor at zero would be lost and `compliance_margin` could report a negative ratio
+ * for a layout Gate 2 has already passed as compliant. **Owner decision: clamp at zero** — "free
+ * distance" means the distance a service engineer can actually walk outward, and a plane a neighbour
+ * has crossed without colliding is exactly as blocked as one it has walked up to.
  */
 function freeDistanceOnSide(
   placement: Placement,
@@ -246,8 +258,12 @@ function freeDistanceOnSide(
   const ceiling = required * PROBE_CEILING_MULTIPLE;
 
   let nearest: number | null = null;
-  const consider = (gap: number | null) => {
-    if (gap !== null && (nearest === null || gap < nearest)) nearest = gap;
+  const consider = (rawGap: number | null) => {
+    if (rawGap === null) return;
+    // Owner decision: a negative gap — a straddling, non-colliding neighbour — clamps to zero
+    // rather than reporting a signed distance nothing asked for. See this function's doc comment.
+    const gap = Math.max(0, rawGap);
+    if (nearest === null || gap < nearest) nearest = gap;
   };
 
   // Every other placement in the room blocks this face, not only this equipment kind — the
