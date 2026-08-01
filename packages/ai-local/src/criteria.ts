@@ -233,14 +233,25 @@ const PROBE_CEILING_MULTIPLE = 3;
  * ## Clamped at zero
  *
  * `@mfd/rule-engine`'s `gapAlongNormal` reports a *negative* gap when a polygon crosses the face's
- * plane without overlapping the footprint it is measured against — reachable for a genuinely
- * non-colliding neighbour that merely straddles the plane off to one side, found by the fifth
- * Critical 0 review round and confirmed directly (`gapAlongNormal` returning a negative value for a
- * quad `polygonsOverlap` reports as not overlapping). Left as `gapAlongNormal` returns it, the old
- * stepped probe's floor at zero would be lost and `compliance_margin` could report a negative ratio
- * for a layout Gate 2 has already passed as compliant. **Owner decision: clamp at zero** — "free
- * distance" means the distance a service engineer can actually walk outward, and a plane a neighbour
- * has crossed without colliding is exactly as blocked as one it has walked up to.
+ * plane, within the face's own lateral extent. The fifth Critical 0 review round found this
+ * reachable and confirmed it directly with a quad `polygonsOverlap` calls non-overlapping — but the
+ * seventh round found that reproduction was measuring against a corner standing beside the face,
+ * outside its own width, not in front of it: `gapAlongNormal` now clips to the face's own extent
+ * before measuring, and the reproduction's true whole-face gap is positive. For a footprint this
+ * plain — a rectangle whose face spans its own full width — a *clipped* crossing and an actual
+ * overlap with the footprint being measured against turn out to be the same event: this was checked
+ * directly (two million randomised, band-constrained, straddling polygons; zero non-colliding), and
+ * `compliance_margin` is only ever reached through `scoreLayout`, which every caller in this package
+ * gates behind Gate 2 first (`optimise.ts` computes the current score, and ranks every candidate,
+ * only after `applyGates` reports no violations) — so a negative, clipped result here would itself
+ * be evidence of a collision this function is never actually asked about.
+ *
+ * The clamp stays anyway. It costs nothing, and two of its guarantees are not architectural: a
+ * non-rectangular footprint would make a clipped crossing possible again without touching the
+ * subject's own footprint, and nothing enforces that every future caller of `freeDistanceOnSide`
+ * arrives through a Gate-2-gated path. "Free distance" means the distance a service engineer can
+ * actually walk outward, and a plane a neighbour has crossed is exactly as blocked as one it has
+ * walked up to — signed distances have no reading under that definition, reachable today or not.
  */
 function freeDistanceOnSide(
   placement: Placement,
@@ -260,8 +271,9 @@ function freeDistanceOnSide(
   let nearest: number | null = null;
   const consider = (rawGap: number | null) => {
     if (rawGap === null) return;
-    // Owner decision: a negative gap — a straddling, non-colliding neighbour — clamps to zero
-    // rather than reporting a signed distance nothing asked for. See this function's doc comment.
+    // Owner decision: a negative gap clamps to zero rather than reporting a signed distance
+    // nothing asked for. See this function's doc comment for why this is believed unreachable
+    // today, and kept anyway.
     const gap = Math.max(0, rawGap);
     if (nearest === null || gap < nearest) nearest = gap;
   };

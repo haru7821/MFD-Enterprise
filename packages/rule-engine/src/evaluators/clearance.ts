@@ -102,12 +102,16 @@ export function evaluateClearance(
       if (rawGap === null) continue;
       /*
        * Owner decision, following the same one taken for `@mfd/ai-local`'s `compliance_margin`:
-       * clamped at zero, not reported signed. A polygon that crosses this face's plane without
-       * colliding with the footprint — confirmed reachable with two ordinary, non-overlapping
-       * placements, not only a contrived shape — produced `measured: -27` and the sentence "S1 has
-       * -27 mm of rear clearance," a number with no defined meaning for a pair the collision rule
-       * does not call touching. The RED verdict is unaffected: `violated` is still decided below,
-       * and zero is already less than any positive threshold a clearance rule can carry.
+       * clamped at zero, not reported signed. `gapAlongNormal` clips to this face's own width
+       * before measuring (seventh Critical 0 review round), so a negative result here means the
+       * neighbour genuinely crosses the plane within that width — for a plain rectangular subject,
+       * that is indistinguishable from an actual overlap with the subject's own footprint. This
+       * function has no Gate 2 of its own: it is the live validation engine, and it reports every
+       * category — clearance included — for whatever the drawing actually holds, collision among
+       * them. A negative gap here is real, but "-700 mm of rear clearance" is still not a sentence
+       * a live finding should print for a pair the engineer is mid-drag on: zero is. The RED verdict
+       * is unaffected either way — `violated` is decided below, and zero is already less than any
+       * positive threshold a clearance rule can carry.
        */
       const gap = Math.max(0, rawGap);
       if (nearest === null || gap < nearest) nearest = gap;

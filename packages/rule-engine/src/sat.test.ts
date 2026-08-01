@@ -155,20 +155,42 @@ describe('gap along a face normal', () => {
     expect(gapAlongNormal(face, extent, box(0, -100, 900, 750))).toBeCloseTo(-100, 6);
   });
 
-  it('goes negative for a rotated, non-colliding neighbour — the reachable real case, not only an axis-aligned one', () => {
+  it('measures only the part of a rotated, non-colliding neighbour actually in front of the face — not a corner standing beside it', () => {
     // An 800x800 station's rear face (`@mfd/object-library`'s `faceGeometry`, at rotation 0):
     // origin (400, 0), outward normal (0, -1), lateral extent [0, 800] along axis (1, 0). Against
     // it, a second 800x800 station at (-700, -900) rotated 10° — an ordinary, ten-degree tilt, not
-    // a contrived shape — reproducing the exact scenario the sixth Critical 0 review round found
-    // reachable with two placements the collision rule does not call touching.
+    // a contrived shape — the exact scenario the sixth Critical 0 review round found reachable
+    // with two placements the collision rule does not call touching.
+    //
+    // The seventh review round found this pair had been measuring the wrong thing: the corner at
+    // roughly (-51, 27) sits laterally outside the face's own [0, 800] band — off to the side, not
+    // in front of it — yet the unclipped implementation let it set the whole measurement, reading
+    // -26.76 (clamped to 0 by the caller). Clipped to the band first, the true whole-face gap is
+    // 262.88 mm: positive, and never clamped, because nothing in front of this face crosses its
+    // plane at all.
     const rearFace = { origin: { x: 400, y: 0 }, normal: { x: 0, y: -1 } };
     const rearExtent = { axis: { x: 1, y: 0 }, min: 0, max: 800 };
     const subject = box(0, 0, 800, 800);
     const other = placedBox({ x: -700, y: -900 }, 10, 800, 800);
 
-    // Not colliding: this is the pair `evaluateClearance`'s collision rule leaves alone, and the
-    // gap below is not a distance the machines are pressed into — it is a plane crossed cleanly.
+    // Not colliding: this is the pair `evaluateClearance`'s collision rule leaves alone.
     expect(polygonsOverlap(subject, other).overlapping).toBe(false);
-    expect(gapAlongNormal(rearFace, rearExtent, other)).toBeCloseTo(-26.76, 1);
+    expect(gapAlongNormal(rearFace, rearExtent, other)).toBeCloseTo(262.88, 1);
+  });
+
+  it('still goes negative for a genuine in-band crossing — clipping narrows what is measured, it does not remove the clamp', () => {
+    // A 300x300 box at (200, -50) rotated 15°: every corner's lateral (x) position already sits
+    // within the face's own [0, 800] band, so clipping changes nothing here — and the box still
+    // straddles the plane, entirely within the width the face actually owns. This is the case the
+    // clamp at each caller exists for: a neighbour genuinely crossing the face in front of it, not
+    // one merely reaching across a corner that was never in front of it to begin with.
+    const rearFace = { origin: { x: 400, y: 0 }, normal: { x: 0, y: -1 } };
+    const rearExtent = { axis: { x: 1, y: 0 }, min: 0, max: 800 };
+    const other = placedBox({ x: 200, y: -50 }, 15, 300, 300);
+    const xs = other.map((point) => point.x);
+
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(rearExtent.min);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(rearExtent.max);
+    expect(gapAlongNormal(rearFace, rearExtent, other)).toBeCloseTo(-317.42, 1);
   });
 });

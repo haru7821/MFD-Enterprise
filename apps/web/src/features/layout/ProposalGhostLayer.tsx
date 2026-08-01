@@ -64,6 +64,14 @@ export function ProposalGhostLayer({ diff, catalog, viewport }: ProposalGhostLay
         const corners = footprintCorners(object, entry.placement.transform).map((corner) =>
           worldToScreen(viewport, corner),
         );
+        /*
+         * Known test gap (seventh Critical 0 review round): `ghostCentre` itself is unit-tested
+         * (`ghostCentre.test.ts`) without a Konva canvas, but nothing exercises this call site —
+         * reverting the line below to `entry.placement.transform.position` passes the whole suite.
+         * No Konva-rendered component in this codebase is covered past its own pure functions today;
+         * closing this needs an e2e assertion on the ghost's actual rendered geometry, not a unit
+         * test, and is a follow-up rather than something this round invents new test tooling for.
+         */
         const centreModel = ghostCentre(entry.placement, catalog);
         if (!centreModel) return null;
         const centre = worldToScreen(viewport, centreModel);

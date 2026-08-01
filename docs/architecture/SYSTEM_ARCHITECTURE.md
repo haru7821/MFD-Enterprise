@@ -325,19 +325,52 @@ decision, asked once per engine and answered the same way both times: clamp at z
 distance" means how far outward a service engineer can actually walk, and a neighbour that has
 crossed the plane without colliding is exactly as blocking as one standing at it; the clamp leaves
 the RED/violated determination unaffected in both engines, since zero is already less than any
-positive threshold a clearance rule can carry. Regression coverage: `score.test.ts` (the verified
-straddling-quad case, ratio 0 instead of a negative one) and `evaluate.test.ts` (a rotated,
-non-colliding pair of 800×800 stations, `measured: 0` instead of −27), each guard-broken and
-restored.
+positive threshold a clearance rule can carry.
 
-**The Hospital_044 replay does not exercise this clamp, and the reason is not the absence of
-straddling geometry in the drawing.** Every clearance rule in that corpus carries `appliedValue:
-null` — the manual figures are not yet sourced, so all sixty clearance findings report `RC-110`
-("threshold unknown"). `measureComplianceMargin`'s own loop over the evaluation report
-(`criteria.ts`) skips any result whose `appliedValue` is null before it ever reaches
-`freeDistanceOnSide`, so the function the clamp lives in is not called at all for this dataset,
-regardless of what geometry it holds. The clamp is unexercised by this replay because the corpus has
-no sourced clearance threshold yet, not because its geometry happens not to straddle a plane.
+A seventh review found the fifth round's own reproduction was not what it claimed to be.
+`gapAlongNormal` gates laterally on whether *any* part of the other polygon overlaps the face's own
+width, then minimised the normal projection over *every* corner of that polygon — including corners
+laterally outside the face's own band, standing beside it rather than in front of it. In both
+reproductions above, the corner supplying the negative number sat outside the face's width; clipped
+to the band first, the true whole-face gap is positive in both (+263 mm and +50 mm), and the −27 mm
+and −500 mm findings were a measurement bug, not a genuine plane crossing. `gapAlongNormal` now
+clips the other polygon to `[faceExtent.min, faceExtent.max]` before projecting (Sutherland-Hodgman
+against the two lateral bounds) — **owner decision: clip to the face's own width**, the same
+"minimum across the whole face" contract already documented above, applied to a corner it had missed
+rather than changed. `score.test.ts` and `evaluate.test.ts`'s fifth-round tests now assert the
+corrected, positive values; each was guard-broken (reverting the clip reproduces the old wrong
+number) and restored.
+
+The clip also settled what the clamp actually guards. For a plain rectangular footprint — every
+equipment record shipped today — a face spans its own object's full width, so a crossing *within*
+that clipped band is, for this codebase, indistinguishable from an actual overlap with the footprint
+being measured against: checked directly, two million randomised, band-constrained, straddling
+polygons against a reference footprint produced zero non-colliding cases. `@mfd/ai-local`'s
+`compliance_margin` is only ever reached through `scoreLayout`, and every caller in that package
+gates it behind Gate 2 first (`optimise.ts` computes the current score, and ranks every candidate,
+only after `applyGates` reports no violations) — so the clamp in `criteria.ts` is believed
+unreachable via any layout the app can actually hand it today. `@mfd/rule-engine`'s own
+`evaluateClearance` has no such gate: it is the live validation engine, reporting every category —
+clearance included — for whatever the engineer has actually drawn, collision among them, so its
+clamp remains directly reachable (two machines placed on top of each other while live-editing is
+enough). Both clamps stay regardless of reachability: they cost nothing, and neither guarantee is
+structural — a non-rectangular footprint would make a clipped crossing possible again without an
+overlap, and nothing enforces that every future caller of either function arrives through a
+Gate-2-gated path. Regression coverage: `sat.test.ts` pins both the corrected (clipped) result and a
+genuine in-band crossing that still clamps; `score.test.ts` and `evaluate.test.ts` each gained a
+directly-overlapping reproduction exercising the clamp itself, documented as not reachable through
+the live app for `@mfd/ai-local` specifically. All guard-broken and restored.
+
+**The Hospital_044 replay does not exercise either clamp, and the reason is not the absence of
+straddling geometry in the drawing.** The corpus's sixty evaluation findings split as forty
+clearance findings (the four AK98 clearance rules × ten AK98 placements) plus twenty from collision
+and boundary rules; every one of the forty carries `appliedValue: null` — the manual figures are not
+yet sourced — so all forty report `RC-110` ("threshold unknown"). `measureComplianceMargin`'s own
+loop over the evaluation report (`criteria.ts`) skips any result whose `appliedValue` is null before
+it ever reaches `freeDistanceOnSide`, so the function either clamp lives in is not called at all for
+this dataset, regardless of what geometry it holds. The clamps are unexercised by this replay because
+the corpus has no sourced clearance threshold yet, not because its geometry happens not to straddle a
+plane.
 
 ## 4. Deferred / Flagged Decisions
 

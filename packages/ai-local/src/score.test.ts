@@ -1010,18 +1010,18 @@ describe('equipment geometry rotates with its placement', () => {
     expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.125);
   });
 
-  it('clamps a straddling, non-colliding obstruction at zero — owner decision, fifth review round', () => {
+  it('measures a straddling obstruction against only the part of it in front of the face — fifth review round, corrected by the seventh', () => {
     /*
-     * Found by the fifth CTO review of this arc, verified directly: `@mfd/rule-engine`'s
-     * `gapAlongNormal` reports a *negative* gap for a polygon that crosses a service face's plane
-     * without overlapping the footprint measured against it — `polygonsOverlap` calls the exact
-     * quad below non-overlapping while `gapAlongNormal` returns -500 for the same pair. Left
-     * unclamped, `compliance_margin` could report a negative ratio for a layout Gate 2 has already
-     * passed as compliant — a "measurement" with no defined meaning.
+     * Found by the fifth CTO review of this arc: `@mfd/rule-engine`'s `gapAlongNormal` reported a
+     * *negative* gap for the quad below — `polygonsOverlap` calls it non-overlapping while
+     * `gapAlongNormal` returned -500 for the same pair, clamped to 0 by this function.
      *
-     * > Owner decision: clamp at zero, matching the old stepped probe's floor. "Free distance" is
-     * > how far a service engineer can walk outward, and a neighbour that has crossed the plane
-     * > without colliding is exactly as blocking as one standing at it.
+     * The seventh review round found that reproduction was measuring against the wrong part of the
+     * quad: its corner nearest the face sits at (740, -340) — laterally outside the rear face's own
+     * [0, 800] band (the quad runs from x = 700 to x = 1,140, only the first 100 mm of which is in
+     * front of the face at all). Clipped to the band first, the true whole-face gap is +50 mm — a
+     * 0.0625 ratio, not the 0 the unclipped measurement produced. `gapAlongNormal` now clips to the
+     * face's own band before measuring; see its own doc comment.
      *
      * The station (unrotated, front-left) sits at (0, 0); its rear face is at y = 0, outward -y.
      * The quad runs diagonally from (700, -300) to (1140, 460) — inside the face's lateral band
@@ -1057,6 +1057,63 @@ describe('equipment geometry rotates with its placement', () => {
       boundaries: [fixtureRoomBoundary(10_000, 10_000)],
       room: fixtureRoom(10_000, 10_000),
       obstructions: [straddling],
+      referencePoints: [],
+      object: machine,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.0625);
+  });
+
+  it('clamps a genuinely overlapping obstruction at zero — the clamp itself, exercised directly', () => {
+    /*
+     * Seventh review round: after the clip fix, a negative `gapAlongNormal` result within a plain
+     * rectangular face's own band is, for this codebase, indistinguishable from an actual overlap
+     * with the footprint being measured against (checked directly — two million randomised,
+     * band-constrained, straddling polygons, zero non-colliding) — and `compliance_margin` is only
+     * ever reached through `scoreLayout`, which every real caller gates behind Gate 2 first. This
+     * fixture is not a layout `optimiseLayout`/`rankLayouts` would ever hand to `scoreLayout`; like
+     * the test above, it calls `scoreLayout` directly to exercise the clamp itself, not to claim it
+     * is reachable through the app today. See `freeDistanceOnSide`'s doc comment for why the clamp
+     * stays regardless.
+     *
+     * The obstruction is a plain box overlapping the station's own rear-zone footprint outright —
+     * x ∈ [200, 600] (well inside the rear face's [0, 800] band, so clipping changes nothing here),
+     * y ∈ [-100, 100] (straddling the rear face at y = 0).
+     */
+    const machine = fixtureMachine();
+    const placement: Placement = {
+      id: 'p',
+      equipmentObjectId: machine.id,
+      equipmentObjectVersion: machine.version,
+      label: 'p',
+      transform: { position: { x: 0, y: 0 }, rotation: 0, mirrored: false },
+      spaceId: null,
+    };
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'rear', threshold: 800 }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+    const overlapping = [
+      { x: 200, y: -100 },
+      { x: 600, y: -100 },
+      { x: 600, y: 100 },
+      { x: 200, y: 100 },
+    ];
+
+    const breakdown = scoreLayout({
+      placements: [placement],
+      occupants: [placement],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(10_000, 10_000)],
+      room: fixtureRoom(10_000, 10_000),
+      obstructions: [overlapping],
       referencePoints: [],
       object: machine,
       planStatus: 'calibrated',
