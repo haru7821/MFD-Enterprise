@@ -310,7 +310,7 @@ function excluding(occupants: readonly OccupantBounds[], placementId: string): B
  *
  * | | |
  * | --- | --- |
- * | **Delivery path** | Is there a route from the level's `access_entry` to this machine's position, clear of everything installed? (**Not** yet checked against the crate's width — see below.) |
+ * | **Delivery path** | Is there a route from the level's `access_entry` to this machine's position, clear of everything installed? |
  * | **Working space** | Is there room at the connection faces for an installer, which is not the same envelope as service clearance in use? |
  *
  * A layout can satisfy every clearance rule and still require a machine to pass through a 700 mm
@@ -350,19 +350,20 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
   if (!allowance || !allowance.isPattern) return unavailable('SC-905');
 
   /*
-   * ## The observed allowance currently only decides *whether* this is measured
+   * ## The observed allowance decides *whether* this is measured, and nothing about its geometry
    *
-   * The crated size was computed here and passed to the router as the **fallback footprint for a
-   * placement the catalogue does not describe** — nothing else. `routedDistance` routes a line and
-   * takes no width (routing.ts:89), so the route has never been checked against a crate's
-   * dimensions, and the heading above this function claiming *"wide enough for its crated
-   * footprint"* claims more than the code does.
+   * > Owner decision: option A. A route reaching the machine's position is enough. Planning
+   * > footprints are modelled larger than the physical equipment wherever a margin belongs to the
+   * > object rather than to its delivery — so a route to the footprint already carries the margin
+   * > the design calls for, and there is no separate crate outline to route a second time.
    *
-   * That gap was hidden while the fallback existed and is visible now that an uncatalogued occupant
-   * reports `SC-906` instead. Left as it is rather than quietly widened: inflating the blockers by
-   * the allowance would change every measured value on this criterion, and whether "feasible"
-   * means *a line reaches the machine* or *a crate fits along it* is what the criterion means. It
-   * is on the list for the owner.
+   * This was found worth asking because a fallback used to obscure it: the crated size used to be
+   * computed here and handed to the router as the footprint for a placement the catalogue does not
+   * describe, and nothing else. `routedDistance` routes a line and takes no width (routing.ts:89),
+   * so the route was never checked against a crate's dimensions — the heading above this function
+   * used to claim otherwise. `allowance` still gates whether the criterion is measured at all:
+   * `SC-905` when no drawing has established a figure, which is the invented-constant failure this
+   * replaced and is unrelated to the question above.
    */
   const occupants = occupantBounds(input.occupants, input.catalog);
   if (occupants === null) return unavailable('SC-906');
@@ -393,8 +394,19 @@ function measureInstallationFeasibility(input: MeasureInput): Measurement {
  * Maintenance access — the fraction of machines a service engineer can actually reach.
  *
  * Reachable means: at least one of the machine's service faces has its clearance envelope free of
- * another machine's footprint. Needs no reference point, which is why it is the one weighted
- * criterion that is always measurable — 15 % of the model that survives an empty document.
+ * another machine's footprint, clear of every obstruction, and inside the room. Needs no reference
+ * point, which is why it is the one weighted criterion that is always measurable — 15 % of the
+ * model that survives an empty document.
+ *
+ * > Owner decision, following the standing review: **obstructions and the room boundary block a
+ * > service face**, the same as equipment does.
+ *
+ * The three geometric criteria disagreed on this before the decision: the compliance-margin probe
+ * already counted equipment, obstructions and the room edge; installation feasibility counted
+ * equipment and obstructions; this counted equipment alone, so a machine backed against a wall or
+ * standing beside a column read as serviceable on whichever side actually had no room to stand in.
+ * The criterion's own name is the reason the wider answer is correct — *"can actually reach it"*
+ * means from the floor a technician can actually stand on.
  */
 function measureMaintenanceAccess(input: MeasureInput): Measurement {
   if (input.placements.length === 0) return unavailable('SC-902');
@@ -405,9 +417,12 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
   const occupants = occupantBounds(input.occupants, input.catalog);
   if (occupants === null) return unavailable('SC-906');
 
+  const obstacles = obstructionBounds(input.obstructions);
+  const roomBounds = boundsOf(input.room);
+
   let reachable = 0;
   for (const placement of input.placements) {
-    const others = excluding(occupants, placement.id);
+    const blockers = [...excluding(occupants, placement.id), ...obstacles];
     const centre = placement.transform.position;
 
     const faces: Bounds[] = [];
@@ -432,7 +447,14 @@ function measureMaintenanceAccess(input: MeasureInput): Measurement {
     // anybody can service this machine.
     if (faces.length === 0) return unavailable('SC-904');
 
-    if (faces.some((face) => others.every((other) => !overlaps(face, other)))) reachable += 1;
+    // A face standing partly outside the room is not a face anyone can stand in front of. Full
+    // containment, not mere overlap — a corner of clear floor on the room side of a face does not
+    // make the other half of it reachable.
+    const clearFace = (face: Bounds): boolean =>
+      blockers.every((blocker) => !overlaps(face, blocker)) &&
+      (roomBounds === null || fullyWithin(roomBounds, face));
+
+    if (faces.some(clearFace)) reachable += 1;
   }
 
   return measured(reachable / input.placements.length);
@@ -503,8 +525,20 @@ function measureFutureExpansion(input: MeasureInput): Measurement {
  * Summed routed distance from a reference point to every machine.
  *
  * Shared by RO piping, electrical, drain and walking distance: the four criteria differ only in
- * which point they measure from, so they differ only in an argument. Writing four near-identical
- * functions would have been four places for a fix to be applied to three of.
+ * which point they measure from and, for one of them, what counts as an obstacle — so they differ
+ * only in arguments. Writing four near-identical functions would have been four places for a fix
+ * to be applied to three of.
+ *
+ * ## Equipment blocks a walk; it does not block a pipe
+ *
+ * > Owner decision, following the standing review: **`walking_distance` routes around equipment,
+ * > the three service runs do not.**
+ *
+ * RO piping, electrical and drain are run in a ceiling or floor void — a machine standing on the
+ * floor is not in their way, and only structural obstructions are. Walking distance measures a
+ * person, on the floor, going to the machine: every other machine in the room is exactly as much
+ * in their way as a column is, and routing straight through one is not a distance anybody would
+ * actually walk.
  *
  * **A machine with no route contributes `unavailable` for the whole criterion**, rather than being
  * skipped. A sum over the reachable subset would score a layout with an unreachable machine as
@@ -520,14 +554,17 @@ function measureRouting(input: MeasureInput, kind: ReferencePointKind): Measurem
 
   const obstacles = obstructionBounds(input.obstructions);
 
+  // Only `walking_distance` needs to know what else is in the room. Computed for that kind alone
+  // so the three service runs never need a catalogue entry for equipment they do not route around.
+  const occupants = kind === 'staff_base' ? occupantBounds(input.occupants, input.catalog) : [];
+  if (occupants === null) return unavailable('SC-906');
+
   let total = 0;
   for (const placement of input.placements) {
     const route = routedDistance({
       from: origin.position,
       to: placement.transform.position,
-      // Machines do not block a pipe run to themselves or to each other: services are routed in a
-      // ceiling or a floor void, not across the floor between the machines.
-      blocked: obstacles,
+      blocked: [...obstacles, ...excluding(occupants, placement.id)],
       within,
     });
     if (route === null) return unavailable('SC-903');
@@ -552,4 +589,14 @@ function obstructionBounds(obstructions: readonly (readonly Vec2[])[]): Bounds[]
 
 function overlaps(a: Bounds, b: Bounds): boolean {
   return !(a.maxX <= b.minX || a.minX >= b.maxX || a.maxY <= b.minY || a.minY >= b.maxY);
+}
+
+/** Is `inner` entirely inside `outer`? Touching an edge counts as inside. */
+function fullyWithin(outer: Bounds, inner: Bounds): boolean {
+  return (
+    inner.minX >= outer.minX &&
+    inner.maxX <= outer.maxX &&
+    inner.minY >= outer.minY &&
+    inner.maxY <= outer.maxY
+  );
 }

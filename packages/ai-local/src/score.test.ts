@@ -48,6 +48,10 @@ const ALL_POINTS: ReferencePointSummary[] = [
   { id: 'staff', kind: 'staff_base', position: { x: 4_000, y: 6_000 } },
 ];
 
+function measurementOf(breakdown: ReturnType<typeof score>, criterion: string) {
+  return breakdown.criteria.find((entry) => entry.criterion === criterion);
+}
+
 function score(overrides: Partial<ScoreInput> = {}) {
   const placements = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
   return scoreLayout({
@@ -92,10 +96,6 @@ describe('what is measured, and what is merely in the way', () => {
   function withOccupant(overrides: Partial<ScoreInput> = {}) {
     const placements = [placement('a', 1_000, 1_000), placement('b', 4_000, 1_000)];
     return score({ placements, occupants: [...placements, inTheWay], ...overrides });
-  }
-
-  function measurementOf(breakdown: ReturnType<typeof score>, criterion: string) {
-    return breakdown.criteria.find((entry) => entry.criterion === criterion);
   }
 
   it('does not offer space another machine is standing in as room to expand into', () => {
@@ -610,6 +610,98 @@ describe('what the scoring engine refuses to do', () => {
     };
 
     expect(() => score({ scoring: broken })).toThrow(/fractionTarget/);
+  });
+});
+
+describe('maintenance access counts obstructions and the room edge, not only equipment', () => {
+  /*
+   * > Owner decision, following the standing review: obstructions and the room boundary block a
+   * > service face, the same as equipment does.
+   *
+   * Room 6 x 4 m. The fixture machine's clearances are front 1,200 mm, rear 800 mm, footprint
+   * 800 x 800 — so at (1,500, 1,200) with no rotation the front face spans y 1,600-2,800 and the
+   * rear face spans y 0-800, both x 1,100-1,900.
+   */
+  const room = fixtureRoom(6_000, 4_000);
+  const boundaries = [fixtureRoomBoundary(6_000, 4_000)];
+  const machine = [placement('a', 1_500, 1_200)];
+
+  it('counts an obstruction in a clearance zone as blocking that face', () => {
+    // A column sitting in the front face's footprint. The rear face is still clear, so the machine
+    // is still reachable — the obstruction has to remove the *last* clear face to change the count.
+    const frontBlocked = score({
+      placements: machine,
+      occupants: machine,
+      room,
+      boundaries,
+      obstructions: [fixtureColumn({ x: 1_200, y: 1_800 }, 400).vertices],
+    });
+    expect(measurementOf(frontBlocked, 'maintenance_access')?.measured).toBe(1);
+
+    // Both faces blocked: front by one column, rear by another.
+    const bothBlocked = score({
+      placements: machine,
+      occupants: machine,
+      room,
+      boundaries,
+      obstructions: [
+        fixtureColumn({ x: 1_200, y: 1_800 }, 400).vertices,
+        fixtureColumn({ x: 1_200, y: 200 }, 400).vertices,
+      ],
+    });
+    expect(measurementOf(bothBlocked, 'maintenance_access')?.measured).toBe(0);
+  });
+
+  it('counts a face standing outside the room as unreachable', () => {
+    // The same machine, 700 mm from the room's near wall: the rear face (800 mm deep) now runs
+    // past y = 0, out of the room, and only the front face remains reachable — until the room
+    // narrows enough to take that one too.
+    const nearWall = [placement('a', 1_500, 700)];
+
+    const oneFaceOut = score({ placements: nearWall, occupants: nearWall, room, boundaries });
+    expect(measurementOf(oneFaceOut, 'maintenance_access')?.measured).toBe(1);
+
+    // Front face now runs to y = 2,300; a room 2,200 mm deep clips it too.
+    const shallow = fixtureRoom(6_000, 2_200);
+    const shallowBoundaries = [fixtureRoomBoundary(6_000, 2_200)];
+    const bothFacesOut = score({
+      placements: nearWall,
+      occupants: nearWall,
+      room: shallow,
+      boundaries: shallowBoundaries,
+    });
+    expect(measurementOf(bothFacesOut, 'maintenance_access')?.measured).toBe(0);
+  });
+});
+
+describe('walking distance routes around equipment; the service runs do not', () => {
+  /*
+   * > Owner decision, following the standing review: `walking_distance` routes around equipment,
+   * > the three service runs do not — they are carried in a ceiling or floor void.
+   */
+  it('routes a walk around a machine standing in the way; a pipe run ignores it', () => {
+    // Two machines in a line between the staff base and the target: the direct route is blocked for
+    // a person, not for a service run.
+    const inTheWay = placement('blocker', 4_000, 3_000);
+    const target = placement('target', 4_000, 500);
+
+    const clear = score({ placements: [target], occupants: [target], referencePoints: ALL_POINTS });
+    const blocked = score({
+      placements: [target],
+      occupants: [target, inTheWay],
+      referencePoints: ALL_POINTS,
+    });
+
+    const walking = (b: ReturnType<typeof score>) =>
+      b.criteria.find((entry) => entry.criterion === 'walking_distance')?.measured;
+    const ro = (b: ReturnType<typeof score>) =>
+      b.criteria.find((entry) => entry.criterion === 'ro_piping_length')?.measured;
+
+    expect(walking(blocked)).toBeGreaterThan(walking(clear) ?? 0);
+    // The pipe run is measured from a different point (ro_supply), but the property under test is
+    // that it is unmoved by the same obstacle that moved the walk — a straight Manhattan distance
+    // either sees the blocker or it does not, and it must not.
+    expect(ro(blocked)).toBe(ro(clear));
   });
 });
 
