@@ -211,6 +211,14 @@ const PROBE_CEILING_MULTIPLE = 3;
  * footprint for `rear` — on the other three, a defect the Critical 0 review found live through
  * `scoreLayout`: an obstruction squarely inside a `left` clearance zone scored full marks. See
  * `faceProbe`'s own doc comment for why deriving from corner order can't be made to work.
+ *
+ * **A separate, still-open limitation, found by the same review round**: this walks a *single ray*
+ * from the face's own midpoint. An obstruction anywhere else in the declared zone — off to one
+ * side of centre — is invisible to it and still scores full marks; only `@mfd/rule-engine`'s own
+ * clearance evaluator (`gapAlongNormal`, which measures the true minimum gap across the whole face)
+ * catches it. Left open pending an owner decision — "minimum across the whole face" vs "along the
+ * centreline" is a real choice with a cost either way, not a coordinate-contract violation — see
+ * `docs/architecture/SYSTEM_ARCHITECTURE.md`'s AD-21 entry.
  */
 function freeDistanceOnSide(
   placement: Placement,

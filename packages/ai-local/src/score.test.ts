@@ -885,8 +885,8 @@ describe('equipment geometry rotates with its placement', () => {
     {
       side: 'rear' as const,
       threshold: 800,
-      // 100 mm into the 800 mm rear zone: the probe starts at the rear face (3000, 3000) and
-      // walks in −y; blocked at the obstruction's near edge, 100 mm out.
+      // 100 mm into the 800 mm rear zone: the probe starts at the rear face's midpoint
+      // (3500, 3000) and walks in −y; blocked at the obstruction's near edge, 100 mm out.
       obstruction: [
         { x: 3_300, y: 2_700 },
         { x: 3_600, y: 2_700 },
