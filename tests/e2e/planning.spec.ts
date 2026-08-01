@@ -229,6 +229,16 @@ test('names the missing reference point instead of quietly dropping a stage', as
   await expect(page.getByTestId('plan-stages')).not.toContainText('RO Loop Pressure Test');
   await expect(page.getByTestId('plan-blockers')).toContainText('No reference point placed');
   await expect(page.getByTestId('plan-blockers')).toContainText('ro_supply');
+
+  // The connections list reports the same absence for every service, bilingually — the caption
+  // is SC-901's own title, not a hand-typed English copy of it (regression: this only fails if
+  // the derivation is reverted or its source is swapped for a different code).
+  await expect(page.getByTestId('plan-connection-power-no-reference-point')).toContainText(
+    '기준점 없음',
+  );
+  await expect(page.getByTestId('plan-connection-power-no-reference-point')).toContainText(
+    'No Reference Point',
+  );
 });
 
 test('routes around a column rather than through it', async ({ page }) => {

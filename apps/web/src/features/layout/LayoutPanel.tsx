@@ -5,6 +5,7 @@ import { catalog } from '@mfd/object-library/catalog';
 import type { Bilingual } from '@mfd/rule-engine';
 import { dialysisRuleSet } from '@mfd/rule-engine/rules';
 
+import { BilingualText } from '@/components/BilingualText';
 import { now } from '@/editor/clock';
 import {
   type LayoutEmptyReason,
@@ -87,20 +88,6 @@ function coverageCaveat(percent: number): Bilingual {
     ko: `채점 모델의 ${percent}%만 측정되었습니다 — 나머지는 측정할 수 없어 보이지 않는 차이가 있을 수 있습니다. 기준점을 배치하고 AK98 매뉴얼이 확보되면 이 범위가 넓어집니다.`,
     en: `Measured over ${percent}% of the scoring model — the rest could not be measured, so there may be differences it cannot see. Placing reference points, and the AK98 manual, are what widen this.`,
   };
-}
-
-/**
- * Korean above English, always both, stacked as two block lines — the convention every bilingual
- * surface in this app uses (`ValidationPanel.tsx`, this panel's own ranking-reason list, and
- * `@mfd/report-engine`'s rendered `LABELS`).
- */
-function BilingualText({ text }: { readonly text: Bilingual }) {
-  return (
-    <>
-      <span className="block">{text.ko}</span>
-      <span className="block">{text.en}</span>
-    </>
-  );
 }
 
 export function LayoutPanel() {
