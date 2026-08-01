@@ -104,11 +104,22 @@ describe('what is measured, and what is merely in the way', () => {
      * no more; measuring only the candidate said three more fit, and moved the total from 0.75 to
      * 0.9375. It is the one weighted criterion measurable with today's catalogue — every AK98
      * clearance is null, so the others report `SC-904` — so this was displayed and wrong.
+     *
+     * Positions are exactly the generator's own 3×2 grid slot centres, offset by the fixture
+     * machine's own half-footprint (400, 400) to land the *front-left-anchored* placement on that
+     * slot — a later fix made `occupantBounds` read the footprint's real (front-left) origin
+     * instead of assuming a centre, and coordinates chosen for the old, wrong assumption no longer
+     * describe the same room. Re-derived rather than kept: every top-row slot is free without the
+     * occupied row and none are once it is there, verified by running the criterion, not eyeballed.
      */
     const room = fixtureRoom(6_000, 4_000);
     const boundaries = [fixtureRoomBoundary(6_000, 4_000)];
-    const occupied = [placement('e1', 1_500, 1_500), placement('e2', 3_000, 1_500), placement('e3', 4_500, 1_500)];
-    const candidate = [placement('c1', 1_500, 3_000), placement('c2', 3_000, 3_000), placement('c3', 4_500, 3_000)];
+    const occupied = [placement('e1', 600, 600), placement('e2', 2_600, 600), placement('e3', 4_600, 600)];
+    const candidate = [
+      placement('c1', 600, 2_600),
+      placement('c2', 2_600, 2_600),
+      placement('c3', 4_600, 2_600),
+    ];
 
     const blind = score({ placements: candidate, occupants: candidate, room, boundaries, stationTarget: 3 });
     const seeing = score({
@@ -151,13 +162,19 @@ describe('what is measured, and what is merely in the way', () => {
      * indistinguishable from sizing them properly.
      *
      * A bed is 1,000 x 2,100 against the station's 800 x 800 — the shipped catalogue's real spread.
-     * Laid across a narrow room, measuring it as an 800 mm square leaves room for a station that is
-     * not there.
+     * A narrow, one-column room (2,000 mm wide, three 2,000 mm pitch slots deep) makes the
+     * difference exact rather than approximate: the bed, in the same spot, spans two of the three
+     * slots at its true depth and blocks a third station reaching the last one; measured as an
+     * 800 mm square it fits inside one slot and leaves the other free.
+     *
+     * Re-derived rather than kept, for the same reason as the test above: the position was chosen
+     * for a centre-anchored footprint, and `occupantBounds` now reads the real, front-left-anchored
+     * one.
      */
-    const room = fixtureRoom(2_400, 6_000);
-    const boundaries = [fixtureRoomBoundary(2_400, 6_000)];
-    const stations = [placement('s1', 1_200, 1_000)];
-    const bed = { ...placement('bed', 1_200, 4_000), equipmentObjectId: 'fixture_bed' };
+    const room = fixtureRoom(2_000, 6_000);
+    const boundaries = [fixtureRoomBoundary(2_000, 6_000)];
+    const stations = [placement('s1', 600, 600)];
+    const bed = { ...placement('bed', 500, 2_950), equipmentObjectId: 'fixture_bed' };
 
     const asItIs = score({
       placements: stations,
@@ -166,18 +183,18 @@ describe('what is measured, and what is merely in the way', () => {
       boundaries,
       stationTarget: 1,
     });
-    // The same drawing with the bed measured as a station-sized square: the mistake being guarded.
+    // The same drawing, same position, with the bed measured as a station-sized square instead —
+    // the mistake being guarded.
     const asAStation = score({
       placements: stations,
-      occupants: [...stations, placement('bed', 1_200, 4_000)],
+      occupants: [...stations, placement('bed', 500, 2_950)],
       room,
       boundaries,
       stationTarget: 1,
     });
 
-    expect(measurementOf(asItIs, 'future_expansion')?.measured).toBeLessThan(
-      measurementOf(asAStation, 'future_expansion')?.measured ?? 0,
-    );
+    expect(measurementOf(asItIs, 'future_expansion')?.measured).toBe(0);
+    expect(measurementOf(asAStation, 'future_expansion')?.measured).toBe(1);
   });
 
   it('refuses to measure a room holding equipment the catalogue does not describe', () => {
@@ -249,15 +266,14 @@ describe('what is measured, and what is merely in the way', () => {
      * way — including equipment of other kinds, which is installed too. A route computed against
      * one kind is a route through the other.
      */
-    // `a` fills the room's corner, 0–800 in both axes. Three more machines, footprints touching,
-    // close the only two sides it is not walled on. The first attempt left an 900 mm gap between
-    // them and the crate simply drove through it — which is the criterion working, and the test not.
-    const corner = [placement('a', 400, 400)];
-    const sealing = [
-      placement('w', 400, 1_200),
-      placement('x', 1_200, 400),
-      placement('y', 1_200, 1_200),
-    ];
+    // `a` fills the room's corner, 0–800 in both axes — a placement's position is the fixture
+    // catalogue's `front-left` origin corner, not its centre, so (0, 0) is what puts it there. Three
+    // more machines, footprints touching, close the only two sides it is not walled on. The first
+    // attempt left a 900 mm gap between them and the crate simply drove through it — which is the
+    // criterion working, and the test not. (A second attempt used a centre-anchored (400, 400) for
+    // `a`, which was the same mistake `occupantBounds` itself has since been corrected out of.)
+    const corner = [placement('a', 0, 0)];
+    const sealing = [placement('w', 0, 800), placement('x', 800, 0), placement('y', 800, 800)];
 
     const open = measurementOf(
       score({ ...measurable, placements: corner, occupants: corner, stationTarget: 1 }),
@@ -708,11 +724,16 @@ describe('equipment geometry rotates with its placement', () => {
   it("sizes an occupant's footprint by its actual orientation, not its unrotated one", () => {
     /*
      * The gap the review measured directly: a bed (1,000 x 2,100) turned 90° reported the same
-     * `walking_distance` as upright, though its true extent blocks both L-routes differently. Two
-     * different orientations of the same physical object, in the same place, now measure
-     * differently — verified against `routedDistance` by hand before writing this: 6,250 mm
-     * upright, 7,250 mm turned, because the turned bed is *wider* across the route even though it
-     * is *shorter along* it.
+     * `walking_distance` as upright, though its true extent blocks the route differently. Two
+     * different orientations of the same physical object, at the same `transform.position`, now
+     * measure differently — verified against `routedDistance` before writing this.
+     *
+     * A placement's position is the object's `front-left` corner, and rotation turns the object
+     * about *that corner* — the same pivot the real editor uses (`rotatePlacementCommand` changes
+     * only `rotation`, never `position`). A 2,100 mm-long bed swung about one end moves almost
+     * entirely from one side of a line to the other, so there is no position that keeps both
+     * orientations straddling the route symmetrically; the honest test is that the two orientations
+     * block it by different amounts, not that one is straightforwardly "wider."
      */
     const points: ReferencePointSummary[] = [
       { id: 'ro', kind: 'ro_supply', position: { x: 0, y: 0 } },
@@ -739,8 +760,11 @@ describe('equipment geometry rotates with its placement', () => {
     const walking = (b: ReturnType<typeof score>) =>
       b.criteria.find((entry) => entry.criterion === 'walking_distance')?.measured;
 
-    expect(walking(upright)).toBe(6_250);
-    expect(walking(turned)).toBe(7_250);
+    expect(walking(upright)).toBe(5_750);
+    expect(walking(turned)).toBe(5_250);
+    // Both still block the route relative to clear, which is the property under test — same object,
+    // same place, and the count changes only because the orientation did.
+    expect(walking(upright)).not.toBe(walking(turned));
   });
 
   it("checks a service face where the machine's own rotation actually put it", () => {
@@ -792,6 +816,71 @@ describe('equipment geometry rotates with its placement', () => {
     expect(measurementOf(blockedBothFaces, 'maintenance_access')?.measured).toBe(0);
     expect(measurementOf(clearedByRotation, 'maintenance_access')?.measured).toBe(1);
   });
+
+  it("starts the compliance-margin probe from the rotated object's own face, not a model-space guess", () => {
+    /*
+     * A third assumption in this file, found by the second review of this decision:
+     * `freeDistanceOnSide` rotated the *normal* correctly, then picked which half-extent (width or
+     * depth) to start the probe from by comparing the **rotated** direction's x/y magnitudes —
+     * which agrees with the *local* axis only at multiples of 90° by coincidence, not by
+     * construction, and is a coin-flip at 45°.
+     *
+     * The bed (1,000 x 2,100, `frontEdge: south`) turned 90° has its front normal rotated to due
+     * west. The correct reach is `depth/2 = 1,050` — the local normal (0, 1) has no x-component, so
+     * it is a north/south side regardless of which way it now points in the world. The old
+     * comparison looked at the *rotated* direction, (-1, 0), saw it was "more x than y", and picked
+     * `width/2 = 500` instead — starting the probe 550 mm short of the bed's actual face.
+     *
+     * An obstruction sits due west of both possible starting points, so the same obstacle produces
+     * two different measured margins depending on which one the probe actually started from —
+     * verified through the full criterion, not asserted from the formula alone. Both figures were
+     * confirmed by deliberately reintroducing the old comparison and reading back the result.
+     */
+    const bed = fixtureCatalog().get('fixture_bed');
+    if (!bed) throw new Error('fixture catalogue did not contain fixture_bed');
+
+    const ruleSet = fixtureRuleSet([
+      fixtureClearanceRule({ side: 'front', threshold: 1_200, categories: ['treatment_bed'] }),
+      fixtureCollisionRule(),
+      fixtureCollisionRule({ ruleId: 'fixture_boundary', scope: 'boundary' }),
+    ]);
+    const turnedBed: Placement = {
+      id: 'bed',
+      equipmentObjectId: bed.id,
+      equipmentObjectVersion: bed.version,
+      label: 'bed',
+      transform: { position: { x: 3_000, y: 3_000 }, rotation: 90_000, mirrored: false },
+      spaceId: null,
+    };
+    // Due west of both the correct start (1,950, 3,000) and the buggy one (2,500, 3,000).
+    const obstruction = [
+      { x: 1_250, y: 2_900 },
+      { x: 1_350, y: 2_900 },
+      { x: 1_350, y: 3_100 },
+      { x: 1_250, y: 3_100 },
+    ];
+
+    const breakdown = scoreLayout({
+      placements: [turnedBed],
+      occupants: [turnedBed],
+      catalog: fixtureCatalog(),
+      ruleSet,
+      boundaries: [fixtureRoomBoundary(8_000, 8_000)],
+      room: fixtureRoom(8_000, 8_000),
+      obstructions: [obstruction],
+      referencePoints: [],
+      object: bed,
+      planStatus: 'calibrated',
+      pitchPadding: 1_200,
+      knowledge: withDeliveryAllowance([140, 150, 160]),
+      scoring: dialysisScoringModel,
+      stationTarget: 1,
+    });
+
+    // 600 mm free (probe stops at the obstruction's east edge, 50 mm steps) over the 1,200 mm
+    // requirement. The buggy start would have measured 1,150 mm free (a 0.9583 ratio) instead.
+    expect(measurementOf(breakdown, 'compliance_margin')?.measured).toBe(0.5);
+  });
 });
 
 describe('walking distance routes around equipment; the service runs do not', () => {
@@ -809,12 +898,17 @@ describe('walking distance routes around equipment; the service runs do not', ()
      * routing this same from/to/blocker through `routedDistance` gives 5,500 mm clear and
      * 6,250 mm if the blocker is treated as an obstacle, so a service run that leaked occupant
      * avoidance would move this number and this test would catch it.
+     *
+     * `blocker` sits at (3,600, 2,600), not (4,000, 3,000): a placement's position is the fixture
+     * catalogue's `front-left` corner, not its centre, so this is what puts an 800 mm station's
+     * footprint at the same [3,600, 4,400] x [2,600, 3,400] box a centre-anchored (4,000, 3,000)
+     * used to describe — re-derived once `occupantBounds` was corrected to read the real origin.
      */
     const points: ReferencePointSummary[] = [
       { id: 'ro', kind: 'ro_supply', position: { x: 4_000, y: 6_000 } },
       { id: 'staff', kind: 'staff_base', position: { x: 4_000, y: 6_000 } },
     ];
-    const inTheWay = placement('blocker', 4_000, 3_000);
+    const inTheWay = placement('blocker', 3_600, 2_600);
     const target = placement('target', 4_000, 500);
 
     const clear = score({ placements: [target], occupants: [target], referencePoints: points });

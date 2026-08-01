@@ -146,7 +146,12 @@ export function fixtureCollisionRule(
  * of the default set so the *default* fixture keeps reflecting the product's actual state.
  */
 export function fixtureClearanceRule(
-  options: { ruleId?: string; side?: 'front' | 'rear' | 'left' | 'right'; threshold?: number } = {},
+  options: {
+    ruleId?: string;
+    side?: 'front' | 'rear' | 'left' | 'right';
+    threshold?: number;
+    categories?: readonly string[];
+  } = {},
 ): Record<string, unknown> {
   return {
     ruleId: options.ruleId ?? 'fixture_front_clearance',
@@ -157,7 +162,7 @@ export function fixtureClearanceRule(
     unit: 'mm',
     status: 'draft',
     severity: 'YELLOW',
-    appliesTo: { equipmentIds: null, categories: ['dialysis_machine'] },
+    appliesTo: { equipmentIds: null, categories: options.categories ?? ['dialysis_machine'] },
     parameters: { side: options.side ?? 'front' },
     source: {
       document: null,
