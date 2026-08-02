@@ -500,15 +500,55 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
     ]);
   });
 
-  it('keeps two genuinely different readings from one plan', () => {
+  it('keeps two genuinely different readings from one plan — on the shipped corpus', () => {
     /*
-     * The trap in the obvious fix. `Hospital_023/dialysis_24bed` records station pitches of 2,000
-     * *and* 1,200 — two real runs on one sheet, each appearing once per file format. Collapsing to
-     * one reading per plan would have discarded the 1,200, so the key is the plan *and the value*.
-     * The surviving spread is the evidence that it was not discarded.
+     * `Hospital_023/dialysis_24bed` records station pitches of 2,000 *and* 1,200 — two real runs on
+     * one sheet, each appearing once per file format. Six plans in the corpus do this.
+     *
+     * **This assertion cannot fail, and saying so is the point.** Measured: removing the value from
+     * the dedup key — collapsing to one reading per plan — changes no published figure at all. The
+     * sample loses 2 readings for `station_pitch` and 4 for `station_row_spacing`, and the minimum,
+     * median and maximum are identical either way, because the values it drops are also contributed
+     * by other plans. The regenerated artefact is byte-identical.
+     *
+     * So this is a statement about the corpus, not a guard on the rule. The guard is the next test,
+     * which constructs the case the corpus does not contain.
      */
     const pitch = entryFor('station_pitch');
     expect(pitch.minimumMm).toBe(1_200);
     expect(pitch.maximumMm).toBe(2_000);
+  });
+
+  it('keys the sample on the plan AND the value, which changes the median when it matters', () => {
+    /*
+     * The discriminating case, constructed because the corpus has none.
+     *
+     * One plan records 1,000 and 1,100 — two genuine runs on one sheet. Another records 3,000.
+     * Keyed on plan **and** value the sample is [1,000, 1,100, 3,000] and the lower-middle reading
+     * is **1,100**. Keyed on the plan alone the second reading is discarded, the sample is
+     * [1,000, 3,000], and the median falls to **1,000** — a figure that would be reported as
+     * observed practice while one of the observations behind it had been thrown away.
+     *
+     * Minimum and maximum are 1,000 and 3,000 under both rules, which is exactly why the test above
+     * cannot see the difference.
+     */
+    const twice = (id: string, drawingId: string, mm: number) =>
+      observation(id, drawingId, {
+        kind: 'common_dimension',
+        name: 'station_pitch',
+        roomFunction: null,
+        millimetres: mm,
+      });
+
+    const entries = entriesFor('common_dimension', [
+      twice('a', 'h1/plan.pdf', 1_000),
+      twice('b', 'h1/plan.pdf', 1_100),
+      twice('c', 'h2/plan.pdf', 3_000),
+    ]);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.distribution?.median).toBe(1_100);
+    expect(entries[0]?.distribution?.minimum).toBe(1_000);
+    expect(entries[0]?.distribution?.maximum).toBe(3_000);
   });
 });
