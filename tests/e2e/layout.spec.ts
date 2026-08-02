@@ -404,9 +404,19 @@ test('shows what each candidate scores, and against what', async ({ page }) => {
    */
   await expect(page.getByTestId('layout-breakdown-1')).toContainText('관측 자료 없음');
   await expect(page.getByTestId('layout-breakdown-1')).toContainText('No Observed Figure');
-  // Bilingual, composed from AR- codes — the solver never writes prose of its own.
+  /*
+   * Bilingual, composed from AR- codes — the solver never writes prose of its own.
+   *
+   * This asserted `방식으로`, which is `AR-104`'s Korean. The top proposal in this room is a
+   * **converged** one, so it now renders `AR-105` instead: `perimeter` and `rows` independently
+   * produced the same arrangement, and the sentence says so rather than naming whichever candidate
+   * id happened to sort first. Re-measured from the rendered panel, not adjusted to pass.
+   */
   await expect(page.getByTestId('layout-reason-1')).toContainText('Arranged 3 stations');
-  await expect(page.getByTestId('layout-reason-1')).toContainText('방식으로');
+  await expect(page.getByTestId('layout-reason-1')).toContainText(
+    'the perimeter and rows strategies each produced independently',
+  );
+  await expect(page.getByTestId('layout-reason-1')).toContainText('각각 동일한 배열에 도달했습니다');
 });
 
 test('applies a rearrangement only when asked, and undoes it in one press', async ({ page }) => {

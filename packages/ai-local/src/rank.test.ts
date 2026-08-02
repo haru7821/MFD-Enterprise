@@ -14,6 +14,7 @@ import {
 } from '../fixtures/index';
 import { type RankInput, collapseByGeometry, denseRanks, rankLayouts } from './rank';
 import { generateFeasibleCandidates, geometryKey } from './generate';
+import { renderRationale } from '@mfd/ai-contract';
 
 /**
  * The output contract.
@@ -459,5 +460,85 @@ describe('what actually decides the layout an engineer is shown first', () => {
     const second = rank().layouts.map((layout) => layout.candidateId);
 
     expect(second).toEqual(first);
+  });
+});
+
+describe('the explanation says how many strategies reached the layout', () => {
+  /*
+   * > Owner finding: *"AR-104 currently describes only the surviving candidate's strategy … This is
+   * > not false, but it hides convergence evidence."*
+   *
+   * `collapseByGeometry` keeps the codepoint-first candidate, so `candidate.strategy` on the
+   * fixture's converged proposal is `perimeter` and `rows` vanished from the sentence while
+   * remaining in `strategies`. The explanation and the evidence model disagreed about the same
+   * layout.
+   */
+  it('Case A — a single strategy keeps AR-104 and names it', () => {
+    const single = rank().layouts.find((layout) => layout.strategies.length === 1);
+    expect(single, 'the fixture has no single-strategy proposal').toBeDefined();
+
+    const arrangement = single!.explanation.find(
+      (item) => item.code === 'AR-104' || item.code === 'AR-105',
+    );
+    expect(arrangement?.code).toBe('AR-104');
+    expect(renderRationale('en', arrangement!.code, arrangement!.params)).toContain('in columns');
+  });
+
+  it('Case B — a converged proposal names every contributing strategy', () => {
+    const converged = rank().layouts.find((layout) => layout.strategies.length > 1);
+    expect(converged, 'the fixture has no convergence case').toBeDefined();
+    expect(converged!.strategies).toEqual(['perimeter', 'rows']);
+
+    const arrangement = converged!.explanation.find(
+      (item) => item.code === 'AR-104' || item.code === 'AR-105',
+    )!;
+    expect(arrangement.code).toBe('AR-105');
+
+    const english = renderRationale('en', arrangement.code, arrangement.params);
+    const korean = renderRationale('ko', arrangement.code, arrangement.params);
+
+    // Both strategies, in both languages. Neither may be dropped.
+    for (const fragment of ['perimeter', 'rows']) expect(english).toContain(fragment);
+    for (const fragment of ['벽면 배열', '행 배열']) expect(korean).toContain(fragment);
+
+    /*
+     * And no wording that ranks them. The owner named these explicitly: a strategy did not *win*,
+     * and none of them produced the layout alone.
+     */
+    for (const forbidden of ['best', 'winning', 'winner', 'primary', 'selected']) {
+      expect(english.toLowerCase(), forbidden).not.toContain(forbidden);
+    }
+
+    // No placeholder survived — the same failure `renderRationale` deliberately makes visible.
+    expect(english).not.toMatch(/\{\w+\}/);
+    expect(korean).not.toMatch(/\{\w+\}/);
+  });
+
+  it('Case C — the wording does not depend on the order the strategies arrive in', () => {
+    /*
+     * Two independent order questions, and the second is the one a test could easily miss.
+     *
+     * `collapseByGeometry` sorts the strategy list, so a reversed candidate stream must produce the
+     * same sentence. And `strategyList` itself must be a pure function of the order it is handed —
+     * asserted through the public rendering rather than by inspecting the array, because the array
+     * being sorted is not the same claim as the *sentence* being stable.
+     */
+    const feasible = generateFeasibleCandidates(pipelineInput()).feasible;
+    const forwards = collapseByGeometry(feasible);
+    const backwards = collapseByGeometry([...feasible].reverse());
+
+    expect(backwards.map((entry) => entry.strategies)).toEqual(
+      forwards.map((entry) => entry.strategies),
+    );
+
+    const converged = rank().layouts.find((layout) => layout.strategies.length > 1)!;
+    const arrangement = converged.explanation.find((item) => item.code === 'AR-105')!;
+    const rendered = renderRationale('en', arrangement.code, arrangement.params);
+
+    // The same list handed over in the opposite order renders differently — which is precisely why
+    // the sort in `collapseByGeometry` is load-bearing rather than cosmetic.
+    const reversedParams = { ...arrangement.params, strategies: { ko: '행 배열, 벽면 배열', en: 'rows and perimeter' } };
+    expect(renderRationale('en', 'AR-105', reversedParams)).not.toBe(rendered);
+    expect(rendered).toContain('perimeter and rows');
   });
 });

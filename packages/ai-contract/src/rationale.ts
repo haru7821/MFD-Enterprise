@@ -63,6 +63,29 @@ export const RATIONALE_CODES = {
       en: 'Arranged {count} stations {strategy}.',
     },
   },
+  /**
+   * Two or more strategies produced the **same** arrangement.
+   *
+   * > Owner requirement: *"Do not select one silently … Use wording that preserves convergence.
+   * > Avoid 'best strategy', 'winning strategy', or implying one strategy produced the result
+   * > alone."*
+   *
+   * Its own code rather than a list in `AR-104`, and the reason is the English template above:
+   * `{strategy}` there is an **adverbial** — *in rows*, *around the perimeter* — so listing into it
+   * yields *"Arranged 4 stations in rows and around the perimeter"*, which reads as some of each.
+   * That is not merely clumsy, it describes a layout that does not exist.
+   *
+   * `each produced` rather than `agreed on` or `converged`: the strategies do not confer, they run
+   * independently and arrive at the same answer, and that independence is the whole evidential
+   * value of saying it at all.
+   */
+  'AR-105': {
+    title: { ko: '동일 배치 도달', en: 'Strategies Converged' },
+    template: {
+      ko: '{count}대를 배치했으며, {strategies} 방식이 각각 동일한 배열에 도달했습니다.',
+      en: 'Arranged {count} stations in one layout that the {strategies} strategies each produced independently.',
+    },
+  },
   'AR-201': {
     title: { ko: '정비 공간 확보를 위한 이동', en: 'Moved To Satisfy Clearance' },
     template: {

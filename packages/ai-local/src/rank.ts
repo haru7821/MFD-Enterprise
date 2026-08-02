@@ -103,6 +103,41 @@ const STRATEGY_WORDS: Readonly<Record<Candidate['strategy'], Bilingual>> = {
   perimeter: { ko: '벽면 배열', en: 'around the perimeter' },
 };
 
+/**
+ * The same strategies as **names** rather than adverbials, for `AR-105`'s list.
+ *
+ * `STRATEGY_WORDS` above answers *how were they arranged* — "in rows", "around the perimeter" — and
+ * reads correctly only in `AR-104`'s single-strategy sentence. Listing those into one sentence
+ * produces *"Arranged 4 stations in rows and around the perimeter"*, which describes a layout that
+ * does not exist. A convergence sentence needs the strategies named, not the arrangement described
+ * twice.
+ */
+const STRATEGY_NAMES: Readonly<Record<Candidate['strategy'], Bilingual>> = {
+  rows: { ko: '행 배열', en: 'rows' },
+  columns: { ko: '열 배열', en: 'columns' },
+  perimeter: { ko: '벽면 배열', en: 'perimeter' },
+};
+
+/**
+ * A bilingual list of strategy names, in the order given.
+ *
+ * English joins the last pair with "and"; Korean uses commas throughout rather than 와/과, whose
+ * correct form depends on whether the preceding syllable ends in a consonant. Every name today ends
+ * in 열 and would take 과, so the particle would be right by accident — and wrong the first time a
+ * strategy is named something else. A comma is correct for any list.
+ */
+function strategyList(strategies: readonly Candidate['strategy'][]): Bilingual {
+  const names = strategies.map((strategy) => STRATEGY_NAMES[strategy]);
+  const english = names.map((name) => name.en);
+  return {
+    ko: names.map((name) => name.ko).join(', '),
+    en:
+      english.length > 1
+        ? `${english.slice(0, -1).join(', ')} and ${english[english.length - 1]}`
+        : (english[0] ?? ''),
+  };
+}
+
 export interface RankInput extends PipelineInput {
   readonly scoring: ScoringModel;
   /** How many to return. The owner's floor is three; fewer only when fewer are feasible. */
@@ -189,6 +224,17 @@ export function collapseByGeometry(
     const ordered = [...members].sort((a, b) =>
       a.candidate.id < b.candidate.id ? -1 : a.candidate.id > b.candidate.id ? 1 : 0,
     );
+    /*
+     * Sorted, and **no test can kill this sort** — measured: removing it leaves the whole suite
+     * green. `candidate.id` is `${strategy}-${count}-${hash}`, so ordering members by id already
+     * orders them by strategy name, and the two can only disagree if that id format changes.
+     *
+     * Kept and labelled rather than deleted, which is the opposite of the call made on two dead
+     * comparator keys in `corpusLedger.ts`. The difference is what the redundancy rests on: those
+     * keys could never decide anything at all, while this one is redundant only *because another
+     * module happens to build ids that way*. `AR-105`'s wording is derived from this order, so a
+     * change to the id format would silently reword an engineer-facing sentence.
+     */
     const strategies = [...new Set(ordered.map((member) => member.candidate.strategy))].sort();
     return { entry: ordered[0]!, strategies };
   });
@@ -285,7 +331,12 @@ export function rankLayouts(input: RankInput): RankResult {
       review: item.entry.gates.reviewCount,
       unevaluable: item.entry.gates.unevaluableCount,
     },
-    explanation: explain(item.entry.candidate, item.score, pipeline),
+    explanation: explain(
+      item.entry.candidate,
+      strategiesFor.get(item.entry.candidate.id) ?? [item.entry.candidate.strategy],
+      item.score,
+      pipeline,
+    ),
   }));
 
   return {
@@ -353,18 +404,44 @@ function marginOf(score: ScoreBreakdown): number {
  */
 function explain(
   candidate: Candidate,
+  strategies: readonly Candidate['strategy'][],
   score: ScoreBreakdown,
   pipeline: PipelineResult,
 ): ExplanationItem[] {
   const items: ExplanationItem[] = [];
 
-  items.push({
-    code: 'AR-104',
-    params: {
-      strategy: STRATEGY_WORDS[candidate.strategy],
-      count: candidate.positions.length,
-    },
-  });
+  /*
+   * **The arrangement statement, and which one depends on the evidence rather than on the survivor.**
+   *
+   * > Owner requirement: *"Do not select one silently … avoid implying one strategy produced the
+   * > result alone."*
+   *
+   * `candidate` is the survivor of `collapseByGeometry`, so `candidate.strategy` is whichever id
+   * sorted first — `perimeter` for the fixture's converged pair. Reporting that alone was not false,
+   * and that is exactly what made it worth fixing: it silently dropped the fact that `rows` reached
+   * the identical arrangement independently, which is the strongest thing this pair of candidates
+   * has to say about the room.
+   *
+   * One strategy keeps `AR-104` and its adverbial phrasing. More than one gets `AR-105`, which names
+   * them and says each produced the layout.
+   */
+  items.push(
+    strategies.length > 1
+      ? {
+          code: 'AR-105',
+          params: {
+            strategies: strategyList(strategies),
+            count: candidate.positions.length,
+          },
+        }
+      : {
+          code: 'AR-104',
+          params: {
+            strategy: STRATEGY_WORDS[candidate.strategy],
+            count: candidate.positions.length,
+          },
+        },
+  );
 
   /*
    * The trade this arrangement made, as a pair of criteria.
