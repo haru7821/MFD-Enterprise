@@ -216,3 +216,74 @@ describe('the ranked output', () => {
     expect(result.layouts.length).toBe(rank().layouts.length);
   });
 });
+
+describe('what actually decides the layout an engineer is shown first', () => {
+  /*
+   * **Measured, not described** — and the answer is uncomfortable enough to be worth a test.
+   *
+   * `compare` has three keys: total score, compliance margin, then candidate id. Deleting either of
+   * the last two left all 1,269 tests green, which sent me looking at what they see.
+   *
+   * On the shipped fixture the ranked output is:
+   *
+   * | candidate            | total       | margin |
+   * | -------------------- | ----------- | ------ |
+   * | `perimeter-4-…`      | 0.283333333 | null   |
+   * | `rows-4-…`           | 0.283333333 | null   |
+   * | `columns-4-…`        | 0.280260417 | null   |
+   *
+   * The top two tie **exactly** on total. `compliance_margin` is unavailable on all three — every
+   * rule in `standards/rules/` carries a null threshold until A-1 arrives, so `marginOf` returns -1
+   * for every candidate and the second key cannot separate anything. What ranks `perimeter` above
+   * `rows` is therefore the third key, on the candidate id: `'p' < 'r'`.
+   *
+   * So the layout presented first is chosen by **alphabetical strategy name** whenever the totals
+   * tie, which with a four-station room they do. The id key is not decoration — it is the tie-break
+   * that decides the headline answer, and it is doing that job in place of an engineering criterion
+   * that cannot be measured yet.
+   *
+   * Whether a tie should be presented as a ranked #1 at all is a product question and is with the
+   * GM. These tests only stop it being a surprise.
+   *
+   * ## What the mutations actually showed, including where they did not fire
+   *
+   * - **Key 3 reversed** → these tests fail. Its *direction* is pinned.
+   * - **Key 3 deleted** (`return 0`) → still green. `candidates.ts` already emits candidates sorted
+   *   by id and `Array.sort` is stable, so the key is redundant *given* that upstream order. It is
+   *   belt-and-braces on an invariant another module maintains, and it is kept for that reason —
+   *   not because a test can show it changing an outcome. `rankLayouts` takes an input, not a
+   *   candidate list, so there is no honest way to inject a different generation order from here.
+   * - **Key 2 deleted**, and `marginOf`'s `-1` fallback changed to `0` → both still green. Neither
+   *   can matter while every margin is unavailable. They are dormant rather than dead: the second
+   *   test below fails the day A-1 supplies a threshold, which is what makes the dormancy visible
+   *   instead of silent.
+   */
+  it('produces an exact tie on total, so a tie-break really is deciding the order', () => {
+    const totals = rank().layouts.map((layout) => layout.score.total);
+
+    expect(totals.length).toBeGreaterThan(1);
+    expect(totals[0]).toBe(totals[1]);
+  });
+
+  it('cannot use the compliance-margin tie-break, because nothing measures it yet', () => {
+    /*
+     * The second key, asserted as unreachable rather than assumed to work. If A-1 ever supplies
+     * thresholds this fails, and whoever supplies them comes here and finds out that the ranking's
+     * middle key has been dormant.
+     */
+    for (const layout of rank().layouts) {
+      const margin = layout.score.criteria.find((c) => c.criterion === 'compliance_margin');
+      expect(margin?.normalised ?? null, 'compliance_margin became measurable').toBeNull();
+    }
+  });
+
+  it('breaks the tie on candidate id, deterministically and by name alone', () => {
+    // The honest statement of what the order means today. Two runs agree, and they agree because
+    // of a string comparison — not because one layout is better than the other.
+    const first = rank().layouts.map((layout) => layout.candidateId);
+    const second = rank().layouts.map((layout) => layout.candidateId);
+
+    expect(second).toEqual(first);
+    expect(first[0]! < first[1]!, `${first[0]} should precede ${first[1]} by id`).toBe(true);
+  });
+});

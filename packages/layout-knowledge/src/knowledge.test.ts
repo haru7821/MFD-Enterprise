@@ -387,6 +387,115 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
     expect(entryFor('corridor_width').medianMm).toBe(2_040);
   });
 
+  it('ships nine derived kinds that are empty because nothing observes them, not because nothing was found', () => {
+    /*
+     * **The measured shape of the knowledge base, declared rather than discovered.**
+     *
+     * `knowledge/derived/` holds ten files. Nine contain `entries: []`, and an empty file reads as
+     * *"we looked and found nothing"* when the truth is *"this kind is never collected"* — the same
+     * confusion between a checked absence and an unchecked one that this project has been removing
+     * everywhere else.
+     *
+     * Measured: all 183 observations in the corpus are `common_dimension`. There is not one
+     * `room_type`, `equipment_placement`, `circulation_path` or `ro_room_pattern` observation, so
+     * eight aggregation branches in `aggregate.ts` have never run on real data.
+     *
+     * Asserted here so the day that changes, this test fails and whoever changed it comes and says
+     * so. It is not a complaint about the corpus — it is the corpus's actual reach, written down.
+     */
+    const kinds = new Set(dialysisKnowledge.entries.map((entry) => entry.kind));
+
+    expect([...kinds]).toEqual(['common_dimension']);
+    expect(dialysisKnowledge.entries.length).toBe(4);
+  });
+
+  it('leaves frequencies empty on every shipped entry, and that is the call site, not the data', () => {
+    /*
+     * `frequenciesOf` computes how many distinct drawings support each distinct value — the table
+     * behind *"eleven units did 2,000 and one did 2,700"*. Every shipped entry has `frequencies: []`.
+     *
+     * Two separate reasons, and neither is a bug in `frequenciesOf`:
+     *
+     * 1. The `common_dimension` branch — the only kind with observations — passes a literal `[]`.
+     * 2. Every branch that *does* call it belongs to a kind with no observations at all.
+     *
+     * So the function and both keys of its comparator are unreachable in production today. That is
+     * how they came to be untested: deleting **either** key of
+     * `b.drawings - a.drawings || compareCodepoint(a.value, b.value)` left all 1,269 tests green.
+     *
+     * Whether dimensions should carry a frequency table, or the field should go, is a product
+     * question and is with the GM. This records the state; it does not paper over it.
+     */
+    for (const entry of dialysisKnowledge.entries) {
+      expect(entry.frequencies, entry.subject).toEqual([]);
+    }
+  });
+
+  it('orders a frequency table by support first, then by value', () => {
+    /*
+     * The comparator proved against a constructed fixture, because no shipped data reaches it.
+     *
+     * Stated plainly rather than dressed up: this is **not** proof that the ordering is right for
+     * the corpus, because the corpus never produces a frequency table. It is proof that the two
+     * keys each decide an ordering, which is what makes them worth keeping until the product
+     * question above is answered. If the answer is "remove the field", this test goes with it.
+     */
+    const roomType = (id: string, drawingId: string, stations: number): Observation =>
+      observation(id, drawingId, {
+        kind: 'room_type',
+        function: 'hemodialysis_treatment',
+        label: null,
+        areaSquareMetres: null,
+        widthMm: null,
+        depthMm: null,
+        stationCount: stations,
+      } as ObservationValue);
+
+    const derived = aggregate(
+      [
+        /*
+         * **The fixture has to make the two keys disagree, and the first one here did not.**
+         *
+         * A first attempt used 20 on two drawings against 8 and 9 on one each. Deleting the support
+         * key still left `'20'` at the head, because `'2'` precedes `'8'` by codepoint too — the
+         * fixture agreed with both comparators and so discriminated neither. Measured: the mutation
+         * survived.
+         *
+         * So the most-supported value is now the one that sorts *last* by value: support says 9
+         * first, value alone would say 20, 8, 9.
+         *
+         * The tied pair is inserted `8` before `20` for the same reason. With the *value* key
+         * deleted, ties fall back to the insertion order of the underlying `Map` — and a fixture
+         * that inserted them in codepoint order would agree with that fallback and let the second
+         * mutation survive too. Measured: it did, until these two lines were swapped.
+         */
+        roomType('a', 'h1/plan', 9),
+        roomType('b', 'h2/plan', 9),
+        roomType('c', 'h3/plan', 8),
+        roomType('d', 'h4/plan', 20),
+      ],
+      ['test'],
+    );
+
+    const roomTypeFile = derived.find((file) => file.kind === 'room_type');
+    expect(roomTypeFile?.entries.length, 'the fixture produced no room_type entry').toBe(1);
+    const frequencies = roomTypeFile?.entries[0]?.frequencies ?? [];
+
+    // Key 1 decides the head: 9 is the most supported value, and by value alone it would be last.
+    expect(frequencies[0]).toEqual({ value: '9', drawings: 2 });
+
+    /*
+     * Key 2 decides the tail. `20` and `8` tie at one drawing each, so the *value* orders them — and
+     * by codepoint, which is why this asserts `'20'` before `'8'`: these are strings, and a numeric
+     * reading would put 8 first. A comparator that sorted them numerically would be a different one
+     * than the code ships, and this is where that difference shows.
+     */
+    expect(frequencies.slice(1)).toEqual([
+      { value: '20', drawings: 1 },
+      { value: '8', drawings: 1 },
+    ]);
+  });
+
   it('keeps two genuinely different readings from one plan', () => {
     /*
      * The trap in the obvious fix. `Hospital_023/dialysis_24bed` records station pitches of 2,000

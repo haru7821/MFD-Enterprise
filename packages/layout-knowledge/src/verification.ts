@@ -514,7 +514,19 @@ export function rowFingerprint(outcome: RowOutcome): string {
     outcome.stoppedAt,
     outcome.discrepancies
       .map((entry) => [entry.code, entry.classification, entry.subject])
-      .sort((a, b) => (a.join() < b.join() ? -1 : 1)),
+      /*
+       * `compareCodepoint`, because the previous form returned **1 for equal elements** rather than
+       * 0 — not a valid comparator, and a sort given one behaves in whatever way the engine's
+       * implementation happens to.
+       *
+       * Stated precisely: I could **not** produce a case where it actually reordered anything. V8's
+       * sort absorbs it at every length tried, no row in the corpus carries a repeated discrepancy,
+       * and the most any row carries is three. So this is a conformance fix, not a reproduced bug —
+       * the reason to make it is that `rowFingerprint`'s entire purpose is to be the same string for
+       * the same run, and resting that on an engine's tolerance of an invalid comparator is the
+       * kind of unstated assumption this file exists to remove.
+       */
+      .sort((a, b) => compareCodepoint(a.join('\u0000'), b.join('\u0000'))),
   ]);
 }
 
