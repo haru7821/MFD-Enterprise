@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Review opened, not concluded.** `Hospital_044/dialysis.pdf`, stopped at `room`; statement recorded, no outcome, no confirmation |
+| [`PILOT-001`](PILOT-001/) | **Reviewed — verdicts given, confirmation outstanding.** `VD-4` confirmed, `VD-1` inconclusive; needs signer `name` + `basis` |

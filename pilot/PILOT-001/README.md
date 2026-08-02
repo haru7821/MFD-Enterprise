@@ -14,9 +14,17 @@
 > uniquely identify which enclosed region is the treatment room, so the abstention was correct.
 > It corroborates `VD-4`; `VD-1` remains unaddressed.
 >
-> **No outcome recorded, no confirmation created.** `outcome.txt` is absent and `confirmation/` is
-> empty, because the statement carries no named individual, no outcome word and no basis — and
-> inferring those to complete the form would be the system signing on someone's behalf.
+> **Verdicts given** ([`review/findings.md`](review/findings.md)): `VD-4` **Confirmed** — the stop
+> judgement was appropriate. `VD-1` **Inconclusive / 검증불가** — neither confirmed nor refuted.
+>
+> **Still no confirmation.** `outcome.txt` is absent and `confirmation/` is empty: the signer's
+> `name` and `basis` are required by `confirmationSchema` and cannot be supplied from inside this
+> repository.
+>
+> **First finding from real use — `F-1`:** the review produced a *split* verdict, and a confirmation
+> binds to the whole row. The model has no per-finding granularity, so a signature here would carry
+> `VD-1` inside the fingerprint as though it had been checked. Goes to priority 3; *no action* is a
+> legitimate answer.
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)
