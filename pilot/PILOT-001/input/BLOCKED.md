@@ -1,86 +1,85 @@
 # PILOT-001 — execution not started
 
-> **Update — input review round 2.** The owner has stated that the four fields below will be
-> supplied, and has ratified the engineering-question interpretation (see
-> [`context.md`](context.md)). The field **values** have not yet arrived — the labels were sent
-> without them — so every blocker below still stands and nothing has been executed.
+> **Superseded — input model simplified.** The earlier version of this file recorded two blockers
+> under the old input model, which required the user to type a `drawingId`, a `page`, an operator, a
+> requester and a reviewing engineer. **Owner decision: none of those is required of the user.** The
+> blockers they described are therefore no longer blockers, and are recorded below as history rather
+> than deleted.
 
-**Two required input fields do not resolve.** Extraction has not been run, `run-metadata.json` has
-not been created, and no folder beyond `input/` contains anything.
+## What is required now
 
-Recorded rather than worked around: substituting a drawing or naming an operator would be exactly
-the inference the execution boundary forbids, and it would put fabricated identity into the first
-real pilot record.
+**One thing: the drawing file.**
 
----
-
-## Blocker 1 — the drawing identifier resolves to nothing
-
-| Provided | `Vantive_Layout_001`, Page 1 |
-| --- | --- |
-| In `knowledge/dataset.json` | **No.** 300 drawings catalogued, **0** matching `vantive` (case-insensitive) |
-| In the dataset on disk | **No.** No file matching `*vantive*` under the dataset root |
-
-Every catalogued identifier has the shape `Hospital_NNN/<sheet>.<ext>` — for example
-`Hospital_044/dialysis.pdf`. `Vantive_Layout_001` matches nothing in either the catalogue or the
-filesystem, so this is not a hash mismatch; the sheet itself cannot be located.
-
-`input/README.md` already states the rule for the weaker version of this problem: *if the `sha256`
-does not match the catalogue, the run is against a different file than the one catalogued and the
-record would be false — stop.* An identifier that resolves to no file at all is a stronger case of
-the same thing.
-
-### What is needed
-
-One of:
-
-1. **A catalogued `drawingId`** — chosen by a person, from the 300 in `knowledge/dataset.json`.
-2. **The `Vantive_Layout_001` drawing file itself**, if it exists outside the current dataset. It
-   would need cataloguing (`pnpm dataset:ingest`) before a pilot could cite it, so that its `sha256`
-   is recorded before it is read.
-
-**No drawing has been selected here, and none will be.** For information only, the 15 sheets that
-reach the furthest stage the pipeline currently achieves — room understanding — are listed below.
-This is the state of the corpus, not a recommendation, and choosing among them is a human decision:
-
-```
-Hospital_008/dialysis_typeA.pdf          Hospital_033/dialysis_rev03.pdf
-Hospital_022/dialysis_typeB.pdf          Hospital_033/dialysis_rev04.pdf
-Hospital_023/dialysis_typeB_30bed.pdf    Hospital_035/dialysis_typeA_16bed_2.pdf
-Hospital_025/dialysis_typeA.pdf          Hospital_039/dialysis_18bed_rev01.pdf
-Hospital_025/dialysis_typeB.pdf          Hospital_044/dialysis.pdf
-Hospital_025/dialysis_typeC.pdf          Hospital_044/ro_room.pdf
-Hospital_028/dialysis_typeA.pdf          Hospital_045/dialysis_typeA_2.pdf
-Hospital_033/dialysis_rev01.pdf
-```
-
-All 15 carry `VD-4: insufficient_evidence`; several also carry `VD-1`. **Every one of them stops** —
-as do all 306 rows in the corpus. A stop is a valid pilot outcome, so this does not disqualify any
-of them; it is what the pilot is for.
-
-## Blocker 2 — the operator has not been designated
-
-| Provided | 영업/TS 담당자 — **실행 담당자 지정 필요** |
-| --- | --- |
-
-The supplied value states that the execution owner is still to be designated. `operator` is
-therefore left empty rather than filled with a role name.
-
-This matters beyond bookkeeping: `run-metadata.json` records who performed the run, and a role name
-in that field would make the record unable to say who to ask about it.
-
-### What is needed
-
-The name of the person who will perform the run.
-
----
-
-## Not blocking, but flagged for the review stage
-
-| Field | Provided | Issue |
+| Step | Who | Status |
 | --- | --- | --- |
-| Requester | `Account Name` | Reads as a placeholder rather than a named account. Machine execution does not depend on it |
-| Reviewing engineer | `TS Team Supervisor` | A role, not a person. A confirmation's `name` must identify an individual, so the holder must be named **before** any confirmation is recorded — not before extraction |
+| 1 · Upload the drawing file | **User** | ❌ **outstanding — the only blocker** |
+| 2 · Generate `drawingId` | System | waiting on 1 |
+| 3 · Record `sourceFilename` + `sha256` | System | waiting on 1 |
+| 4 · Detect `pageCount` | System | waiting on 1 |
+| 5 · Select page, or analyse full document | User, optional | defaults to `full-document` |
+| 6 · Requester / operator | User, optional | absent is valid |
+| 7 · Reviewing engineer | — | not an input; required only at confirmation |
+
+Steps 5–7 cannot block anything: 5 has a defined default that infers nothing, and 6 and 7 are
+optional or deferred by decision.
+
+## One open decision before step 2
+
+**How a generated `drawingId` is derived.** It is one of the project's six equality concepts — it
+identifies a drawing *entity* — so the derivation decides what "the same drawing" means. Deriving
+from `sha256` keeps it coherent with the bytes-equality concept and cannot mint a second identity
+for a file already catalogued; deriving from an upload event would count one drawing twice, which
+matters because support is counted per plan and per facility (D6, D15).
+
+Options and their consequences are in
+[`../../../docs/PILOT_VALIDATION_PROCESS.md`](../../../docs/PILOT_VALIDATION_PROCESS.md) §2. It is
+the owner's decision and is not settled here.
+
+## What the system cannot do yet — measured, not assumed
+
+The new flow is defined; parts of it have no code path today. Stated so the run is attempted knowing
+what exists.
+
+| Step | Today |
+| --- | --- |
+| `sha256` of an uploaded file | ✅ `ingest-dataset.ts` computes it |
+| PDF page count | ✅ detected from the document (`numPages`) |
+| Per-page analysis | ✅ `verify:drawing --drawing <id> --page <n>`, page defaults to `0` |
+| **Generate a `drawingId` for a loose uploaded file** | ❌ `drawingId` is built as `${hospitalId}/${basename}` — it needs a hospital-shaped folder. There is **no single-file ingest path** |
+| **Full-document analysis** | ❌ no wrapper loops the pages; each page is a separate invocation today |
+
+Both gaps are source changes and are outside the documentation scope this was prepared under.
+
+---
+
+# History — the blockers under the previous input model
+
+Retained rather than deleted; this project does not rewrite its own record.
+
+## Former blocker 1 — the drawing identifier resolved to nothing
+
+`Vantive_Layout_001`, Page 1 — matched **0** of the 300 drawings in `knowledge/dataset.json` and no
+file under the dataset root. Every catalogued identifier has the shape `Hospital_NNN/<sheet>.<ext>`.
+
+**No longer applicable in this form.** The user no longer supplies an identifier, so an identifier
+cannot fail to resolve. The underlying requirement survives in a simpler shape: *the file itself must
+exist*, and the system records its `sha256` before reading it.
+
+## Former blocker 2 — the operator was not designated
+
+Supplied as *영업/TS 담당자 — 실행 담당자 지정 필요*.
+
+**No longer a blocker.** Operator is optional metadata. Absent is a valid state — and absent means
+the key is omitted, not filled with a role name.
+
+## Formerly flagged, now resolved by the decision
+
+| Field | Then | Now |
+| --- | --- | --- |
+| Requester `Account Name` | Flagged as a placeholder | Optional. Omit if not supplied |
+| Reviewing engineer `TS Team Supervisor` | Flagged as a role, not a person | Not an input at all. Named at confirmation, by the person signing |
+
+---
 
 ## What has been recorded
 
@@ -89,23 +88,8 @@ The name of the person who will perform the run.
 
 ## What has **not** been done
 
-- `run-metadata.json` — not created; drawing identity and operator are unresolved
+- `run-metadata.json` — not created; no file has been uploaded
 - `evidence/`, `result/` — empty; extraction has not been run
-- `review/`, `confirmation/` — empty; those are human stages and were never in scope for this step
-
----
-
-## Awaiting — the four values
-
-| # | Field | Format that will resolve |
-| --- | --- | --- |
-| 1 | `drawingId` | An exact string from `knowledge/dataset.json`, shaped `Hospital_NNN/<sheet>.<ext>` — e.g. `Hospital_044/dialysis.pdf` |
-| 2 | `page` | **Zero-based.** Every single-sheet drawing in the corpus is `page: 0`; only 6 of 306 rows have a page above 0, ranging to 6. A first page is `0`, not `1` |
-| 3 | Operator | The name of the person performing the run |
-| 4 | Requester | The actual account or organisation |
-| 5 | Reviewing engineer | The individual holding the TS reviewer role |
-
-Items 4 and 5 do not block extraction. Item 5 blocks any confirmation, since a confirmation's `name`
-must identify an individual.
+- `review/`, `confirmation/` — empty; human stages, never in machine scope
 
 **PILOT-001 remains NOT EXECUTED.**

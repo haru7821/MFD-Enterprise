@@ -60,14 +60,64 @@ guard working.
 
 Recorded **before** the run, so the run cannot be described after the fact by whatever it produced.
 
-| Field | Meaning | Where it comes from |
+**The user uploads a drawing file. That is the only thing required of them.** Everything the system
+can derive from the file, it derives; everything it cannot derive, it either asks for optionally or
+defers to the stage where it is genuinely needed. A user who cannot name a `drawingId` is not
+blocked, because inventing an identifier scheme for them to type was never protecting anything.
+
+| Step | Who | Field |
 | --- | --- | --- |
-| **Drawing identifier** | `drawingId` of the sheet, plus `page` and `sha256` | `knowledge/dataset.json` — the catalogued entry. `sha256` proves the file run is the file catalogued |
-| **Project context** | Facility, the **review objective**, and who asked for the review | The engineer. Not derivable from the repository |
-| **Room type** | The room being evaluated | Dialysis for Pilot-001. The only room type with a rule set and a scoring model today |
-| **Catalogue version** | `version` of every equipment record used | Each catalogue record, e.g. `vantive_ak98` `0.6.0`. Recorded **per record** — there is no single repo-wide catalogue version |
-| **Solver version** | The exact code that produced the result | **See the note below** |
-| **Execution date** | When the run was performed, ISO-8601 with offset | The operator, in their own timezone |
+| 1 · Upload the drawing file | **User** | — the only required input |
+| 2 · Generate the identifier | System | `drawingId`, `drawingIdDerivedFrom` |
+| 3 · Record what was uploaded | System | `sourceFilename`, `sha256` |
+| 4 · Detect the page count | System | `pageCount` |
+| 5 · Select a page, or analyse the whole document | **User, optionally** | `selectionMode`, `selectedPages` |
+| 6 · Requester and operator | User, optionally | `context.requestedBy`, `context.operator` |
+| 7 · Reviewing engineer | **Not here** | Required only at the confirmation stage |
+
+Still recorded, because they change the answer and the system knows them: catalogue record versions,
+rule set id / version / status, scoring model ref, the git commit SHA (see below), and the execution
+timestamp.
+
+### The three rules this flow must not break
+
+**Never infer which page contains the target room.** `selectionMode` is `user-selected` or
+`full-document`, and there is deliberately no third option. If the user selects nothing, **every
+page is analysed and reported separately** — the engine does not scan the document and pick the page
+that looks like a dialysis room. Choosing a page is an engineering judgement about what the drawing
+shows, and a wrong guess produces a confident result about the wrong room.
+
+**Never infer requester or reviewer identity.** Optional means **absent** — the key is omitted, not
+filled with `unknown`, `system`, `TS team` or a role name. An absent key says nothing; a placeholder
+says something false. That is owner decision D14's principle applied to people rather than to
+frequencies.
+
+**Never create a confirmation automatically.** Unchanged, and the reason the reviewing engineer is
+not an input field at all: the person who signs is recorded at the moment they sign, in `review/`
+and `confirmation/`, by them.
+
+### On the generated `drawingId` — a decision, not an implementation detail
+
+`drawingId` is one of the project's six equality concepts: it identifies a drawing **entity**. How a
+generated one is derived therefore decides what "the same drawing" means, and that is an
+engineering-semantics question rather than a coding choice.
+
+Today `dataset:ingest` builds `drawingId` as `${hospitalId}/${basename(path)}` — from the folder the
+file sits in. An uploaded file has no such folder, so a derivation must be chosen. The candidates
+differ in what they treat as identity:
+
+| Derivation | Re-uploading identical bytes | Re-uploading the same sheet renamed |
+| --- | --- | --- |
+| From `sha256` | Same id — one entity | Same id — one entity |
+| From filename | Two ids if renamed | Same id |
+| From upload event | **Two ids** — the same drawing counted twice | Two ids |
+
+Deriving from `sha256` keeps `drawingId` and the bytes-equality concept coherent and cannot mint a
+second identity for a file already catalogued — which matters because support is counted per plan
+and per facility (D6, D15), and a duplicate identity would inflate evidence. **`drawingIdDerivedFrom`
+records which rule was used**, so a record never leaves the reader guessing.
+
+This is recorded as the owner's decision to make, not settled here.
 
 ### Note — there is no solver version field
 

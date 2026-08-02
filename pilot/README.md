@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Not executed — blocked on input.** Drawing identifier does not resolve; operator not designated |
+| [`PILOT-001`](PILOT-001/) | **Not executed — awaiting the drawing file.** Input simplified to a single required input: the upload |

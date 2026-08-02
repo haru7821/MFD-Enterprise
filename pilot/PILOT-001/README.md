@@ -1,11 +1,12 @@
 # PILOT-001
 
-> **Status: NOT EXECUTED — blocked on input.** Structure prepared; no stage has been run.
+> **Status: NOT EXECUTED — awaiting the drawing file.** Structure prepared; no stage has been run.
 >
-> Input decision received and recorded in [`input/context.md`](input/context.md). Two required
-> fields do not resolve — see [`input/BLOCKED.md`](input/BLOCKED.md): the drawing identifier
-> `Vantive_Layout_001` matches no catalogued drawing and no file in the dataset, and the operator is
-> stated as still to be designated.
+> Input model simplified by owner decision: the user uploads a file and nothing else is required of
+> them. `drawingId`, `sha256` and `pageCount` are system-generated; page selection, requester and
+> operator are optional; the reviewing engineer is named only at confirmation. See
+> [`input/BLOCKED.md`](input/BLOCKED.md) for what is outstanding and which steps have no code path
+> yet.
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)

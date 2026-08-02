@@ -9,11 +9,22 @@
   "pilotId": "PILOT-001",
 
   "drawing": {
-    "_note": "Identity of the sheet. drawingId and sha256 must both match knowledge/dataset.json — if the hash differs, the run is against a different file and must stop. PAGE IS ZERO-BASED: the first page is 0, not 1. Every single-sheet drawing in the corpus is page 0; only 6 of 306 rows carry a page above 0. A page number off by one resolves to a real but different sheet, producing a record that is valid and false.",
-    "drawingId": null,
-    "page": null,
+    "_note": "SYSTEM-GENERATED from the uploaded file. The user supplies the file; they do not type an identifier. sourceFilename and sha256 are recorded as uploaded — sha256 is what proves which bytes were read, and it is the only field a later reader can use to check that.",
+    "sourceFilename": null,
     "sha256": null,
-    "hashMatchesCatalogue": null
+    "drawingId": null,
+    "drawingIdDerivedFrom": null,
+    "alreadyInCatalogue": null
+  },
+
+  "pages": {
+    "_note": "pageCount is DETECTED, never asked for. selection is the user's, and it is the one page-related thing the system may not decide: NEVER INFER WHICH PAGE CONTAINS THE TARGET ROOM. If the user selects no page, every page is analysed and reported separately — the engine does not pick the one that looks like a dialysis room.",
+    "pageCount": null,
+    "selectionMode": null,
+    "_selectionMode": "'user-selected' or 'full-document'. Nothing else. There is no 'auto' — that would be the inference the rule forbids.",
+    "selectedPages": null,
+    "_selectedPages": "Zero-based. Null when selectionMode is 'full-document'. The first page is 0, not 1 — a page number off by one resolves to a real but different sheet, producing a record that is valid and false.",
+    "pagesAnalysed": null
   },
 
   "catalogue": {
@@ -59,11 +70,18 @@
   },
 
   "context": {
-    "_note": "Human input. Not derivable from the repository, and must not be invented — if it cannot be supplied, the run does not start.",
+    "_note": "OPTIONAL metadata. A run proceeds without any of it. Optional means ABSENT — omit the key rather than writing 'unknown', 'system', 'TS team' or a role name. NEVER INFER REQUESTER IDENTITY. An absent key says nothing; a placeholder says something false, which is owner decision D14's principle applied to people instead of frequencies.",
     "facility": null,
     "roomType": null,
     "reviewObjective": null,
-    "requestedBy": null
+    "requestedBy": null,
+    "operator": null
+  },
+
+  "reviewingEngineer": {
+    "_note": "NOT AN INPUT FIELD. Required only at the human review confirmation stage, and recorded there — in review/ and confirmation/, not here. Left null through the whole machine run. NEVER INFER REVIEWER IDENTITY, and never fill this from a role: a confirmation's `name` must identify an individual.",
+    "name": null,
+    "recordedAt": "review/ and confirmation/, after the machine run stops"
   },
 
   "geometry": {

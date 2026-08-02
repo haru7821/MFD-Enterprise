@@ -14,15 +14,41 @@ something could not be established. A guessed one is not.
 
 ## 1 · Input record — complete BEFORE the run
 
+**Uploaded by the user** — the only required input
+
 | Field | Value |
 | --- | --- |
-| Drawing identifier (`drawingId`) | |
-| Page — **zero-based**, first page is `0` | |
-| `sha256` | |
-| Hash matches `knowledge/dataset.json`? | ☐ yes ☐ no — if no, **stop** |
-| Project context — facility | |
-| Project context — review objective | |
-| Project context — requested by | |
+| Source filename, as uploaded | |
+| `sha256` of the uploaded bytes | |
+
+**Generated or detected by the system** — not typed by anyone
+
+| Field | Value |
+| --- | --- |
+| `drawingId` | |
+| Derived from (`sha256` / filename / other — state which) | |
+| Already in `knowledge/dataset.json`? | ☐ yes ☐ no |
+| `pageCount` detected | |
+
+**Page selection** — the user's, and never the engine's
+
+| Field | Value |
+| --- | --- |
+| Selection mode | ☐ user-selected ☐ full-document |
+| Selected pages — **zero-based**, first page is `0` | |
+| Pages actually analysed | |
+
+> **Never infer which page contains the target room.** There is no third selection mode. If the user
+> selected nothing, every page is analysed and reported separately.
+
+**Optional metadata** — leave blank if not supplied; do **not** write `unknown`, `system` or a role
+
+| Field | Value |
+| --- | --- |
+| Facility | |
+| Review objective | |
+| Requested by (optional) | |
+| Operator (optional) | |
 | Room type | |
 | Catalogue records used, with `version` of each | |
 | Rule set id / version | |
@@ -31,7 +57,6 @@ something could not be established. A guessed one is not.
 | **Solver version — full git commit SHA** | |
 | Working tree clean at that SHA? | ☐ yes ☐ no |
 | Execution date (ISO-8601, with offset) | |
-| Operator | |
 
 ## 2 · Evidence extraction
 
@@ -138,7 +163,7 @@ result. If a threshold was entered, it must carry a document number, a revision 
 
 | | |
 | --- | --- |
-| Reviewing engineer (name) | |
+| Reviewing engineer (name) — **first recorded here, never in the input record** | |
 | Date and time of review (ISO-8601, with offset) | |
 | Drawing reviewed against — what was consulted | |
 | Time spent | |
