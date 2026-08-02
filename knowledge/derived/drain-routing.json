@@ -1,6 +1,6 @@
 {
   "kind": "drain_routing",
-  "knowledgeVersion": 2,
+  "knowledgeVersion": 3,
   "generatedFrom": [
     "knowledge/observations/hospital-dataset-analyzer.json",
     "knowledge/observations/verification-hospital_044-dialysis.json"

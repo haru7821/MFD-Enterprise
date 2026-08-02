@@ -143,9 +143,25 @@ describe('the shipped knowledge base', () => {
     });
 
     expect(entries.length).toBeGreaterThan(0);
+    /*
+     * And the dedup is not merely permitted, it happens: at least one shipped entry has strictly
+     * fewer plans than files. Without this the `<=` above would pass on a `plans` that still
+     * counted files, which is the state D15 replaced.
+     */
+    expect(
+      entries.some((entry) => entry.support.plans < entry.support.sources.length),
+      'no entry has an export twin — the dedup is untested',
+    ).toBe(true);
+
     for (const entry of entries) {
-      expect(entry.support.drawings, entry.id).toBeGreaterThan(0);
-      expect(entry.support.sources.length, entry.id).toBe(entry.support.drawings);
+      expect(entry.support.plans, entry.id).toBeGreaterThan(0);
+      /*
+       * `plans` counts sheets, `sources` lists files — owner decision D15, and this assertion is
+       * where the two stopped being the same number. It was `sources.length === drawings`, which
+       * held only because the count was of files; a plan exported as both `.dwg` and `.pdf` is one
+       * plan and two sources.
+       */
+      expect(entry.support.plans, entry.id).toBeLessThanOrEqual(entry.support.sources.length);
       for (const source of entry.support.sources) {
         // A hash, so the reading is tied to the bytes that were read rather than to a filename.
         expect(source.sha256, entry.id).toMatch(/^[a-f0-9]{64}$/);

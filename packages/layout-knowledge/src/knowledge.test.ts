@@ -106,7 +106,7 @@ describe('aggregation states only what was observed', () => {
     );
     const support = base.dimension('station_pitch')?.support;
 
-    expect(support?.drawings).toBe(1);
+    expect(support?.plans).toBe(1);
     expect(support?.observations).toBe(3);
     expect(isPattern(support!)).toBe(false);
   });
@@ -256,7 +256,7 @@ describe('every kind aggregates', () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]?.kind).toBe(kind);
-    expect(entries[0]?.support.drawings).toBe(1);
+    expect(entries[0]?.support.plans).toBe(1);
   });
 });
 
@@ -327,9 +327,14 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
   }
 
   it('counts facilities, not files', () => {
-    // 117 files, 24 sites. The gap is the whole reason the decision exists.
+    /*
+     * 117 files, **71 plans**, 24 sites — three different numbers for one body of evidence, and the
+     * gaps are the whole reason D6 and D15 exist. `support.plans` reports 71 now; the 117 is still
+     * visible as `sources.length`, which is the file count and is not claimed to be support.
+     */
     expect(entryFor('station_pitch').support.facilities).toBe(24);
-    expect(entryFor('station_pitch').support.drawings).toBe(117);
+    expect(entryFor('station_pitch').support.plans).toBe(71);
+    expect(entryFor('station_pitch').support.sources.length).toBe(117);
     expect(entryFor('corridor_width').support.facilities).toBe(5);
     expect(entryFor('station_row_spacing').support.facilities).toBe(9);
   });
@@ -345,7 +350,7 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
      */
     const twoSites: Support = {
       facilities: 2,
-      drawings: 10,
+      plans: 10,
       observations: 10,
       strongestMethod: 'dimension_line',
       sources: [
@@ -481,7 +486,7 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
     const frequencies = roomTypeFile?.entries[0]?.frequencies ?? [];
 
     // Key 1 decides the head: 9 is the most supported value, and by value alone it would be last.
-    expect(frequencies[0]).toEqual({ value: '9', drawings: 2 });
+    expect(frequencies[0]).toEqual({ value: '9', plans: 2 });
 
     /*
      * Key 2 decides the tail. `20` and `8` tie at one drawing each, so the *value* orders them — and
@@ -490,8 +495,8 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
      * than the code ships, and this is where that difference shows.
      */
     expect(frequencies.slice(1)).toEqual([
-      { value: '20', drawings: 1 },
-      { value: '8', drawings: 1 },
+      { value: '20', plans: 1 },
+      { value: '8', plans: 1 },
     ]);
   });
 

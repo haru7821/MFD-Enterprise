@@ -235,8 +235,24 @@ export const supportSchema = z.strictObject({
    * hospital's template read twice is not two hospitals agreeing.
    */
   facilities: z.number().int().positive(),
-  /** Distinct drawing files behind it. Kept, because it says how much reading was done. */
-  drawings: z.number().int().positive(),
+  /**
+   * Distinct **plans** behind it — one sheet counted once, however many formats it was exported in.
+   *
+   * > Owner rule: *"Audit whether identical engineering evidence can enter through different routes
+   * > … PDF + DWG, multiple exports … Count observations, never files."*
+   *
+   * This was `drawings` and counted distinct `drawingId`, which is a **file** count. The corpus
+   * ships 75 plans in two export formats, so `station_pitch` reported **117** drawings of support
+   * over **71** actual sheets; `station_row_spacing` 36 over 21; `corridor_width` 18 over 12. The
+   * field's own comment argued against counting observations — *"ten dimensions off one sheet is
+   * one hospital's practice recorded ten times"* — and then made the same mistake one level up.
+   *
+   * D6 fixed `facilities` and the median's dedup and left this one alone. Renamed rather than
+   * silently renumbered (owner decision D15): a figure that keeps its name while changing its value
+   * is the failure this project keeps having, so a stale quotation should fail to parse rather than
+   * read plausibly. The per-file detail is not lost — `sources` still lists every file.
+   */
+  plans: z.number().int().positive(),
   /** Individual readings, which may exceed `drawings`. */
   observations: z.number().int().positive(),
   /** The best evidence behind it. */

@@ -312,7 +312,14 @@ export type Distribution = z.infer<typeof distributionSchema>;
 export const frequencySchema = z.strictObject({
   value: z.string().min(1),
   /** Distinct drawings showing this value. */
-  drawings: z.number().int().positive(),
+  /**
+   * Distinct **plans** showing this value — owner decision D15, the same unit as `Support.plans`.
+   *
+   * Counted `drawingId` before, so a plan exported as both `.dwg` and `.pdf` voted twice for its own
+   * value. Latent today because no entry ships a frequency table, and fixed now for that reason: it
+   * feeds which value is presented as commonest practice, and an export format must not decide that.
+   */
+  plans: z.number().int().positive(),
 });
 
 export type Frequency = z.infer<typeof frequencySchema>;
@@ -383,7 +390,7 @@ export type KnowledgeFile = z.infer<typeof knowledgeFileSchema>;
  * identify: in a version 1 file an empty array was written for entries nobody had counted, and a
  * reader that treated it as "counted, found none" would be wrong about every one of them.
  */
-export const KNOWLEDGE_VERSION = 2;
+export const KNOWLEDGE_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // The dataset itself

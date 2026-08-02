@@ -107,10 +107,15 @@ function supportOf(observations: readonly Observation[]): Support {
      * to tell a reused template from a convention.
      */
     facilities: new Set(sources.map((source) => facilityOf(source.drawingId))).size,
-    // Distinct drawings, not observations: ten dimensions off one sheet is one hospital's practice
-    // recorded ten times, and counting it as ten would turn a template into a consensus. Kept
-    // beside `facilities` because it still says how much reading stands behind the entry.
-    drawings: sources.length,
+    /*
+     * Distinct **plans** — owner decision D15.
+     *
+     * Not observations: ten dimensions off one sheet is one hospital's practice recorded ten times,
+     * and counting it as ten would turn a template into a consensus. And not files either, which is
+     * what `sources.length` gives: the corpus holds 75 plans in two export formats, so that count
+     * said 117 where 71 sheets exist. `sources` still lists every file, so nothing is lost.
+     */
+    plans: new Set(sources.map((source) => planOf(source.drawingId))).size,
     observations: observations.length,
     strongestMethod: strongest,
     sources,
@@ -128,13 +133,16 @@ function frequenciesOf(
     const value = valueOf(observation);
     if (value === null) continue;
     const set = drawingsByValue.get(value) ?? new Set<string>();
-    set.add(observation.source.drawing.drawingId);
+    // `planOf`, not the raw id — owner decision D15. A plan exported as both `.dwg` and `.pdf`
+    // would otherwise vote twice for its own value, and this table decides what is presented as
+    // commonest practice.
+    set.add(planOf(observation.source.drawing.drawingId));
     drawingsByValue.set(value, set);
   }
 
   return [...drawingsByValue.entries()]
-    .map(([value, drawings]) => ({ value, drawings: drawings.size }))
-    .sort((a, b) => b.drawings - a.drawings || compareCodepoint(a.value, b.value));
+    .map(([value, plans]) => ({ value, plans: plans.size }))
+    .sort((a, b) => b.plans - a.plans || compareCodepoint(a.value, b.value));
 }
 
 /**

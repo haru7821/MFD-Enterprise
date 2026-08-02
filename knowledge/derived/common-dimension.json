@@ -1,6 +1,6 @@
 {
   "kind": "common_dimension",
-  "knowledgeVersion": 2,
+  "knowledgeVersion": 3,
   "generatedFrom": [
     "knowledge/observations/hospital-dataset-analyzer.json",
     "knowledge/observations/verification-hospital_044-dialysis.json"
@@ -19,7 +19,7 @@
       },
       "support": {
         "facilities": 5,
-        "drawings": 18,
+        "plans": 12,
         "observations": 18,
         "strongestMethod": "dimension_line",
         "sources": [
@@ -201,7 +201,7 @@
       },
       "support": {
         "facilities": 24,
-        "drawings": 117,
+        "plans": 71,
         "observations": 121,
         "strongestMethod": "dimension_line",
         "sources": [
@@ -1274,7 +1274,7 @@
       },
       "support": {
         "facilities": 9,
-        "drawings": 36,
+        "plans": 21,
         "observations": 43,
         "strongestMethod": "dimension_line",
         "sources": [
@@ -1618,7 +1618,7 @@
       },
       "support": {
         "facilities": 1,
-        "drawings": 1,
+        "plans": 1,
         "observations": 1,
         "strongestMethod": "calibrated_measurement",
         "sources": [

@@ -2,16 +2,16 @@
   "datasetId": "dialysis-drawings",
   "observations": [
     {
-      "id": "_reference/30대_sample.pdf#4",
+      "id": "Hospital_001/dialysis.dwg#1",
       "source": {
         "drawing": {
           "datasetId": "dialysis-drawings",
-          "drawingId": "_reference/30대_sample.pdf",
-          "path": "_reference/30대_sample.pdf",
+          "drawingId": "Hospital_001/dialysis.dwg",
+          "path": "Hospital_001/dialysis.dwg",
           "page": 0,
           "sheet": null,
           "revision": null,
-          "sha256": "6639cf3822b175887c5e14b5186b7d6de016734b1e2affe3f4ddf82d6460bfa6"
+          "sha256": "844249497a30f178c0f44d65466180d8330f8b00a294ca81c1a5eed3b3b84779"
         },
         "method": "dimension_line",
         "observer": {
@@ -21,12 +21,41 @@
         },
         "observationDate": "2026-07-31",
         "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"2,000 (통로)\""
+        "note": "Dataset analysis, verbatim: \"1900 으로 벌림 (베드 간격 주기)\""
       },
       "value": {
         "kind": "common_dimension",
-        "name": "corridor_width",
-        "millimetres": 2000,
+        "name": "station_pitch",
+        "millimetres": 1900,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_001/dialysis.pdf#1",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_001/dialysis.pdf",
+          "path": "Hospital_001/dialysis.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "dd7551368b1b309782d1db486664467e91fd2336f1c56d8a4602575d8ddc411b"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
+        "note": "Dataset analysis, verbatim: \"1900 으로 벌림 (베드 간격 주기)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1900,
         "roomFunction": null
       }
     },
@@ -114,64 +143,6 @@
         "kind": "common_dimension",
         "name": "station_pitch",
         "millimetres": 1800,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_001/dialysis.dwg#1",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_001/dialysis.dwg",
-          "path": "Hospital_001/dialysis.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "844249497a30f178c0f44d65466180d8330f8b00a294ca81c1a5eed3b3b84779"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1900 으로 벌림 (베드 간격 주기)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1900,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_001/dialysis.pdf#1",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_001/dialysis.pdf",
-          "path": "Hospital_001/dialysis.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "dd7551368b1b309782d1db486664467e91fd2336f1c56d8a4602575d8ddc411b"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1900 으로 벌림 (베드 간격 주기)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1900,
         "roomFunction": null
       }
     },
@@ -404,6 +375,122 @@
         "kind": "common_dimension",
         "name": "station_pitch",
         "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_012/dialysis.dwg#14",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_012/dialysis.dwg",
+          "path": "Hospital_012/dialysis.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_012/dialysis.dwg#15",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_012/dialysis.dwg",
+          "path": "Hospital_012/dialysis.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1500 (열 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_row_spacing",
+        "millimetres": 1500,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_012/dialysis.pdf#14",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_012/dialysis.pdf",
+          "path": "Hospital_012/dialysis.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_012/dialysis.pdf#15",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_012/dialysis.pdf",
+          "path": "Hospital_012/dialysis.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1500 (열 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_row_spacing",
+        "millimetres": 1500,
         "roomFunction": null
       }
     },
@@ -814,122 +901,6 @@
       }
     },
     {
-      "id": "Hospital_012/dialysis.dwg#14",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_012/dialysis.dwg",
-          "path": "Hospital_012/dialysis.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_012/dialysis.dwg#15",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_012/dialysis.dwg",
-          "path": "Hospital_012/dialysis.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "cfe16c39f4b29d2f01633ac777f9e6954ead1b8ad2e91a03029fefeb79ed3fd1"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1500 (열 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_row_spacing",
-        "millimetres": 1500,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_012/dialysis.pdf#14",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_012/dialysis.pdf",
-          "path": "Hospital_012/dialysis.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_012/dialysis.pdf#15",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_012/dialysis.pdf",
-          "path": "Hospital_012/dialysis.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "5eda2fad41819c07904c1f8932e592f6ee2fc46292e21f6eab0f2f894c62a2a5"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1500 (열 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_row_spacing",
-        "millimetres": 1500,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_014/dialysis_typeB.dwg#8",
       "source": {
         "drawing": {
@@ -1042,122 +1013,6 @@
         "kind": "common_dimension",
         "name": "station_pitch",
         "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_015/dialysis_2.pdf#6",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_015/dialysis_2.pdf",
-          "path": "Hospital_015/dialysis_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_015/dialysis_2.pdf#7",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_015/dialysis_2.pdf",
-          "path": "Hospital_015/dialysis_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1900 (베드 열 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_row_spacing",
-        "millimetres": 1900,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_015/dialysis_typeA.dwg#7",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_015/dialysis_typeA.dwg",
-          "path": "Hospital_015/dialysis_typeA.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "d9f2a9be483167a243e6276f17bae3e744afc08068000221d42919933deb18a8"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1402 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1402,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_015/dialysis_typeA.pdf#7",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_015/dialysis_typeA.pdf",
-          "path": "Hospital_015/dialysis_typeA.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "039472f410799fdf1ccb3f71c106f6fcfae1e9ed7f07ab79b25a1b443b77e2d6"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1402 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1402,
         "roomFunction": null
       }
     },
@@ -1278,6 +1133,122 @@
       }
     },
     {
+      "id": "Hospital_015/dialysis_2.pdf#6",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_015/dialysis_2.pdf",
+          "path": "Hospital_015/dialysis_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_015/dialysis_2.pdf#7",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_015/dialysis_2.pdf",
+          "path": "Hospital_015/dialysis_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "76f60e3c2586cb3551e38b3c31bb7460f09d6a2e8de23afc63a31850d71f64d2"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
+        "note": "Dataset analysis, verbatim: \"1900 (베드 열 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_row_spacing",
+        "millimetres": 1900,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_015/dialysis_typeA.dwg#7",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_015/dialysis_typeA.dwg",
+          "path": "Hospital_015/dialysis_typeA.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "d9f2a9be483167a243e6276f17bae3e744afc08068000221d42919933deb18a8"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1402 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1402,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_015/dialysis_typeA.pdf#7",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_015/dialysis_typeA.pdf",
+          "path": "Hospital_015/dialysis_typeA.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "039472f410799fdf1ccb3f71c106f6fcfae1e9ed7f07ab79b25a1b443b77e2d6"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1402 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1402,
+        "roomFunction": null
+      }
+    },
+    {
       "id": "Hospital_017/dialysis.dwg#5",
       "source": {
         "drawing": {
@@ -1336,16 +1307,16 @@
       }
     },
     {
-      "id": "Hospital_018/dialysis_typeA_26bed.pdf#7",
+      "id": "Hospital_018/dialysis_typeA.pdf#9",
       "source": {
         "drawing": {
           "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_018/dialysis_typeA_26bed.pdf",
-          "path": "Hospital_018/dialysis_typeA_26bed.pdf",
+          "drawingId": "Hospital_018/dialysis_typeA.pdf",
+          "path": "Hospital_018/dialysis_typeA.pdf",
           "page": 0,
           "sheet": null,
           "revision": null,
-          "sha256": "4fe4a7c2cd35079129c4376c1ce0ccd71720b83ab3f0fe7a3db6ef38246bf843"
+          "sha256": "1e02288a633becc05bd70ae4dba246bd6176fbd71dc54452e2f8f5b2ba817535"
         },
         "method": "dimension_line",
         "observer": {
@@ -1365,16 +1336,16 @@
       }
     },
     {
-      "id": "Hospital_018/dialysis_typeA.pdf#9",
+      "id": "Hospital_018/dialysis_typeA_26bed.pdf#7",
       "source": {
         "drawing": {
           "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_018/dialysis_typeA.pdf",
-          "path": "Hospital_018/dialysis_typeA.pdf",
+          "drawingId": "Hospital_018/dialysis_typeA_26bed.pdf",
+          "path": "Hospital_018/dialysis_typeA_26bed.pdf",
           "page": 0,
           "sheet": null,
           "revision": null,
-          "sha256": "1e02288a633becc05bd70ae4dba246bd6176fbd71dc54452e2f8f5b2ba817535"
+          "sha256": "4fe4a7c2cd35079129c4376c1ce0ccd71720b83ab3f0fe7a3db6ef38246bf843"
         },
         "method": "dimension_line",
         "observer": {
@@ -1655,64 +1626,6 @@
       }
     },
     {
-      "id": "Hospital_021/dialysis_typeB_2.pdf#0",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
-          "path": "Hospital_021/dialysis_typeB_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1650 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1650,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_021/dialysis_typeB_2.pdf#1",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
-          "path": "Hospital_021/dialysis_typeB_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1200 (베드 열 간 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_row_spacing",
-        "millimetres": 1200,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_021/dialysis_typeB.dwg#2",
       "source": {
         "drawing": {
@@ -1810,6 +1723,64 @@
           "sheet": null,
           "revision": null,
           "sha256": "f2dd8b8545c4ad19d7e461fc45f4e387e70516cf975f8738a6f3245eb3c242d3"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1200 (베드 열 간 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_row_spacing",
+        "millimetres": 1200,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_021/dialysis_typeB_2.pdf#0",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
+          "path": "Hospital_021/dialysis_typeB_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1650 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1650,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_021/dialysis_typeB_2.pdf#1",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_021/dialysis_typeB_2.pdf",
+          "path": "Hospital_021/dialysis_typeB_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "ff126e53dc9de1a81cac2d1deee28b90d5015464bd80acfcd12f19d85526f5ce"
         },
         "method": "dimension_line",
         "observer": {
@@ -2177,6 +2148,35 @@
       }
     },
     {
+      "id": "Hospital_022/dialysis.pdf#16",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_022/dialysis.pdf",
+          "path": "Hospital_022/dialysis.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "281e9b21790fcd2ab348354df2ffd46e1a9c85e12667e08e916191c39a5490e4"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
+        "note": "Dataset analysis, verbatim: \"1,700 (베드 피치)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
       "id": "Hospital_022/dialysis_36bed.pdf#11",
       "source": {
         "drawing": {
@@ -2231,35 +2231,6 @@
         "kind": "common_dimension",
         "name": "station_row_spacing",
         "millimetres": 1400,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_022/dialysis.pdf#16",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_022/dialysis.pdf",
-          "path": "Hospital_022/dialysis.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "281e9b21790fcd2ab348354df2ffd46e1a9c85e12667e08e916191c39a5490e4"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1,700 (베드 피치)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
         "roomFunction": null
       }
     },
@@ -2496,6 +2467,122 @@
       }
     },
     {
+      "id": "Hospital_023/dialysis_25bed.dwg#1",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_023/dialysis_25bed.dwg",
+          "path": "Hospital_023/dialysis_25bed.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1200 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1200,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_023/dialysis_25bed.dwg#2",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_023/dialysis_25bed.dwg",
+          "path": "Hospital_023/dialysis_25bed.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"2,700 (통로 폭)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "corridor_width",
+        "millimetres": 2700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_023/dialysis_25bed.pdf#1",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_023/dialysis_25bed.pdf",
+          "path": "Hospital_023/dialysis_25bed.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1200 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1200,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_023/dialysis_25bed.pdf#2",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_023/dialysis_25bed.pdf",
+          "path": "Hospital_023/dialysis_25bed.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"2,700 (통로 폭)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "corridor_width",
+        "millimetres": 2700,
+        "roomFunction": null
+      }
+    },
+    {
       "id": "Hospital_023/dialysis_25bed_2.dwg#0",
       "source": {
         "drawing": {
@@ -2651,122 +2738,6 @@
           "sheet": null,
           "revision": null,
           "sha256": "f2589f285ae63314f44d0ae66d76cabf2ce060c341ed4000ce08eacbf7472d83"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"2,700 (통로 폭)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "corridor_width",
-        "millimetres": 2700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_023/dialysis_25bed.dwg#1",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_023/dialysis_25bed.dwg",
-          "path": "Hospital_023/dialysis_25bed.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1200 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1200,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_023/dialysis_25bed.dwg#2",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_023/dialysis_25bed.dwg",
-          "path": "Hospital_023/dialysis_25bed.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "a5d5169a84c116c50ffc935762d1aa73ad370d968d844abe02d31476e680157e"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"2,700 (통로 폭)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "corridor_width",
-        "millimetres": 2700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_023/dialysis_25bed.pdf#1",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_023/dialysis_25bed.pdf",
-          "path": "Hospital_023/dialysis_25bed.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1200 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1200,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_023/dialysis_25bed.pdf#2",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_023/dialysis_25bed.pdf",
-          "path": "Hospital_023/dialysis_25bed.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "114fb3412817aa247ca3f798625afb380d768dd26e8c0ce606b84b0b71536d85"
         },
         "method": "dimension_line",
         "observer": {
@@ -3250,64 +3221,6 @@
       }
     },
     {
-      "id": "Hospital_029/dialysis_typeA_2.dwg#25",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_029/dialysis_typeA_2.dwg",
-          "path": "Hospital_029/dialysis_typeA_2.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "e1ab926df9f0bc569e7d9eb4daba55bfc2f52a770ee5f201f2fcde47f27563a6"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_029/dialysis_typeA_2.pdf#25",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_029/dialysis_typeA_2.pdf",
-          "path": "Hospital_029/dialysis_typeA_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "511bd3b7afcbbb0d7760284fe349a2f42e7f68f36724e4f0e433724bc7b721bd"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_029/dialysis_typeA.dwg#0",
       "source": {
         "drawing": {
@@ -3420,6 +3333,64 @@
         "kind": "common_dimension",
         "name": "station_row_spacing",
         "millimetres": 1400,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_029/dialysis_typeA_2.dwg#25",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_029/dialysis_typeA_2.dwg",
+          "path": "Hospital_029/dialysis_typeA_2.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "e1ab926df9f0bc569e7d9eb4daba55bfc2f52a770ee5f201f2fcde47f27563a6"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_029/dialysis_typeA_2.pdf#25",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_029/dialysis_typeA_2.pdf",
+          "path": "Hospital_029/dialysis_typeA_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "511bd3b7afcbbb0d7760284fe349a2f42e7f68f36724e4f0e433724bc7b721bd"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
         "roomFunction": null
       }
     },
@@ -3627,64 +3598,6 @@
       }
     },
     {
-      "id": "Hospital_031/dialysis_typeA_2.dwg#4",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_031/dialysis_typeA_2.dwg",
-          "path": "Hospital_031/dialysis_typeA_2.dwg",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "687215f6dbddf328e6d822f490da1e4145f7566d5134b959d428520b730ba791"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
-      "id": "Hospital_031/dialysis_typeA_2.pdf#4",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_031/dialysis_typeA_2.pdf",
-          "path": "Hospital_031/dialysis_typeA_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "d6b38b1a69ff898f56503f5deda034263baa61f8aeee9c7b3868c576bd9ca3bf"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "high",
-        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1700,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_031/dialysis_typeA.dwg#4",
       "source": {
         "drawing": {
@@ -3724,6 +3637,64 @@
           "sheet": null,
           "revision": null,
           "sha256": "37b60a0131cf19be91085382d4104a4414b4e7122e2f914d087829f1813c9c55"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_031/dialysis_typeA_2.dwg#4",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_031/dialysis_typeA_2.dwg",
+          "path": "Hospital_031/dialysis_typeA_2.dwg",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "687215f6dbddf328e6d822f490da1e4145f7566d5134b959d428520b730ba791"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1700 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1700,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_031/dialysis_typeA_2.pdf#4",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_031/dialysis_typeA_2.pdf",
+          "path": "Hospital_031/dialysis_typeA_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "d6b38b1a69ff898f56503f5deda034263baa61f8aeee9c7b3868c576bd9ca3bf"
         },
         "method": "dimension_line",
         "observer": {
@@ -4787,16 +4758,16 @@
       }
     },
     {
-      "id": "Hospital_041/dialysis_2.pdf#2",
+      "id": "Hospital_041/dialysis.pdf#2",
       "source": {
         "drawing": {
           "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_041/dialysis_2.pdf",
-          "path": "Hospital_041/dialysis_2.pdf",
+          "drawingId": "Hospital_041/dialysis.pdf",
+          "path": "Hospital_041/dialysis.pdf",
           "page": 0,
           "sheet": null,
           "revision": null,
-          "sha256": "4f9411a5ee3a1c24276a21874117641e3dffb49d137b1bc393f9df40dc3a2cff"
+          "sha256": "a450fed93cfc9aec8ca287d420900bb526fbb0a35e7ba08db618eacd03eb705a"
         },
         "method": "dimension_line",
         "observer": {
@@ -4816,16 +4787,16 @@
       }
     },
     {
-      "id": "Hospital_041/dialysis.pdf#2",
+      "id": "Hospital_041/dialysis_2.pdf#2",
       "source": {
         "drawing": {
           "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_041/dialysis.pdf",
-          "path": "Hospital_041/dialysis.pdf",
+          "drawingId": "Hospital_041/dialysis_2.pdf",
+          "path": "Hospital_041/dialysis_2.pdf",
           "page": 0,
           "sheet": null,
           "revision": null,
-          "sha256": "a450fed93cfc9aec8ca287d420900bb526fbb0a35e7ba08db618eacd03eb705a"
+          "sha256": "4f9411a5ee3a1c24276a21874117641e3dffb49d137b1bc393f9df40dc3a2cff"
         },
         "method": "dimension_line",
         "observer": {
@@ -4903,35 +4874,6 @@
       }
     },
     {
-      "id": "Hospital_045/dialysis_typeA_2.pdf#1",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_045/dialysis_typeA_2.pdf",
-          "path": "Hospital_045/dialysis_typeA_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "196a4a3fc804f6829fb6f48cf52dcd3e4094bb884b39e5d12fbfe26e67a85cad"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1550,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_045/dialysis_typeA.dwg#1",
       "source": {
         "drawing": {
@@ -4980,6 +4922,35 @@
         },
         "observationDate": "2026-07-31",
         "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1550,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_045/dialysis_typeA_2.pdf#1",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_045/dialysis_typeA_2.pdf",
+          "path": "Hospital_045/dialysis_typeA_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "196a4a3fc804f6829fb6f48cf52dcd3e4094bb884b39e5d12fbfe26e67a85cad"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
         "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
       },
       "value": {
@@ -5048,35 +5019,6 @@
       }
     },
     {
-      "id": "Hospital_045/dialysis_typeB_2.pdf#0",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_045/dialysis_typeB_2.pdf",
-          "path": "Hospital_045/dialysis_typeB_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "52bc080db90be26bcffb2c4d655337c352803a53b3c2e6ba2f7cb2e8fb9f25f2"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1550,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_045/dialysis_typeB.dwg#0",
       "source": {
         "drawing": {
@@ -5125,6 +5067,35 @@
         },
         "observationDate": "2026-07-31",
         "confidence": "high",
+        "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1550,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_045/dialysis_typeB_2.pdf#0",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_045/dialysis_typeB_2.pdf",
+          "path": "Hospital_045/dialysis_typeB_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "52bc080db90be26bcffb2c4d655337c352803a53b3c2e6ba2f7cb2e8fb9f25f2"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
         "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
       },
       "value": {
@@ -5193,35 +5164,6 @@
       }
     },
     {
-      "id": "Hospital_045/dialysis_typeC_2.pdf#0",
-      "source": {
-        "drawing": {
-          "datasetId": "dialysis-drawings",
-          "drawingId": "Hospital_045/dialysis_typeC_2.pdf",
-          "path": "Hospital_045/dialysis_typeC_2.pdf",
-          "page": 0,
-          "sheet": null,
-          "revision": null,
-          "sha256": "33b20000e3329619cc0b138bce80e0732d11ca36f9ebc3b61a197f062e96e511"
-        },
-        "method": "dimension_line",
-        "observer": {
-          "type": "ai",
-          "name": "MFD Hospital Dataset Analyzer",
-          "version": "1.0"
-        },
-        "observationDate": "2026-07-31",
-        "confidence": "medium",
-        "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
-      },
-      "value": {
-        "kind": "common_dimension",
-        "name": "station_pitch",
-        "millimetres": 1550,
-        "roomFunction": null
-      }
-    },
-    {
       "id": "Hospital_045/dialysis_typeC.dwg#0",
       "source": {
         "drawing": {
@@ -5276,6 +5218,64 @@
         "kind": "common_dimension",
         "name": "station_pitch",
         "millimetres": 1550,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "Hospital_045/dialysis_typeC_2.pdf#0",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "Hospital_045/dialysis_typeC_2.pdf",
+          "path": "Hospital_045/dialysis_typeC_2.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "33b20000e3329619cc0b138bce80e0732d11ca36f9ebc3b61a197f062e96e511"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
+        "note": "Dataset analysis, verbatim: \"1550 (베드 간격)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "station_pitch",
+        "millimetres": 1550,
+        "roomFunction": null
+      }
+    },
+    {
+      "id": "_reference/30대_sample.pdf#4",
+      "source": {
+        "drawing": {
+          "datasetId": "dialysis-drawings",
+          "drawingId": "_reference/30대_sample.pdf",
+          "path": "_reference/30대_sample.pdf",
+          "page": 0,
+          "sheet": null,
+          "revision": null,
+          "sha256": "6639cf3822b175887c5e14b5186b7d6de016734b1e2affe3f4ddf82d6460bfa6"
+        },
+        "method": "dimension_line",
+        "observer": {
+          "type": "ai",
+          "name": "MFD Hospital Dataset Analyzer",
+          "version": "1.0"
+        },
+        "observationDate": "2026-07-31",
+        "confidence": "medium",
+        "note": "Dataset analysis, verbatim: \"2,000 (통로)\""
+      },
+      "value": {
+        "kind": "common_dimension",
+        "name": "corridor_width",
+        "millimetres": 2000,
         "roomFunction": null
       }
     }
