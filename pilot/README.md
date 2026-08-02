@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Reviewed — verdicts given, confirmation outstanding.** `VD-4` confirmed, `VD-1` inconclusive; needs signer `name` + `basis` |
+| [`PILOT-001`](PILOT-001/) | **Complete.** Reviewed; **F-1** found. Confirmation deliberately not created — it would overstate what was reviewed |

@@ -1,30 +1,24 @@
 # PILOT-001
 
-> **Status: MACHINE STAGES COMPLETE — awaiting engineer review.**
+> **Status: COMPLETE — objective achieved.**
 >
-> Drawing `Hospital_044/dialysis.pdf`, page 0 of 1, `full-document`. Hash verified against the
-> catalogue before extraction. **The run stopped at `room`** after completing `verify_mapping`,
-> with `VD-1` (drawing_error) and `VD-4` (insufficient_evidence). A stop is a valid outcome.
+> | Stage | |
+> | --- | --- |
+> | Pilot | ✅ executed — `Hospital_044/dialysis.pdf`, stopped at `room` |
+> | Review | ✅ complete — `VD-4` Confirmed, `VD-1` Inconclusive / 검증불가 |
+> | Finding | ✅ **F-1** — the confirmation model cannot represent a mixed verdict |
+> | Confirmation | ⏸️ **deliberately not created** |
 >
-> No evaluation, ranking or rationale was produced — extraction stopped before them, so their
-> absence is the result, not a gap.
+> **The pilot's purpose was to find what real use would reveal, and it did.** The abstention was
+> validated against a real drawing by a real engineer, and the exercise surfaced a product
+> limitation that no amount of reasoning about the code had found.
 >
-> **Review opened, not concluded.** An engineering statement has been recorded in
-> [`review/review.md`](review/review.md): a room candidate exists, but the evidence does not
-> uniquely identify which enclosed region is the treatment room, so the abstention was correct.
-> It corroborates `VD-4`; `VD-1` remains unaddressed.
->
-> **Verdicts given** ([`review/findings.md`](review/findings.md)): `VD-4` **Confirmed** — the stop
-> judgement was appropriate. `VD-1` **Inconclusive / 검증불가** — neither confirmed nor refuted.
->
-> **Still no confirmation.** `outcome.txt` is absent and `confirmation/` is empty: the signer's
-> `name` and `basis` are required by `confirmationSchema` and cannot be supplied from inside this
-> repository.
->
-> **First finding from real use — `F-1`:** the review produced a *split* verdict, and a confirmation
-> binds to the whole row. The model has no per-finding granularity, so a signature here would carry
-> `VD-1` inside the fingerprint as though it had been checked. Goes to priority 3; *no action* is a
-> legitimate answer.
+> **No confirmation exists, by decision** — *"do not create a confirmation that overstates what was
+> actually reviewed."* A `stop` confirmation here would carry `VD-1` inside the row fingerprint as
+> though it had been checked. The first confirmation will be written when it can state the truth
+> without exaggeration. F-1 is recorded in
+> [`../../docs/decisions/POST_PILOT_IMPROVEMENTS.md`](../../docs/decisions/POST_PILOT_IMPROVEMENTS.md);
+> whether it needs a schema change is a post-pilot question, and *no action* is a legitimate answer.
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)

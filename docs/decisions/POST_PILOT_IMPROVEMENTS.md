@@ -29,6 +29,54 @@ outcomes priority 4 may reach.
 
 ---
 
+## F-1 · The confirmation model cannot represent a mixed verdict
+
+> **Architectural finding from Pilot-001.** Recorded, not fixed.
+>
+> The current confirmation model cannot represent mixed verdicts — **Confirmed + Inconclusive within
+> a single review.**
+
+**Found by using the product.** Every other item in this repository's backlog was found by reasoning
+about the code. This one was found because a real engineer reviewed a real drawing and returned a
+verdict the schema had no shape for.
+
+| | |
+| --- | --- |
+| Run | PILOT-001 · `Hospital_044/dialysis.pdf`, stopped at `room` |
+| `VD-4` | **Confirmed** — the stop judgement was appropriate |
+| `VD-1` | **Inconclusive / 검증불가** — neither confirmed nor refuted |
+
+A confirmation binds to `rowFingerprint(outcome)` under D10, and that fingerprint includes the
+**whole discrepancy list**. It is a statement about the row. `confirmationSchema` has no field
+meaning *"I confirmed this finding and could not verify that one."*
+
+So a `stop` confirmation written from this review would record the stop as correctly diagnosed —
+true — while carrying `VD-1` inside the fingerprint as though it had been checked. Nothing in the
+artefact would distinguish *the signer verified both* from *the signer verified one and could not
+reach the other*. **It would overstate by exactly one finding**, in the one file this product treats
+as ground truth.
+
+### Why no confirmation was created
+
+> Owner decision: *"Do not create a confirmation that overstates what was actually reviewed."*
+
+This is the governing reason, and it is stronger than the administrative one. A signer's `name` and
+`basis` were also missing — but supplying them would not have made the confirmation honest, because
+the shape itself cannot carry what the reviewer actually established.
+
+**The first confirmation will be written when it can state the truth without exaggeration.** Not
+before. `confirmations.json` remains `[]`, and
+[`release/RELEASE_GATE.md`](../release/RELEASE_GATE.md) §3 therefore remains **not met** — now for a
+principled reason rather than an unfinished one.
+
+### Not to be acted on during Pilot-001
+
+- **No schema change.** Not during the pilot.
+- Whether one is needed at all is decided in the **post-pilot review** — priority 4, whose outcomes
+  include **no action**. One unverifiable finding on one drawing may not justify changing a contract.
+
+---
+
 ## OI-1 · File-first pilot workflow
 
 > **The operator should never need to reference an internal catalogue identifier.** The workflow
