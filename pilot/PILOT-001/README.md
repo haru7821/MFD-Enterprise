@@ -2,11 +2,12 @@
 
 > **Status: NOT EXECUTED — awaiting the drawing file.** Structure prepared; no stage has been run.
 >
-> Input model simplified by owner decision: the user uploads a file and nothing else is required of
-> them. `drawingId`, `sha256` and `pageCount` are system-generated; page selection, requester and
-> operator are optional; the reviewing engineer is named only at confirmation. See
-> [`input/BLOCKED.md`](input/BLOCKED.md) for what is outstanding and which steps have no code path
-> yet.
+> Awaiting one thing: the drawing. Page selection, requester and operator are optional; the
+> reviewing engineer is named only at confirmation.
+>
+> **D17 identity migration is deferred and does not block this pilot** — it runs under the existing
+> drawing identity model, so the drawing is named by its catalogued `drawingId`. See
+> [`input/BLOCKED.md`](input/BLOCKED.md).
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)

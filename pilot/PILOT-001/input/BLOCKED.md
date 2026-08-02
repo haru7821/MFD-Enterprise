@@ -8,12 +8,17 @@
 
 ## What is required now
 
-**One thing: the drawing file.**
+**One thing: the drawing.**
+
+Because D17 is deferred, the identifier model is the existing one — so the drawing must be a
+**catalogued** one, named by its `drawingId` from `knowledge/dataset.json`. The upload-and-generate
+flow depends on the single-file ingest path that D17 would have brought, and that is now a later
+milestone.
 
 | Step | Who | Status |
 | --- | --- | --- |
-| 1 · Upload the drawing file | **User** | ❌ **outstanding — the only blocker** |
-| 2 · Generate `drawingId` | System | waiting on 1 |
+| 1 · Supply the drawing | **User** | ❌ **outstanding — the only blocker** |
+| 2 · `drawingId` | System | Existing model, unchanged: a catalogued path-derived id |
 | 3 · Record `sourceFilename` + `sha256` | System | waiting on 1 |
 | 4 · Detect `pageCount` | System | waiting on 1 |
 | 5 · Select page, or analyse full document | User, optional | defaults to `full-document` |
@@ -23,51 +28,18 @@
 Steps 5–7 cannot block anything: 5 has a defined default that infers nothing, and 6 and 7 are
 optional or deferred by decision.
 
-## D17 decided, and one consequence that blocks implementing it as written
+## D17 is deferred — it does not block this pilot
 
-> **Owner decision D17.** `drawingId` derives from **`sha256`** — content identity. Never from
-> filename, upload event or folder structure. The same evidence must not create multiple drawing
-> identities, because duplicates inflate evidence aggregation. Filename, revision and upload
-> metadata are kept separate from identity.
+> **Owner decision: do not start D17 identity migration.** It is a repository-wide architectural
+> change, independent of Pilot-001, and provides no benefit to the first real engineering validation.
+> It is scheduled as a separate milestone after the pilot completes and the first confirmation
+> exists.
 
-The decision is right and the reason is the one that matters. **It cannot be applied as written
-without a second change**, and the reason is the same aggregation the decision protects:
+**In force until then:** the existing drawing identity model stays; the catalogue and corpus are not
+regenerated; `rowFingerprint` is not invalidated; confirmation bindings are not modified.
 
-```ts
-// packages/layout-knowledge/src/provenance.ts:302
-export function facilityOf(drawingId: string): string {
-  const separator = drawingId.indexOf('/');
-  return separator === -1 ? drawingId : drawingId.slice(0, separator);
-}
-```
-
-`facilityOf` reads the **site** out of the id string — everything before the first `/`. A bare
-`sha256` contains no `/`, so it returns the whole hash and **every drawing becomes its own
-facility**.
-
-That inverts D6. Support counts independent facilities precisely so one firm's template across many
-files cannot read as consensus — measured at 117 files against 24 sites. Under a bare-hash id, three
-sheets from one hospital would count as three facilities: the same evidence inflation D17 exists to
-prevent, moved from identity into grouping.
-
-**What is needed:** facility must become a **recorded field** rather than a substring of the id.
-That is a schema change to the dataset entry plus a rewrite of `facilityOf`, and it invalidates the
-grouping behind every one of the 306 committed corpus rows and 300 catalogue entries until they are
-regenerated with the field present.
-
-Two further consequences worth deciding at the same time:
-
-- **`planOf`** — D15 counts distinct plans so a `.dwg`/`.pdf` twin pair is not two sheets of
-  evidence. Two exports of one plan have **different bytes**, so under content identity they are two
-  ids. Plan grouping needs its own recorded field for the same reason facility does.
-- **Migration** — the existing 300 catalogued drawings have path-derived ids. Whether they are
-  re-identified by hash or left as they are, and how a record written under one scheme is read under
-  the other, is a decision rather than a mechanical step.
-
-**Not implemented here.** Flipping the derivation alone would leave the suite green and quietly
-break D6 and D15 — which is the shape of defect this project's whole audit phase existed to remove.
-Raised for decision on how facility and plan identity are carried once the id no longer carries
-them.
+So this pilot runs on catalogued, path-derived `drawingId`s exactly as the corpus already holds them.
+Full record: [`../../../docs/decisions/IDENTITY_MIGRATION.md`](../../../docs/decisions/IDENTITY_MIGRATION.md).
 
 ## What the system cannot do yet — measured, not assumed
 
@@ -81,7 +53,7 @@ what exists.
 | Per-page analysis | ✅ `verify:drawing --page N` / `--pages N,M`, recorded as `user-selected` |
 | **Full-document analysis** | ✅ **implemented** — `--all-pages`, or simply no page argument. Every page analysed independently, one result each. Exercised on `Hospital_016/dialysis.pdf`, 7 pages |
 | Out-of-range page | ✅ **refused**, never clamped — a third outcome that analyses nothing |
-| **Generate a `drawingId` for a loose uploaded file** | ❌ built as `${hospitalId}/${basename}`; needs a hospital-shaped folder. No single-file ingest path, and D17 blocks on the `facilityOf` consequence above |
+| **Generate a `drawingId` for a loose uploaded file** | ❌ built as `${hospitalId}/${basename}`; needs a hospital-shaped folder. No single-file ingest path — **and D17, which would have replaced this, is deferred** |
 
 `--page` no longer defaults to `0`. That default made *"nobody chose"* and *"page 0"* the same
 input, so a multi-page drawing was reported on its first page and the record could not say

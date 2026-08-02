@@ -5,11 +5,39 @@
 > Owner decision **D17**, revised: keep `sha256` as drawing identity, and **separate identity from
 > aggregation** into three independent concepts.
 
-**Decisions are made (§4). The migration is authorised and has NOT yet been executed** — see §7 for
-the ordered plan and why it is one atomic step rather than several commits.
+> ## Status: DEFERRED — future architecture milestone
+>
+> **Owner decision: do not start D17.** Identity migration is a repository-wide architectural change,
+> independent of Pilot-001, and it provides no benefit to the first real engineering validation.
+>
+> **Priority order, until further notice:**
+>
+> 1. Complete the first real pilot.
+> 2. Obtain the first genuine human confirmation (D9–D12).
+> 3. Complete the operational validation.
+> 4. Freeze the current repository state.
+>
+> D17 is scheduled as a **separate architectural milestone** only after Pilot-001 completes and the
+> first confirmation exists.
+>
+> **Until then, in force:** keep the existing drawing identity model · do not regenerate the
+> catalogue · do not regenerate the corpus · do not invalidate `rowFingerprint` · do not modify
+> confirmation bindings.
 
-This record exists because the owner required the migration to be an explicit decision rather than a
-side effect.
+The decisions in §4 stand as decided — what is deferred is executing them. §7 is the plan the future
+milestone starts from.
+
+### One inherited cost, recorded rather than argued
+
+Deferring changes the price. Re-identification invalidates every `rowFingerprint`, and a
+`rowFingerprint` is what binds a confirmation to a run under D10. **Today that costs nothing —
+`confirmations.json` is empty.** After Pilot-001 produces the first genuine signature, the migration
+must either preserve that binding across the id change or re-obtain the signature from the engineer
+who gave it.
+
+This is not a reason to reorder the priorities — the owner has weighed it and the pilot comes first.
+It is recorded so the milestone that eventually runs §7 inherits a known cost rather than discovers
+one, and so whoever schedules it knows a re-signature may be part of the work.
 
 ---
 
@@ -17,7 +45,7 @@ side effect.
 
 | Concept | Answers | Derived from | Status |
 | --- | --- | --- | --- |
-| **Drawing identity** — `drawingId` | *is this the same file evidence?* | `sha256` | Decided; migration authorised, **not executed** |
+| **Drawing identity** — `drawingId` | *is this the same file evidence?* | `sha256` | Decided; **deferred** — the path-derived id remains in force |
 | **Facility identity** — `facilityId` | *which site is this?* | The catalogue's existing `hospital_id` | Source exists on **300 of 300** ✅ |
 | **Plan identity** — `planId` | *which design plan is this an export of?* | **Human-provided metadata** | Concept retained; **unpopulated** until a person records one |
 
@@ -142,7 +170,7 @@ handles one and forgets the other is right on half the corpus and silently wrong
 - **The confirmation boundary is untouched** by all of the above. No confirmation is created
   automatically, and re-identification does not sign anything.
 
-## 7 · Execution plan — one atomic change
+## 7 · Execution plan — for the future milestone, not for now
 
 **Measured blast radius**, not estimated:
 
@@ -172,18 +200,23 @@ returns nothing, and `support` would report zero evidence rather than failing.
 6. Update the 20 files carrying path-shaped ids.
 7. Re-run the full validation set; confirm a second regeneration is byte-identical.
 
-**Not started.** It is recorded here in full so the next session executes a plan rather than
-rediscovers one, and so the ordering — which is the part that makes it safe — is not left to memory.
+**Not started, and not to be started** until the four priorities above are complete. Recorded in
+full so the milestone executes a plan rather than rediscovers one, and so the ordering — the part
+that makes it safe — is not left to memory.
+
+The blast-radius figures will need re-measuring when it runs: they are true as of this record, and
+the corpus will have moved.
 
 ## 6 · State
 
 | | |
 | --- | --- |
 | Decisions §4 | ✅ made by the owner |
-| `identity.ts` + tests | ✅ committed — the resolution layer the migration targets |
-| Schema, catalogue, corpus, ingest, aggregation | ❌ **authorised, not executed** — §7 |
-| Artefact regeneration | ❌ not started |
-| **PILOT-001** | **Blocked until §7 is executed** |
+| `identity.ts` + tests | ✅ committed — inert, called by nothing in production |
+| Schema, catalogue, corpus, ingest, aggregation | ⏸️ **deferred** — future milestone, §7 |
+| Artefact regeneration | ⏸️ deferred. Catalogue, corpus and `rowFingerprint` untouched |
+| Existing drawing identity model | ✅ **in force, unchanged** |
+| **PILOT-001** | **Not blocked by this.** It runs under the existing identity model |
 
 **Nothing in this record is a confirmation, and executing §7 creates none.** The confirmation
 boundary, the evidence rules and the human review boundary are untouched by all of it.
