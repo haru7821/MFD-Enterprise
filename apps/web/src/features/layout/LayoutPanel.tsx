@@ -68,9 +68,28 @@ const EMPTY_MESSAGES: Record<LayoutEmptyReason, Bilingual> = {
     ko: '최적화는 이미 배치된 기기를 재배치합니다. 위에서 허용한 뒤 다시 시도하세요.',
     en: 'Optimising rearranges machines that are already placed. Allow that above, then try again.',
   },
+  /**
+   * **"scores highest" was one word stronger than the measurement.**
+   *
+   * `already_best` is returned when `better.length === 0`, and `better` is the candidates scoring
+   * *strictly greater* than the drawing. A candidate that scores **exactly the same** is therefore
+   * not "better" and does not prevent this outcome — so the sentence claimed a top position the
+   * comparison never established.
+   *
+   * Measured, and it is the canonical path rather than an edge case: feeding the solver's own
+   * proposal back returns `already_best` at 0.283333333, which is precisely the total a
+   * constructible arrangement also scores. The drawing ties; it does not lead.
+   *
+   * This is the same claim owner decision D13 removed from the proposal list — *"do not present a
+   * tie as #1"* — surviving in the optimiser's message, where nobody looked for it.
+   *
+   * The reworded sentence says exactly what `better.length === 0` proves: nothing scores higher.
+   * The first half is untouched, because "nothing improves on what you have drawn" was already the
+   * honest half.
+   */
   already_best: {
-    ko: '현재 도면보다 더 나은 배치가 없습니다. 이 기기 수로 솔버가 구성할 수 있는 배치 중 현재 배치의 점수가 가장 높습니다.',
-    en: 'Nothing improves on what you have drawn. Of the arrangements the solver can construct at this station count, yours scores highest.',
+    ko: '현재 도면보다 더 나은 배치가 없습니다. 이 기기 수로 솔버가 구성할 수 있는 어떤 배치도 현재 배치보다 점수가 높지 않습니다.',
+    en: 'Nothing improves on what you have drawn. No arrangement the solver can construct at this station count scores higher.',
   },
   coverage_too_low: {
     ko: '채점 모델에서 측정 가능한 항목이 너무 적어 순위를 매길 수 없습니다. 아래 항목별 표에서 무엇이 측정되었고 무엇이 측정되지 않았는지 확인하세요 — 기준점을 배치하고 AK98 매뉴얼이 확보되면 측정 범위가 넓어집니다.',

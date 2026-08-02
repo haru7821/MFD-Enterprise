@@ -717,3 +717,47 @@ describe('command derivation', () => {
     expect(() => commandsFor([source], [flipped], catalog)).toThrow(/mirrored/);
   });
 });
+
+describe('what already_best is entitled to claim', () => {
+  /*
+   * > Owner decision D13: *"Do not present a tie as '#1' … Never let alphabetical order become
+   * > engineering preference."*
+   *
+   * That decision was applied to the proposal list and missed the optimiser's own message, which
+   * told an engineer their drawing *"scores highest"*. `already_best` is returned when `better` is
+   * empty, and `better` holds candidates scoring **strictly greater** — so a candidate scoring
+   * exactly the same leaves the outcome unchanged while making "highest" untrue.
+   *
+   * These pin the comparison the message is allowed to describe, so the wording cannot drift back.
+   */
+  it('fires when nothing scores higher, including when something ties', () => {
+    const first = optimise();
+    const best = first.proposals[0];
+    if (!best) throw new Error('expected a proposal to feed back');
+
+    const second = optimise({ current: best.placements });
+
+    expect(second.outcome).toBe('already_best');
+    expect(second.proposals).toEqual([]);
+
+    /*
+     * The tie, asserted rather than described. Feeding the solver its own proposal back means an
+     * arrangement it can construct scores exactly what the drawing scores — so this outcome is
+     * reached *with* an equal-scoring alternative present, which is the case "highest" got wrong.
+     */
+    expect(second.current).not.toBeNull();
+    expect(second.current?.total).toBe(best.score.total);
+    expect(second.current?.total).not.toBeNull();
+  });
+
+  /*
+   * The wording itself is asserted in `tests/e2e/layout.spec.ts`, against the **rendered panel**
+   * rather than against this package's source.
+   *
+   * Two reasons, and the first is the project's own architecture catching this test being written
+   * in the wrong place: `@mfd/ai-local` ships without `@types/node` because AD-3 requires the
+   * engines to be isomorphic, so a test here cannot read a file and the typecheck said so. The
+   * second reason is better: what an engineer reads is the DOM, not a string literal, and checking
+   * the rendered text also proves the message reaches the screen.
+   */
+});

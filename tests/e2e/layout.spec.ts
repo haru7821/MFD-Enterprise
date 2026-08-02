@@ -451,13 +451,32 @@ test('applies a rearrangement only when asked, and undoes it in one press', asyn
    * counts machines and a rearrangement does not change the count, so "3" proves nothing either
    * way.
    *
-   * Optimising the layout that was just applied has to say `already_best`: it is the highest
-   * scoring arrangement the solver can construct, so nothing beats it. One undo press must put the
-   * engineer's own awkward layout back, and optimising *that* has something to offer again. Two
-   * different answers from the same button, which is only possible if the document really reverted.
+   * Optimising the layout that was just applied has to say `already_best`: **nothing the solver can
+   * construct scores higher**. One undo press must put the engineer's own awkward layout back, and
+   * optimising *that* has something to offer again. Two different answers from the same button,
+   * which is only possible if the document really reverted.
    */
   await optimise(page);
   await expect(page.getByTestId('layout-empty')).toContainText('Nothing improves');
+
+  /*
+   * **The claim, checked in the rendered panel.**
+   *
+   * This message said the drawing *"scores highest"*, and `already_best` is returned when nothing
+   * scores **strictly greater** — so an arrangement scoring exactly the same leaves the outcome
+   * unchanged and makes "highest" untrue. Measured: feeding the solver its own proposal back
+   * returns `already_best` at 0.283333333, the same total a constructible arrangement scores. The
+   * drawing ties; it does not lead.
+   *
+   * The same claim owner decision D13 removed from the proposal list, surviving in the optimiser's
+   * message where nobody had looked. The comment above this block said "highest scoring" too.
+   */
+  await expect(page.getByTestId('layout-empty')).toContainText(
+    'No arrangement the solver can construct at this station count scores higher',
+  );
+  await expect(page.getByTestId('layout-empty')).toContainText('점수가 높지 않습니다');
+  await expect(page.getByTestId('layout-empty')).not.toContainText('scores highest');
+  await expect(page.getByTestId('layout-empty')).not.toContainText('가장 높습니다');
 
   await page.keyboard.press('Control+z');
   await selectRoom(page);
