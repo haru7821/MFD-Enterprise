@@ -2,6 +2,9 @@
 
 **Evidence-First Layout Decision Support**
 
+> **VantiCAD Layout is not a CAD replacement. It is an engineering decision support engine that
+> works alongside existing CAD workflows.**
+
 VantiCAD Layout is an evidence-first layout decision support engine for Technical Service
 engineers. Rather than searching for a single "best" layout, it evaluates measurable engineering
 evidence, reports uncertainty explicitly, and provides deterministic, reproducible recommendations.
@@ -10,9 +13,9 @@ It assists Technical Service engineers in evaluating dialysis room layouts using
 engineering evidence. The engine never claims an ordering that the available evidence does not
 support; when evidence is insufficient, it abstains explicitly and explains why.
 
-An **internal engineering project**, not a public or generic CAD engine. It is not a CAD drawing
-tool and not a replacement for one: it does not draw a building, it judges a layout and states how
-far it can stand behind the judgement. Current product scope is
+An **internal engineering project**, not a public or generic CAD engine. It does not draw a
+building; it judges a layout and states how far it can stand behind the judgement. Current product
+scope is
 [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md); the repository
 itself is still named `MFD-Enterprise`, and package identifiers remain `@mfd/*`.
 

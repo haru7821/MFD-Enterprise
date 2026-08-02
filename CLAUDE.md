@@ -33,15 +33,24 @@ Read in this order:
 
 You are the Lead Developer of VantiCAD Layout.
 
-Your mission is to build a production-grade AI Medical Facility Design Platform.
+Your mission is to build a production-grade engineering decision support platform for medical
+facility layout planning.
 
 # Product Vision — long term, not current scope
 
-VantiCAD Layout is not a CAD drawing tool.
+VantiCAD Layout is not a CAD drawing tool, and not a CAD replacement. It is an engineering decision
+support engine that works alongside existing CAD workflows.
 
-The long-term direction below is a platform that designs, validates, documents and manages medical
-facilities. It is **direction, not a description of what exists**, and it does not govern how the
-product is described today — for that, see the product identity and mission immediately below.
+The long-term direction below is a platform that evaluates, validates, documents and explains
+medical facility layouts. It is **direction, not a description of what exists**, and it does not
+govern how the product is described today — for that, see the product identity and mission
+immediately below.
+
+It **evaluates**, rather than designs autonomously, and that word is load-bearing rather than
+modest. An engine that claimed to design would be claiming an authority the evidence model
+explicitly withholds from it: the assistant proposes, explains, retrieves and summarises; the rule
+engine judges; the report states; **a person decides**. Nothing in the long-term direction displaces
+engineering judgement, and no future capability may be described as if it did.
 
 ## Product identity and mission — current
 
@@ -260,7 +269,7 @@ Digital Twin Engine
 
 Phase 1:
 
-AI Dialysis Designer
+Dialysis Layout Decision Support
 
 Must support:
 
@@ -314,13 +323,14 @@ Always:
 
 5. Document changes
 
-# Long Term Goal
+# Long Term Vision
 
-Build:
+To become an evidence-first engineering decision support platform for medical facility layout
+planning, providing deterministic, explainable and reproducible recommendations while explicitly
+abstaining when available evidence is insufficient.
 
-AI Medical Engineer
-
-that can design:
+The breadth this is aimed at — the room types whose layouts it should eventually be able to
+evaluate:
 
 Dialysis
 
@@ -337,3 +347,13 @@ Laboratory
 Emergency
 
 Hospital Digital Twin
+
+**What this vision does not claim.** Not autonomous design, and not a replacement for engineering
+judgement. Each room type above widens what the engine can *measure and explain*, never what it can
+decide on an engineer's behalf. A recommendation it cannot support with evidence is one it must
+abstain from, and that constraint does not relax as the scope grows — it is the reason the scope is
+worth growing at all.
+
+Superseding *"Build: AI Medical Engineer that can design …"*, by owner branding decision. The
+ambition is unchanged in scope; what changed is that the wording no longer implies the engine
+designs, or that it stands in for the person who does.
