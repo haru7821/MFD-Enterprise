@@ -122,7 +122,60 @@ requirement rather than an objective, and it will put pressure on the run to gue
 
 ---
 
-## 3 · Review workflow
+## 3 · Geometry provenance
+
+Three kinds of geometry. They must never be collapsed, because collapsing them is how a number an
+engineer never checked acquires the authority of one they did.
+
+| Tier | What it is | Comes from |
+| --- | --- | --- |
+| **1 · Drawing Evidence** | Information extracted from, or referenced in, the uploaded drawing | The sheet — dimension strings, a printed scale, line work, the title block |
+| **2 · Verified Geometry** | Dimensions or spatial facts **confirmed by human input** | An engineer, who measured, typed or traced it and can say against what |
+| **3 · Evaluation Geometry** | The geometry the solver **actually used** | The project document, as handed to the engine |
+
+### The rules
+
+1. **Do not assume drawing scale is accurate.**
+2. **Do not infer missing dimensions from visual appearance.**
+3. **Do not treat extracted dimensions as verified unless provenance is recorded.**
+4. **Human-confirmed geometry must remain distinguishable from drawing-derived evidence.**
+
+The load-bearing consequence: **every value in Tier 3 must trace to Tier 1 or Tier 2.** A number in
+the evaluation geometry that traces to neither was inferred, and rule 2 forbids it. That is the
+check the pilot performs — not "does the geometry look right", but "can each value say where it
+came from".
+
+### What the system enforces today, and what it does not
+
+Stated precisely, because a process document describing a distinction the code does not make would
+be the overclaim this project exists to remove.
+
+**Scale — partially enforced.** `calibration.method` distinguishes a **two-point** calibration (an
+engineer picked two points and typed the real distance) from a **stated ratio** read off the title
+block, and the two are not interchangeable. The calibration safety rule refuses a printed scale that
+the file's own sheet size contradicts, and reports the measured sheet size beside the claim rather
+than silently overriding it — rule 1, implemented. Until a scale is established, `planStatus` is
+provisional and every finding is capped at YELLOW.
+
+**Shape — not represented at all.** `boundarySchema` and `spaceSchema` carry `vertices`, `kind` and
+`label`, and **no provenance field**. A room outline is bare coordinates. Nothing in the document
+model records whether a human traced it against the drawing, or what they traced it from.
+
+So for **shape**, Tier 1 and Tier 2 are indistinguishable in the data, and Tier 3 is simply whatever
+the document holds.
+
+**Consequence for Pilot-001: the distinction must be recorded by hand in the run record.** The
+schema cannot enforce it, and the pilot must not claim that it did. Closing the gap means adding a
+provenance field to boundaries and spaces — a schema change, and therefore a source change, out of
+scope here. Recorded so the run is performed knowing it rather than discovering it at review.
+
+### Recording it
+
+`input/run-metadata.json` carries a `geometry` block with the three tiers; the checklist has a
+matching section. Both exist so the tiers are written down **as the run proceeds**, since after the
+fact nobody can reconstruct which numbers a person actually checked.
+
+## 4 · Review workflow
 
 ```
 Input drawing
@@ -158,7 +211,7 @@ measure, or omits an abstention, is a defect even if every number is right.
 whether what the engine reported is what the drawing says. **The engine does not participate in this
 stage.**
 
-**Confirmation record.** §4.
+**Confirmation record.** §5.
 
 ### The review must be able to end in "no"
 
@@ -169,7 +222,7 @@ refusing must be a normal, recordable outcome rather than a failure of the exerc
 
 ---
 
-## 4 · Confirmation requirements
+## 5 · Confirmation requirements
 
 > A valid confirmation requires a **real engineer**, a **real drawing**, and an **actual review
 > action**.
@@ -225,7 +278,7 @@ classification recorded against it is correct."*
 
 ---
 
-## 5 · Checklist
+## 6 · Checklist
 
 A blank template is at [`pilot/PILOT-001-CHECKLIST.md`](pilot/PILOT-001-CHECKLIST.md).
 
@@ -239,3 +292,14 @@ Copy it to `docs/pilot/PILOT-001.md` when the run is performed, and fill it in a
 rather than afterwards.
 
 
+
+---
+
+## 7 · Run folder
+
+Run artefacts live in [`../pilot/PILOT-001/`](../pilot/PILOT-001/), not in `docs/`. Each of its five
+folders — `input`, `evidence`, `result`, `review`, `confirmation` — defines the files expected in it,
+and the run metadata template is at `pilot/PILOT-001/input/run-metadata.template.json`.
+
+The review outcome is exactly one of `confirmed`, `rejected` or `stopped`, and **only `confirmed`
+produces a confirmation record**.

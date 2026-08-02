@@ -66,6 +66,45 @@
     "requestedBy": null
   },
 
+  "geometry": {
+    "_note": "THREE TIERS, NEVER COLLAPSED. Recorded by hand: boundarySchema and spaceSchema carry no provenance field, so the document model cannot distinguish tier 1 from tier 2 for SHAPE. Scale is different — calibration.method does distinguish them. See PILOT_VALIDATION_PROCESS.md §3.",
+
+    "drawingEvidence": {
+      "_note": "TIER 1 — read from or referenced in the drawing. Not verified by anyone yet.",
+      "printedScaleClaimed": null,
+      "sheetSizeMeasuredFromFile": null,
+      "printedScaleAgreesWithSheetSize": null,
+      "dimensionStringsRead": null,
+      "roomOutlineVisible": null
+    },
+
+    "verifiedGeometry": {
+      "_note": "TIER 2 — confirmed by human input. Every entry must name WHO confirmed it and AGAINST WHAT. An entry without both is tier 1 wearing a tier 2 label, which rule 3 forbids.",
+      "calibrationMethod": null,
+      "calibrationBasis": null,
+      "calibrationConfirmedBy": null,
+      "roomOutlineTracedBy": null,
+      "roomOutlineTracedAgainst": null,
+      "dimensionsConfirmed": null
+    },
+
+    "evaluationGeometry": {
+      "_note": "TIER 3 — what the solver actually used. THE CHECK: every value here must trace to tier 1 or tier 2. A value tracing to neither was inferred, and rule 2 forbids inferring a dimension from visual appearance.",
+      "roomPolygonUsed": null,
+      "planStatus": null,
+      "everyValueTracesToTier1Or2": null,
+      "untracedValues": null
+    },
+
+    "rulesObserved": {
+      "_note": "Answer each as observed during the run, not as intended before it.",
+      "scaleNotAssumedAccurate": null,
+      "noDimensionInferredFromAppearance": null,
+      "noExtractedDimensionMarkedVerifiedWithoutProvenance": null,
+      "humanConfirmedGeometryDistinguishableFromDrawingDerived": null
+    }
+  },
+
   "expected": {
     "_note": "Recorded in advance so the run cannot be re-described afterwards by what it produced. These are consequences of A-1 being unresolved, not predictions of success.",
     "verdict": "판정 불가 / Inconclusive",

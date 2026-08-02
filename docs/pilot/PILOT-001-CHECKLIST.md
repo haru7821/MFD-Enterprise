@@ -47,6 +47,56 @@ something could not be established. A guessed one is not.
 **Validating:** that the engine stopped where a person would stop, and for the reason a person would
 give. A stop is a valid outcome. A stop for the *wrong reason* is a defect.
 
+## 2b · Geometry provenance
+
+Three tiers, never collapsed. Procedure:
+[`../PILOT_VALIDATION_PROCESS.md`](../PILOT_VALIDATION_PROCESS.md) §3.
+
+**Tier 1 — Drawing Evidence** (read from the drawing; verified by nobody yet)
+
+| | Value |
+| --- | --- |
+| Printed scale claimed on the sheet | |
+| Sheet size measured from the file | |
+| Do those two agree? | ☐ yes ☐ no — if no, the printed scale is refused, and that is correct |
+| Dimension strings read | |
+| Room outline visible on the sheet? | ☐ yes ☐ no |
+
+**Tier 2 — Verified Geometry** (confirmed by human input)
+
+Every row needs **who** and **against what**. A row with a value but no confirmer is Tier 1 wearing a
+Tier 2 label — rule 3 forbids it.
+
+| | Value | Confirmed by | Against what |
+| --- | --- | --- | --- |
+| Calibration method (two-point / stated ratio) | | | |
+| Calibration basis — which printed dimension | | | |
+| Room outline traced | | | |
+| Dimensions confirmed | | | |
+
+**Tier 3 — Evaluation Geometry** (what the solver actually used)
+
+| | Value |
+| --- | --- |
+| Room polygon used | |
+| `planStatus` | |
+| **Does every value trace to Tier 1 or Tier 2?** | ☐ yes ☐ no |
+| Values tracing to neither — these were **inferred**, and rule 2 forbids it | |
+
+**The four rules — answer as observed, not as intended**
+
+| Rule | Observed |
+| --- | --- |
+| 1 · Drawing scale was not assumed accurate | ☐ held ☐ broken |
+| 2 · No dimension inferred from visual appearance | ☐ held ☐ broken |
+| 3 · No extracted dimension marked verified without recorded provenance | ☐ held ☐ broken |
+| 4 · Human-confirmed geometry stayed distinguishable from drawing-derived | ☐ held ☐ broken |
+
+> **Rule 4 cannot be enforced by the schema today.** `boundarySchema` and `spaceSchema` carry no
+> provenance field, so for **shape** the document model cannot tell a traced outline from a derived
+> one — only this record can. Scale is different: `calibration.method` does distinguish them.
+> A `broken` here is a finding about the product, not about the operator.
+
 ## 3 · Deterministic result generation
 
 | Check | Result |
