@@ -1,5 +1,7 @@
 # Schema Freeze Checklist
 
+> **VantiCAD Layout** · Evidence-First Layout Decision Support
+
 > Companion to [`RELEASE_READINESS_REPORT.md`](RELEASE_READINESS_REPORT.md), at commit `cea0f54`.
 >
 > The conditions for leaving Release Candidate are in [`RELEASE_GATE.md`](RELEASE_GATE.md).

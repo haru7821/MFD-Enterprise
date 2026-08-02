@@ -1,5 +1,7 @@
 # Release Gate — Release Candidate → Production
 
+> **VantiCAD Layout** · Evidence-First Layout Decision Support
+
 > The conditions required to move this product from Release Candidate to Production, at commit
 > `43e226a`.
 >

@@ -1,6 +1,6 @@
 # System Architecture
 
-> Architecture for MFD-E. Status: proposal, partially implemented as of v0.1 Alpha.
+> Architecture for VantiCAD Layout. Status: proposal, partially implemented as of v0.1 Alpha.
 >
 > **Scope authority:** [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md) defines
 > what is built now. CLAUDE.md supplies the engineering principles and the long-term
@@ -8,7 +8,7 @@
 
 ## 0. Plain-language summary
 
-MFD-E has three kinds of code, and keeping them separate is the whole design:
+VantiCAD Layout has three kinds of code, and keeping them separate is the whole design:
 
 1. **The brain** (`packages/`) — pure calculation. Where a machine sits, how far apart
    things must be, whether a layout breaks a rule. It knows nothing about buttons or

@@ -18,7 +18,7 @@
 # Claude Code Sprint 1 Instruction
 
 
-You are the Lead Developer of MFD-E TS Edition.
+You are the Lead Developer of VantiCAD Layout TS Edition.
 
 
 Read:
@@ -34,7 +34,7 @@ Read:
 # Sprint Goal
 
 
-Create the foundation of MFD-E TS Edition.
+Create the foundation of VantiCAD Layout TS Edition.
 
 
 ---

@@ -8,7 +8,7 @@ Version:
 
 # Purpose
 
-Define the first medical equipment object in MFD-E.
+Define the first medical equipment object in VantiCAD Layout.
 
 
 ---

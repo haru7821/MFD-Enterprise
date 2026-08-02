@@ -21,7 +21,7 @@ This is the single blocker for the product's purpose. Everything else on this pa
 
 **What changed.** A-1 was written as "the AK98 installation data package" — one manual that would
 arrive and unblock everything. The owner has established that no such document exists: the AK98
-manual is equipment *operating* information, and the clearance and installation-layout figures MFD-E
+manual is equipment *operating* information, and the clearance and installation-layout figures VantiCAD Layout
 needs are not in it. Waiting for it was waiting for the wrong document.
 
 So the blocker is now **two blockers with different owners**, and the data model separates them so
@@ -337,7 +337,7 @@ Not blocking; recorded so they are visible and can be corrected.
 
 | Question | Answer | Settled |
 | --- | --- | --- |
-| Which product are we building? | MFD-E TS Edition is Phase 1; CLAUDE.md is the long-term vision and does not govern current scope. | Sprint 1.5 |
+| Which product are we building? | VantiCAD Layout TS Edition is Phase 1; CLAUDE.md is the long-term vision and does not govern current scope. | Sprint 1.5 |
 | Who is the primary user? | Vantive TS engineer, evaluating dialysis installation feasibility. | TS Edition spec §2 |
 | Import a plan, or draw from scratch? | **Import** — PDF, PNG, JPG, with a scale-setting step. Sprint 4. | TS Edition spec §5.1 |
 | What is the authority for engineering values? | The **manufacturer installation manual**, not a national building code. | TS Edition spec §6 |

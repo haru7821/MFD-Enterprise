@@ -1,15 +1,25 @@
-# MFD-E TS Edition Specification
+# VantiCAD Layout TS Edition Specification
 
 Version:
 0.1 Alpha
 
 Product:
-Medical Facility Designer Enterprise - TS Edition
+VantiCAD Layout — Evidence-First Layout Decision Support
+
+Formerly *Medical Facility Designer Enterprise - TS Edition*. The identity changed; the scope this
+document defines did not. The filename is unchanged so that existing links and citations keep
+resolving.
 
 
 # 1. Product Definition
 
-MFD-E TS Edition is an AI-assisted dialysis facility design application for Vantive Technical Service Engineers.
+VantiCAD Layout TS Edition is an evidence-first layout decision support engine for Vantive
+Technical Service Engineers. It assists them in evaluating dialysis room layouts using measurable
+engineering evidence: rather than searching for a single "best" layout, it evaluates the evidence
+available, reports uncertainty explicitly, and produces deterministic, reproducible
+recommendations.
+
+It is an internal engineering project, not a public or generic CAD engine.
 
 The purpose is not to replace general CAD software.
 
@@ -63,7 +73,7 @@ Problems:
 
 ---
 
-# 4. MFD-E Solution
+# 4. VantiCAD Layout Solution
 
 
 Input:

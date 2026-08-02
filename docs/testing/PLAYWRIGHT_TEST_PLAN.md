@@ -1,6 +1,6 @@
 # Playwright Test Plan
 
-> Browser-level verification for MFD-E TS Edition.
+> Browser-level verification for VantiCAD Layout TS Edition.
 > Written in Sprint 2, committed and wired into CI in Sprint 3.
 
 ## Status — committed and running in CI as of Sprint 3

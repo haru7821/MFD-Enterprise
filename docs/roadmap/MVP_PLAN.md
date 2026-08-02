@@ -1,4 +1,4 @@
-# Sprint Plan — MFD-E TS Edition
+# Sprint Plan — VantiCAD Layout TS Edition
 
 > Plan of record. Governed by
 > [MFD-E_TS_EDITION_SPEC.md](../product/MFD-E_TS_EDITION_SPEC.md).

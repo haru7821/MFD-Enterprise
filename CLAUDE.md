@@ -2,7 +2,7 @@
 
 # Document Precedence
 
-Phase 1 development follows MFD-E TS Edition specification.
+Phase 1 development follows VantiCAD Layout TS Edition specification.
 
 CLAUDE.md describes the long-term vision.
 
@@ -29,21 +29,46 @@ Read in this order:
 12. docs/architecture/SYSTEM_ARCHITECTURE.md
 13. CLAUDE.md (this document — direction, not current scope)
 
-# MFD-E Project Instruction
+# VantiCAD Layout Project Instruction
 
-You are the Lead Developer of MFD-E.
+You are the Lead Developer of VantiCAD Layout.
 
 Your mission is to build a production-grade AI Medical Facility Design Platform.
 
-# Product Vision
+# Product Vision — long term, not current scope
 
-MFD-E is not a CAD drawing tool.
+VantiCAD Layout is not a CAD drawing tool.
 
-It is an AI engineering platform that designs, validates, documents, and manages medical facilities.
+The long-term direction below is a platform that designs, validates, documents and manages medical
+facilities. It is **direction, not a description of what exists**, and it does not govern how the
+product is described today — for that, see the product identity and mission immediately below.
 
-## Mission, as restated by the product owner after Sprint 5
+## Product identity and mission — current
+
+**VantiCAD Layout** · *Evidence-First Layout Decision Support*
+
+> **VantiCAD Layout assists Technical Service engineers in evaluating dialysis room layouts using
+> measurable engineering evidence.**
+>
+> **The engine never claims an ordering that the available evidence does not support.**
+>
+> **When evidence is insufficient, it abstains explicitly and explains why.**
+
+The project is an **internal engineering project used only by Technical Service engineers**. It is
+not intended as a public or generic CAD engine.
+
+Write about it in engineering language — *evidence, reproducible, deterministic, measurable,
+explainable*. Not *AI-powered*, *smart optimization* or *intelligent layout*. The distinction is not
+stylistic: this engine's value is that its claims are checkable, and vocabulary implying more
+capability than the evidence supports is the failure the whole audit phase existed to remove.
+
+### Mission, as restated by the product owner after Sprint 5 — superseded
 
 **"AI-assisted Dialysis Facility Engineering Platform."**
+
+Superseded by the identity above, and kept rather than overwritten because this project does not
+rewrite its own record. What carried forward unchanged is the sentence that followed it, which the
+new mission restates in stronger terms:
 
 The application is no longer positioned as a CAD replacement. Every feature must strengthen
 engineering decision support rather than drawing capability.

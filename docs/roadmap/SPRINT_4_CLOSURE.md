@@ -57,7 +57,7 @@
 
 ### The one criterion not met, stated plainly
 
-Nobody has calibrated MFD-E against a real hospital drawing's printed dimension line and
+Nobody has calibrated VantiCAD Layout against a real hospital drawing's printed dimension line and
 confirmed the result. What *is* verified: the transform inverts exactly at arbitrary rotation
 (unit), a machine draws its catalogue size on screen at every zoom (browser, pixel-measured),
 and a synthetic plan round-trips through import, calibration and reopen.

@@ -1,5 +1,7 @@
 # Release Readiness Report
 
+> **VantiCAD Layout** · Evidence-First Layout Decision Support
+
 > Prepared at commit `cea0f54`, after the audit phase closed; revised at `7db2b16` after review.
 >
 > The first draft was documentation-only. The review of it rejected three claims, and the revision
