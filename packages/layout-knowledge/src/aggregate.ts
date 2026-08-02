@@ -240,7 +240,15 @@ function entry(
     subject: group.subject,
     roomFunction: group.roomFunction,
     distribution,
-    frequencies,
+    /*
+     * **Omitted rather than emitted empty** — owner decision.
+     *
+     * `[]` was doing duty for two different states: "no observations exist" and "this kind never
+     * collects frequencies". Both appeared in every shipped entry, and an empty array reads as a
+     * measurement that found nothing. Spreading the key in only when there is something to say
+     * means the artefact is silent where the product is silent.
+     */
+    ...(frequencies.length > 0 ? { frequencies } : {}),
     support: supportOf(group.observations),
   };
 }

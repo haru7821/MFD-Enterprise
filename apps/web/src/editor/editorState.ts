@@ -171,7 +171,15 @@ export type LayoutEmptyReason = (typeof LAYOUT_EMPTY_REASONS)[number];
 
 export interface LayoutProposal {
   readonly id: string;
+  /** Dense: tied proposals share a number. Owner decision — a tie is not a #1. */
   readonly rank: number;
+  /**
+   * Another proposal here is indistinguishable from this one — equal total, equal coverage.
+   *
+   * > Owner decision: *"Do not present a tie as #1 … Never let alphabetical order become
+   * > engineering preference."*
+   */
+  readonly tied: boolean;
   readonly placements: readonly Placement[];
   readonly score: ScoreBreakdown;
   /** What the rule engine established, separately from what the model scored. */

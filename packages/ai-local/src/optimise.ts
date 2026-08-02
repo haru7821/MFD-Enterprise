@@ -4,7 +4,7 @@ import type { Catalog } from '@mfd/object-library';
 import { footprintCentre } from '@mfd/object-library';
 
 import { type Rejection, applyGates, distinctViolations } from './gates';
-import { type RankInput, type RankedLayout, rankLayouts } from './rank';
+import { type RankInput, type RankedLayout, denseRanks, rankLayouts } from './rank';
 import { scoreLayout } from './score';
 
 /**
@@ -69,7 +69,16 @@ export interface OptimiseInput extends Omit<RankInput, 'stationTarget'> {
 }
 
 export interface OptimisationProposal {
+  /** Dense — tied proposals share a number. See {@link OptimisationProposal.tied}. */
   readonly rank: number;
+  /**
+   * True when another proposal here is indistinguishable from this one.
+   *
+   * Owner decision, the same rule the ranked layouts follow: equal total and equal coverage means
+   * the evidence cannot separate them, and an order presented over that would be alphabetical
+   * preference wearing an engineering label.
+   */
+  readonly tied: boolean;
   readonly candidateId: string;
   readonly placements: readonly Placement[];
   readonly score: ScoreBreakdown;
@@ -328,12 +337,17 @@ export function optimiseLayout(input: OptimiseInput): OptimiseResult {
     };
   }
 
+  // Recomputed over the filtered set: `better` drops the layouts that do not improve on the
+  // current one, so positions in `ranked` no longer describe this list.
+  const standing = denseRanks(better.map((layout) => layout.score));
+
   const proposals = better.map((layout, index) => {
     const commands = commandsFor(input.current, layout.placements, input.catalog);
     assertNoDeletions(commands);
 
     return {
-      rank: index + 1,
+      rank: standing[index]!.rank,
+      tied: standing[index]!.tied,
       candidateId: layout.candidateId,
       placements: layout.placements,
       score: layout.score,

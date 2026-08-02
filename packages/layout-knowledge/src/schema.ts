@@ -335,7 +335,23 @@ export const knowledgeEntrySchema = z.strictObject({
   /** For a measured quantity. Null for a purely categorical entry. */
   distribution: distributionSchema.nullable(),
   /** For a categorical quantity, commonest first. Empty for a purely measured entry. */
-  frequencies: z.array(frequencySchema),
+  /**
+   * How many distinct drawings support each distinct value — **absent when there is none**.
+   *
+   * > Owner decision: *"Do not emit an empty `frequencies` field. `[]` currently means two different
+   * > things: no observations exist, and this observation type never collects frequencies. Those are
+   * > different states. Until frequencies carries real information, remove it from generated
+   * > artifacts rather than emitting `[]`. Unknown must not masquerade as measured zero."*
+   *
+   * Measured before the decision: every entry in every derived file carried `frequencies: []`, for
+   * two unrelated reasons — the `common_dimension` branch passes a literal `[]` at the call site,
+   * and every branch that does compute frequencies belongs to a kind with no observations at all.
+   * An empty array read as *"we counted and found nothing"* in both cases.
+   *
+   * Optional rather than nullable on purpose: `null` would be a third spelling of the same
+   * ambiguity. An absent key is the only encoding that says nothing at all.
+   */
+  frequencies: z.array(frequencySchema).optional(),
   support: supportSchema,
 });
 
@@ -359,7 +375,15 @@ export const knowledgeFileSchema = z.strictObject({
 export type KnowledgeFile = z.infer<typeof knowledgeFileSchema>;
 
 /** The derived contract this build writes and reads. */
-export const KNOWLEDGE_VERSION = 1;
+/**
+ * Bumped to 2 when `frequencies` stopped being emitted empty.
+ *
+ * The shape widened rather than broke — the field is optional, so a file still carrying
+ * `frequencies: []` parses. The *meaning* changed, which is the part a version number exists to
+ * identify: in a version 1 file an empty array was written for entries nobody had counted, and a
+ * reader that treated it as "counted, found none" would be wrong about every one of them.
+ */
+export const KNOWLEDGE_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // The dataset itself

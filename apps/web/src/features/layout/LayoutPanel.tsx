@@ -336,10 +336,11 @@ export function LayoutPanel() {
             </p>
           )}
 
-          {results.proposals.map((proposal) => (
+          {results.proposals.map((proposal, index) => (
             <ProposalCard
               key={proposal.id}
               proposal={proposal}
+              position={index + 1}
               results={results}
               previewed={proposal.id === state.previewedProposalId}
               onPreview={() => dispatch({ type: 'layout/preview', proposalId: proposal.id })}
@@ -364,6 +365,14 @@ export function LayoutPanel() {
 }
 
 interface ProposalCardProps {
+  /**
+   * Position in the list, 1-based — used for test ids **only**.
+   *
+   * Separate from `proposal.rank` since ranks became dense: two tied proposals share a rank, so a
+   * test id keyed on rank would appear twice in one document. Position is unique and carries no
+   * engineering meaning, which is exactly what a selector should be.
+   */
+  readonly position: number;
   readonly proposal: LayoutProposal;
   readonly results: LayoutProposalSet;
   readonly previewed: boolean;
@@ -371,25 +380,50 @@ interface ProposalCardProps {
   readonly onApply: () => void;
 }
 
-function ProposalCard({ proposal, results, previewed, onPreview, onApply }: ProposalCardProps) {
+function ProposalCard({
+  proposal,
+  position,
+  results,
+  previewed,
+  onPreview,
+  onApply,
+}: ProposalCardProps) {
   const added = proposal.diff.filter((entry) => entry.change === 'added').length;
   const moved = proposal.diff.filter((entry) => entry.change === 'moved').length;
   const unchanged = proposal.diff.filter((entry) => entry.change === 'unchanged').length;
 
   return (
     <article
-      data-testid={`layout-proposal-${proposal.rank}`}
+      data-testid={`layout-proposal-${position}`}
       className={`mb-1.5 rounded border p-1.5 ${
         previewed ? 'border-accent/60 bg-accent/10' : 'border-edge'
       }`}
     >
       <button
         type="button"
-        data-testid={`layout-preview-${proposal.rank}`}
+        data-testid={`layout-preview-${position}`}
         className="flex w-full items-baseline justify-between gap-2 text-left"
         onClick={onPreview}
       >
-        <span className="text-[11px] text-ink">#{proposal.rank}</span>
+        {/*
+          Owner decision: *"Do not present a tie as '#1'. If two or more candidates are
+          indistinguishable under the available evidence, they are tied. Show: Tied, same measurable
+          score, same coverage. Never let alphabetical order become engineering preference."*
+
+          The measurement behind it: `perimeter` and `rows` scored an identical 0.283333333 with
+          `compliance_margin` unavailable on both, and the one shown as #1 was chosen by `'p' < 'r'`
+          — the candidate id. The list is still ordered, because a deterministic order is needed to
+          render at all; what it no longer does is dress that order up as a judgement.
+
+          The score and coverage the owner asked to be shown are the two lines directly beneath.
+        */}
+        <span className="text-[11px] text-ink" data-testid={`layout-standing-${position}`}>
+          {proposal.tied ? (
+            <BilingualText text={{ ko: '동점', en: 'Tied' }} />
+          ) : (
+            `#${proposal.rank}`
+          )}
+        </span>
         {/*
           Owner decision D1: *"If coverage is below the required threshold, suppress the total
           ranking. Show: coverage, measurable criteria, unavailable criteria. Do not display a
@@ -405,7 +439,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
               ? 'text-[10px] text-ink-faint'
               : 'font-mono text-[11px] text-ink tabular-nums'
           }
-          data-testid={`layout-total-${proposal.rank}`}
+          data-testid={`layout-total-${position}`}
         >
           {proposal.score.total === null ? 'not scored' : proposal.score.total.toFixed(2)}
         </span>
@@ -417,7 +451,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
       */}
       <p
         className="mt-0.5 text-[10px] text-ink-faint"
-        data-testid={`layout-coverage-${proposal.rank}`}
+        data-testid={`layout-coverage-${position}`}
       >
         Coverage {Math.round(proposal.score.coverage * 100)}%
         {proposal.score.coverage < 1 &&
@@ -434,7 +468,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
       */}
       <p
         className="text-[10px] text-ink-faint"
-        data-testid={`layout-compliance-${proposal.rank}`}
+        data-testid={`layout-compliance-${position}`}
       >
         {proposal.compliance.violations} violations
         {proposal.compliance.review > 0 && ` · ${proposal.compliance.review} to review`}
@@ -447,7 +481,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
         categories, and one of the two has to work on a laptop trackpad with the canvas scrolled
         somewhere else.
       */}
-      <p className="text-[10px] text-ink-faint" data-testid={`layout-changes-${proposal.rank}`}>
+      <p className="text-[10px] text-ink-faint" data-testid={`layout-changes-${position}`}>
         {added > 0 && `${added} added`}
         {added > 0 && (moved > 0 || unchanged > 0) && ' · '}
         {moved > 0 && `${moved} moved`}
@@ -457,7 +491,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
 
       {previewed && (
         <>
-          <table className="mt-1 w-full text-[10px]" data-testid={`layout-breakdown-${proposal.rank}`}>
+          <table className="mt-1 w-full text-[10px]" data-testid={`layout-breakdown-${position}`}>
             <tbody>
               {proposal.score.criteria.map((entry) => (
                 <tr key={entry.criterion} className="text-ink-muted">
@@ -495,7 +529,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
             justification is a document that lies about why a machine is where it is, so the set of
             things this can say is closed and lives in the contract.
           */}
-          <ul className="mt-1 space-y-0.5" data-testid={`layout-reason-${proposal.rank}`}>
+          <ul className="mt-1 space-y-0.5" data-testid={`layout-reason-${position}`}>
             {proposal.explanation.map((item) => (
               <li key={item.code} className="text-[10px] leading-snug text-ink-faint">
                 <span className="block">{renderRationale('ko', item.code, item.params)}</span>
@@ -510,7 +544,7 @@ function ProposalCard({ proposal, results, previewed, onPreview, onApply }: Prop
           */}
           <button
             type="button"
-            data-testid={`layout-apply-${proposal.rank}`}
+            data-testid={`layout-apply-${position}`}
             className="mt-1.5 w-full rounded bg-accent/25 px-2 py-1 text-[11px] text-ink ring-1 ring-accent/60 hover:bg-accent/35"
             onClick={onApply}
           >

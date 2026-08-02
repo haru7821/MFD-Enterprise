@@ -155,6 +155,57 @@ test('offers ranked alternatives, not one answer', async ({ page }) => {
   await expect(page.getByTestId('layout-proposal-2')).toBeVisible();
 });
 
+test('says Tied rather than #1 when the evidence cannot separate two layouts', async ({ page }) => {
+  /*
+   * > Owner decision: *"Do not present a tie as '#1'. If two or more candidates are
+   * > indistinguishable under the available evidence, they are tied. Show: Tied, same measurable
+   * > score, same coverage. Never let alphabetical order become engineering preference."*
+   *
+   * Asserted in the browser rather than only in the ranker, because this decision is entirely about
+   * what an engineer is *shown*. The unit tests prove `tied` is computed; only this proves the word
+   * reaches the screen.
+   *
+   * The four-station fixture produces the tie the decision was written for: `perimeter` and `rows`
+   * score an identical 0.283333333 at identical coverage, `compliance_margin` is unavailable on
+   * both, and before this the first was labelled **#1** on the strength of `'p' < 'r'`.
+   */
+  await traceRoom(page);
+  await generate(page, '4');
+
+  await expect(page.getByTestId('layout-standing-1')).toContainText('Tied');
+  await expect(page.getByTestId('layout-standing-2')).toContainText('Tied');
+  // Korean above English, as every bilingual label in this panel is.
+  await expect(page.getByTestId('layout-standing-1')).toContainText('동점');
+
+  /*
+   * **All three are tied here, and I asserted the opposite first.**
+   *
+   * The unit fixture separates the third layout (0.280260417 against 0.283333333), so this test was
+   * written expecting `layout-standing-3` to keep a number — a statement made from the wrong
+   * scenario's evidence. In the browser's room nothing measurable separates any of the three, and
+   * the panel says so three times. Recorded rather than quietly adjusted, because assuming one
+   * fixture's numbers hold in another is the habit this whole sweep is against.
+   *
+   * It is also the stronger demonstration: before the decision this screen showed #1, #2 and #3
+   * over three layouts the engine cannot tell apart.
+   */
+  await expect(page.getByTestId('layout-standing-3')).toContainText('Tied');
+
+  /*
+   * And the two things the owner asked to be shown beside the word: the same measurable score and
+   * the same coverage. Read from the DOM rather than assumed equal.
+   */
+  const totals = await Promise.all(
+    [1, 2, 3].map((n) => page.getByTestId(`layout-total-${n}`).textContent()),
+  );
+  expect(new Set(totals).size, `totals differ: ${JSON.stringify(totals)}`).toBe(1);
+
+  const coverages = await Promise.all(
+    [1, 2, 3].map((n) => page.getByTestId(`layout-coverage-${n}`).textContent()),
+  );
+  expect(new Set(coverages).size, `coverages differ: ${JSON.stringify(coverages)}`).toBe(1);
+});
+
 test('shows coverage beside every total', async ({ page }) => {
   /*
    * The owner made this mandatory, and this is why: every rule threshold is null until the AK98

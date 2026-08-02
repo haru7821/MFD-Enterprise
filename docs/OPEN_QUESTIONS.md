@@ -403,6 +403,9 @@ that lives only in a commit message is a decision the next person meets as a sur
 > where a decision is looked up. That is the same failure D1–D5 caused when they lived only in commit
 > messages.
 
+| May a tie be presented as a ranked #1? | **No.** Candidates indistinguishable under the available evidence — equal `total` **and** equal `coverage` — share a dense rank and are shown as **Tied / 동점**, with the same score and coverage beside the word. A deterministic internal order is still needed and still exists (candidate id); what changed is that it is no longer *presented* as significance. Measured: on the four-station fixture `perimeter` and `rows` scored an identical 0.283333333 with `compliance_margin` unavailable on both, and the one labelled **#1** was chosen by `'p' < 'r'`. In the browser's room all **three** proposals tie. | D13 · `denseRanks` in `rank.ts`, shared with `optimise.ts`; browser proof in `layout.spec.ts` |
+| May a generated artefact emit an empty `frequencies`? | **No — omit the key.** `[]` was carrying two different meanings at once: *no observations exist* and *this kind never collects frequencies*. Both were live — the one populated kind passed a literal `[]`, and every kind that computes frequencies has no observations. Optional rather than nullable, because `null` would be a third spelling of the same ambiguity. `KNOWLEDGE_VERSION` 1 → 2: the shape widened, but the *meaning* changed, which is what a version identifies. | D14 · `schema.ts`, `aggregate.ts`, pinned by `knowledge.test.ts` |
+
 **The standing rule behind all of them**, restated by the owner in each round: *"If something cannot
 honestly be measured, do not estimate it."* Where implementation must choose between optimistic,
 inferred, approximate and abstaining behaviour, it abstains. The goal is not to maximise PASS; it is

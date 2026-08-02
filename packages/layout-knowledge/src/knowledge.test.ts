@@ -409,25 +409,24 @@ describe('D6 — support counts facilities, and the twins are collapsed', () => 
     expect(dialysisKnowledge.entries.length).toBe(4);
   });
 
-  it('leaves frequencies empty on every shipped entry, and that is the call site, not the data', () => {
+  it('omits frequencies entirely rather than emitting an empty one', () => {
     /*
-     * `frequenciesOf` computes how many distinct drawings support each distinct value — the table
-     * behind *"eleven units did 2,000 and one did 2,700"*. Every shipped entry has `frequencies: []`.
+     * > Owner decision: *"Do not emit an empty `frequencies` field. `[]` currently means two
+     * > different things: no observations exist, and this observation type never collects
+     * > frequencies. Those are different states … Unknown must not masquerade as measured zero."*
      *
-     * Two separate reasons, and neither is a bug in `frequenciesOf`:
+     * Both of those states were live at once. `common_dimension` — the only kind with observations
+     * — passed a literal `[]` at the call site, and every branch that does compute frequencies
+     * belongs to a kind with no observations at all. Every shipped entry therefore carried
+     * `frequencies: []`, which reads as a count that came back empty.
      *
-     * 1. The `common_dimension` branch — the only kind with observations — passes a literal `[]`.
-     * 2. Every branch that *does* call it belongs to a kind with no observations at all.
-     *
-     * So the function and both keys of its comparator are unreachable in production today. That is
-     * how they came to be untested: deleting **either** key of
-     * `b.drawings - a.drawings || compareCodepoint(a.value, b.value)` left all 1,269 tests green.
-     *
-     * Whether dimensions should carry a frequency table, or the field should go, is a product
-     * question and is with the GM. This records the state; it does not paper over it.
+     * Asserted as **key absence**, not as `undefined`: the artefact is JSON, and the difference
+     * between a missing key and a present-but-empty one is the whole decision.
      */
     for (const entry of dialysisKnowledge.entries) {
-      expect(entry.frequencies, entry.subject).toEqual([]);
+      expect(Object.hasOwn(entry, 'frequencies'), `${entry.subject} still emits frequencies`).toBe(
+        false,
+      );
     }
   });
 

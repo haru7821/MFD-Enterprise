@@ -85,6 +85,7 @@ function proposalSet(diff: LayoutProposalSet['proposals'][number]['diff']): Layo
       {
         id: 'candidate-1',
         rank: 1,
+        tied: false,
         placements: diff.map((entry) => entry.placement),
         score: SCORE,
         compliance: { violations: 0, review: 0, unevaluable: 0 },

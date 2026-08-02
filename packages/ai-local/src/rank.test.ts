@@ -12,7 +12,7 @@ import {
   fixtureRoomBoundary,
   fixtureRuleSet,
 } from '../fixtures/index';
-import { type RankInput, rankLayouts } from './rank';
+import { type RankInput, denseRanks, rankLayouts } from './rank';
 
 /**
  * The output contract.
@@ -142,16 +142,55 @@ describe('the ranked output', () => {
     }
   });
 
-  it('ranks in descending total, numbered from one', () => {
+  it('ranks in descending total, densely, so a tie shares a number', () => {
+    /*
+     * > Owner decision: *"Do not present a tie as '#1'. If two or more candidates are
+     * > indistinguishable under the available evidence, they are tied."*
+     *
+     * This asserted `[1, 2, 3]` — a rank per position — which is the behaviour the decision
+     * replaced. On this fixture the answer is now `[1, 1, 2]`, because the first two layouts score
+     * an identical 0.283333333 at identical coverage and nothing measurable separates them.
+     */
     const result = rank();
-    expect(result.layouts.map((layout) => layout.rank)).toEqual(
-      result.layouts.map((_, index) => index + 1),
-    );
+    const ranks = result.layouts.map((layout) => layout.rank);
+
+    expect(ranks).toEqual([1, 1, 2]);
+    expect(result.layouts.map((layout) => layout.tied)).toEqual([true, true, false]);
 
     // A suppressed total (owner decision D1) sorts last rather than as zero — `rank.ts`'s
     // comparator substitutes -1 for null, outside the 0…1 range every real total lives in.
     const totals = result.layouts.map((layout) => layout.score.total ?? -1);
     expect([...totals].sort((a, b) => b - a)).toEqual(totals);
+  });
+
+  it('marks a tie only when both the total and the coverage match', () => {
+    /*
+     * The equality behind `tied`, stated. Two layouts are tied when the *evidence* cannot separate
+     * them — equal total **and** equal coverage — not when they merely round to the same total.
+     * `denseRanks` is exercised directly here so the rule can be read without a solver run.
+     */
+    const score = (total: number | null, coverage: number) =>
+      ({ total, coverage }) as unknown as Parameters<typeof denseRanks>[0][number];
+
+    expect(denseRanks([score(0.5, 0.25), score(0.5, 0.25), score(0.4, 0.25)])).toEqual([
+      { rank: 1, tied: true },
+      { rank: 1, tied: true },
+      { rank: 2, tied: false },
+    ]);
+
+    // Same total, different coverage: two layouts backed by different amounts of evidence are not
+    // indistinguishable, and must not be reported as tied.
+    expect(denseRanks([score(0.5, 0.25), score(0.5, 0.3)])).toEqual([
+      { rank: 1, tied: false },
+      { rank: 2, tied: false },
+    ]);
+
+    // Two unmeasurable totals *are* indistinguishable — that is exactly the case where claiming an
+    // order would assert something the engine could not measure.
+    expect(denseRanks([score(null, 0.2), score(null, 0.2)])).toEqual([
+      { rank: 1, tied: true },
+      { rank: 1, tied: true },
+    ]);
   });
 
   it('produces identical rankings twice, ids included', () => {
@@ -160,25 +199,31 @@ describe('the ranked output', () => {
     expect(JSON.stringify(rank())).toBe(JSON.stringify(rank()));
   });
 
-  it('breaks a tie on compliance margin rather than on generation order', () => {
+  it('orders tied layouts internally by id, without presenting that order as a judgement', () => {
     /*
-     * With no thresholds in the rule set every layout's compliance margin is unavailable, so this
-     * fixture exercises the *fallback* leg: a stable, total order on candidate id.
+     * **Renamed.** This was called *"breaks a tie on compliance margin rather than on generation
+     * order"*, which describes something it has never done: with no thresholds in the rule set,
+     * every compliance margin is unavailable, so the margin leg cannot run. The body always said
+     * so; the title did not, and a title is what someone reads when deciding whether the case is
+     * covered.
      *
-     * Asserted by sorting the returned ids and comparing — if the comparator ever fell through to
-     * `Array.prototype.sort`'s stability, the order would be generation order, which is neither
-     * meaningful nor guaranteed to survive a change to the generator.
+     * What it does check is the internal order — the deterministic fallback on candidate id, which
+     * the owner's decision explicitly permits and explicitly forbids presenting as significance.
+     * The `tied` flag beside it is what carries the presentation.
      */
     const result = rank();
     const tied = result.layouts.filter(
       (layout) => layout.score.total === result.layouts[0]?.score.total,
     );
 
-    if (tied.length > 1) {
-      const ids = tied.map((layout) => layout.candidateId);
-      expect([...ids].sort()).toEqual(ids);
-    }
-    expect(result.layouts.length).toBeGreaterThan(0);
+    // Declared, not assumed: the `if` this replaces made the assertion skippable, and a fixture
+    // that stopped producing a tie would have quietly stopped testing anything.
+    expect(tied.length).toBeGreaterThan(1);
+
+    const ids = tied.map((layout) => layout.candidateId);
+    expect([...ids].sort()).toEqual(ids);
+    // And every one of them is reported as tied rather than as a ranking.
+    expect(tied.every((layout) => layout.tied)).toBe(true);
   });
 
   it('explains itself in codes rather than prose', () => {

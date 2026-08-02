@@ -1,6 +1,6 @@
 {
   "kind": "circulation_path",
-  "knowledgeVersion": 1,
+  "knowledgeVersion": 2,
   "generatedFrom": [
     "knowledge/observations/hospital-dataset-analyzer.json",
     "knowledge/observations/verification-hospital_044-dialysis.json"

@@ -1,6 +1,6 @@
 {
   "kind": "common_dimension",
-  "knowledgeVersion": 1,
+  "knowledgeVersion": 2,
   "generatedFrom": [
     "knowledge/observations/hospital-dataset-analyzer.json",
     "knowledge/observations/verification-hospital_044-dialysis.json"
@@ -17,7 +17,6 @@
         "maximum": 2700,
         "unit": "mm"
       },
-      "frequencies": [],
       "support": {
         "facilities": 5,
         "drawings": 18,
@@ -200,7 +199,6 @@
         "maximum": 2000,
         "unit": "mm"
       },
-      "frequencies": [],
       "support": {
         "facilities": 24,
         "drawings": 117,
@@ -1274,7 +1272,6 @@
         "maximum": 2100,
         "unit": "mm"
       },
-      "frequencies": [],
       "support": {
         "facilities": 9,
         "drawings": 36,
@@ -1619,7 +1616,6 @@
         "maximum": 7402,
         "unit": "mm"
       },
-      "frequencies": [],
       "support": {
         "facilities": 1,
         "drawings": 1,

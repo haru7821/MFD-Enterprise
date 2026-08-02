@@ -211,6 +211,7 @@ export function runOptimiser(request: OptimiseRequest): LayoutProposalSet {
     proposals: result.proposals.map((proposal) => ({
       id: proposal.candidateId,
       rank: proposal.rank,
+      tied: proposal.tied,
       placements: proposal.placements,
       score: proposal.score,
       compliance: proposal.compliance,
@@ -273,6 +274,7 @@ function proposalOf(
   return {
     id: layout.candidateId,
     rank: layout.rank,
+    tied: layout.tied,
     placements: layout.placements,
     score: layout.score,
     compliance: layout.compliance,

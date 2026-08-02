@@ -25,7 +25,30 @@ import type { Placement } from '@mfd/document-model';
  */
 
 export interface RankedLayout {
+  /**
+   * Position among the alternatives, **dense** — tied layouts share a number.
+   *
+   * > Owner decision: *"Do not present a tie as #1. If two or more candidates are indistinguishable
+   * > under the available evidence, they are tied. Never let alphabetical order become engineering
+   * > preference."*
+   *
+   * So this is 1, 1, 2 where the first two are indistinguishable, not 1, 2, 3. See {@link tied}.
+   */
   readonly rank: number;
+  /**
+   * True when another layout in this result is indistinguishable from this one.
+   *
+   * Indistinguishable means **equal total and equal coverage** — the two numbers the product
+   * actually measured. It does not mean the layouts are the same; it means the evidence available
+   * cannot tell them apart, and saying which is better would be an assertion the engine cannot
+   * support.
+   *
+   * The measurement that forced this: on a four-station fixture, `perimeter` and `rows` scored an
+   * identical 0.283333333, `compliance_margin` was unavailable on both (every rule threshold is
+   * null until A-1), and the layout shown as **#1** was chosen by `'p' < 'r'` — the candidate id.
+   * Alphabetical order was standing in for engineering preference on the headline answer.
+   */
+  readonly tied: boolean;
   readonly candidateId: string;
   readonly placements: readonly Placement[];
   readonly score: ScoreBreakdown;
@@ -79,6 +102,41 @@ export interface RankResult {
 
 const DEFAULT_LIMIT = 3;
 
+/**
+ * Dense ranks over the **evidence**, and which of them are ties.
+ *
+ * > Owner decision: *"Do not present a tie as #1 … The implementation may still need a
+ * > deterministic internal order, but that order must never be presented as engineering
+ * > significance."*
+ *
+ * Those are two separate jobs and this separates them. `compare` still orders the array — the
+ * candidate id gives a deterministic internal order, which is needed for reproducibility. This
+ * decides what the engineer is *told*: layouts the evidence cannot separate share a number and are
+ * marked tied, so 1, 1, 2 rather than 1, 2, 3.
+ *
+ * **Indistinguishable is equal `total` and equal `coverage`** — the two numbers the product
+ * actually measured. Two `null` totals are equal, and deliberately so: `null` is D1's "not
+ * measurable", and two unmeasurable layouts are exactly the case where claiming an order would be
+ * an assertion the engine cannot support.
+ *
+ * Shared by `rankLayouts` and `optimiseLayout` rather than written twice. Both present a list to
+ * the same engineer, and two implementations of "these are tied" could disagree in one screen.
+ */
+export function denseRanks(
+  scores: readonly ScoreBreakdown[],
+): readonly { rank: number; tied: boolean }[] {
+  const ranks: number[] = [];
+  for (const [index, score] of scores.entries()) {
+    const previous = scores[index - 1];
+    const same =
+      previous !== undefined &&
+      previous.total === score.total &&
+      previous.coverage === score.coverage;
+    ranks.push(index === 0 ? 1 : same ? ranks[index - 1]! : ranks[index - 1]! + 1);
+  }
+  return ranks.map((rank) => ({ rank, tied: ranks.filter((other) => other === rank).length > 1 }));
+}
+
 export function rankLayouts(input: RankInput): RankResult {
   const pipeline = generateFeasibleCandidates(input);
 
@@ -125,8 +183,13 @@ export function rankLayouts(input: RankInput): RankResult {
   scored.sort((a, b) => compare(a, b));
 
   const limit = input.limit ?? DEFAULT_LIMIT;
-  const layouts = scored.slice(0, limit).map((item, index) => ({
-    rank: index + 1,
+  const shown = scored.slice(0, limit);
+
+  const standing = denseRanks(shown.map((item) => item.score));
+
+  const layouts = shown.map((item, index) => ({
+    rank: standing[index]!.rank,
+    tied: standing[index]!.tied,
     candidateId: item.entry.candidate.id,
     placements: item.entry.placements,
     score: item.score,
