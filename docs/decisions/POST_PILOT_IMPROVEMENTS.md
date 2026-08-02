@@ -5,9 +5,27 @@
 > Recorded, **not scheduled and not implemented**. Nothing here may be started before Pilot-001
 > completes and the first genuine human confirmation exists.
 
-The current priority is unchanged: complete the first real pilot, obtain the first confirmation
-(D9–D12), complete the operational validation, freeze the repository state. **No feature expansion
-before Pilot-001 is completed.**
+**The Pilot-001 process is FROZEN.** The only remaining objective before execution is obtaining a
+real drawing.
+
+## Priority order after Pilot-001 executes
+
+| | |
+| --- | --- |
+| **1** | Complete the first genuine engineer review |
+| **2** | Obtain the first real D9–D12 confirmation |
+| **3** | Review all findings from Pilot-001 |
+| **4** | Decide whether any finding requires a **product change**, a **documentation change**, a **process change**, or **no action** |
+
+**Only after that review may new implementation work begin.**
+
+Not to be started: **OI-1** (below), **D17** (deferred), or any new functionality.
+
+**Pilot-001 is the baseline operational validation of VantiCAD Layout.** Every future improvement
+must be justified by evidence collected during Pilot-001 or later real engineering use — including
+everything recorded in this document. An item here is a candidate, not a commitment: if the pilot
+produces no evidence that it matters, that is an answer, and *no action* is one of the four
+outcomes priority 4 may reach.
 
 ---
 

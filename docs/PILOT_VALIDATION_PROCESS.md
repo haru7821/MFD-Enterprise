@@ -6,6 +6,20 @@
 > [`RELEASE_PROCESS.md`](RELEASE_PROCESS.md) §4 and
 > [`release/RELEASE_GATE.md`](release/RELEASE_GATE.md) §3.
 
+> ## FROZEN — owner decision
+>
+> **Pilot-001 preparation is complete.** This process is frozen exactly as documented. No further
+> pilot features, no redesign of the workflow, no new functionality.
+>
+> **The only remaining objective before execution is obtaining a real drawing.**
+>
+> Pilot-001 is the **baseline operational validation** of VantiCAD Layout. Every future improvement
+> must be justified by evidence collected during Pilot-001 or later real engineering use — see
+> [`decisions/POST_PILOT_IMPROVEMENTS.md`](decisions/POST_PILOT_IMPROVEMENTS.md).
+>
+> A change to this document before the pilot runs would mean the pilot validated a process nobody
+> used. That is the whole reason it is frozen.
+
 ---
 
 ## 1 · What Pilot-001 is, and what it is not
@@ -60,20 +74,25 @@ guard working.
 
 Recorded **before** the run, so the run cannot be described after the fact by whatever it produced.
 
-**The user uploads a drawing file. That is the only thing required of them.** Everything the system
-can derive from the file, it derives; everything it cannot derive, it either asks for optionally or
-defers to the stage where it is genuinely needed. A user who cannot name a `drawingId` is not
-blocked, because inventing an identifier scheme for them to type was never protecting anything.
+**Pilot-001 runs on a catalogued drawing.** The operator names one `drawingId` from
+`knowledge/dataset.json`; everything else the system derives, asks for optionally, or defers.
 
 | Step | Who | Field |
 | --- | --- | --- |
-| 1 · Upload the drawing file | **User** | — the only required input |
-| 2 · Generate the identifier | System | `drawingId`, `drawingIdDerivedFrom` |
-| 3 · Record what was uploaded | System | `sourceFilename`, `sha256` |
-| 4 · Detect the page count | System | `pageCount` |
-| 5 · Select a page, or analyse the whole document | **User, optionally** | `selectionMode`, `selectedPages` |
-| 6 · Requester and operator | User, optionally | `context.requestedBy`, `context.operator` |
-| 7 · Reviewing engineer | **Not here** | Required only at the confirmation stage |
+| 1 · Name a catalogued drawing | **User** | `drawingId` — the only required input |
+| 2 · Record what it is | System | `sourceFilename`, `sha256`, verified against the catalogue |
+| 3 · Detect the page count | System | `pageCount` |
+| 4 · Select a page, or analyse the whole document | **User, optionally** | `selectionMode`, `selectedPages` |
+| 5 · Requester and operator | User, optionally | `context.requestedBy`, `context.operator` |
+| 6 · Reviewing engineer | **Not here** | Required only at the confirmation stage |
+
+> **Corrected before freezing.** This section previously described an upload-and-generate flow — the
+> user supplying a file and the system minting an identifier. **That flow is OI-1, and it is not
+> implemented**: there is no single-file ingest path, so `drawingId` is still built from a
+> hospital-shaped folder. Freezing the process with that description would have frozen a statement
+> about a capability the repository does not have, which is the one failure this project exists to
+> prevent. The workflow is unchanged — only the description now matches it. See
+> [`decisions/POST_PILOT_IMPROVEMENTS.md`](decisions/POST_PILOT_IMPROVEMENTS.md).
 
 Still recorded, because they change the answer and the system knows them: catalogue record versions,
 rule set id / version / status, scoring model ref, the git commit SHA (see below), and the execution
