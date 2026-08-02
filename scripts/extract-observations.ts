@@ -173,7 +173,9 @@ for (const drawing of drawings) {
   });
 }
 
-observations.sort((a, b) => a.id.localeCompare(b.id));
+// Codepoint order — this writes a committed artefact, and `localeCompare` would make its bytes
+// depend on the machine that generated them.
+observations.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
 const file = { datasetId: 'dialysis-drawings', observations };
 parseObservationFile(file, 'knowledge/observations/hospital-dataset-analyzer.json');

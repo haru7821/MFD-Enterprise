@@ -29,6 +29,11 @@ export default defineConfig({
       'packages/*/src/**/*.test.ts',
       'apps/web/src/**/*.test.ts',
       'scripts/**/*.test.ts',
+      // Repo-wide architecture rules, which belong to no package. Playwright's specs in the same
+      // tree are `.spec.ts` and are not matched. The gap this closes is the one described above,
+      // one directory over: a test written here would not have been collected either, and
+      // `everyTestIsCollected.test.ts` now fails rather than letting the next one go quiet.
+      'tests/**/*.test.ts',
     ],
     // The PDF renderer embeds and subsets a 2.7 MB Korean font twice per case, so its
     // suite is slower than a geometry test. Generous, but not unbounded: a hang is a bug.

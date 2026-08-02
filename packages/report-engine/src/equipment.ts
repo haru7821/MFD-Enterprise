@@ -111,7 +111,10 @@ export function equipmentUsage(
 
   const usage = [...counts.entries()]
     .map(([id, quantity]) => ({ object: catalog.require(id), quantity }))
-    .sort((a, b) => a.object.model.localeCompare(b.object.model));
+    // Codepoint order: `localeCompare` reads the runtime's locale, so the same document would
+    // render its equipment table in a different order on a different machine. Banned repo-wide by
+    // `packages/document-model/src/isomorphism.test.ts`.
+    .sort((a, b) => (a.object.model < b.object.model ? -1 : a.object.model > b.object.model ? 1 : 0));
 
   return { usage, unknownEquipmentIds: [...unknown].sort() };
 }

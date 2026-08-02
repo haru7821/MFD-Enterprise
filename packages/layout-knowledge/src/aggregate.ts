@@ -1,3 +1,4 @@
+import { compareCodepoint } from './verification';
 import { facilityOf, strongestMethod, type DrawingRef, type ObservationMethod, type Support } from './provenance';
 import {
   KNOWLEDGE_KINDS,
@@ -28,12 +29,34 @@ import {
  * not their average, because an average of 1,800 and 1,900 is 1,850 — a number no drawing showed.
  */
 
-/** Ordered by drawing, then observation id: the sort is the determinism. */
+/**
+ * Ordered by drawing, then observation id — **codepoint order, so the sort really is the
+ * determinism it claims to be.**
+ *
+ * This said *"the sort is the determinism"* while sorting with `localeCompare`, which reads the
+ * runtime's locale.
+ *
+ * **And the corpus discriminates**, so this was not a latent risk — it was live. Switching to
+ * codepoint order moved 171 lines of `knowledge/derived/common-dimension.json`: `_reference/30대_
+ * sample.pdf` changes position, and so does every `Hospital_NNN/x.pdf` against its `x_2.pdf` twin,
+ * because ICU gives `_` a variable weight and codepoint order does not. A Korean filename and an
+ * underscore suffix are all it took.
+ *
+ * Worth recording how that was established, because the first attempt got it backwards: a probe
+ * looking for *case-folding collisions* among the 300 drawing ids found none, and this comment
+ * briefly claimed the artefact was "byte-stable by luck". The regeneration test then failed. The
+ * probe had asked the wrong question — collision, not ordering disagreement — and the claim went in
+ * before the evidence, which is the failure this whole sweep is against.
+ *
+ * `candidates.ts` had already written down why `localeCompare` is wrong. Knowing it in one file did
+ * not stop it being used in five others, so the rule is now a test that bans it outright.
+ */
 function ordered(observations: readonly Observation[]): Observation[] {
-  return [...observations].sort((a, b) => {
-    const drawing = a.source.drawing.drawingId.localeCompare(b.source.drawing.drawingId);
-    return drawing !== 0 ? drawing : a.id.localeCompare(b.id);
-  });
+  return [...observations].sort(
+    (a, b) =>
+      compareCodepoint(a.source.drawing.drawingId, b.source.drawing.drawingId) ||
+      compareCodepoint(a.id, b.id),
+  );
 }
 
 /**
@@ -66,7 +89,7 @@ function drawingsOf(observations: readonly Observation[]): DrawingRef[] {
     const { drawing } = observation.source;
     if (!byId.has(drawing.drawingId)) byId.set(drawing.drawingId, drawing);
   }
-  return [...byId.values()].sort((a, b) => a.drawingId.localeCompare(b.drawingId));
+  return [...byId.values()].sort((a, b) => compareCodepoint(a.drawingId, b.drawingId));
 }
 
 function supportOf(observations: readonly Observation[]): Support {
@@ -111,7 +134,7 @@ function frequenciesOf(
 
   return [...drawingsByValue.entries()]
     .map(([value, drawings]) => ({ value, drawings: drawings.size }))
-    .sort((a, b) => (b.drawings - a.drawings) || a.value.localeCompare(b.value));
+    .sort((a, b) => b.drawings - a.drawings || compareCodepoint(a.value, b.value));
 }
 
 /**
@@ -145,8 +168,8 @@ function groupBy(
 
   return [...groups.values()].sort(
     (a, b) =>
-      a.subject.localeCompare(b.subject) ||
-      (a.roomFunction ?? '').localeCompare(b.roomFunction ?? ''),
+      compareCodepoint(a.subject, b.subject) ||
+      compareCodepoint(a.roomFunction ?? '', b.roomFunction ?? ''),
   );
 }
 
