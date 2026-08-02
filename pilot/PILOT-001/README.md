@@ -37,7 +37,7 @@ Each folder's `README.md` defines the files expected in it.
 | --- | --- | --- |
 | `confirmed` | The engineer reviewed the output and it is correct | **Created** |
 | `rejected` | The engineer reviewed the output and it is wrong | **Must not be created** |
-| `stopped` | The run could not reach a reviewable result | **Must not be created** |
+| `stopped` | A **valid completed outcome** — the pilot could not reach a point where an engineer could judge anything | **Must not be created** — no review occurred, so there is nothing to sign |
 
 **`rejected` results must not create confirmation records.** Not "should not" — a confirmation
 asserts that a person checked something and found it correct, so a confirmation attached to a
