@@ -1,181 +1,293 @@
-# MFD-Enterprise
+# CAD APP
 
-**MFD-E TS Edition** — an **AI-assisted dialysis facility engineering platform** for Vantive
-Technical Service engineers.
+**Evidence-first CAD Layout Decision Support Engine**
 
-It is not a replacement for CAD. Its job is to help a TS engineer evaluate dialysis installation
-feasibility quickly and accurately, and every engineering value it applies is data it can cite back
-to a manual, not a number someone wrote from memory.
-
-That discipline is what shapes the AI work in Sprint 6: the assistant proposes, explains, retrieves
-and summarises. The rule engine judges, the report states, and a person decides.
-
-**Current release: v0.5 Alpha — Sprint 5 delivered: the engineering report.** Import a hospital
-floor plan, calibrate it, set its origin, trace the rooms and the things in the way, place
-equipment across several floors, see every installation requirement checked live, and generate
-a bilingual Korean/English installation review report as PDF, HTML or JSON.
-
-Current scope is defined by
+The engineering core of **MFD-E** (MFD-Enterprise), an AI-assisted dialysis facility engineering
+platform for Vantive Technical Service engineers. It is not a CAD drawing tool and not a
+replacement for one: it does not draw a building, it judges a layout and states how far it can
+stand behind the judgement. Current product scope is
 [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md).
-[CLAUDE.md](CLAUDE.md) describes the long-term vision; where the two differ, the TS Edition
-specification governs.
 
 ---
 
-## Quick start
+## Philosophy
 
-Requires **Node.js ≥ 20.19** and **pnpm ≥ 10** (`npm install -g pnpm`).
+**The engine never claims an ordering that the evidence does not support.**
 
-```bash
-pnpm install     # install dependencies for every workspace
-pnpm dev         # start the designer at http://localhost:5173
+Everything below follows from that sentence, and from its consequence — that a system which cannot
+tell *"I checked and it passed"* from *"I could not check"* will eventually tell an engineer the
+second while sounding like the first. Nine of the ten defects found during this project's standing
+audit were that single failure wearing different clothes.
+
+So the engine distinguishes **three** states, never two: passed, failed, and **could not be
+measured**. The third is carried explicitly, by reason code (`RC-9xx`, `SC-9xx`), all the way to the
+screen. A criterion that could not be measured never becomes a zero, never renormalises out of a
+total, and never ranks like a bad result.
+
+Where implementation must choose between optimistic, inferred, approximate and abstaining
+behaviour, it abstains. The goal is not to maximise PASS. It is to maximise **truthful** PASS.
+
+**What that costs today**, stated here because leaving it out would break the rule above:
+installation planning standards (A-1) have not been supplied, so every clearance rule carries a
+`null` threshold, every clearance finding reads `RC-110`, and every report verdict is
+**판정 불가 / Inconclusive**. `compliance_margin` — 40 % of the scoring model — is unmeasurable on
+every real project. The engine abstains correctly and says so; it cannot yet answer the question it
+exists to answer. Release status and the conditions for production are in
+[docs/release/RELEASE_GATE.md](docs/release/RELEASE_GATE.md).
+
+---
+
+## Features
+
+- **Geometry-aware candidate comparison** — candidates are compared by `geometryKey`: the exact
+  equipment, position, rotation and mirroring of every placement. Exact, not hashed — at 32 bits a
+  collision would merge two genuinely different layouts, and merging is the operation that destroys
+  evidence. Candidates that are the same arrangement collapse into one proposal *before* scoring.
+- **Evidence-based ranking** — a weighted score over a declared model, with the divisor fixed at the
+  model's **whole** weight, so an unmeasured criterion contributes nothing and a score can only be
+  earned. Below `minimumCoverage` (0.25) no total is offered at all — `null`, not zero.
+- **Dense ranking with explicit ties** — proposals the evidence cannot separate share a rank number
+  and are labelled **Tied / 동점**, never `#1` and `#2`. Tied means equal total *and* equal
+  coverage; two unmeasurable layouts are exactly where claiming an order would assert what the
+  engine cannot support.
+- **Deterministic output** — the same evidence produces the same bytes, on any machine, on any
+  re-run. No `localeCompare`, one declared clock boundary, no randomness; asserted by architecture
+  tests and by a replay harness that shuffles inputs and compares outputs.
+- **Explainable recommendations** — the solver emits **codes with parameters**, never prose. Every
+  sentence an engineer reads is composed at render time from a rationale code, so an explanation
+  cannot drift from the data it describes.
+- **English / Korean explanations** — both rendered, never one as a fallback for the other. Korean
+  particles are computed from the Hangul syllable (`(code - 0xAC00) % 28 !== 0`) rather than kept in
+  a table, and the helper **abstains** — falling back to commas — for a word whose ending it cannot
+  read, because a guessed particle is a mistake printed in front of an engineer.
+
+---
+
+## Example
+
+Four dialysis stations in an 8,000 × 6,000 mm room with five service reference points. The output
+below was produced by running the solver on the shipped fixture, not written by hand; the same case
+is asserted in `packages/ai-local/src/rank.test.ts`.
+
+### Input
+
+```ts
+rankLayouts({
+  room:            [{x:0,y:0}, {x:8000,y:0}, {x:8000,y:6000}, {x:0,y:6000}],   // mm
+  object:          fixtureMachine(),      // the dialysis station to place
+  stationTarget:   4,
+  pitchPadding:    1200,
+  planStatus:      'calibrated',
+  referencePoints: [
+    { kind: 'ro_supply',        position: {x:    0, y:    0} },
+    { kind: 'electrical_panel', position: {x: 8000, y:    0} },
+    { kind: 'drain',            position: {x:    0, y: 6000} },
+    { kind: 'access_entry',     position: {x: 4000, y:    0} },
+    { kind: 'staff_base',       position: {x: 4000, y: 6000} },
+  ],
+  scoring: dialysisScoringModel,
+})
 ```
 
-Other commands, all run from the repository root:
+↓
 
-| Command | What it does |
+### Output
+
+Three strategies generated candidates. `rows` and `perimeter` produced the **same arrangement**, so
+they collapsed into one proposal that records both:
+
+```jsonc
+{
+  "rank": 1, "tied": false,
+  "candidateId": "perimeter-4-033p4n9",
+  "strategies":  ["rows", "perimeter"],     // convergence kept, in canonical order (D16)
+  "total": 0.283333333, "coverage": 0.4,
+  "unavailable": ["compliance_margin:SC-904", "installation_feasibility:SC-905"],
+  "compliance": { "violations": 0, "review": 8, "unevaluable": 0 }
+}
+{
+  "rank": 2, "tied": false,
+  "candidateId": "columns-4-0l767z9",
+  "strategies":  ["columns"],
+  "total": 0.280260417, "coverage": 0.4,
+  "unavailable": ["compliance_margin:SC-904", "installation_feasibility:SC-905"],
+  "compliance": { "violations": 0, "review": 8, "unevaluable": 0 }
+}
+```
+
+Note what the engine **declines** to do. Two of the model's criteria could not be measured, so
+`coverage` is 0.4 and each `unavailable` entry names *why*, in the criterion's own reason code:
+
+- **`SC-904` — No Requirement To Compare.** `compliance_margin` cannot be computed because no
+  applicable threshold exists to measure headroom above. That is A-1 reaching the score.
+- **`SC-905` — No Observed Figure.** `installation_feasibility` needs a delivery allowance, and no
+  figure for it has been observed in the drawing dataset. It replaced a 150 mm constant written
+  into the solver — a planning assumption with nothing behind it.
+
+Neither scores as a zero, and neither is quietly divided out of the total. The score that remains
+is 40 % of the model, and `AR-402` below says so on screen.
+
+**This fixture scores better than a real project can.** Its machine declares service clearances, so
+`maintenance_access` (weight 0.15) is measurable here; the shipped AK98 record has all four sides
+`null`, which makes three criteria unmeasurable rather than two — 0.75 of the model — and puts the
+reachable coverage ceiling at exactly `minimumCoverage`, 0.25. The example is chosen to show the
+ranking machinery working, not to represent what today's catalogue returns.
+
+These two proposals are **not** tied — 0.2833 separates from 0.2803. The tie path is real and is
+exercised where it actually occurs: `tests/e2e/layout.spec.ts` drives a room in which all three
+proposals tie, and asserts the panel prints **Tied / 동점** instead of a ranking.
+
+↓
+
+### Explanation
+
+```
+AR-105  EN  Arranged 4 stations in one layout that the rows and perimeter strategies
+            each produced independently.
+        KO  4대를 배치했으며, 행 배열과 벽면 배열 방식이 각각 동일한 배열에 도달했습니다.
+
+AR-401  EN  This improves future expansion and worsens RO piping.
+        KO  증설 여유 항목이 개선되고 RO 배관 길이 항목이 저하되었습니다.
+
+AR-402  EN  2 criteria could not be measured, so this score covers 40% of the model.
+        KO  2개 항목을 측정할 수 없어 평가 모델의 40%만 반영된 점수입니다.
+```
+
+`AR-105` says *each produced independently* — not *"agreed"*, not *"converged"*, and never *"best"*,
+*"winning"* or *"selected"*: the strategies do not confer, and their independence is the whole
+evidential value of naming them. That forbidden vocabulary is asserted by test.
+
+`AR-402` is the abstention, carried into the sentence the engineer reads rather than left in a field
+nobody renders.
+
+---
+
+## Architecture
+
+Nine packages under `packages/`, each independently testable, plus the web client:
+
+```
+document-model    the project file and its migrations    cad-engine       geometry, units, transforms
+object-library    equipment catalogue                    rule-engine      rules → findings
+ai-contract       scoring model, rationale codes         ai-local         candidates, scoring, ranking
+ai-planner        installation planning                  report-engine    JSON / HTML / PDF
+layout-knowledge  observations → derived knowledge       apps/web         React + Vite designer
+```
+
+The dependency rule is one-way and enforced by ESLint rather than by memory: `apps/` may import
+`packages/`, never the reverse, and `packages/` may not import a UI framework, a renderer or a Node
+built-in. `ai-local`, `document-model` and `rule-engine` are **pure and isomorphic** — no Node type
+dependency at all, asserted by an architecture test.
+
+Engineering values are never written in code. Search the rule engine for a millimetre figure and
+there is not one: every number comes from a rule file under `standards/` or an equipment record, and
+every finding cites which.
+
+### Owner decisions D1–D16
+
+The engineering semantics of this system are decisions, not defaults. Each is recorded with the
+measurement that forced it in [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) §D, and each maps to
+a guard in [docs/release/REGRESSION_PROTECTION_MAP.md](docs/release/REGRESSION_PROTECTION_MAP.md).
+
+| | Decision |
 | --- | --- |
-| `pnpm dev` | Run the web client with hot reload |
-| `pnpm build` | Type-check and produce a production build in `apps/web/dist` |
-| `pnpm preview` | Serve the production build locally |
-| `pnpm test` | Run the engine unit tests (506) |
-| `pnpm test:e2e` | Run the browser specs against a production build (87) |
-| `pnpm bench` | Rule engine performance baseline |
-| `pnpm test:perf` | Frame-time measurement — an instrument, not a gate |
-| `pnpm typecheck` | Type-check every workspace |
-| `pnpm lint` | Lint every workspace |
+| **D1** | No renormalised total. Below `minimumCoverage` 0.25 there is no total — `null`, not zero. Dividing by *available* weight meant deleting evidence raised the score, to a perfect 1.0000 at coverage 0.20. |
+| **D2** | Touching is not collision — proper overlap only, one predicate for every subsystem. |
+| **D3** | Clearance must see walls and obstructions, and **abstains** rather than reporting clear past one. |
+| **D4** | `compliance_margin` is unavailable on a non-rectangular room (`SC-908`). No bounding-box approximation — it over-reported 9.6× on an L-shaped room. |
+| **D5** | An unevaluable placement means the level cannot receive a PASS. |
+| **D6** | Support counts **independent facilities**, not files. Measured: 117 files, 24 sites. |
+| **D7** | Completion means a **human-confirmed** run. Batch execution alone is not completion. |
+| **D8** | D4's rule extends to `maintenance_access`, ordered after the `SC-904` check so the reported reason stays one an engineer can act on. |
+| **D9** | Confirmations live in a file **no batch writes**, so a re-run cannot destroy a signature. |
+| **D10** | A confirmation binds to the run's **outcome**, not merely the file's bytes — it stops applying the moment the pipeline's reading changes. |
+| **D11** | One confirmation applies; duplicates and stale ones are **reported, never deleted**. |
+| **D12** | Confirming a stop is a **separate act** — separate field, separate count, never summed into completion. |
+| **D13** | A tie is never presented as `#1`. Alphabetical order may not become engineering preference. |
+| **D14** | No empty `frequencies` — omit the key. Unknown must not masquerade as measured zero. |
+| **D15** | Support counts distinct **plans**, not files; the field is renamed `plans` rather than silently renumbered. |
+| **D16** | `RankedLayout.strategies` is ordered as the sentence built from it is ordered. One fact, one order. |
 
-## What v0.5 Alpha does
-
-The complete feasibility-review workflow, end to end:
-
-1. **Pick the floor.** A project holds as many levels as the building has; each one keeps
-   its own drawing, rooms and equipment.
-2. **Import the hospital's drawing** — PDF, PNG or JPG. PDF pages are rasterised; the
-   image is embedded in the project file, so a project emailed to a colleague arrives with
-   its floor plan.
-3. **Calibrate it.** Pick two points on a known distance and type the distance. There is
-   no skip: until the scale is set the drawing has no millimetres in it, the status bar
-   says so, and every finding is capped at YELLOW.
-4. **Set the origin** by clicking the point on the drawing that is (0, 0). The layout stays
-   exactly where it is; only the coordinates renumber.
-5. **Trace the rooms**, and the **columns, shafts and fixed obstacles** equipment must not
-   overlap. Live segment length and running area while drawing. Reshape afterwards by
-   dragging a vertex, clicking a midpoint to add one, or Delete to remove one — vertices
-   snap onto a neighbouring room's corner, so a shared party wall is shared exactly.
-6. **Place equipment** from the catalogue, drag it, rotate it with `[` and `]`, delete it.
-7. **Read the findings.** Clearance, equipment collision and boundary checks, each naming
-   the machine, the threshold applied, where that threshold came from, and whether the data
-   behind it is verified or provisional.
-8. **Generate the report.** A bilingual Korean/English installation review document —
-   cover, executive summary, equipment schedule, floor plan with numbered equipment,
-   validation results with the threshold and its source, an installation checklist, equipment
-   datasheets, every applied standard, and a fixed liability statement. Preview it on screen,
-   then download PDF, HTML or JSON. The drawing is **vector by default**; the scanned plan can be
-   shown beneath it, or alone as a debug output, and the choice is stored in the project.
-9. **Save and reopen** as a `.mfd.json` file, validated in both directions.
-
-Undo and redo cover all of it. One drag is one undo step; one renaming session is one undo
-step; deleting a whole floor comes back whole.
-
-**Web-native, and installable.** Desktop browsers are the primary target and tablets the secondary
-one: the canvas is driven by pointer events, so touch works, and a two-finger pinch zooms. The
-application installs as a PWA and its own shell is cached, so a second visit opens with no network.
-Remembering recent *projects* offline is a later sprint. No Electron, no desktop-only code path —
-see [docs/architecture/PLATFORM_SUPPORT.md](docs/architecture/PLATFORM_SUPPORT.md).
-
-Underneath:
-
-- **Millimetre model space.** Everything is stored in millimetres; pixels exist only while
-  drawing to the screen, and are never persisted.
-- **No engineering value is written in code.** Search the rule engine for a millimetre
-  figure and you will not find one — every number comes from a rule file or an equipment
-  record, and every finding says which.
-- **Manufacturer dimensions and planning footprint are separate.** The AK98 is a
-  585 × 620 × 1305 mm machine planned at 800 × 800 mm. The engines measure the footprint;
-  the manufacturer's figures are immutable reference data that nothing computes with and
-  the report quotes. Rounding a footprint up to make a layout work can no longer erase the
-  measurement of the machine that arrives on site.
-- **Nothing provisional can be signed off.** A pass computed from placeholder data reports
-  YELLOW, never GREEN. A *violation* is never softened for the same reason in reverse:
-  poor data must not hide problems.
-
-It does **not** read vector geometry from a PDF, parse DWG or IFC, or produce DOCX — the
-renderer interface is in place for that last one, but no DOCX renderer is written. See
-[docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md).
-
-**Findings carry reason codes.** `RC-101` means "insufficient service clearance" whatever
-language it is read in, and each language is composed from the code rather than translated
-from the other. That is what makes the report bilingual rather than translated, and it is why
-`EVALUATION_RESULT_VERSION` is 2.
-
-## Repository layout
-
-```
-MFD-Enterprise
-├── CLAUDE.md               long-term vision and engineering principles
-├── docs/
-│   ├── product/            TS Edition specification — current scope
-│   ├── architecture/       system architecture, tech stack
-│   ├── data-model/         project model, equipment object model
-│   ├── equipment/          equipment object specifications
-│   ├── rules/              rule engine specification
-│   ├── roadmap/            sprint plans
-│   └── OPEN_QUESTIONS.md   what we still need from the product owner
-├── apps/
-│   ├── web/                React + Vite client (the designer)          ← built
-│   ├── api/                NestJS backend                              not in Version 1
-│   └── ai-service/         Python FastAPI AI service                   Sprint 6
-├── packages/
-│   ├── cad-engine/         geometry, units, viewport, polygons, plan transform  ← built
-│   ├── object-library/     equipment catalogue                                  ← built
-│   ├── document-model/     the project document, commands, save/load            ← built
-│   ├── rule-engine/        installation requirement evaluation                  ← built
-│   ├── report-engine/      the bilingual engineering report                  ← built
-│   ├── ai-contract/        AI request/response types — no AI in it         Sprint 6
-│   └── ai-local/           deterministic layout solver, no LLM            Sprint 6
-├── database/               schema, migrations, seed data
-├── standards/              rule sets as versioned data
-├── assets/                 symbols, icons, models
-└── tests/                  cross-package integration and E2E tests
-```
-
-The dependency rule is one-way: `apps/` may import `packages/`, never the reverse, and
-`packages/` may not import a UI framework, a renderer or a Node built-in. That boundary
-is enforced by ESLint, not by memory — see `eslint.config.js`.
-
-## Documentation
-
-Read in this order:
+### Documentation
 
 | Document | Read it for |
 | --- | --- |
-| [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md) | **What we are building now** — product definition, user, MVP features |
+| [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md) | **What is being built now** — product definition, user, MVP scope |
+| [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | Owner decisions D1–D16, and **what is still needed from the owner** |
+| [docs/release/RELEASE_GATE.md](docs/release/RELEASE_GATE.md) | Release Candidate → Production conditions, and the one not met |
+| [docs/release/RELEASE_READINESS_REPORT.md](docs/release/RELEASE_READINESS_REPORT.md) | Evidence model, equality definitions, determinism, known limitations |
+| [docs/release/REGRESSION_PROTECTION_MAP.md](docs/release/REGRESSION_PROTECTION_MAP.md) | Every decision → source → test → what a failure means |
+| [docs/release/SCHEMA_FREEZE_CHECKLIST.md](docs/release/SCHEMA_FREEZE_CHECKLIST.md) | Version fields, optional and nullable contracts, export surface |
 | [docs/data-model/PROJECT_MODEL.md](docs/data-model/PROJECT_MODEL.md) | Project · Level · Boundary · Space · Placement |
-| [docs/data-model/OBJECT_MODEL.md](docs/data-model/OBJECT_MODEL.md) | Equipment object: catalogue record, manufacturer dimensions vs design footprint, per-field-group verification |
-| [docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md](docs/equipment/VANTIVE_AK98_OBJECT_SPEC.md) | The first equipment object |
+| [docs/data-model/OBJECT_MODEL.md](docs/data-model/OBJECT_MODEL.md) | Manufacturer dimensions vs design footprint, per-field verification |
 | [docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md](docs/rules/DIALYSIS_RULE_ENGINE_v0.1.md) | Rule categories, result levels, rule data structure |
-| [docs/architecture/DOCUMENT_MODEL.md](docs/architecture/DOCUMENT_MODEL.md) | What a project *is*, and why undo is commands rather than snapshots |
-| [docs/roadmap/PHASE_4_5_REPORT.md](docs/roadmap/PHASE_4_5_REPORT.md) | What finishing the gestures turned up that the model work had not |
-| [docs/roadmap/SPRINT_4_CLOSURE.md](docs/roadmap/SPRINT_4_CLOSURE.md) | What Sprint 4 shipped, the one criterion it did not meet, and what carried forward |
-| [docs/architecture/REPORT_ENGINE_DESIGN.md](docs/architecture/REPORT_ENGINE_DESIGN.md) | Sprint 5 architecture — **awaiting review, not implemented** |
-| [docs/roadmap/SPRINT_5_PLAN.md](docs/roadmap/SPRINT_5_PLAN.md) | Sprint 5 implementation plan — order, estimate, risks |
-| [docs/roadmap/SPRINT_5_REPORT.md](docs/roadmap/SPRINT_5_REPORT.md) | What Sprint 5 shipped, what it did not, and the defects it turned up |
-| [docs/architecture/AI_SYSTEM_ARCHITECTURE.md](docs/architecture/AI_SYSTEM_ARCHITECTURE.md) | Sprint 6 — where the AI sits, and what it may not assert. **For review, not implemented** |
-| [docs/roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md](docs/roadmap/SPRINT_6_IMPLEMENTATION_PLAN.md) | Sprint 6 plan — order, estimate, what B-4 gates |
-| [docs/architecture/PLATFORM_SUPPORT.md](docs/architecture/PLATFORM_SUPPORT.md) | Web-first: browsers, tablet, PWA — and what is **not** verified |
 | [docs/architecture/RULE_ENGINE_API.md](docs/architecture/RULE_ENGINE_API.md) | The frozen finding contract every consumer reads |
-| [docs/roadmap/MVP_PLAN.md](docs/roadmap/MVP_PLAN.md) | Sprint-by-sprint scope and acceptance criteria |
-| [docs/roadmap/DEVELOPMENT_ROADMAP.md](docs/roadmap/DEVELOPMENT_ROADMAP.md) | Long view, version map, risk register |
-| [docs/architecture/SYSTEM_ARCHITECTURE.md](docs/architecture/SYSTEM_ARCHITECTURE.md) | Architecture and the decisions behind it |
-| [docs/architecture/TECH_STACK.md](docs/architecture/TECH_STACK.md) | Versions and the reasoning behind them |
-| [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | **What we still need from the product owner** |
-| [CLAUDE.md](CLAUDE.md) | Long-term direction and engineering principles |
+| [docs/architecture/AI_SYSTEM_ARCHITECTURE.md](docs/architecture/AI_SYSTEM_ARCHITECTURE.md) | Where the AI sits, and what it may not assert |
+| [docs/architecture/PLATFORM_SUPPORT.md](docs/architecture/PLATFORM_SUPPORT.md) | Web-first: browsers, tablet, PWA — and what is **not** verified |
+| [CLAUDE.md](CLAUDE.md) | Long-term direction, engineering principles, and the review loop |
 
-`docs/OPEN_QUESTIONS.md` is the important one.
+---
 
-Five sprints in, **the application is finished and empty**. The plan imports, the scale
-calibrates, the rooms trace, the rule engine evaluates — and every finding still reads
-"threshold unknown", because there is no true figure to compare against. The AK98
-installation manual, with its document number and revision, is the one thing standing
-between this and a usable answer. Nothing here will invent one.
+## Build
+
+Requires **Node.js ≥ 20.19** and **pnpm 10** (`npm install -g pnpm`).
+
+```bash
+pnpm install     # every workspace
+pnpm dev         # designer at http://localhost:5173
+pnpm build       # production build → apps/web/dist
+```
+
+| Command | What it does |
+| --- | --- |
+| `pnpm typecheck` · `pnpm lint` | Type-check · lint every workspace |
+| `pnpm test` · `pnpm test:e2e` | Unit tests · browser specs against a production build |
+| `pnpm bench` · `pnpm test:perf` | Rule-engine baseline · frame time — instruments, not gates |
+| `pnpm dataset:ingest` | Catalogue the drawing dataset → `knowledge/dataset.json` |
+| `pnpm knowledge:extract` | Drawings → `knowledge/observations/` |
+| `pnpm knowledge:build` | Observations → `knowledge/derived/` |
+| `pnpm verify:drawing` | Drive one drawing through the pipeline, recording where it stops |
+| `pnpm validate:corpus` | The whole corpus → `knowledge/validation/corpus.json` |
+
+The knowledge artefacts are committed and **regenerate byte-identically** — verified across `LC_ALL`
+of C, sv_SE, tr_TR, ko_KR and de_DE. If a regeneration produces a diff, either the input changed or
+a generator did; catching that is why they are committed.
+
+---
+
+## Tests
+
+```
+1327 unit   in 75 files    pnpm test
+ 156 e2e    in 12 files    pnpm test:e2e
+```
+
+Passing is the floor, not the standard. Guards here are verified by **mutation** — break the guard,
+confirm the suite goes red — because this repository has shipped guards that could not fail, and a
+green suite cannot tell the difference. Guards that currently cannot fail are listed rather than
+quietly counted, in
+[docs/release/REGRESSION_PROTECTION_MAP.md](docs/release/REGRESSION_PROTECTION_MAP.md), which gives
+every decision a source, a test, and a statement of **what a failure of that guard means**.
+
+Four architecture tests police what a unit test cannot see:
+
+| | |
+| --- | --- |
+| `determinism.test.ts` | No `localeCompare`, one clock boundary, no randomness |
+| `replay.test.ts` | Shuffled input, identical output |
+| `everyTestIsCollected.test.ts` | No test file exists that never runs — indistinguishable from one that always passes |
+| `artefactsMatchTheirGenerators.test.ts` | No committed artefact has drifted from the code that writes it |
+
+---
+
+## License
+
+**No licence is currently declared.** There is no `LICENSE` file, no `license` field in any of the
+ten `package.json` files, and every workspace is marked `private: true`.
+
+Absent a declared licence, no rights are granted: this is **not** open source and should not be
+treated as such. Saying so plainly is better than leaving the section blank, which reads as an
+oversight rather than a position.
+
+Choosing a licence — or confirming that the project stays proprietary — is an owner decision, and
+not one the engineering loop may make on its own.
