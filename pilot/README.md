@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Not executed — awaiting the drawing file.** Input simplified to a single required input: the upload |
+| [`PILOT-001`](PILOT-001/) | **Not executed — blocked on the identity model** (D17). See [docs/decisions/IDENTITY_MIGRATION.md](../docs/decisions/IDENTITY_MIGRATION.md) |
