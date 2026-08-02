@@ -118,6 +118,10 @@ checked something. One produced by the engine, by a script, or by any agent in t
 to clear its own gate would be the system confirming itself — the exact failure the chain was built
 to prevent, committed in the artefact built to prevent it.
 
+The operational procedure for performing it is
+[`PILOT_VALIDATION_PROCESS.md`](PILOT_VALIDATION_PROCESS.md), with a blank checklist at
+[`pilot/PILOT-001-CHECKLIST.md`](pilot/PILOT-001-CHECKLIST.md).
+
 **Procedure for the first confirmation**, recorded because the mechanism to *store* one exists while
 no tool *authors* one:
 
