@@ -50,6 +50,17 @@ import {
  *
  * `candidates.ts` had already written down why `localeCompare` is wrong. Knowing it in one file did
  * not stop it being used in five others, so the rule is now a test that bans it outright.
+ *
+ * ## This sort and `drawingsOf`'s are mutually redundant
+ *
+ * Measured: deleting **either** one leaves the whole suite green, including the shuffled-input
+ * replay. `drawingsOf` receives observations this function has already ordered, so its own sort
+ * re-does settled work; and every other figure is derived through a `Map` keyed on values rather
+ * than on position. Removing **both** fails three replay cases and two package tests.
+ *
+ * Both are kept, and the redundancy is written down rather than left to be rediscovered — the pair
+ * is what holds the ordering, and a future reader deleting "the obviously duplicated sort" needs to
+ * know the other one is then load-bearing alone.
  */
 function ordered(observations: readonly Observation[]): Observation[] {
   return [...observations].sort(
