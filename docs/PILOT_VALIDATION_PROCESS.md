@@ -63,7 +63,7 @@ Recorded **before** the run, so the run cannot be described after the fact by wh
 | Field | Meaning | Where it comes from |
 | --- | --- | --- |
 | **Drawing identifier** | `drawingId` of the sheet, plus `page` and `sha256` | `knowledge/dataset.json` — the catalogued entry. `sha256` proves the file run is the file catalogued |
-| **Project context** | Facility, the engineering question being asked, and who asked it | The engineer. Not derivable from the repository |
+| **Project context** | Facility, the **review objective**, and who asked for the review | The engineer. Not derivable from the repository |
 | **Room type** | The room being evaluated | Dialysis for Pilot-001. The only room type with a rule set and a scoring model today |
 | **Catalogue version** | `version` of every equipment record used | Each catalogue record, e.g. `vantive_ak98` `0.6.0`. Recorded **per record** — there is no single repo-wide catalogue version |
 | **Solver version** | The exact code that produced the result | **See the note below** |
@@ -87,6 +87,32 @@ carry.** A shortened SHA is not sufficient for a record intended to be re-run ag
 
 Adding a solver version is a source change and is out of scope here; it is recorded as a gap so the
 pilot is run knowing it, rather than discovering it when a result cannot be reproduced.
+
+### Review objective — what it is, and what it is not
+
+This field was called **Engineering Question**, and the name was wrong in a specific and checkable
+way: it implied an input that shapes the output. It does not. **The field is referenced nowhere in
+`packages/`, `apps/`, `scripts/` or `tests/`** — verified — so the pipeline runs identically whatever
+is written in it. A name suggesting the engine answers a question the user poses claims a behaviour
+the code does not have, which is the class of overclaim this project exists to remove.
+
+**The product assesses a drawing on the available evidence. It does not require a user to formulate
+a question, and it does not select an answer from a question-shaped input.**
+
+| | |
+| --- | --- |
+| **Belongs to** | The reviewer — it is what *they* intend to establish by examining this run |
+| **Affects the engine** | No. Nothing in the pipeline reads it |
+| **Affects the review** | Yes. It records why the run was performed, so the review knows what to examine |
+
+**An objective can be satisfied by an abstention.** The word invites a met / not-met reading, and
+that reading would be a defect: a result of *"the available evidence supports no statement about
+station count"* **satisfies** an objective of establishing what the evidence supports. It is an
+answer, not a failure to produce one.
+
+The objective may not be phrased as an instruction to the engine, a target it must reach, or a
+recommendation it must produce. If it can only be satisfied by a particular output, it is a
+requirement rather than an objective, and it will put pressure on the run to guess.
 
 ### Also record, because it changes the answer
 

@@ -21,7 +21,7 @@ something could not be established. A guessed one is not.
 | `sha256` | |
 | Hash matches `knowledge/dataset.json`? | ☐ yes ☐ no — if no, **stop** |
 | Project context — facility | |
-| Project context — question being asked | |
+| Project context — review objective | |
 | Project context — requested by | |
 | Room type | |
 | Catalogue records used, with `version` of each | |

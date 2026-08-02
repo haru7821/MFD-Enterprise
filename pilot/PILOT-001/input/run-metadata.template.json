@@ -62,7 +62,7 @@
     "_note": "Human input. Not derivable from the repository, and must not be invented — if it cannot be supplied, the run does not start.",
     "facility": null,
     "roomType": null,
-    "questionBeingAsked": null,
+    "reviewObjective": null,
     "requestedBy": null
   },
 

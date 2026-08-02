@@ -7,7 +7,7 @@ abandoned and a new one started.
 | File | Contents | Required |
 | --- | --- | --- |
 | `run-metadata.json` | Identity of the run — a filled copy of `run-metadata.template.json` | **Yes** |
-| `context.md` | Facility, the engineering question being asked, who asked it, operator | **Yes** |
+| `context.md` | Facility, the review objective, who asked for the review, operator | **Yes** |
 | `drawing-reference.txt` | Path to the source drawing in the dataset, and its `sha256` | **Yes** |
 
 The drawing itself is **not** copied here. It is the hospital's property, it lives outside this

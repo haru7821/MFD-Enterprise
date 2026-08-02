@@ -16,14 +16,21 @@ and no file in the dataset, so extraction cannot start against it.
 
 Dialysis room.
 
-## Engineering question
+## Review objective
+
+> Renamed from **Engineering question** by owner review. The old name implied the engine answers a
+> question the user poses; nothing in the pipeline reads this field, so the name claimed a behaviour
+> the code does not have. The objective belongs to the reviewer, not to the engine. See
+> [`../../../docs/PILOT_VALIDATION_PROCESS.md`](../../../docs/PILOT_VALIDATION_PROCESS.md) §2.
+>
+> The wording below is unchanged — only the field it sits under.
 
 > 해당 공간에서 적정 장비 대수는 몇 대인가?
 
-> The engineering question is to evaluate the appropriate number of equipment stations that can be
-> supported by the available evidence for this room.
+> The objective is to evaluate the number of equipment stations supported by the available evidence
+> for this Dialysis room.
 
-### Interpretation — ratified by the owner, binding on this run
+### Objective — ratified by the owner, binding on this run
 
 > *"Evaluate the number of equipment stations supported by available evidence for this Dialysis
 > room."*
@@ -31,12 +38,11 @@ Dialysis room.
 > **Not** to be interpreted as requesting an unconditional recommended equipment count.
 
 This was recorded before the run as a note; the owner has since stated it as the governing
-interpretation, so it is now the ratified reading rather than an observation. The question asks what
-the *evidence* supports — a question the engine is built to answer, and one it may still answer with
-an abstention.
+interpretation, so it is now the ratified reading rather than an observation. The objective is to
+establish what the *evidence* supports — which the engine may satisfy with an abstention.
 
 The distinction has teeth at review time: a result reading *"the evidence supports no statement about
-station count"* **answers** this question. It is not a failure to answer it.
+station count"* **satisfies** this objective. It is not a failure to meet it.
 
 `stationTarget` is an input to the solver, and `resolvedStationCount` / `countWasDerived` record
 whether a count was supplied or derived. Which of those applies is part of what the review examines.
