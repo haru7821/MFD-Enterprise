@@ -37,6 +37,7 @@ Every path below was checked to exist while writing this.
 | Decision | Source | Test | A failure means |
 | --- | --- | --- | --- |
 | **D13 — tie semantics** | `packages/ai-local/src/rank.ts` (`denseRanks`) | `packages/ai-local/src/rank.test.ts`, `tests/e2e/layout.spec.ts` | Alphabetical order is being presented as engineering preference. |
+| **D1 — a suppressed total sorts last, and is not a zero** | `packages/ai-local/src/rank.ts` (`compareLayouts`) | `packages/ai-local/src/rank.test.ts` | The engine offers "could not measure" as its best answer, or ranks it level with a layout that genuinely scored 0. Both mutants (`?? 2`, `?? 0`) were green before this row existed. |
 | **Geometry convergence collapses** | `packages/ai-local/src/rank.ts` (`collapseByGeometry`) | `packages/ai-local/src/rank.test.ts` Case A | Duplicates are being labelled *Tied*, which says the evidence cannot separate two things when there is one. |
 | Convergence evidence is preserved | `RankedLayout.strategies` | `packages/ai-local/src/rank.test.ts` Case A | The fact that two strategies independently agreed has been thrown away. |
 | `already_best` claims only what it compared | `packages/ai-local/src/optimise.ts`, `apps/web/src/features/layout/LayoutPanel.tsx` | `packages/ai-local/src/optimise.test.ts`, `tests/e2e/layout.spec.ts` | The drawing is told it "scores highest" when an arrangement ties it. |
@@ -48,6 +49,7 @@ Every path below was checked to exist while writing this.
 | --- | --- | --- | --- |
 | `AR-105` names every converging strategy | `packages/ai-local/src/rank.ts` (`explain`) | `packages/ai-local/src/rank.test.ts` Case B | The explanation names one strategy and silently drops the others. |
 | Canonical strategy order is declared | `packages/ai-local/src/rank.ts` (`compareStrategies`) | `packages/ai-local/src/rank.test.ts` Case C | Wording depends on the `candidate.id` string format. |
+| **D16** — the `strategies` array is ordered as the sentence is | `packages/ai-local/src/rank.ts` (`collapseByGeometry`) | `packages/ai-local/src/rank.test.ts` Cases A and B | The exported field and the sentence built from it name the same strategies in different orders, and a consumer has to pick which of our statements to believe. |
 | Korean 와/과 is computed from the syllable | `packages/ai-contract/src/rationale.ts` | `packages/ai-contract/src/korean.test.ts` | A wrong particle is printed, or a strategy renamed in future takes the wrong one. |
 | Every finding is bilingual | `packages/rule-engine/src/messages.ts` | `packages/rule-engine/src/messages.test.ts` | One language is missing and the other reads as the whole answer. |
 | No claim word exceeds the evidence | user-facing strings | `tests/e2e/layout.spec.ts` | The product is telling an engineer something it did not measure. |
@@ -83,11 +85,18 @@ Listed because a map that omits them would overstate its own coverage. Each is k
 each is labelled at its definition; see
 [`RELEASE_READINESS_REPORT.md`](RELEASE_READINESS_REPORT.md) §9.4.
 
+**One entry was removed from this table because the claim was wrong, and how it was wrong is worth
+keeping.** The strategy-list sort was listed as unkillable on the evidence that *deleting* it left
+the suite green — which it does, because `candidate.id` begins with the strategy name. But
+**reversing** it fails two tests: the sort's output is pinned even though its presence is not. The
+mutation chosen decided the answer, and the weaker mutation was the one that flattered the code.
+A guard is dormant only if no mutation of it can be caught, and "I deleted it and nothing happened"
+does not establish that. It now sits in the live rows above, under D16.
+
 | Guard | Why it cannot fail today |
 | --- | --- |
 | `compare`'s compliance-margin key | Every margin is unavailable (A-1). A test fails the day one is not. |
 | `compare`'s candidate-id key | `candidates.ts` already emits in id order and `Array.sort` is stable. |
-| The strategy-list sort | `candidate.id` begins with the strategy name, so id order *is* strategy order. |
 | `ordered()` **or** `drawingsOf`'s sort — either alone | Mutually redundant. Deleting **both** fails five tests. |
 | `tally`'s tie-break, on real data | 211 / 80 / 15 are distinct counts. Covered by a constructed tie. |
 | D8's rectangularity guard, on the shipped catalogue | `SC-904` fires first, every time. Covered by a fixture object that declares clearances. |

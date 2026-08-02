@@ -57,7 +57,7 @@ export interface RankedLayout {
   readonly tied: boolean;
   readonly candidateId: string;
   /**
-   * Every strategy that produced **this exact geometry**, sorted.
+   * Every strategy that produced **this exact geometry**, in `CANDIDATE_STRATEGIES` order.
    *
    * Usually one. More than one means the strategies converged: `rows` and `perimeter` independently
    * arriving at the same arrangement is a stronger statement about the room than either alone, and
@@ -65,6 +65,12 @@ export interface RankedLayout {
    *
    * `candidateId` names the surviving candidate and therefore carries only *its* strategy in the
    * string. This is the honest list.
+   *
+   * **The order is the sentence's order** (owner decision D16). This array is the machine-readable
+   * form of what `AR-105` states in prose, not a second datum with a second audience, so it is
+   * ordered by `compareStrategies` exactly as the rendered sentence is. The consequence, stated
+   * because it is a coupling and not an accident: reordering `CANDIDATE_STRATEGIES` reorders this
+   * public field. That is correct — one fact, one order.
    */
   readonly strategies: readonly CandidateStrategy[];
   readonly placements: readonly Placement[];
@@ -252,17 +258,27 @@ export function collapseByGeometry(
       a.candidate.id < b.candidate.id ? -1 : a.candidate.id > b.candidate.id ? 1 : 0,
     );
     /*
-     * Sorted, and **no test can kill this sort** — measured: removing it leaves the whole suite
-     * green. `candidate.id` is `${strategy}-${count}-${hash}`, so ordering members by id already
-     * orders them by strategy name, and the two can only disagree if that id format changes.
+     * **`compareStrategies`, not a bare `.sort()`** — owner decision D16.
      *
-     * Kept and labelled rather than deleted, which is the opposite of the call made on two dead
-     * comparator keys in `corpusLedger.ts`. The difference is what the redundancy rests on: those
-     * keys could never decide anything at all, while this one is redundant only *because another
-     * module happens to build ids that way*. `AR-105`'s wording is derived from this order, so a
-     * change to the id format would silently reword an engineer-facing sentence.
+     * This was alphabetical, which put the exported array in one order (`['perimeter', 'rows']`)
+     * and the `AR-105` sentence built from it in another (`'rows and perimeter'`). One fact with
+     * two renderings that disagree is one of them being wrong, and a consumer choosing between
+     * them is choosing which of our own statements to believe. The field has no meaning
+     * independent of the sentence, so it may not have an order independent of it.
+     *
+     * The order is therefore `CANDIDATE_STRATEGIES`' declared order, and **that coupling is
+     * deliberate**: adding a strategy reorders this exported field as well as the prose, because
+     * they are the same fact. Neither order is engineering significance — the strategies
+     * converged, they did not compete.
+     *
+     * A previous comment here claimed **no test can kill this sort**. That was measured by
+     * *deletion* only, which is green because `candidate.id` begins with the strategy name;
+     * reversing it fails two tests. The claim was true of the wrong mutation, which is how a
+     * dormant-guard note becomes the very thing this phase removes.
      */
-    const strategies = [...new Set(ordered.map((member) => member.candidate.strategy))].sort();
+    const strategies = [...new Set(ordered.map((member) => member.candidate.strategy))].sort(
+      compareStrategies,
+    );
     return { entry: ordered[0]!, strategies };
   });
 
@@ -339,7 +355,7 @@ export function rankLayouts(input: RankInput): RankResult {
     }),
   }));
 
-  scored.sort((a, b) => compare(a, b));
+  scored.sort((a, b) => compareLayouts(a, b));
 
   const limit = input.limit ?? DEFAULT_LIMIT;
   const shown = scored.slice(0, limit);
@@ -388,8 +404,19 @@ export function rankLayouts(input: RankInput): RankResult {
  * something that has nothing to do with which layout is better. A solver that returns the same
  * three layouts in a different order has failed the determinism requirement as completely as one
  * that returns different layouts.
+ *
+ * **Exported so step 0 can be broken.** It was private, and the review found what that cost:
+ * changing the null sentinel from `-1` to `2` — the exact inversion of D1, making an *unscored*
+ * layout outrank every scored one — left all 1,322 tests green. No test reached a null total,
+ * because reaching one through `rankLayouts` needs two candidates in one room whose coverage
+ * straddles `minimumCoverage`, which the fixtures do not produce. An owner decision was resting on
+ * an unreachable line.
+ *
+ * This is the fourth export that exists so a test can reach it, and the honest reading is that
+ * ordering and presentation are one contract: `denseRanks` is already exported for the same reason
+ * and answers the second half of the same question.
  */
-function compare(
+export function compareLayouts(
   a: { entry: { candidate: Candidate }; score: ScoreBreakdown },
   b: { entry: { candidate: Candidate }; score: ScoreBreakdown },
 ): number {

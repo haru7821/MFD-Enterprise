@@ -15,12 +15,13 @@ import {
 import {
   type RankInput,
   collapseByGeometry,
+  compareLayouts,
   compareStrategies,
   denseRanks,
   rankLayouts,
   strategyList,
 } from './rank';
-import { CANDIDATE_STRATEGIES } from './candidates';
+import { CANDIDATE_STRATEGIES, type Candidate } from './candidates';
 import { generateFeasibleCandidates, geometryKey } from './generate';
 import { renderRationale } from '@mfd/ai-contract';
 
@@ -313,7 +314,7 @@ describe('geometry-equivalent candidates collapse into one proposal', () => {
     // producing it, this fails and the case below stops being about anything.
     const converged = result.layouts.find((layout) => layout.strategies.length > 1);
     expect(converged, 'the fixture no longer contains a convergence case').toBeDefined();
-    expect(converged?.strategies).toEqual(['perimeter', 'rows']);
+    expect(converged?.strategies).toEqual(['rows', 'perimeter']);
 
     // And nothing is tied, because the two surviving geometries score differently. Before the
     // collapse this fixture reported two tied layouts that were one layout.
@@ -495,7 +496,7 @@ describe('the explanation says how many strategies reached the layout', () => {
   it('Case B — a converged proposal names every contributing strategy', () => {
     const converged = rank().layouts.find((layout) => layout.strategies.length > 1);
     expect(converged, 'the fixture has no convergence case').toBeDefined();
-    expect(converged!.strategies).toEqual(['perimeter', 'rows']);
+    expect(converged!.strategies).toEqual(['rows', 'perimeter']);
 
     const arrangement = converged!.explanation.find(
       (item) => item.code === 'AR-104' || item.code === 'AR-105',
@@ -575,5 +576,83 @@ describe('the explanation says how many strategies reached the layout', () => {
     expect(backwards.map((entry) => entry.strategies)).toEqual(
       forwards.map((entry) => entry.strategies),
     );
+  });
+});
+
+describe('compareLayouts — the ordering contract, including the step no fixture reaches', () => {
+  /*
+   * **Why this block exists, and why it uses a synthesised score.**
+   *
+   * `compareLayouts` was private. Review broke its null sentinel — `?? -1` to `?? 2`, which is
+   * precisely the inversion of owner decision D1, promoting an *unscored* layout above every scored
+   * one — and all 1,322 tests stayed green. Nothing reached the line.
+   *
+   * The reason is structural rather than an oversight in the fixtures: a null total needs coverage
+   * below `minimumCoverage`, and coverage is a property of the room and the catalogue far more than
+   * of the candidate, so every candidate in a given run tends to land on the same side of the
+   * threshold. Producing a genuine straddle would mean a room where one arrangement can be routed
+   * and another cannot (`SC-903`). That fixture may be worth building for its own sake; it is not
+   * what pins an ordering rule, and waiting for it is how the guard stayed dormant.
+   *
+   * So the score is a **real** breakdown from the solver with `total` overridden. Real, because a
+   * hand-built literal would let the shape drift from `ScoreBreakdown` without failing; overridden,
+   * because the value is the one thing the solver will not currently produce.
+   */
+  const measured = rank().layouts[0]!.score;
+
+  const withTotal = (total: number | null, id: string) => ({
+    entry: { candidate: { id } as Candidate },
+    score: { ...measured, total },
+  });
+
+  it('sorts a scored layout above an unscored one, however low the score', () => {
+    const scored = withTotal(0.01, 'a-4-aaaa');
+    const unscored = withTotal(null, 'a-4-aaaa');
+
+    // Both directions, so the assertion cannot pass on a comparator that returns a constant.
+    expect(compareLayouts(scored, unscored)).toBeLessThan(0);
+    expect(compareLayouts(unscored, scored)).toBeGreaterThan(0);
+  });
+
+  it('does not let a suppressed total behave like a perfect one', () => {
+    /*
+     * The mutation this test was written against. `?? 2` is outside the 0…1 range in the *wrong*
+     * direction, so an unscored layout outranks a perfectly scored one — the engine presenting
+     * "we could not measure this" as the best answer available.
+     */
+    expect(compareLayouts(withTotal(null, 'a-4-aaaa'), withTotal(1, 'a-4-aaaa'))).toBeGreaterThan(0);
+  });
+
+  it('leaves two unscored layouts to the deterministic tiebreakers, not to input order', () => {
+    const first = withTotal(null, 'a-4-aaaa');
+    const second = withTotal(null, 'b-4-bbbb');
+
+    expect(compareLayouts(first, second)).toBeLessThan(0);
+    expect(compareLayouts(second, first)).toBeGreaterThan(0);
+    expect(compareLayouts(first, first)).toBe(0);
+  });
+
+  it('does not let a suppressed total behave like a measured zero either', () => {
+    /*
+     * **The mutant the three cases above did not kill**, found by running them: `?? 0` passes every
+     * one, because a null then loses to 0.01 and to 1 exactly as -1 does. It is still wrong, and
+     * wrong in this project's signature way — a layout that genuinely scored 0 and a layout the
+     * engine refused to score become indistinguishable, `denseRanks` reads equal totals and equal
+     * coverage, and the panel prints **Tied**. That sentence says *the evidence cannot separate
+     * these two*, when in fact one was measured and the other was not.
+     *
+     * A real 0 is a score. Null is the engine declining to offer one. The only comparison that
+     * separates them is this one, so it is the only one that pins the sentinel.
+     */
+    const measuredZero = withTotal(0, 'a-4-aaaa');
+    const unscored = withTotal(null, 'a-4-aaaa');
+
+    expect(compareLayouts(measuredZero, unscored)).toBeLessThan(0);
+    expect(compareLayouts(unscored, measuredZero)).toBeGreaterThan(0);
+  });
+
+  it('orders by total before anything else', () => {
+    // Higher total wins even when the id would order them the other way — step 1 before step 3.
+    expect(compareLayouts(withTotal(0.9, 'z-4-zzzz'), withTotal(0.1, 'a-4-aaaa'))).toBeLessThan(0);
   });
 });

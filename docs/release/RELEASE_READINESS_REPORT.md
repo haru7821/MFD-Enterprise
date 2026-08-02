@@ -1,7 +1,10 @@
 # Release Readiness Report
 
-> Prepared at commit `cea0f54`, after the audit phase closed. Documentation and release hardening
-> only — this report added no behaviour.
+> Prepared at commit `cea0f54`, after the audit phase closed; revised at `7db2b16` after review.
+>
+> The first draft was documentation-only. The review of it rejected three claims, and the revision
+> carries the code changes those findings and owner decision D16 required — an exported
+> `compareLayouts` with tests that can break it, and one strategy order instead of two.
 >
 > Read with [`SCHEMA_FREEZE_CHECKLIST.md`](SCHEMA_FREEZE_CHECKLIST.md) and
 > [`REGRESSION_PROTECTION_MAP.md`](REGRESSION_PROTECTION_MAP.md).
@@ -27,7 +30,7 @@ defects the standing audit found were the same failure — the system could not 
 it passed"* from *"I could not check"*. Reason codes carry that distinction (`RC-9xx` and `SC-9xx`
 are engine-cannot-answer), and `ReasonKind` drives the report verdict from it.
 
-Decisions D1–D15 are recorded with their evidence in
+Decisions D1–D16 are recorded with their evidence in
 [`docs/OPEN_QUESTIONS.md`](../OPEN_QUESTIONS.md) §D. That register exists because D1–D5 originally
 lived only in commit messages, and a decision recorded only there is one the next reader meets as a
 surprise.
@@ -61,7 +64,7 @@ different layouts, and merging is the operation that loses evidence.
 
 ## 3 · Ranking semantics
 
-- `compare` orders by **total score**, then **compliance margin**, then **candidate id**.
+- `compareLayouts` orders by **total score**, then **compliance margin**, then **candidate id**.
 - Ranks are **dense over the evidence**: two proposals the evidence cannot separate share a number.
 - Below the scoring model's `minimumCoverage` (**0.25**) there is no total at all — `null`, not zero
   (D1). Dividing by the *available* weight meant deleting evidence raised the score, to a perfect
@@ -73,6 +76,11 @@ different layouts, and merging is the operation that loses evidence.
 compliance-margin key cannot fire while every rule threshold is null (A-1), and the id key is
 redundant given that `candidates.ts` already emits in id order. Both are labelled in the code as
 belt-and-braces rather than as load-bearing. See [§9](#9-known-intentional-limitations).
+
+The **first** key — the null-total sentinel that puts a suppressed score last — was dormant too and
+was not listed here until review broke it. It is now live: `compareLayouts` is exported and
+`rank.test.ts` pins both the *unknown outranks everything* mutant and the subtler *unknown equals a
+measured zero* one.
 
 ---
 
@@ -89,8 +97,19 @@ support.
 
 The panel shows **Tied / 동점** in place of `#N`, with the score and coverage beneath it.
 
-The measurement that forced this: `perimeter` and `rows` scored an identical 0.283333333 with
-`compliance_margin` unavailable on both, and the layout shown as **#1** was chosen by `'p' < 'r'`.
+The measurement that forced this, **and what re-measurement later did to it**: `perimeter` and
+`rows` scored an identical 0.283333333 with `compliance_margin` unavailable on both, and the layout
+shown as **#1** was chosen by `'p' < 'r'`. That is what prompted D13 — and it was afterwards found
+to be a duplicate. `perimeter-4-033p4n9` and `rows-4-033p4n9` are the *same arrangement*, so the id
+key was not choosing between two layouts; it was choosing which name to print on one. Once
+`collapseByGeometry` landed, the two surviving geometries on that fixture are separated by score
+(0.283333333 against 0.280260417) and nothing on it ties at all.
+
+The decision stands on evidence that survived: **in the browser's room all three proposals tie**,
+which is what `layout.spec.ts` asserts and what an engineer actually meets. The fixture figure is
+recorded here as the retracted measurement it is, rather than left in place as the forcing evidence,
+because a number that keeps its role after its basis dissolves is the exact failure this phase
+exists to remove. The full re-measurement is in `rank.test.ts:421-440`.
 
 **Tied is not the same as converged** — see §5. Before geometry deduplication this screen showed
 three "tied alternatives" of which two were one layout.
@@ -125,7 +144,12 @@ writes prose.
   value of saying it at all.
 - Forbidden vocabulary, asserted by test: `best`, `winning`, `winner`, `primary`, `selected`.
 - Strategy order is `CANDIDATE_STRATEGIES`' declared order via `compareStrategies` — **not** the
-  candidate-id format it previously inherited by accident.
+  candidate-id format it previously inherited by accident. As written this was true of the rendered
+  sentence and false of `RankedLayout.strategies`, which sorted alphabetically: the array read
+  `['perimeter', 'rows']` beside a sentence reading *"rows and perimeter"*. Owner decision **D16**
+  settles it in favour of one order for both, on the ground that the array is the machine-readable
+  form of the sentence rather than a second datum — so the coupling is deliberate, and adding a
+  strategy reorders the public field along with the prose.
 - A placeholder with no parameter is left **visible** as `{name}` rather than blanked. *"Arranged 12
   stations "* reads as clumsy prose somebody explains away; `{strategy}` reads as the defect it is.
 
@@ -191,7 +215,7 @@ Stated because a release that hides these is worse than one that ships with them
 
 ### 9.2 · Reach of the knowledge base
 
-- All **183** observations in the corpus are `common_dimension`. Nine of the ten files in
+- All **183** observations in the corpus are `common_dimension`. Eight of the nine files in
   `knowledge/derived/` contain `entries: []` — because those kinds are never collected, not because
   nothing was found. Asserted by test so the day it changes, something says so.
 - **0 of 306** drawing-pages complete the validation programme; all 306 stop, 211 at import.
@@ -218,9 +242,14 @@ Stated because a release that hides these is worse than one that ships with them
   suite green; deleting both fails five tests. The pair is load-bearing, neither is alone, and this
   is written into `aggregate.ts` so a future reader deleting "the obviously duplicated sort" learns
   the other is then holding it up by itself.
-- **The strategy-list sort** cannot be killed by any test, because `candidate.id` begins with the
-  strategy name. Kept because `AR-105`'s wording derives from that order, so a change to the id
-  format would silently reword an engineer-facing sentence.
+- **`compare`'s null-total sentinel is no longer in this list, and the correction is the point.**
+  It was not listed at all, and it should have been: changing `?? -1` to `?? 2` — the exact
+  inversion of D1, promoting an *unscored* layout above every scored one — left all 1,322 tests
+  green. Nothing reached it, because a null total needs coverage below `minimumCoverage` and the
+  fixtures put every candidate on the same side of that threshold. It is now pinned by
+  `rank.test.ts`, including the sharper mutant `?? 0`, which the first three cases did **not** kill:
+  it makes *unknown* and *measured zero* indistinguishable, so the panel prints **Tied** over two
+  layouts of which one was measured and one was not.
 
 ### 9.5 · A latent contradiction, unreachable today
 
@@ -244,7 +273,7 @@ not demonstrated.
 
 | Check | Result |
 | --- | --- |
-| Unit tests | **1,322** in **75** files |
+| Unit tests | **1,327** in **75** files |
 | Browser specs | **156** |
 | `pnpm typecheck` | clean |
 | `pnpm lint` | clean |
