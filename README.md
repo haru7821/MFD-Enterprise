@@ -48,6 +48,28 @@ exists to answer. Release status and the conditions for production are in
 
 ---
 
+## Engineering Principles
+
+1. **Never claim more than the evidence supports.**
+2. **Prefer abstaining over guessing.**
+3. **Every recommendation must be reproducible.**
+4. **Engineering judgement remains with the engineer.**
+
+These are enforced rather than aspirational, and each has a guard that fails when it is broken —
+a suppressed total that cannot rank as a zero, a criterion that reports `SC-9xx` instead of a
+number, a replay harness that shuffles inputs and compares bytes, an optimiser that proposes
+commands an engineer could have issued rather than applying them.
+
+The fourth is the one that constrains the other three. VantiCAD Layout **evaluates, validates,
+documents and explains**. It does not design automatically, it does not stand in for the engineer,
+and no output of it is a decision — the engine proposes and explains, the rule engine judges, the
+report states, and **a person decides**.
+
+Full statement, with the guard behind each rule:
+[docs/ENGINEERING_PRINCIPLES.md](docs/ENGINEERING_PRINCIPLES.md).
+
+---
+
 ## Features
 
 - **Geometry-aware candidate comparison** — candidates are compared by `geometryKey`: the exact
@@ -182,7 +204,7 @@ document-model    the project file and its migrations    cad-engine       geomet
 object-library    equipment catalogue                    rule-engine      rules → findings
 ai-contract       scoring model, rationale codes         ai-local         candidates, scoring, ranking
 ai-planner        installation planning                  report-engine    JSON / HTML / PDF
-layout-knowledge  observations → derived knowledge       apps/web         React + Vite designer
+layout-knowledge  observations → derived knowledge       apps/web         React + Vite editor
 ```
 
 The dependency rule is one-way and enforced by ESLint rather than by memory: `apps/` may import
@@ -224,6 +246,8 @@ a guard in [docs/release/REGRESSION_PROTECTION_MAP.md](docs/release/REGRESSION_P
 | Document | Read it for |
 | --- | --- |
 | [docs/product/MFD-E_TS_EDITION_SPEC.md](docs/product/MFD-E_TS_EDITION_SPEC.md) | **What is being built now** — product definition, user, MVP scope |
+| [docs/ENGINEERING_PRINCIPLES.md](docs/ENGINEERING_PRINCIPLES.md) | The four principles, and the guard behind each |
+| [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) | How a change becomes an internal release, and what blocks one |
 | [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | Owner decisions D1–D16, and **what is still needed from the owner** |
 | [docs/release/RELEASE_GATE.md](docs/release/RELEASE_GATE.md) | Release Candidate → Production conditions, and the one not met |
 | [docs/release/RELEASE_READINESS_REPORT.md](docs/release/RELEASE_READINESS_REPORT.md) | Evidence model, equality definitions, determinism, known limitations |
@@ -245,7 +269,7 @@ Requires **Node.js ≥ 20.19** and **pnpm 10** (`npm install -g pnpm`).
 
 ```bash
 pnpm install     # every workspace
-pnpm dev         # designer at http://localhost:5173
+pnpm dev         # editor at http://localhost:5173
 pnpm build       # production build → apps/web/dist
 ```
 
