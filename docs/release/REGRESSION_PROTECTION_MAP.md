@@ -2,6 +2,8 @@
 
 > Companion to [`RELEASE_READINESS_REPORT.md`](RELEASE_READINESS_REPORT.md), at commit `cea0f54`.
 >
+> The conditions for leaving Release Candidate are in [`RELEASE_GATE.md`](RELEASE_GATE.md).
+>
 > For each design decision: where it lives, what guards it, and **what a failure of that guard
 > means**. The third column is the one worth having — a red test whose meaning nobody can state is a
 > red test somebody will delete.

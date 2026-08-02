@@ -2,6 +2,8 @@
 
 > Companion to [`RELEASE_READINESS_REPORT.md`](RELEASE_READINESS_REPORT.md), at commit `cea0f54`.
 >
+> The conditions for leaving Release Candidate are in [`RELEASE_GATE.md`](RELEASE_GATE.md).
+>
 > A checklist whose boxes are all pre-ticked is a decoration. Two items below are **not** clear, and
 > they are the reason this document exists.
 
@@ -62,15 +64,24 @@ than "the freeze covers every optional field". Counting `?:` on exported TypeScr
 | | |
 | --- | --- |
 | Shape | 7 optional properties — `ruleId`, `reasonCode`, `expected`, `actual`, `placementIds`, `measured`, `reasonParams` |
-| Exposure | public, through `RankResult.rejected` |
+| Exposure | public, three routes — `GateOutcome.violations`, `OptimiseResult.blocking`, `RankResult.rejected` |
 | Schema | **none** — it is a TypeScript interface, so nothing validates it at a boundary |
-| Consumer | `apps/web/src/features/layout/runSolver.ts:88` branches on it |
-| Tested | **no** — by §9.3 of the readiness report, no test in the repository asserts a non-empty `rejected` |
+| Consumer | `apps/web/src/features/layout/runSolver.ts:166-174`, off `blocking` |
+| Tested | **partly** — `gates.test.ts` and `optimise.test.ts` assert `detail` on the first two routes; **no test asserts a non-empty `rejected`** |
 
-Every property being optional means the type permits `detail: {}`, and no test would notice. This is
-not fixed here for the same reason as `dataset.json`: adding a schema is a contract change, and this
-commit is documentation. It is recorded so the freeze is entered knowing that the export surface has
-one unvalidated, untested, all-optional object in it.
+This entry first read *"no schema, no test, a UI consumer branching on it"*. Checked clause by
+clause, only the first survived: `detail` **is** asserted by tests, on two of its three routes, and
+the consumer reads it off `blocking` rather than branching on it at line 88 — that line reads
+`rejected.length` and nothing else. Corrected here rather than left standing, since a freeze
+checklist that overstates a gap is the same defect as one that hides it.
+
+What remains true is the shape: every property optional, so the type permits `detail: {}`, and the
+consumer compensates with `violation.detail.ruleId ?? ''`. An absent `ruleId` renders as an **empty
+string** in the panel — unknown presented as a measured value, in the one place the type system
+still allows it. Nothing produces such a `Rejection` today; nothing prevents one either.
+
+Not fixed here for the same reason as `dataset.json`: adding a schema is a contract change, and this
+commit is documentation. Full statement in [`RELEASE_GATE.md`](RELEASE_GATE.md) §2.2.
 
 ✅ **Clear on the zod surface** — both `.optional()` exceptions are outside the document model and
 documented at their definition. ⚠️ **Not clear on the interface surface**, as above.
@@ -163,7 +174,7 @@ a person's signature — lives where no batch can overwrite it.
 | Item | Status |
 | --- | --- |
 | Version fields present where required | ❌ **1 open** — `dataset.json` |
-| Optional fields documented | ⚠️ ✅ 2 of 2 `.optional()`; **1 open** — `Rejection.detail`, 7 optional properties, no schema, no test |
+| Optional fields documented | ⚠️ ✅ 2 of 2 `.optional()`; **1 open** — `Rejection.detail`, 7 optional properties, no schema, one route untested |
 | Nullable fields documented | ✅ |
 | Artefact formats documented | ✅ 6 of 6 |
 | Public contracts unchanged | ⚠️ changed with version bumps, itemised above |

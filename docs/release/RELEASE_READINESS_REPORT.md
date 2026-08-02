@@ -7,7 +7,8 @@
 > `compareLayouts` with tests that can break it, and one strategy order instead of two.
 >
 > Read with [`SCHEMA_FREEZE_CHECKLIST.md`](SCHEMA_FREEZE_CHECKLIST.md) and
-> [`REGRESSION_PROTECTION_MAP.md`](REGRESSION_PROTECTION_MAP.md).
+> [`REGRESSION_PROTECTION_MAP.md`](REGRESSION_PROTECTION_MAP.md). The conditions for leaving Release
+> Candidate — and the one that is not met — are in [`RELEASE_GATE.md`](RELEASE_GATE.md).
 
 Every figure below was re-derived from the repository while writing this. Where something could not
 be verified, it is in [§9](#9-known-intentional-limitations) rather than stated as fact.
