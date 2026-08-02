@@ -8,7 +8,7 @@ abandoned and a new one started.
 | --- | --- | --- |
 | `run-metadata.json` | Identity of the run — a filled copy of `run-metadata.template.json` | **Yes** |
 | `context.md` | Facility, the review objective, who asked for the review, operator | **Yes** |
-| `drawing-reference.txt` | Path to the source drawing in the dataset, and its `sha256` | **Yes** |
+| `drawing-reference.txt` | Path to the source drawing, and its `sha256` — identity derives from the bytes (D17), not the path | **Yes** |
 
 The drawing itself is **not** copied here. It is the hospital's property, it lives outside this
 repository, and `sha256` in `run-metadata.json` identifies which file was used.

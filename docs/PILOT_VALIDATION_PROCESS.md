@@ -87,6 +87,19 @@ page is analysed and reported separately** — the engine does not scan the docu
 that looks like a dialysis room. Choosing a page is an engineering judgement about what the drawing
 shows, and a wrong guess produces a confident result about the wrong room.
 
+Implemented in `scripts/lib/pageSelection.ts` and driven by `verify:drawing`:
+
+| Invocation | Selection |
+| --- | --- |
+| `--all-pages`, or no page argument | `full-document` — every page, one result each |
+| `--page 2` / `--pages 0,2` | `user-selected`, recorded as such |
+| A page outside the document | **Refused.** Not clamped — clamping page 7 to page 3 would analyse a real page nobody asked for and file it under a number nobody chose |
+| Page count unreadable, nothing selected | **Refused.** Reading page 0 would report on an unknown fraction of the document |
+
+`--page` no longer defaults to `0`: that default made *"nobody chose"* and *"page 0"* the same
+input. The rule lives where a test can break it, because a page chosen by software and a page chosen
+by a person produce identical-looking records.
+
 **Never infer requester or reviewer identity.** Optional means **absent** — the key is omitted, not
 filled with `unknown`, `system`, `TS team` or a role name. An absent key says nothing; a placeholder
 says something false. That is owner decision D14's principle applied to people rather than to
@@ -96,28 +109,42 @@ frequencies.
 not an input field at all: the person who signs is recorded at the moment they sign, in `review/`
 and `confirmation/`, by them.
 
-### On the generated `drawingId` — a decision, not an implementation detail
+### `drawingId` is content identity — owner decision D17
 
-`drawingId` is one of the project's six equality concepts: it identifies a drawing **entity**. How a
-generated one is derived therefore decides what "the same drawing" means, and that is an
-engineering-semantics question rather than a coding choice.
+> **`drawingId` derives from `sha256`.** Never from filename, upload event or folder structure. The
+> same evidence must not create multiple drawing identities, because duplicates inflate evidence
+> aggregation. Filename, revision and upload metadata are kept **separate from identity**.
 
-Today `dataset:ingest` builds `drawingId` as `${hospitalId}/${basename(path)}` — from the folder the
-file sits in. An uploaded file has no such folder, so a derivation must be chosen. The candidates
-differ in what they treat as identity:
-
-| Derivation | Re-uploading identical bytes | Re-uploading the same sheet renamed |
+| Derivation | Identical bytes re-uploaded | Same sheet, renamed |
 | --- | --- | --- |
-| From `sha256` | Same id — one entity | Same id — one entity |
-| From filename | Two ids if renamed | Same id |
-| From upload event | **Two ids** — the same drawing counted twice | Two ids |
+| **`sha256`** — decided | One entity | One entity |
+| Filename | Two entities | One entity |
+| Upload event | **Two entities** | Two entities |
 
-Deriving from `sha256` keeps `drawingId` and the bytes-equality concept coherent and cannot mint a
-second identity for a file already catalogued — which matters because support is counted per plan
-and per facility (D6, D15), and a duplicate identity would inflate evidence. **`drawingIdDerivedFrom`
-records which rule was used**, so a record never leaves the reader guessing.
+`drawingIdDerivedFrom` records which rule produced a given id, so a record written under one scheme
+is readable under another.
 
-This is recorded as the owner's decision to make, not settled here.
+#### Not yet implemented, and why — `facilityOf`
+
+`facilityOf(drawingId)` returns everything before the first `/`. A bare `sha256` has none, so it
+returns the whole hash and **every drawing becomes its own facility**.
+
+That inverts **D6**, which counts independent facilities precisely so one firm's template across
+many files cannot read as consensus — measured at 117 files against 24 sites. Under a bare-hash id,
+three sheets from one hospital count as three facilities: the same inflation D17 exists to prevent,
+relocated from identity into grouping.
+
+**`planOf` has the same problem.** D15 counts distinct plans so a `.dwg`/`.pdf` twin pair is not two
+sheets of evidence — and two exports of one plan have *different bytes*, so content identity makes
+them two ids.
+
+So D17 needs a second change alongside it: **facility and plan must become recorded fields rather
+than substrings of the id.** That is a schema change plus a regeneration of all 300 catalogue entries
+and 306 corpus rows, and how existing path-derived ids are migrated is itself a decision.
+
+Flipping the derivation alone would leave the suite green and silently break D6 and D15. It is
+therefore raised rather than done — see
+[`../pilot/PILOT-001/input/BLOCKED.md`](../pilot/PILOT-001/input/BLOCKED.md).
 
 ### Note — there is no solver version field
 

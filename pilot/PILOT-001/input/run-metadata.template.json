@@ -9,7 +9,7 @@
   "pilotId": "PILOT-001",
 
   "drawing": {
-    "_note": "SYSTEM-GENERATED from the uploaded file. The user supplies the file; they do not type an identifier. sourceFilename and sha256 are recorded as uploaded — sha256 is what proves which bytes were read, and it is the only field a later reader can use to check that.",
+    "_note": "SYSTEM-GENERATED from the uploaded file. The user supplies the file; they do not type an identifier. OWNER DECISION D17: identity is CONTENT identity — drawingId derives from sha256, never from filename, upload event or folder structure, because the same evidence must not create multiple drawing identities. NOT YET IMPLEMENTED: see BLOCKED.md, adopting it as written breaks facilityOf(), which reads the site out of the id string.",
     "sourceFilename": null,
     "sha256": null,
     "drawingId": null,
@@ -21,7 +21,7 @@
     "_note": "pageCount is DETECTED, never asked for. selection is the user's, and it is the one page-related thing the system may not decide: NEVER INFER WHICH PAGE CONTAINS THE TARGET ROOM. If the user selects no page, every page is analysed and reported separately — the engine does not pick the one that looks like a dialysis room.",
     "pageCount": null,
     "selectionMode": null,
-    "_selectionMode": "'user-selected' or 'full-document'. Nothing else. There is no 'auto' — that would be the inference the rule forbids.",
+    "_selectionMode": "'user-selected' or 'full-document'. Nothing else. There is no 'auto' — that would be the inference the rule forbids. IMPLEMENTED: verify:drawing --all-pages (or supplying no page) runs full-document; --page N or --pages N,M records a selection; an out-of-range page is REFUSED, never clamped. A refusal is a third outcome and analyses nothing.",
     "selectedPages": null,
     "_selectedPages": "Zero-based. Null when selectionMode is 'full-document'. The first page is 0, not 1 — a page number off by one resolves to a real but different sheet, producing a record that is valid and false.",
     "pagesAnalysed": null
