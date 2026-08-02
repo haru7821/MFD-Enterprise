@@ -1,13 +1,16 @@
 # PILOT-001
 
-> **Status: NOT EXECUTED — awaiting the drawing file.** Structure prepared; no stage has been run.
+> **Status: MACHINE STAGES COMPLETE — awaiting engineer review.**
 >
-> Awaiting one thing: the drawing. Page selection, requester and operator are optional; the
-> reviewing engineer is named only at confirmation.
+> Drawing `Hospital_044/dialysis.pdf`, page 0 of 1, `full-document`. Hash verified against the
+> catalogue before extraction. **The run stopped at `room`** after completing `verify_mapping`,
+> with `VD-1` (drawing_error) and `VD-4` (insufficient_evidence). A stop is a valid outcome.
 >
-> **D17 identity migration is deferred and does not block this pilot** — it runs under the existing
-> drawing identity model, so the drawing is named by its catalogued `drawingId`. See
-> [`input/BLOCKED.md`](input/BLOCKED.md).
+> No evaluation, ranking or rationale was produced — extraction stopped before them, so their
+> absence is the result, not a gap.
+>
+> **`review/` and `confirmation/` are empty and stay that way until a person acts.** The machine
+> scope ends here.
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)

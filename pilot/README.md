@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Not executed — awaiting the drawing.** D17 identity migration is deferred and does not block it |
+| [`PILOT-001`](PILOT-001/) | **Machine stages complete — awaiting engineer review.** `Hospital_044/dialysis.pdf`, stopped at `room` |

@@ -1,0 +1,7 @@
+Hospital_044/dialysis.pdf
+sha256 4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4
+dataset path: /workspace/mfd-hospital-dataset/Hospital_044/dialysis.pdf
+
+The drawing itself is not copied here: it is the hospital property and lives outside this
+repository. The sha256 above identifies which bytes were read, and it was verified against
+knowledge/dataset.json before extraction began.

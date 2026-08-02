@@ -1,32 +1,11 @@
-# PILOT-001 — execution not started
+# PILOT-001 — input, and the blockers that preceded it
 
-> **Superseded — input model simplified.** The earlier version of this file recorded two blockers
-> under the old input model, which required the user to type a `drawingId`, a `page`, an operator, a
-> requester and a reviewing engineer. **Owner decision: none of those is required of the user.** The
-> blockers they described are therefore no longer blockers, and are recorded below as history rather
-> than deleted.
-
-## What is required now
-
-**One thing: the drawing.**
-
-Because D17 is deferred, the identifier model is the existing one — so the drawing must be a
-**catalogued** one, named by its `drawingId` from `knowledge/dataset.json`. The upload-and-generate
-flow depends on the single-file ingest path that D17 would have brought, and that is now a later
-milestone.
-
-| Step | Who | Status |
-| --- | --- | --- |
-| 1 · Supply the drawing | **User** | ❌ **outstanding — the only blocker** |
-| 2 · `drawingId` | System | Existing model, unchanged: a catalogued path-derived id |
-| 3 · Record `sourceFilename` + `sha256` | System | waiting on 1 |
-| 4 · Detect `pageCount` | System | waiting on 1 |
-| 5 · Select page, or analyse full document | User, optional | defaults to `full-document` |
-| 6 · Requester / operator | User, optional | absent is valid |
-| 7 · Reviewing engineer | — | not an input; required only at confirmation |
-
-Steps 5–7 cannot block anything: 5 has a defined default that infers nothing, and 6 and 7 are
-optional or deferred by decision.
+> **Resolved.** The drawing was supplied as `hospital044/Dialysis.pdf` and resolved to the
+> catalogued `Hospital_044/dialysis.pdf` — exactly one candidate matched, case- and
+> punctuation-insensitively. The resolution is recorded in `run-metadata.json` rather than applied
+> silently, because the operator wrote a different string from the catalogued one.
+>
+> The machine stages have run. See [`../README.md`](../README.md).
 
 ## D17 is deferred — it does not block this pilot
 

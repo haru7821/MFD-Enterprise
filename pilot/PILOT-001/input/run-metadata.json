@@ -1,0 +1,112 @@
+{
+  "pilotId": "PILOT-001",
+
+  "drawing": {
+    "sourceFilename": "dialysis.pdf",
+    "sourcePath": "Hospital_044/dialysis.pdf",
+    "sha256": "4e795d5bb5e8c038b43c84828f9a1233660a466cd77d5e59056796b3466032d4",
+    "bytes": 1034341,
+    "drawingId": "Hospital_044/dialysis.pdf",
+    "drawingIdDerivedFrom": "legacy-path-derived",
+    "alreadyInCatalogue": true,
+    "hashMatchesCatalogue": true,
+    "identifierAsSupplied": "hospital044/Dialysis.pdf",
+    "identifierResolution": "Case- and punctuation-insensitive match against knowledge/dataset.json returned exactly ONE candidate. Recorded rather than applied silently: the operator wrote a different string from the catalogued one, and a reader must be able to see that a resolution happened."
+  },
+
+  "pages": {
+    "pageCount": 1,
+    "selectionMode": "full-document",
+    "selectedPages": null,
+    "pagesAnalysed": [0]
+  },
+
+  "catalogue": {
+    "records": [{ "id": "vantive_ak98", "version": "0.6.0" }]
+  },
+
+  "ruleSet": {
+    "id": "dialysis",
+    "version": "0.1.0",
+    "status": "draft"
+  },
+
+  "scoringModel": {
+    "id": "dialysis_default",
+    "version": "1.0.0",
+    "minimumCoverage": 0.25
+  },
+
+  "code": {
+    "gitCommitSha": "be5b6b3367b1af7342fd011772d7e1959d9177a9",
+    "workingTreeClean": true,
+    "aiContractVersion": 1,
+    "evaluationResultVersion": 3,
+    "documentVersion": 5,
+    "knowledgeVersion": 3,
+    "corpusValidationVersion": 2,
+    "confirmationsVersion": 2
+  },
+
+  "execution": {
+    "timestamp": "2026-08-02T15:46:57+00:00",
+    "operator": null,
+    "machine": "VantiCAD Layout session container",
+    "locale": "C"
+  },
+
+  "context": {
+    "facility": "Dialysis room",
+    "roomType": "dialysis",
+    "reviewObjective": "Evaluate the number of equipment stations supported by available evidence for this Dialysis room. Not a request for an unconditional recommended equipment count."
+  },
+
+  "reviewingEngineer": {
+    "name": null,
+    "recordedAt": "review/ and confirmation/, after the machine run stops"
+  },
+
+  "geometry": {
+    "drawingEvidence": {
+      "printedScaleClaimed": null,
+      "sheetSizeMeasuredFromFile": null,
+      "printedScaleAgreesWithSheetSize": null,
+      "dimensionStringsRead": null,
+      "roomOutlineVisible": null
+    },
+    "verifiedGeometry": {
+      "calibrationMethod": null,
+      "calibrationBasis": null,
+      "calibrationConfirmedBy": null,
+      "roomOutlineTracedBy": null,
+      "roomOutlineTracedAgainst": null,
+      "dimensionsConfirmed": null
+    },
+    "evaluationGeometry": {
+      "roomPolygonUsed": null,
+      "planStatus": null,
+      "everyValueTracesToTier1Or2": null,
+      "untracedValues": null
+    },
+    "rulesObserved": {
+      "scaleNotAssumedAccurate": null,
+      "noDimensionInferredFromAppearance": null,
+      "noExtractedDimensionMarkedVerifiedWithoutProvenance": null,
+      "humanConfirmedGeometryDistinguishableFromDrawingDerived": null
+    }
+  },
+
+  "expected": {
+    "verdict": "판정 불가 / Inconclusive",
+    "clearanceFindings": "RC-110 throughout — no threshold to compare against",
+    "complianceMargin": "unavailable — 40% of the scoring model",
+    "aStopIsAValidOutcome": true
+  },
+
+  "notesOnOmittedFields": [
+    "context.requestedBy — omitted. Not supplied, and optional means absent rather than a placeholder.",
+    "execution.operator — null. Not supplied by a person; a role name would make the record unable to say who to ask about it.",
+    "reviewingEngineer.name — null through the whole machine run, by design.",
+    "geometry.* — left null here because it is recorded as the run proceeds and by the reviewer, not predicted before it."
+  ]
+}
