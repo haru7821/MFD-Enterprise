@@ -1,6 +1,11 @@
 # PILOT-001
 
-> **Status: NOT EXECUTED.** Structure prepared; no stage has been run.
+> **Status: NOT EXECUTED — blocked on input.** Structure prepared; no stage has been run.
+>
+> Input decision received and recorded in [`input/context.md`](input/context.md). Two required
+> fields do not resolve — see [`input/BLOCKED.md`](input/BLOCKED.md): the drawing identifier
+> `Vantive_Layout_001` matches no catalogued drawing and no file in the dataset, and the operator is
+> stated as still to be designated.
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)

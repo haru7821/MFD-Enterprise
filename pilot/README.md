@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Not executed** — structure prepared, awaiting a drawing and an operator |
+| [`PILOT-001`](PILOT-001/) | **Not executed — blocked on input.** Drawing identifier does not resolve; operator not designated |
