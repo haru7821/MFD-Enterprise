@@ -76,6 +76,47 @@ export interface FeasibleCandidate {
   readonly gates: GateOutcome;
 }
 
+/**
+ * What makes two candidates **the same layout**.
+ *
+ * > Owner decision: *"Candidates with identical geometry evidence should collapse into one
+ * > proposal … The deduplication key must represent geometry identity, not candidate id, strategy
+ * > name, first-seen order, or metadata differences."*
+ *
+ * Derived from the placements, because those are the geometry the engineer is actually shown and
+ * the report actually signs — the equipment, where it stands, which way it faces. Deliberately
+ * **not** derived from:
+ *
+ * - `candidate.id`, which embeds the strategy name and so says who found the layout rather than
+ *   what it is. That is precisely the defect: `perimeter-4-033p4n9` and `rows-4-033p4n9` were
+ *   measured to have byte-identical placements and were presented as two alternatives.
+ * - `placement.id`, which is a document counter and differs between two identical arrangements.
+ * - array position, hence the sort: two strategies may emit the same stations in a different
+ *   sequence, and a sequence is not a fact about the room.
+ *
+ * `JSON.stringify` over an array rather than a delimiter-joined string, for the reason
+ * `rowFingerprint` learned the hard way: a separator that can appear inside a field is not a
+ * separator. Ids here are `placement-N` and could not collide, but the rule is cheaper to keep than
+ * to re-derive.
+ *
+ * This is **exact**, not the 32-bit `hashPositions` that feeds `candidate.id`. A hash is fine for
+ * naming a candidate and wrong for deciding two are the same: at 32 bits a collision would merge
+ * two genuinely different layouts, and merging is the operation that loses evidence.
+ */
+export function geometryKey(placements: readonly Placement[]): string {
+  return JSON.stringify(
+    placements
+      .map((placement) => [
+        placement.equipmentObjectId,
+        placement.transform.position.x,
+        placement.transform.position.y,
+        placement.transform.rotation,
+        placement.transform.mirrored,
+      ])
+      .sort((a, b) => (JSON.stringify(a) < JSON.stringify(b) ? -1 : 1)),
+  );
+}
+
 export interface RejectedCandidate {
   readonly candidateId: string;
   readonly rejection: Rejection;

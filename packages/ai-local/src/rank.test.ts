@@ -12,7 +12,8 @@ import {
   fixtureRoomBoundary,
   fixtureRuleSet,
 } from '../fixtures/index';
-import { type RankInput, denseRanks, rankLayouts } from './rank';
+import { type RankInput, collapseByGeometry, denseRanks, rankLayouts } from './rank';
+import { generateFeasibleCandidates, geometryKey } from './generate';
 
 /**
  * The output contract.
@@ -31,6 +32,25 @@ const POINTS: ReferencePointSummary[] = [
   { id: 'entry', kind: 'access_entry', position: { x: 4_000, y: 0 } },
   { id: 'staff', kind: 'staff_base', position: { x: 4_000, y: 6_000 } },
 ];
+
+/** The same inputs `rank()` uses, for the tests that need the pipeline rather than the ranking. */
+function pipelineInput(): RankInput {
+  return {
+    room: fixtureRoom(),
+    obstructions: [],
+    boundaries: [fixtureRoomBoundary()],
+    object: machine,
+    catalog: fixtureCatalog(),
+    ruleSet: fixtureRuleSet(),
+    planStatus: 'calibrated',
+    stationTarget: 4,
+    pitchPadding: 1_200,
+    knowledge: fixtureKnowledge(),
+    existing: [],
+    referencePoints: POINTS,
+    scoring: dialysisScoringModel,
+  };
+}
 
 function rank(overrides: Partial<RankInput> = {}) {
   return rankLayouts({
@@ -142,20 +162,24 @@ describe('the ranked output', () => {
     }
   });
 
-  it('ranks in descending total, densely, so a tie shares a number', () => {
+  it('ranks in descending total, densely, over distinct geometries', () => {
     /*
-     * > Owner decision: *"Do not present a tie as '#1'. If two or more candidates are
-     * > indistinguishable under the available evidence, they are tied."*
+     * **Rewritten twice, and the second rewrite is the interesting one.**
      *
-     * This asserted `[1, 2, 3]` — a rank per position — which is the behaviour the decision
-     * replaced. On this fixture the answer is now `[1, 1, 2]`, because the first two layouts score
-     * an identical 0.283333333 at identical coverage and nothing measurable separates them.
+     * It first asserted `[1, 2, 3]` — a rank per position. D13 made ranks dense and it became
+     * `[1, 1, 2]` with the first two `tied`. Both were describing a fixture in which two of the
+     * three "alternatives" were the **same layout**: `perimeter-4-033p4n9` and `rows-4-033p4n9`
+     * have byte-identical placements.
+     *
+     * With geometry-equivalent candidates collapsed there are two proposals, and their totals
+     * differ (0.283333333 against 0.280260417), so nothing here is tied at all. The tie this test
+     * used to assert was never a tie — it was one layout counted twice.
      */
     const result = rank();
     const ranks = result.layouts.map((layout) => layout.rank);
 
-    expect(ranks).toEqual([1, 1, 2]);
-    expect(result.layouts.map((layout) => layout.tied)).toEqual([true, true, false]);
+    expect(ranks).toEqual([1, 2]);
+    expect(result.layouts.map((layout) => layout.tied)).toEqual([false, false]);
 
     // A suppressed total (owner decision D1) sorts last rather than as zero — `rank.ts`'s
     // comparator substitutes -1 for null, outside the 0…1 range every real total lives in.
@@ -199,31 +223,26 @@ describe('the ranked output', () => {
     expect(JSON.stringify(rank())).toBe(JSON.stringify(rank()));
   });
 
-  it('orders tied layouts internally by id, without presenting that order as a judgement', () => {
+  it('returns the surviving proposals in a defined order', () => {
     /*
-     * **Renamed.** This was called *"breaks a tie on compliance margin rather than on generation
-     * order"*, which describes something it has never done: with no thresholds in the rule set,
-     * every compliance margin is unavailable, so the margin leg cannot run. The body always said
-     * so; the title did not, and a title is what someone reads when deciding whether the case is
-     * covered.
+     * **Third title for this test, and the previous two both described a duplicate.**
      *
-     * What it does check is the internal order — the deterministic fallback on candidate id, which
-     * the owner's decision explicitly permits and explicitly forbids presenting as significance.
-     * The `tied` flag beside it is what carries the presentation.
+     * It began as *"breaks a tie on compliance margin rather than on generation order"*, which it
+     * never did — with no thresholds in the rule set the margin leg cannot run. It was renamed to
+     * *"orders tied layouts internally by id"*, which was true only because two of the three
+     * layouts were the same arrangement counted twice. With geometry-equivalent candidates
+     * collapsed, this fixture has no tie, and a test that filtered for one asserted over a set of
+     * size one while claiming to check ordering.
+     *
+     * What is left to check, and what was always the real property: the output has a defined order
+     * that does not vary between runs. `compare` puts the higher total first; the id key is the
+     * fallback and is not reached here.
      */
     const result = rank();
-    const tied = result.layouts.filter(
-      (layout) => layout.score.total === result.layouts[0]?.score.total,
-    );
 
-    // Declared, not assumed: the `if` this replaces made the assertion skippable, and a fixture
-    // that stopped producing a tie would have quietly stopped testing anything.
-    expect(tied.length).toBeGreaterThan(1);
-
-    const ids = tied.map((layout) => layout.candidateId);
-    expect([...ids].sort()).toEqual(ids);
-    // And every one of them is reported as tied rather than as a ranking.
-    expect(tied.every((layout) => layout.tied)).toBe(true);
+    expect(result.layouts.length).toBeGreaterThan(1);
+    const totals = result.layouts.map((layout) => layout.score.total ?? -1);
+    expect([...totals].sort((a, b) => b - a)).toEqual(totals);
   });
 
   it('explains itself in codes rather than prose', () => {
@@ -262,59 +281,167 @@ describe('the ranked output', () => {
   });
 });
 
+describe('geometry-equivalent candidates collapse into one proposal', () => {
+  /*
+   * > Owner decision: *"Candidates with identical geometry evidence should collapse into one
+   * > proposal … Tied means multiple distinct geometries have equivalent evidence, not multiple
+   * > strategies generated the same geometry."*
+   *
+   * The defect, measured before the change: `rank()` returned three layouts over **two** distinct
+   * geometries. `perimeter-4-033p4n9` and `rows-4-033p4n9` placed the same equipment at the same
+   * positions with the same rotation and mirroring, and D13 had just labelled that pair *Tied* —
+   * telling an engineer the evidence could not separate two alternatives when there was only one.
+   */
+
+  it('Case A — two strategies, one geometry: one proposal, and no artificial tie', () => {
+    const result = rank();
+
+    // Every proposal is a distinct arrangement. The key is the geometry, not the candidate id.
+    const geometries = new Set(result.layouts.map((layout) => geometryKey(layout.placements)));
+    expect(geometries.size).toBe(result.layouts.length);
+
+    // The shipped fixture's convergence, asserted rather than assumed — if the generator stops
+    // producing it, this fails and the case below stops being about anything.
+    const converged = result.layouts.find((layout) => layout.strategies.length > 1);
+    expect(converged, 'the fixture no longer contains a convergence case').toBeDefined();
+    expect(converged?.strategies).toEqual(['perimeter', 'rows']);
+
+    // And nothing is tied, because the two surviving geometries score differently. Before the
+    // collapse this fixture reported two tied layouts that were one layout.
+    expect(result.layouts.every((layout) => !layout.tied)).toBe(true);
+  });
+
+  it('Case A — the evidence of convergence is kept, not discarded', () => {
+    /*
+     * Collapsing must not lose the fact that two strategies agreed. `candidateId` names only the
+     * survivor, so it carries `perimeter` alone; `strategies` is the honest list.
+     */
+    const converged = rank().layouts.find((layout) => layout.strategies.length > 1)!;
+
+    expect(converged.candidateId).toContain('perimeter');
+    expect(converged.strategies).toContain('rows');
+  });
+
+  it('Case B — two geometries with equal evidence stay, and may still be tied', () => {
+    /*
+     * The other half of the decision: *"Do not change ranking semantics for genuinely different
+     * geometries."* Distinct arrangements are never merged, and a tie between them remains possible.
+     *
+     * Constructed at the `denseRanks` level because the shipped fixture's two surviving geometries
+     * happen to score differently — asserting a tie through `rank()` would need a room invented to
+     * produce one, and a fixture built to make a test pass is not evidence.
+     */
+    const result = rank();
+    expect(result.layouts.length).toBeGreaterThan(1);
+    expect(new Set(result.layouts.map((l) => geometryKey(l.placements))).size).toBe(
+      result.layouts.length,
+    );
+
+    const score = (total: number | null, coverage: number) =>
+      ({ total, coverage }) as unknown as Parameters<typeof denseRanks>[0][number];
+    expect(denseRanks([score(0.5, 0.25), score(0.5, 0.25)])).toEqual([
+      { rank: 1, tied: true },
+      { rank: 1, tied: true },
+    ]);
+  });
+
+  it('Case C — the survivor does not depend on the order the candidates arrive in', () => {
+    /*
+     * The claim that would be worthless untested: that `collapseByGeometry` picks by codepoint
+     * order on the candidate id rather than by whichever member came first.
+     *
+     * Today the generator emits candidates already sorted, so first-seen and codepoint-first are
+     * the same entry and no observation through `rankLayouts` could tell them apart. Hence the
+     * shuffled input here, and hence the function being exported at all.
+     */
+    const feasible = generateFeasibleCandidates(pipelineInput()).feasible;
+    expect(feasible.length).toBeGreaterThan(2);
+
+    const forwards = collapseByGeometry(feasible);
+    const backwards = collapseByGeometry([...feasible].reverse());
+
+    expect(backwards.map((entry) => entry.entry.candidate.id)).toEqual(
+      forwards.map((entry) => entry.entry.candidate.id),
+    );
+    expect(backwards.map((entry) => entry.strategies)).toEqual(
+      forwards.map((entry) => entry.strategies),
+    );
+
+    // And it really did collapse something, or the equality above is between two singletons.
+    expect(feasible.length).toBeGreaterThan(forwards.length);
+  });
+
+  it('Case C — geometry identity ignores placement order and placement ids', () => {
+    /*
+     * The key itself. Two candidates may list the same stations in a different sequence, and every
+     * arrangement numbers its placements from one — neither is a fact about the room.
+     */
+    const [layout] = rank().layouts;
+    const placements = layout!.placements;
+    expect(placements.length).toBeGreaterThan(1);
+
+    const shuffled = [...placements].reverse();
+    expect(geometryKey(shuffled)).toBe(geometryKey(placements));
+
+    const renamed = placements.map((placement, index) => ({
+      ...placement,
+      id: `renamed-${index}`,
+    }));
+    expect(geometryKey(renamed)).toBe(geometryKey(placements));
+
+    // But a machine that actually moved is a different layout.
+    const moved = placements.map((placement, index) =>
+      index === 0
+        ? {
+            ...placement,
+            transform: {
+              ...placement.transform,
+              position: {
+                x: placement.transform.position.x + 1,
+                y: placement.transform.position.y,
+              },
+            },
+          }
+        : placement,
+    );
+    expect(geometryKey(moved)).not.toBe(geometryKey(placements));
+  });
+});
+
 describe('what actually decides the layout an engineer is shown first', () => {
   /*
-   * **Measured, not described** — and the answer is uncomfortable enough to be worth a test.
+   * **Measured again after geometry-equivalent candidates were collapsed, and the answer changed.**
    *
-   * `compare` has three keys: total score, compliance margin, then candidate id. Deleting either of
-   * the last two left all 1,269 tests green, which sent me looking at what they see.
+   * Before the collapse this file recorded that the top two layouts tied exactly on total, that
+   * `compliance_margin` could not break the tie, and that `perimeter` was therefore shown first
+   * because `'p' < 'r'` — alphabetical order standing in for engineering preference.
    *
-   * On the shipped fixture the ranked output is:
+   * Two of those three facts were about a duplicate. The "tie" was `perimeter-4-033p4n9` and
+   * `rows-4-033p4n9`, which are the same arrangement, so the id key was not choosing between two
+   * layouts — it was choosing which name to print on one. With them collapsed, the two surviving
+   * geometries are separated by score:
    *
-   * | candidate            | total       | margin |
-   * | -------------------- | ----------- | ------ |
-   * | `perimeter-4-…`      | 0.283333333 | null   |
-   * | `rows-4-…`           | 0.283333333 | null   |
-   * | `columns-4-…`        | 0.280260417 | null   |
+   * | proposal                | total       | margin |
+   * | ----------------------- | ----------- | ------ |
+   * | `perimeter-4-033p4n9`   | 0.283333333 | null   |
+   * | `columns-4-0l767z9`     | 0.280260417 | null   |
    *
-   * The top two tie **exactly** on total. `compliance_margin` is unavailable on all three — every
-   * rule in `standards/rules/` carries a null threshold until A-1 arrives, so `marginOf` returns -1
-   * for every candidate and the second key cannot separate anything. What ranks `perimeter` above
-   * `rows` is therefore the third key, on the candidate id: `'p' < 'r'`.
-   *
-   * So the layout presented first is chosen by **alphabetical strategy name** whenever the totals
-   * tie, which with a four-station room they do. The id key is not decoration — it is the tie-break
-   * that decides the headline answer, and it is doing that job in place of an engineering criterion
-   * that cannot be measured yet.
-   *
-   * Whether a tie should be presented as a ranked #1 at all is a product question and is with the
-   * GM. These tests only stop it being a surprise.
-   *
-   * ## What the mutations actually showed, including where they did not fire
-   *
-   * - **Key 3 reversed** → these tests fail. Its *direction* is pinned.
-   * - **Key 3 deleted** (`return 0`) → still green. `candidates.ts` already emits candidates sorted
-   *   by id and `Array.sort` is stable, so the key is redundant *given* that upstream order. It is
-   *   belt-and-braces on an invariant another module maintains, and it is kept for that reason —
-   *   not because a test can show it changing an outcome. `rankLayouts` takes an input, not a
-   *   candidate list, so there is no honest way to inject a different generation order from here.
-   * - **Key 2 deleted**, and `marginOf`'s `-1` fallback changed to `0` → both still green. Neither
-   *   can matter while every margin is unavailable. They are dormant rather than dead: the second
-   *   test below fails the day A-1 supplies a threshold, which is what makes the dormancy visible
-   *   instead of silent.
+   * What remains true is the third fact: the margin key is dormant, and would be the first thing
+   * to separate two genuinely different layouts that scored alike.
    */
-  it('produces an exact tie on total, so a tie-break really is deciding the order', () => {
+  it('separates the surviving proposals by score, not by a tie-break', () => {
     const totals = rank().layouts.map((layout) => layout.score.total);
 
-    expect(totals.length).toBeGreaterThan(1);
-    expect(totals[0]).toBe(totals[1]);
+    expect(totals.length).toBe(2);
+    expect(totals[0]).not.toBe(totals[1]);
+    expect(totals[0]! > totals[1]!).toBe(true);
   });
 
   it('cannot use the compliance-margin tie-break, because nothing measures it yet', () => {
     /*
-     * The second key, asserted as unreachable rather than assumed to work. If A-1 ever supplies
-     * thresholds this fails, and whoever supplies them comes here and finds out that the ranking's
-     * middle key has been dormant.
+     * The second comparator key, asserted as unreachable rather than assumed to work. If A-1 ever
+     * supplies thresholds this fails, and whoever supplies them finds out that the ranking's middle
+     * key has been dormant since it was written.
      */
     for (const layout of rank().layouts) {
       const margin = layout.score.criteria.find((c) => c.criterion === 'compliance_margin');
@@ -322,13 +449,15 @@ describe('what actually decides the layout an engineer is shown first', () => {
     }
   });
 
-  it('breaks the tie on candidate id, deterministically and by name alone', () => {
-    // The honest statement of what the order means today. Two runs agree, and they agree because
-    // of a string comparison — not because one layout is better than the other.
+  it('produces the same order on a second run', () => {
+    /*
+     * What the id key is actually for now: reproducibility, not preference. It orders the array
+     * deterministically; it no longer decides which of two "alternatives" is better, because two
+     * candidates that would need it to be separated are the same layout and have been collapsed.
+     */
     const first = rank().layouts.map((layout) => layout.candidateId);
     const second = rank().layouts.map((layout) => layout.candidateId);
 
     expect(second).toEqual(first);
-    expect(first[0]! < first[1]!, `${first[0]} should precede ${first[1]} by id`).toBe(true);
   });
 });

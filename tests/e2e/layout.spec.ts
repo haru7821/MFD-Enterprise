@@ -155,22 +155,36 @@ test('offers ranked alternatives, not one answer', async ({ page }) => {
   await expect(page.getByTestId('layout-proposal-2')).toBeVisible();
 });
 
-test('says Tied rather than #1 when the evidence cannot separate two layouts', async ({ page }) => {
+test('collapses converged geometries, and says Tied only for the ones that remain', async ({
+  page,
+}) => {
   /*
-   * > Owner decision: *"Do not present a tie as '#1'. If two or more candidates are
-   * > indistinguishable under the available evidence, they are tied. Show: Tied, same measurable
-   * > score, same coverage. Never let alphabetical order become engineering preference."*
+   * > Owner decision: *"Candidates with identical geometry evidence should collapse into one
+   * > proposal … Tied means multiple distinct geometries have equivalent evidence, not multiple
+   * > strategies generated the same geometry."*
    *
-   * Asserted in the browser rather than only in the ranker, because this decision is entirely about
-   * what an engineer is *shown*. The unit tests prove `tied` is computed; only this proves the word
-   * reaches the screen.
+   * **Re-measured rather than adjusted.** This asserted three tied proposals, written when the
+   * panel showed three. Measured after the collapse: the panel shows **two**, and both say Tied.
    *
-   * The four-station fixture produces the tie the decision was written for: `perimeter` and `rows`
-   * score an identical 0.283333333 at identical coverage, `compliance_margin` is unavailable on
-   * both, and before this the first was labelled **#1** on the strength of `'p' < 'r'`.
+   * Both halves of that are correct, and for different reasons:
+   *
+   * - Three became two because `perimeter` and `rows` converge on one arrangement. The unit tests
+   *   prove the survivors are geometrically distinct; the count is what is visible from here.
+   * - The two that remain are genuinely tied, and this room is a *different* case from the unit
+   *   fixture. There are no reference points here, so coverage is below the floor and D1 suppresses
+   *   the total: both read **not scored**. Two layouts whose evidence is equally unmeasurable are
+   *   precisely what "the evidence cannot separate these" means.
+   *
+   * So the earlier version of this test was wrong twice over — three proposals where there are two,
+   * and a tie it attributed to equal scores when the scores do not exist.
    */
   await traceRoom(page);
   await generate(page, '4');
+
+  // Exactly two proposals. A third would mean a converged geometry came back.
+  await expect(page.getByTestId('layout-proposal-1')).toBeVisible();
+  await expect(page.getByTestId('layout-proposal-2')).toBeVisible();
+  await expect(page.getByTestId('layout-proposal-3')).toHaveCount(0);
 
   await expect(page.getByTestId('layout-standing-1')).toContainText('Tied');
   await expect(page.getByTestId('layout-standing-2')).toContainText('Tied');
@@ -178,32 +192,20 @@ test('says Tied rather than #1 when the evidence cannot separate two layouts', a
   await expect(page.getByTestId('layout-standing-1')).toContainText('동점');
 
   /*
-   * **All three are tied here, and I asserted the opposite first.**
-   *
-   * The unit fixture separates the third layout (0.280260417 against 0.283333333), so this test was
-   * written expecting `layout-standing-3` to keep a number — a statement made from the wrong
-   * scenario's evidence. In the browser's room nothing measurable separates any of the three, and
-   * the panel says so three times. Recorded rather than quietly adjusted, because assuming one
-   * fixture's numbers hold in another is the habit this whole sweep is against.
-   *
-   * It is also the stronger demonstration: before the decision this screen showed #1, #2 and #3
-   * over three layouts the engine cannot tell apart.
-   */
-  await expect(page.getByTestId('layout-standing-3')).toContainText('Tied');
-
-  /*
-   * And the two things the owner asked to be shown beside the word: the same measurable score and
-   * the same coverage. Read from the DOM rather than assumed equal.
+   * And the two things the owner asked to be shown beside the word. Read from the DOM rather than
+   * assumed equal — and here the shared value is the *absence* of a score, which is the honest
+   * thing for this room to say.
    */
   const totals = await Promise.all(
-    [1, 2, 3].map((n) => page.getByTestId(`layout-total-${n}`).textContent()),
+    [1, 2].map((n) => page.getByTestId(`layout-total-${n}`).textContent()),
   );
-  expect(new Set(totals).size, `totals differ: ${JSON.stringify(totals)}`).toBe(1);
+  expect(totals[0]).toBe(totals[1]);
+  expect(totals[0]).toContain('not scored');
 
   const coverages = await Promise.all(
-    [1, 2, 3].map((n) => page.getByTestId(`layout-coverage-${n}`).textContent()),
+    [1, 2].map((n) => page.getByTestId(`layout-coverage-${n}`).textContent()),
   );
-  expect(new Set(coverages).size, `coverages differ: ${JSON.stringify(coverages)}`).toBe(1);
+  expect(coverages[0]).toBe(coverages[1]);
 });
 
 test('shows coverage beside every total', async ({ page }) => {

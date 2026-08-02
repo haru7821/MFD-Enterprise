@@ -7,8 +7,14 @@ import type {
 import { CRITERION_LABELS } from '@mfd/ai-contract';
 import type { Bilingual } from '@mfd/rule-engine';
 
-import type { Candidate } from './candidates';
-import { type PipelineInput, type PipelineResult, generateFeasibleCandidates } from './generate';
+import type { Candidate, CandidateStrategy } from './candidates';
+import {
+  type FeasibleCandidate,
+  type PipelineInput,
+  type PipelineResult,
+  generateFeasibleCandidates,
+  geometryKey,
+} from './generate';
 import { scoreLayout } from './score';
 import type { Placement } from '@mfd/document-model';
 
@@ -50,6 +56,17 @@ export interface RankedLayout {
    */
   readonly tied: boolean;
   readonly candidateId: string;
+  /**
+   * Every strategy that produced **this exact geometry**, sorted.
+   *
+   * Usually one. More than one means the strategies converged: `rows` and `perimeter` independently
+   * arriving at the same arrangement is a stronger statement about the room than either alone, and
+   * it is kept rather than discarded when the duplicates collapse into a single proposal.
+   *
+   * `candidateId` names the surviving candidate and therefore carries only *its* strategy in the
+   * string. This is the honest list.
+   */
+  readonly strategies: readonly CandidateStrategy[];
   readonly placements: readonly Placement[];
   readonly score: ScoreBreakdown;
   /**
@@ -122,6 +139,71 @@ const DEFAULT_LIMIT = 3;
  * Shared by `rankLayouts` and `optimiseLayout` rather than written twice. Both present a list to
  * the same engineer, and two implementations of "these are tied" could disagree in one screen.
  */
+/**
+ * One proposal per distinct geometry — **owner decision, candidate deduplication.**
+ *
+ * > *"Prevent the product from claiming it found multiple alternatives when the evidence model says
+ * > the alternatives converge to the same geometry … Do not change ranking semantics for genuinely
+ * > different geometries."*
+ *
+ * The measured defect: on the four-station fixture, `perimeter-4-033p4n9` and `rows-4-033p4n9` have
+ * **byte-identical placements** — same equipment, same positions, same rotation, same mirroring.
+ * The engineer was shown three alternatives of which two were one layout, and after D13 both of
+ * those carried the label *Tied*, which said the evidence could not separate them when in truth
+ * there was nothing to separate.
+ *
+ * ## What survives, and why it does not depend on order
+ *
+ * The candidate whose id sorts first by codepoint. `generateCandidates` already returns them in
+ * that order, so this is the first-seen entry today — but it is computed rather than assumed,
+ * because "first seen" is exactly the kind of dependence this collapse exists to remove. Shuffle
+ * the input and the same candidate survives.
+ *
+ * ## What is kept
+ *
+ * Every contributing strategy, on the surviving proposal. Convergence is evidence: three strategies
+ * arriving at one arrangement is a stronger statement about the room than one strategy doing so,
+ * and discarding it to fix a duplicate would trade one lost fact for another.
+ *
+ * Exported for one reason: order-independence cannot be demonstrated through `rankLayouts`, which
+ * takes a room rather than a candidate list, so a test has no way to shuffle the input. A claim
+ * that the survivor does not depend on insertion order is worth nothing unless a test can feed it
+ * the other order.
+ */
+export function collapseByGeometry(
+  feasible: readonly FeasibleCandidate[],
+): readonly { entry: FeasibleCandidate; strategies: readonly CandidateStrategy[] }[] {
+  const groups = new Map<string, FeasibleCandidate[]>();
+  for (const entry of feasible) {
+    const key = geometryKey(entry.placements);
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
+
+  const collapsed = [...groups.values()].map((members) => {
+    /*
+     * Sorted rather than taking `members[0]`: `Map` preserves insertion order, so the untouched
+     * first element would be whichever candidate the generator happened to emit first. That is a
+     * hidden ordering dependency of exactly the kind the audit was looking for, and it would be
+     * invisible until somebody reordered the strategy list.
+     */
+    const ordered = [...members].sort((a, b) =>
+      a.candidate.id < b.candidate.id ? -1 : a.candidate.id > b.candidate.id ? 1 : 0,
+    );
+    const strategies = [...new Set(ordered.map((member) => member.candidate.strategy))].sort();
+    return { entry: ordered[0]!, strategies };
+  });
+
+  // The collapsed set in a defined order, so what follows cannot inherit `Map` iteration order
+  // either. `compare` re-sorts on score immediately; this is about the input to that being stable.
+  return collapsed.sort((a, b) =>
+    a.entry.candidate.id < b.entry.candidate.id
+      ? -1
+      : a.entry.candidate.id > b.entry.candidate.id
+        ? 1
+        : 0,
+  );
+}
+
 export function denseRanks(
   scores: readonly ScoreBreakdown[],
 ): readonly { rank: number; tied: boolean }[] {
@@ -139,8 +221,12 @@ export function denseRanks(
 
 export function rankLayouts(input: RankInput): RankResult {
   const pipeline = generateFeasibleCandidates(input);
+  const distinct = collapseByGeometry(pipeline.feasible);
+  const strategiesFor = new Map(
+    distinct.map(({ entry, strategies }) => [entry.candidate.id, strategies]),
+  );
 
-  const scored = pipeline.feasible.map((entry) => ({
+  const scored = distinct.map(({ entry }) => ({
     entry,
     score: scoreLayout({
       /*
@@ -191,6 +277,7 @@ export function rankLayouts(input: RankInput): RankResult {
     rank: standing[index]!.rank,
     tied: standing[index]!.tied,
     candidateId: item.entry.candidate.id,
+    strategies: strategiesFor.get(item.entry.candidate.id) ?? [item.entry.candidate.strategy],
     placements: item.entry.placements,
     score: item.score,
     compliance: {
