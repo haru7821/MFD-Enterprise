@@ -1,0 +1,76 @@
+{
+  "_template": "BLANK TEMPLATE — copy to run-metadata.json and fill. Do not fill this file in place.",
+  "_rules": [
+    "null means NOT YET ESTABLISHED. Leave it null rather than guessing — an empty field is evidence that something could not be determined, a guessed one is not.",
+    "Every field below is recorded BEFORE extraction runs.",
+    "Delete the keys beginning with an underscore from the filled copy."
+  ],
+
+  "pilotId": "PILOT-001",
+
+  "drawing": {
+    "_note": "Identity of the sheet. drawingId and sha256 must both match knowledge/dataset.json — if the hash differs, the run is against a different file and must stop.",
+    "drawingId": null,
+    "page": null,
+    "sha256": null,
+    "hashMatchesCatalogue": null
+  },
+
+  "catalogue": {
+    "_note": "There is no single repository-wide catalogue version. Record the `version` of every equipment record the run uses, one entry each.",
+    "records": [
+      { "id": null, "version": null }
+    ]
+  },
+
+  "ruleSet": {
+    "_note": "ruleSetId and ruleSetVersion appear on the evaluation report. status is expected to be 'draft' — every dialysis rule currently carries source.document: null (A-1).",
+    "id": null,
+    "version": null,
+    "status": null
+  },
+
+  "scoringModel": {
+    "_note": "RefWithVersion from standards/scoring/. minimumCoverage is recorded because it decides whether a total is offered at all.",
+    "id": null,
+    "version": null,
+    "minimumCoverage": null
+  },
+
+  "code": {
+    "_note": "THE FULL 40-CHARACTER COMMIT SHA. There is no SOLVER_VERSION constant in this repository, and none of the version fields below changes when solver logic changes — so the SHA is the only complete identifier of the code that produced this result. A shortened SHA is not sufficient for a record intended to be re-run against.",
+    "gitCommitSha": null,
+    "workingTreeClean": null,
+    "aiContractVersion": null,
+    "evaluationResultVersion": null,
+    "documentVersion": null,
+    "knowledgeVersion": null,
+    "corpusValidationVersion": null,
+    "confirmationsVersion": null
+  },
+
+  "execution": {
+    "_note": "ISO-8601 with offset, in the operator's own timezone — not UTC-only. A hand-converted wrong time is a valid-but-false record.",
+    "timestamp": null,
+    "operator": null,
+    "machine": null,
+    "nodeVersion": null,
+    "locale": null
+  },
+
+  "context": {
+    "_note": "Human input. Not derivable from the repository, and must not be invented — if it cannot be supplied, the run does not start.",
+    "facility": null,
+    "roomType": null,
+    "questionBeingAsked": null,
+    "requestedBy": null
+  },
+
+  "expected": {
+    "_note": "Recorded in advance so the run cannot be re-described afterwards by what it produced. These are consequences of A-1 being unresolved, not predictions of success.",
+    "verdict": "판정 불가 / Inconclusive",
+    "clearanceFindings": "RC-110 throughout — no threshold to compare against",
+    "complianceMargin": "unavailable — 40% of the scoring model",
+    "aStopIsAValidOutcome": true
+  }
+}

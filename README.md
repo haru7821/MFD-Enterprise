@@ -249,6 +249,7 @@ a guard in [docs/release/REGRESSION_PROTECTION_MAP.md](docs/release/REGRESSION_P
 | [docs/ENGINEERING_PRINCIPLES.md](docs/ENGINEERING_PRINCIPLES.md) | The four principles, and the guard behind each |
 | [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md) | How a change becomes an internal release, and what blocks one |
 | [docs/PILOT_VALIDATION_PROCESS.md](docs/PILOT_VALIDATION_PROCESS.md) | Pilot-001 — the first real operational validation, and why it is not a feature test |
+| [pilot/](pilot/) | Pilot run records — what actually happened, once a run has happened |
 | [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | Owner decisions D1–D16, and **what is still needed from the owner** |
 | [docs/release/RELEASE_GATE.md](docs/release/RELEASE_GATE.md) | Release Candidate → Production conditions, and the one not met |
 | [docs/release/RELEASE_READINESS_REPORT.md](docs/release/RELEASE_READINESS_REPORT.md) | Evidence model, equality definitions, determinism, known limitations |
