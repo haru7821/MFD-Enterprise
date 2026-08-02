@@ -9,7 +9,7 @@
   "pilotId": "PILOT-001",
 
   "drawing": {
-    "_note": "Identity of the sheet. drawingId and sha256 must both match knowledge/dataset.json — if the hash differs, the run is against a different file and must stop.",
+    "_note": "Identity of the sheet. drawingId and sha256 must both match knowledge/dataset.json — if the hash differs, the run is against a different file and must stop. PAGE IS ZERO-BASED: the first page is 0, not 1. Every single-sheet drawing in the corpus is page 0; only 6 of 306 rows carry a page above 0. A page number off by one resolves to a real but different sheet, producing a record that is valid and false.",
     "drawingId": null,
     "page": null,
     "sha256": null,

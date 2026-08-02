@@ -17,7 +17,7 @@ something could not be established. A guessed one is not.
 | Field | Value |
 | --- | --- |
 | Drawing identifier (`drawingId`) | |
-| Page | |
+| Page — **zero-based**, first page is `0` | |
 | `sha256` | |
 | Hash matches `knowledge/dataset.json`? | ☐ yes ☐ no — if no, **stop** |
 | Project context — facility | |
