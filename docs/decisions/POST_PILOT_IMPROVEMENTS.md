@@ -77,6 +77,52 @@ principled reason rather than an unfinished one.
 
 ---
 
+## F-2 · No input path for a human-confirmed room extent — **implemented**
+
+> **Finding from real use, and the second one the pilot produced.** A drawing states its room as
+> text — `Room: 25,000 x 15,000 mm` — with no dimension line and `Scale: fit-to-page`. Neither
+> calibration method applies, so the pipeline stopped at `room` even though the number an engineer
+> needs was printed on the sheet.
+
+**The gap was not the incomplete drawing.** The solver takes a polygon in millimetres; nothing about
+that requires calibrating an image. What was missing was a way to say *"the room is 25,000 × 15,000,
+and here is who says so"*. Geometry provenance already defined the tier — **Tier 2, Verified
+Geometry, confirmed by human input** — and had no input path.
+
+Measured before building it: with the room supplied directly, the solver placed **12, 16 and 20
+stations**, 0 rejections, and reported `total: null` at `coverage: 0.20` — below `minimumCoverage`
+0.25. It shows arrangements and declines to rank them. That is D1 working, not a failure.
+
+### `scripts/lib/statedRoom.ts` — 14 tests
+
+The distinction it exists to enforce, because once both are numbers they are indistinguishable:
+
+| Source | Tier | Usable as geometry |
+| --- | --- | --- |
+| `drawing-text` — read off the sheet, nobody checked it | 1 · Drawing Evidence | **No** |
+| `human-confirmed` — a person states it and says against what | 2 · Verified Geometry | Yes |
+
+- **A printed dimension is a claim the drawing makes**, not a measurement. It may be the building
+  rather than the room; it may disagree with its own linework — Pilot-001's `VD-1` is exactly that,
+  3.01 % out. `drawing-text` is recorded and **refused for geometry**, not discarded: it is the
+  candidate a person is being asked to confirm.
+- **Both attributions or none.** `human-confirmed` requires `statedBy` *and* `basis`. A number with
+  a name but no basis says a person typed it; with a basis but no name, nobody is answerable. The
+  same rule `confirmationSchema` already enforces.
+- **No promotion path.** Supplying a name and basis on a `drawing-text` statement does not make it a
+  confirmation, and `roomPolygon` has no `force` parameter — an escape hatch would be used.
+- **The provenance reaches the reader.** `provenanceNote` states the room was *stated, not measured*,
+  and that nothing checked the statement against the linework.
+
+Both guards mutation-tested: allowing a polygon from unverified text, and dropping the basis
+requirement, each turn the suite red.
+
+**Not yet wired into `verify:drawing` or the editor.** The module is the decision layer; the
+operator-facing path is the next step and needs its own decision about where the statement is
+entered and recorded.
+
+---
+
 ## OI-1 · File-first pilot workflow
 
 > **The operator should never need to reference an internal catalogue identifier.** The workflow
