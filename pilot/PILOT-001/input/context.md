@@ -23,10 +23,20 @@ Dialysis room.
 > The engineering question is to evaluate the appropriate number of equipment stations that can be
 > supported by the available evidence for this room.
 
-**Note on scope, recorded before the run rather than after it.** This question asks what the
-*evidence* supports, which is a question the engine is built to answer and may still answer with an
-abstention. It is not a request for a recommended station count independent of evidence, and the
-result must not be read as one.
+### Interpretation — ratified by the owner, binding on this run
+
+> *"Evaluate the number of equipment stations supported by available evidence for this Dialysis
+> room."*
+>
+> **Not** to be interpreted as requesting an unconditional recommended equipment count.
+
+This was recorded before the run as a note; the owner has since stated it as the governing
+interpretation, so it is now the ratified reading rather than an observation. The question asks what
+the *evidence* supports — a question the engine is built to answer, and one it may still answer with
+an abstention.
+
+The distinction has teeth at review time: a result reading *"the evidence supports no statement about
+station count"* **answers** this question. It is not a failure to answer it.
 
 `stationTarget` is an input to the solver, and `resolvedStationCount` / `countWasDerived` record
 whether a count was supplied or derived. Which of those applies is part of what the review examines.

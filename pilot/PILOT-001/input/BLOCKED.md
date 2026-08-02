@@ -1,5 +1,10 @@
 # PILOT-001 — execution not started
 
+> **Update — input review round 2.** The owner has stated that the four fields below will be
+> supplied, and has ratified the engineering-question interpretation (see
+> [`context.md`](context.md)). The field **values** have not yet arrived — the labels were sent
+> without them — so every blocker below still stands and nothing has been executed.
+
 **Two required input fields do not resolve.** Extraction has not been run, `run-metadata.json` has
 not been created, and no folder beyond `input/` contains anything.
 
@@ -87,5 +92,20 @@ The name of the person who will perform the run.
 - `run-metadata.json` — not created; drawing identity and operator are unresolved
 - `evidence/`, `result/` — empty; extraction has not been run
 - `review/`, `confirmation/` — empty; those are human stages and were never in scope for this step
+
+---
+
+## Awaiting — the four values
+
+| # | Field | Format that will resolve |
+| --- | --- | --- |
+| 1 | `drawingId` | An exact string from `knowledge/dataset.json`, shaped `Hospital_NNN/<sheet>.<ext>` — e.g. `Hospital_044/dialysis.pdf` |
+| 2 | `page` | **Zero-based.** Every single-sheet drawing in the corpus is `page: 0`; only 6 of 306 rows have a page above 0, ranging to 6. A first page is `0`, not `1` |
+| 3 | Operator | The name of the person performing the run |
+| 4 | Requester | The actual account or organisation |
+| 5 | Reviewing engineer | The individual holding the TS reviewer role |
+
+Items 4 and 5 do not block extraction. Item 5 blocks any confirmation, since a confirmation's `name`
+must identify an individual.
 
 **PILOT-001 remains NOT EXECUTED.**
