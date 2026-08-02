@@ -177,6 +177,60 @@ export function renderRationale(
   );
 }
 
+/**
+ * Does this word end in a **final consonant** (받침)?
+ *
+ * Korean's conjunctive particle is 과 after a syllable that closes on a consonant and 와 after one
+ * that does not — 벽면 배열**과**, 격자 배치**와**. The rule is phonological, not lexical, so it must
+ * be computed from the word rather than looked up per strategy: a name added next year would
+ * otherwise take whichever particle its neighbours happened to need.
+ *
+ * A Hangul syllable block encodes its own final consonant: the syllables run from `AC00`, and each
+ * initial+medial pair is followed by 28 variants — index 0 being "no final consonant" and 1…27 the
+ * consonants. So `(code - 0xAC00) % 28 !== 0` is the whole test.
+ *
+ * Returns `null` when the word does not end in a Hangul syllable — a Latin name, a digit, a bracket.
+ * The correct particle there depends on how the reader *pronounces* it, which this cannot know, and
+ * guessing would put a wrong particle in an engineer-facing sentence. {@link joinKorean} abstains
+ * into a comma list instead, which is correct for any list in any language.
+ */
+export function hasFinalConsonant(word: string): boolean | null {
+  const last = [...word].at(-1);
+  if (last === undefined) return null;
+
+  const code = last.codePointAt(0)!;
+  if (code < 0xac00 || code > 0xd7a3) return null;
+
+  return (code - 0xac00) % 28 !== 0;
+}
+
+/**
+ * Join Korean noun phrases the way a Korean sentence does.
+ *
+ * Two items take the particle directly — *A와 B*. Three or more comma the head and attach the
+ * particle to the **second-to-last** item, which is where it belongs: *A, B와 C*. So the particle is
+ * chosen from the word it attaches to, not from the last word in the list.
+ *
+ * Falls back to a plain comma list when any joining word does not end in a Hangul syllable. That is
+ * an abstention rather than a default: a comma list is always grammatical, and a guessed 와/과 on a
+ * word whose pronunciation is unknown is a mistake printed in front of an engineer.
+ */
+export function joinKorean(words: readonly string[]): string {
+  if (words.length <= 1) return words[0] ?? '';
+
+  const head = words.slice(0, -1);
+  const attachesTo = head[head.length - 1]!;
+  const final = hasFinalConsonant(attachesTo);
+  if (final === null) return words.join(', ');
+
+  /*
+   * The particle binds to the word before it with no space, and a space follows before the next
+   * noun: 행 배열**과** 벽면 배열. Written without that trailing space first, and the test caught it —
+   * `행 배열과벽면 배열`, which a Korean reader sees as one mangled word.
+   */
+  return `${head.join(', ')}${final ? '과' : '와'} ${words[words.length - 1]}`;
+}
+
 /** The rationale's short title, for a heading too narrow for the sentence. */
 export function rationaleTitle(code: RationaleCode): Bilingual {
   return RATIONALE_CODES[code].title;

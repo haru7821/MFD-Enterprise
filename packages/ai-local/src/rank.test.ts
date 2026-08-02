@@ -12,7 +12,15 @@ import {
   fixtureRoomBoundary,
   fixtureRuleSet,
 } from '../fixtures/index';
-import { type RankInput, collapseByGeometry, denseRanks, rankLayouts } from './rank';
+import {
+  type RankInput,
+  collapseByGeometry,
+  compareStrategies,
+  denseRanks,
+  rankLayouts,
+  strategyList,
+} from './rank';
+import { CANDIDATE_STRATEGIES } from './candidates';
 import { generateFeasibleCandidates, geometryKey } from './generate';
 import { renderRationale } from '@mfd/ai-contract';
 
@@ -500,6 +508,9 @@ describe('the explanation says how many strategies reached the layout', () => {
     // Both strategies, in both languages. Neither may be dropped.
     for (const fragment of ['perimeter', 'rows']) expect(english).toContain(fragment);
     for (const fragment of ['벽면 배열', '행 배열']) expect(korean).toContain(fragment);
+    // Canonical order and the Korean particle, both computed rather than inherited.
+    expect(english).toContain('rows and perimeter');
+    expect(korean).toContain('행 배열과 벽면 배열');
 
     /*
      * And no wording that ranks them. The owner named these explicitly: a strategy did not *win*,
@@ -514,15 +525,49 @@ describe('the explanation says how many strategies reached the layout', () => {
     expect(korean).not.toMatch(/\{\w+\}/);
   });
 
-  it('Case C — the wording does not depend on the order the strategies arrive in', () => {
+  it('Case C — the same strategies in either order render the same sentence', () => {
     /*
-     * Two independent order questions, and the second is the one a test could easily miss.
+     * > Owner requirement: *"Do not rely on candidate.id format. Do not rely on insertion order.
+     * > Do not rely on generation order."*
      *
-     * `collapseByGeometry` sorts the strategy list, so a reversed candidate stream must produce the
-     * same sentence. And `strategyList` itself must be a pure function of the order it is handed —
-     * asserted through the public rendering rather than by inspecting the array, because the array
-     * being sorted is not the same claim as the *sentence* being stable.
+     * **This test previously asserted the opposite**, and was right to at the time: `strategyList`
+     * preserved the order it was handed, and the order was correct only because
+     * `collapseByGeometry` sorts by `candidate.id` and an id begins with its strategy name. The
+     * determinism was real and the reason for it was an accident of a string format defined in
+     * another module.
+     *
+     * `strategyList` now sorts canonically itself, so the two input orders below are the direct
+     * test of that: identical text, in both languages, from opposite inputs.
      */
+    const forwards = strategyList(['rows', 'perimeter']);
+    const backwards = strategyList(['perimeter', 'rows']);
+
+    expect(backwards).toEqual(forwards);
+    expect(forwards.en).toBe('rows and perimeter');
+    expect(forwards.ko).toBe('행 배열과 벽면 배열');
+
+    // Rendered, not just composed — the sentence an engineer reads is the thing being pinned.
+    const render = (list: typeof forwards) =>
+      renderRationale('en', 'AR-105', { strategies: list, count: 4 });
+    expect(render(backwards)).toBe(render(forwards));
+  });
+
+  it('Case C — the canonical order is declared, not inherited from the candidate id', () => {
+    /*
+     * The comparator reads `CANDIDATE_STRATEGIES`, the one declaration of which strategies exist.
+     * Asserted against that list rather than against a copy of it, so adding a strategy to the
+     * product cannot leave the explanation order silently undefined.
+     */
+    const shuffled = [...CANDIDATE_STRATEGIES].reverse();
+    expect([...shuffled].sort(compareStrategies)).toEqual([...CANDIDATE_STRATEGIES]);
+
+    // Every declared strategy is ordered — an unknown one sorts last rather than throwing.
+    for (const strategy of CANDIDATE_STRATEGIES) {
+      expect(compareStrategies(strategy, strategy)).toBe(0);
+    }
+  });
+
+  it('Case C — collapsing still yields the same strategies from a reversed candidate stream', () => {
     const feasible = generateFeasibleCandidates(pipelineInput()).feasible;
     const forwards = collapseByGeometry(feasible);
     const backwards = collapseByGeometry([...feasible].reverse());
@@ -530,15 +575,5 @@ describe('the explanation says how many strategies reached the layout', () => {
     expect(backwards.map((entry) => entry.strategies)).toEqual(
       forwards.map((entry) => entry.strategies),
     );
-
-    const converged = rank().layouts.find((layout) => layout.strategies.length > 1)!;
-    const arrangement = converged.explanation.find((item) => item.code === 'AR-105')!;
-    const rendered = renderRationale('en', arrangement.code, arrangement.params);
-
-    // The same list handed over in the opposite order renders differently — which is precisely why
-    // the sort in `collapseByGeometry` is load-bearing rather than cosmetic.
-    const reversedParams = { ...arrangement.params, strategies: { ko: '행 배열, 벽면 배열', en: 'rows and perimeter' } };
-    expect(renderRationale('en', 'AR-105', reversedParams)).not.toBe(rendered);
-    expect(rendered).toContain('perimeter and rows');
   });
 });

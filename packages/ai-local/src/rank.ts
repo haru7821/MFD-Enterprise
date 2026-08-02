@@ -4,10 +4,10 @@ import type {
   ScoreBreakdown,
   ScoringModel,
 } from '@mfd/ai-contract';
-import { CRITERION_LABELS } from '@mfd/ai-contract';
+import { CRITERION_LABELS, joinKorean } from '@mfd/ai-contract';
 import type { Bilingual } from '@mfd/rule-engine';
 
-import type { Candidate, CandidateStrategy } from './candidates';
+import { type Candidate, type CandidateStrategy, CANDIDATE_STRATEGIES } from './candidates';
 import {
   type FeasibleCandidate,
   type PipelineInput,
@@ -119,18 +119,45 @@ const STRATEGY_NAMES: Readonly<Record<Candidate['strategy'], Bilingual>> = {
 };
 
 /**
- * A bilingual list of strategy names, in the order given.
+ * The order strategies are named in an explanation — **explicit, and not inherited from anything.**
  *
- * English joins the last pair with "and"; Korean uses commas throughout rather than 와/과, whose
- * correct form depends on whether the preceding syllable ends in a consonant. Every name today ends
- * in 열 and would take 과, so the particle would be right by accident — and wrong the first time a
- * strategy is named something else. A comma is correct for any list.
+ * > Owner requirement: *"Do not rely on candidate.id format. Do not rely on insertion order. Do not
+ * > rely on generation order."*
+ *
+ * It used to be all three at once without saying so. `collapseByGeometry` sorts its members by
+ * `candidate.id`, and an id is `${strategy}-${count}-${hash}` — so the strategy list came out
+ * alphabetical *because the id happens to start with the strategy name*. Correct, deterministic,
+ * and resting on a string format defined in another module for an unrelated reason. Change the id
+ * template and an engineer-facing sentence silently rewords.
+ *
+ * `CANDIDATE_STRATEGIES` is the one place that declares which strategies exist, so the canonical
+ * order is read from it rather than re-declared here. A second list would be a second source of
+ * truth, and the two would drift the first time a strategy was added to one of them.
  */
-function strategyList(strategies: readonly Candidate['strategy'][]): Bilingual {
-  const names = strategies.map((strategy) => STRATEGY_NAMES[strategy]);
+const STRATEGY_ORDER: readonly Candidate['strategy'][] = CANDIDATE_STRATEGIES;
+
+/** Canonical explanation order. Unknown strategies sort last rather than throwing. */
+export function compareStrategies(a: Candidate['strategy'], b: Candidate['strategy']): number {
+  const rank = (strategy: Candidate['strategy']) => {
+    const index = STRATEGY_ORDER.indexOf(strategy);
+    return index === -1 ? STRATEGY_ORDER.length : index;
+  };
+  return rank(a) - rank(b);
+}
+
+/**
+ * A bilingual list of strategy names, in the canonical order regardless of the order handed in.
+ *
+ * English joins the final pair with "and". Korean uses `joinKorean`, which selects 와/과 from the
+ * final syllable of the word the particle attaches to — the phonological rule, computed rather than
+ * looked up, so a strategy named something new next year is joined correctly without anyone
+ * remembering to come here.
+ */
+export function strategyList(strategies: readonly Candidate['strategy'][]): Bilingual {
+  const names = [...strategies].sort(compareStrategies).map((strategy) => STRATEGY_NAMES[strategy]);
   const english = names.map((name) => name.en);
   return {
-    ko: names.map((name) => name.ko).join(', '),
+    ko: joinKorean(names.map((name) => name.ko)),
     en:
       english.length > 1
         ? `${english.slice(0, -1).join(', ')} and ${english[english.length - 1]}`

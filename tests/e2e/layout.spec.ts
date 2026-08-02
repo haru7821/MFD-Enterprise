@@ -414,8 +414,17 @@ test('shows what each candidate scores, and against what', async ({ page }) => {
    */
   await expect(page.getByTestId('layout-reason-1')).toContainText('Arranged 3 stations');
   await expect(page.getByTestId('layout-reason-1')).toContainText(
-    'the perimeter and rows strategies each produced independently',
+    'the rows and perimeter strategies each produced independently',
   );
+  /*
+   * Korean with the conjunctive particle, not a comma: 행 배열**과** 벽면 배열. 배열 closes on ㄹ, so
+   * the form is 과 — computed from the syllable rather than hardcoded, which is what makes a
+   * strategy named 격자 배치 come out as 격자 배치**와** without anyone editing this file.
+   *
+   * The order is `rows` before `perimeter` now: `CANDIDATE_STRATEGIES`'s declared order rather than
+   * the alphabetical order the candidate-id sort used to produce by accident.
+   */
+  await expect(page.getByTestId('layout-reason-1')).toContainText('행 배열과 벽면 배열');
   await expect(page.getByTestId('layout-reason-1')).toContainText('각각 동일한 배열에 도달했습니다');
 });
 
