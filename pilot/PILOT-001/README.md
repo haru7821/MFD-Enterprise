@@ -9,8 +9,14 @@
 > No evaluation, ranking or rationale was produced — extraction stopped before them, so their
 > absence is the result, not a gap.
 >
-> **`review/` and `confirmation/` are empty and stay that way until a person acts.** The machine
-> scope ends here.
+> **Review opened, not concluded.** An engineering statement has been recorded in
+> [`review/review.md`](review/review.md): a room candidate exists, but the evidence does not
+> uniquely identify which enclosed region is the treatment room, so the abstention was correct.
+> It corroborates `VD-4`; `VD-1` remains unaddressed.
+>
+> **No outcome recorded, no confirmation created.** `outcome.txt` is absent and `confirmation/` is
+> empty, because the statement carries no named individual, no outcome word and no basis — and
+> inferring those to complete the form would be the system signing on someone's behalf.
 >
 > Procedure: [`../../docs/PILOT_VALIDATION_PROCESS.md`](../../docs/PILOT_VALIDATION_PROCESS.md) ·
 > Checklist: [`../../docs/pilot/PILOT-001-CHECKLIST.md`](../../docs/pilot/PILOT-001-CHECKLIST.md)

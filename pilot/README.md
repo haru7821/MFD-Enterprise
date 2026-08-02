@@ -29,4 +29,4 @@ same rule the confirmation ledger lives under, and for the same reason.
 
 | Run | Status |
 | --- | --- |
-| [`PILOT-001`](PILOT-001/) | **Machine stages complete — awaiting engineer review.** `Hospital_044/dialysis.pdf`, stopped at `room` |
+| [`PILOT-001`](PILOT-001/) | **Review opened, not concluded.** `Hospital_044/dialysis.pdf`, stopped at `room`; statement recorded, no outcome, no confirmation |
